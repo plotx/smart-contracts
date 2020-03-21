@@ -6,28 +6,15 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 contract PlotusData {
     using SafeMath for uint;
 
-    enum MarketStatus {NotStarted, InProgress, Ended}
-    enum MarketType {Invalid, Low, Medium, High}
     uint public PlotusAddress; 
     address[] public allMarkets;
-
-    address[] cbs;
-    mapping(uint => uint) public marketTimeline;
-    uint[] recentMarketTypeExpire;
     mapping(address => bool) private isMarketAdd;
 
-    event MarketQuestion(address indexed marketId, string question, uint marketType);
-    event MarketClosed(uint indexed _type, address marketId);
+    event Market(address indexed marketId, string question, uint marketType);
   
     constructor() public {
-
-        marketTimeline[0] = 60 * 60;
-        marketTimeline[1] = 1 * 1 days;
-        marketTimeline[2] = 7 * 1 days;
+    
         allMarkets.push(address(0));
-        recentMarketTypeExpire.push(0);
-        recentMarketTypeExpire.push(0);
-        recentMarketTypeExpire.push(0);
 
     }
 
@@ -43,11 +30,7 @@ contract PlotusData {
         return allMarkets.length;
     }
 
-    function updateMarketTimeline(uint _type, uint _val) public onlyOwner {
-        require(_type > 0 && _type < 4);
-        marketTimeline[_type] = _val;
-    }
-
+    
     function getAllClosedMarkets() public view returns(address[] memory)
     {
         return cbs;

@@ -7,20 +7,28 @@ import "./PlotusToken.sol";
 contract Plotus{
     using SafeMath for uint;
 
-    BetData bd;
+    PlotusData pd;
+    address plotusDataContract;
+
+    constructor(address _plotusDataContract)
+    {
+      plotusDataContract = _plotusDataContract;
+
+    }
+
 
     function addNewMarket( 
-      string memory _question, 
-      uint _betType,
-      uint _startTime,
-      uint _predictionValue,
-      string memory _feedSource
+     uint[] _uintparams,
+     string _feedsource,
+     bytes32 _stockName,
+     address[] _addressParams     
       ) public payable onlyOwner {
 
         // PlotusToken tk = new PlotusToken();
         // uint _expireTime = _startTime.add(bd.betTimeline(_betType));
-        // BetContract betCon = (new BetContract).value(msg.value)(bd.minBet(), bd.maxBet(),tk., _question, _betType, _startTime, _expireTime, _predictionValue, _feedSource, address(bd), ms.owner());
-        // bd.pushBet(address(betCon), _question, _betType);
+        pd = PlotusData(plotusDataContract);
+        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
+        pd.pushMarket(address(marketCon), _feedsource, _uintparams[2]);
         // bd.updateRecentBetTypeExpire(_betType);
     }
 

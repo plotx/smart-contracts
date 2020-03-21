@@ -9,21 +9,19 @@ contract Market is usingProvable {
 
     uint public startTime;
     uint public expireTime;
-    uint public finalResult;
     string public FeedSource;
     uint public betType;
     string public stockName;
     PlotusToken public tk;
-    address payable public AdminAccount;
-
     bool public betClosed;
     uint public WinningOption;
     uint public predictionForDate;
     uint public minBet;
-    uint public totalOptions = 7; // make function for total options
+    uint public totalOptions; // make function for total options
+    uint public rate;
+    uint public commissionPerc;
+    uint public donationPerc;
     PlotusData pl;
-    uint cx1000;
-
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
@@ -36,8 +34,7 @@ contract Market is usingProvable {
       uint minValue;
       uint maxValue;
       uint betPoints;
-      // uint ethStaked;
-      bool correctOption;
+      uint ethStaked;                                                                                                                                                                                                             ;
     }
 
     mapping(uint=>option) optionsAvailable;
@@ -47,31 +44,30 @@ contract Market is usingProvable {
     event Claimed(address _user, uint _reward);
 
     constructor(
-      uint _minBet,
-      PlotusToken _agree, 
-      string memory _question, 
-      uint _betType,
-      uint _startTime,
-      uint _expireTime,
-      string memory _feedSource,
-      address plAdd,
-      address payable _donation,
-      address payable _commission
+     uint[] _uintparams,
+     string _feedsource,
+     bytes32 _stockName,
+     address[] _addressParams 
     ) 
     public
     payable 
     {
-      minBet = _minBet;
-      PlotusToken = _agree;
-      startTime = _startTime;
-      betType = _betType;
-      expireTime = _expireTime;
-      FeedSource = _feedSource;
-      tk.changeOperator(address(this));
-      pl = PlotusData(plAdd);
-      DonationAccount = _donation;
-      CommissionAccount = _commission;
-      stockName = _question;
+      startTime = _uintparams[0];
+
+      // minBet = _minBet;
+      // PlotusToken = _agree;
+      // startTime = _startTime;
+      // betType = _betType;
+      // expireTime = _expireTime;
+      // FeedSource = _feedSource;
+      // tk.changeOperator(address(this));
+      // pl = PlotusData(plAdd);
+      // DonationAccount = _donation;
+      // CommissionAccount = _commission;
+      // stockName = _question;
+      Initialise values
+      Set option ranges
+      optionsAvailable[0] = option(0,0,0,0);
       provable_query(_expireTime.sub(now), "URL", _feedSource, 500000);
       emit BetQuestion(address(this), _question, _betType);
     }
@@ -84,19 +80,12 @@ contract Market is usingProvable {
       require(now >= startTime && now <= expireTime);
       require(msg.value >= minBet);
       // require(userBettingPoints[msg.sender] == 0);
-      bytes32 reason = keccak256(abi.encodePacked(address(this),_prediction);
      // uint tokenPrice = getPrice(_prediction);
-      uint value = uint(msg.value).mul(10**18).div(tk.tokenPrice);
-      tk.mint(msg.sender, value);
-      if(tk.tokensLocked(msg.sender, reason) == 0){
-        tk.lock(reason,value,uint(2 ** 251).sub(now))
-      }
-      else{
-        tk.increaseLockAmount(reason,value)
-      }  
+      uint value = uint(msg.value).mul(10**18).div(rate);        
       uint betValue = value.div(getPrice(_prediction));
       userBettingPoints[msg.sender][_prediction] = betValue;
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
+      userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
       emit Bet(msg.sender, betValue, _prediction);
@@ -105,18 +94,27 @@ contract Market is usingProvable {
     function _closeBet(uint _value) internal {      
       require(now > expireTime);
       require(!betClosed);
+      uint totalReward;
       betClosed = true;
-      rewardToDistribute = address(this).balance;
-      CommissionAccount.transfer((0.02).mul(address(this).balance));
-      DonationAccount.transfer((0.02).mul(address(this).balance));
+     
+      
       for(uint i=1;i <= totalOptions;i++){
          if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
           WinningOption = i;
-      }         
+          else
+           totalReward = totalReward.add(optionsAvailable[i].ethStaked);
+      } 
+      uint commision = commissionPerc.mul(totalReward).div(100);
+      uint donation = donationPerc.mul(totalReward).div(100);
+
+      rewardToDistribute = totalReward.sub(commision).sub(donation);
+      CommissionAccount.transfer(commision);
+      DonationAccount.transfer(donation);
+
      pl.callCloseMarketEvent(betType); 
+    function claimReward() public {
      }
 
-    function claimReward() public {
       require(!userClaimedReward[msg.sender] && betClosed);
       userClaimedReward[msg.sender] = true;
       uint userPoints;
