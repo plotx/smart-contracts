@@ -13,8 +13,12 @@
   "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts": "^2.5.0",
+    "ethereumjs-abi": "^0.6.8",
     "remixd": "^0.1.8-alpha.14",
-    "truffle": "^5.1.17",
+    "truffle": "^5.1.18",
     "web3": "^1.2.6"
+  },
+  "devDependencies": {
+    "chai": "^4.2.0"
   }
 }

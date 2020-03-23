@@ -26,6 +26,7 @@ contract Market is usingProvable {
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
+    mapping(uint => uint) public optionPrice;
     uint rewardToDistribute;
     uint maxLim = 10**12;
     struct option
@@ -94,9 +95,14 @@ contract Market is usingProvable {
       }
      }
 
-     function getPrice(uint _prediction) public pure returns(uint) {
-      return _prediction * 5;
+     function getPrice(uint _prediction) public view returns(uint) {
+      return optionPrice[_prediction];
      }
+
+     function setPrice(uint _prediction, uint _value) public returns(uint ,uint){
+      optionPrice[_prediction] = _value;
+
+     } 
 
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
