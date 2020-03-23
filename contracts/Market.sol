@@ -1,131 +1,147 @@
 pragma solidity 0.5.7;
-import "./PlotusToken";
 import "./PlotusData.sol";
 import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
 
 contract Market is usingProvable {
     using SafeMath for uint;
 
-
     uint public startTime;
     uint public expireTime;
     string public FeedSource;
     uint public betType;
-    string public stockName;
-    PlotusToken public tk;
+    bytes32 public stockName;
     bool public betClosed;
     uint public WinningOption;
     uint public predictionForDate;
     uint public minBet;
-    uint public totalOptions; // make function for total options
+    uint public totalOptions;
     uint public rate;
+    uint public currentPrice;
+    address payable public DonationAccount;
+    address payable public CommissionAccount;
     uint public commissionPerc;
     uint public donationPerc;
+    uint public delta;
     PlotusData pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
-    uint public result;
     uint rewardToDistribute;
-    // uint public betTimeline;
-
+    uint maxLim = 10**12;
     struct option
     {
       uint minValue;
       uint maxValue;
       uint betPoints;
-      uint ethStaked;                                                                                                                                                                                                             ;
+      uint ethStaked                                                                                                                                                                                                         ;
     }
 
-    mapping(uint=>option) optionsAvailable;
+    mapping(uint=>option) public optionsAvailable;
   
-    event BetQuestion(address indexed betId, string question, uint betType);
-    event Bet(address indexed _user, uint _betAmount, bool _prediction);
+    event BetQuestion(address indexed MarketAdd, bytes32 _stockName, uint betType);
+    event Bet(address indexed _user,uint indexed _value, uint _betAmount, uint _prediction);
     event Claimed(address _user, uint _reward);
 
     constructor(
-     uint[] _uintparams,
-     string _feedsource,
+     uint[] memory _uintparams,
+     string memory _feedsource,
      bytes32 _stockName,
-     address[] _addressParams 
+      address payable[] memory _addressParams
     ) 
     public
     payable 
     {
       startTime = _uintparams[0];
-
-      // minBet = _minBet;
-      // PlotusToken = _agree;
-      // startTime = _startTime;
-      // betType = _betType;
-      // expireTime = _expireTime;
-      // FeedSource = _feedSource;
-      // tk.changeOperator(address(this));
-      // pl = PlotusData(plAdd);
-      // DonationAccount = _donation;
-      // CommissionAccount = _commission;
-      // stockName = _question;
-      Initialise values
-      Set option ranges
+      expireTime = _uintparams[1];
+      FeedSource = _feedsource;
+      betType = _uintparams[2];
+      stockName = _stockName;
+      predictionForDate = _uintparams[3];
+      minBet = _uintparams[4];
+      totalOptions = _uintparams[5];
+      rate = _uintparams[6];
+      currentPrice = _uintparams[7];
+      DonationAccount = _addressParams[0];
+      CommissionAccount = _addressParams[1];
+      donationPerc = _uintparams[8];
+      commissionPerc  = _uintparams[9];
+      delta = _uintparams[10];
       optionsAvailable[0] = option(0,0,0,0);
-      provable_query(_expireTime.sub(now), "URL", _feedSource, 500000);
-      emit BetQuestion(address(this), _question, _betType);
+      setOptionRanges(currentPrice,delta,totalOptions);
+      provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+      emit BetQuestion(address(this), stockName, betType);
     }
 
-    function getPrice(uint _prediction) public view returns(uint) {
-      return prediction * 5;
-    }
+    function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) public{
+    uint primaryOption = uint(_totalOptions).div(2);
+    optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(_delta).div(2));
+    optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(_delta).div(2));
+    uint _increaseOption;
+    for(uint i = primaryOption ;i>0 ;i--){
+     _increaseOption = ++primaryOption;
+      if(i-1 > 0){
+        optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+        optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(_delta);
+        optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(_delta);
+        optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+      }
+       else{
+        optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+        optionsAvailable[i-1].minValue = 0;
+        optionsAvailable[_increaseOption].maxValue = maxLim.sub(1);
+        optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+        }     
+      }
+     }
+
+     function getPrice(uint _prediction) public pure returns(uint) {
+      return _prediction * 5;
+     }
 
     function placeBet(uint _prediction) public payable {
-      require(now >= startTime && now <= expireTime);
-      require(msg.value >= minBet);
-      // require(userBettingPoints[msg.sender] == 0);
-     // uint tokenPrice = getPrice(_prediction);
+      require(now >= startTime && now <= expireTime,"bet not started yet or expired");
+      require(msg.value >= minBet,"value less than min bet amount");
       uint value = uint(msg.value).mul(10**18).div(rate);        
       uint betValue = value.div(getPrice(_prediction));
-      userBettingPoints[msg.sender][_prediction] = betValue;
+      userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
-      userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
-      emit Bet(msg.sender, betValue, _prediction);
+      emit Bet(msg.sender,msg.value, betValue, _prediction);
     }
 
     function _closeBet(uint _value) internal {      
-      require(now > expireTime);
-      require(!betClosed);
+      require(now > expireTime,"bet not yet expired");
+      require(!betClosed,"bet closed");
       uint totalReward;
-      betClosed = true;
-     
-      
+      betClosed = true;    
       for(uint i=1;i <= totalOptions;i++){
          if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
-          WinningOption = i;
-          else
-           totalReward = totalReward.add(optionsAvailable[i].ethStaked);
+           WinningOption = i;
+         }        
+          else{
+             totalReward = totalReward.add(optionsAvailable[i].ethStaked);
+          }        
       } 
       uint commision = commissionPerc.mul(totalReward).div(100);
       uint donation = donationPerc.mul(totalReward).div(100);
-
       rewardToDistribute = totalReward.sub(commision).sub(donation);
       CommissionAccount.transfer(commision);
       DonationAccount.transfer(donation);
+    }
 
-     pl.callCloseMarketEvent(betType); 
     function claimReward() public {
-     }
-
-      require(!userClaimedReward[msg.sender] && betClosed);
+      require(!userClaimedReward[msg.sender] && betClosed,"claimed alredy or bet is not closed yet");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
       userPoints = userBettingPoints[msg.sender][WinningOption];
-      require(userPoints > 0);
+      require(userPoints > 0,"must have atleast 0 points");
       uint reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
       (msg.sender).transfer(reward);  
       emit Claimed(msg.sender, reward);
     }
 
-    function __callback(bytes32 myid, string memory result, bytes memory proof) public{      
+    function __callback(string memory result) public{      
         if (msg.sender != provable_cbAddress()) revert();
         uint resultVal = safeParseInt(result);
         _closeBet(resultVal);
