@@ -69,18 +69,18 @@ contract Market is usingProvable {
       delta = _uintparams[10];
       optionsAvailable[0] = option(0,0,0,0);
       setOptionRanges(currentPrice,delta,totalOptions);
-      provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+       provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
       emit BetQuestion(address(this), stockName, betType);
     }
 
     function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) public{
-    uint primaryOption = uint(_totalOptions).div(2);
+    uint primaryOption = uint(_totalOptions).div(2).add(1);
     optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(_delta).div(2));
     optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(_delta).div(2));
     uint _increaseOption;
-    for(uint i = primaryOption ;i>0 ;i--){
+    for(uint i = primaryOption ;i>1 ;i--){
      _increaseOption = ++primaryOption;
-      if(i-1 > 0){
+      if(i-1 > 1){
         optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
         optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(_delta);
         optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(_delta);
