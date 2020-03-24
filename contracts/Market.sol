@@ -69,11 +69,11 @@ contract Market is usingProvable {
       delta = _uintparams[10];
       optionsAvailable[0] = option(0,0,0,0);
       setOptionRanges(currentPrice,delta,totalOptions);
-       provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+      provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
       emit BetQuestion(address(this), stockName, betType);
     }
 
-    function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) public{
+    function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) internal{
     uint primaryOption = uint(_totalOptions).div(2).add(1);
     optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(_delta).div(2));
     optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(_delta).div(2));
@@ -107,7 +107,7 @@ contract Market is usingProvable {
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
       require(msg.value >= minBet,"value less than min bet amount");
-      uint value = uint(msg.value).mul(10**18).div(rate);        
+      uint value = uint(msg.value).div(rate);        
       uint betValue = value.div(getPrice(_prediction));
       userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);

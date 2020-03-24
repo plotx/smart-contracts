@@ -8,14 +8,11 @@ contract Plotus{
 
     PlotusData pd;
     address plotusDataContract;
+    address public _owner;
 
- modifier onlyOwner() {
-        if (plotusDataContract != address(0))
-            require(msg.sender == plotusDataContract);
-        _;
-    }
     constructor(address _plotusDataContract) public
     {
+     _owner = msg.sender;
       plotusDataContract = _plotusDataContract;
 
     }
@@ -25,7 +22,8 @@ contract Plotus{
      string memory _feedsource,
      bytes32 _stockName,
      address payable[] memory _addressParams     
-      ) public payable onlyOwner {
+      ) public payable{
+        require(msg.sender == _owner);
         pd = PlotusData(plotusDataContract);
         Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
         pd.pushMarket(address(marketCon), _feedsource, _uintparams[2]);
