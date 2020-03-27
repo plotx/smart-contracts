@@ -38,11 +38,14 @@ contract('Market', function([
     // const addressParams = ["0x81A69EE30637601356ff15d6c4a905079b53FCE1","0x81A69EE30637601356ff15d6c4a905079b53FCE1"]
     beforeEach(async () => {
         marketInstance = await Market.deployed()
+        const addressOfMaster = marketInstance.address;
+        // const balanceOfPool = await marketInstance.balanceOf(addressOfMaster)
+        // console.log(balanceOfPool/1);
+        // const marketAddress = await marketInstance.address()
         assert.ok(marketInstance)
     })
     it('set option price',async function(){
           const options1 = await marketInstance.optionsAvailable(1);
-
           assert.equal(options1[0]/1,0)
           assert.equal(options1[1]/1,9749)
           const options2 = await marketInstance.optionsAvailable(2);
@@ -63,9 +66,108 @@ contract('Market', function([
           const options7 = await marketInstance.optionsAvailable(7);
           assert.equal(options7[0]/1,10251)
           assert.equal(options7[1]/1,999999999999)
-              
+  
     })
-    it('place bet from nine users',async function() {
+
+    // test case for when  option 1 win
+    // it('place bet from nine users with 2% commision and 2% donation',async function() {
+
+    //   await marketInstance.setPrice(1,10);
+    //   const getPrice = await marketInstance.getPrice(1);
+    //   assert.equal(getPrice/1,10);
+
+    //   await marketInstance.placeBet(1,{value: 4000000000000000000,from: user1});
+    //   const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
+    //   const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
+    //   assert.equal(getbrttingpoint/1,400);
+
+    //   await marketInstance.setPrice(2,20);
+    //   const getPrice1 = await marketInstance.getPrice(2);
+    //   assert.equal(getPrice1/1,20);
+    //   await marketInstance.placeBet(2,{value: 6000000000000000000,from: user2});
+    //   const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
+    //   assert.equal(getbrttingpoint1/1,300);
+
+    //   await marketInstance.setPrice(3,30);
+    //   const getPrice2 = await marketInstance.getPrice(3);
+    //   assert.equal(getPrice2/1,30);
+    //   await marketInstance.placeBet(3,{value: 2000000000000000000,from: user3});
+    //   const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
+    //   assert.equal(getbrttingpoint2/1,66);
+
+    //   await marketInstance.setPrice(4,40);
+    //   const getPrice3 = await marketInstance.getPrice(4);
+    //   assert.equal(getPrice3/1,40);
+    //   await marketInstance.placeBet(4,{value: 4000000000000000000,from: user4});
+    //   const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
+    //   assert.equal(getbrttingpoint3/1,100);
+
+    //   await marketInstance.setPrice(1,50);
+    //   const getPrice4 = await marketInstance.getPrice(1);
+    //   assert.equal(getPrice4/1,50);
+    //   await marketInstance.placeBet(1,{value: 3000000000000000000,from: user5});
+    //   const getbrttingpoint4 = await marketInstance.userBettingPoints(user5,1);
+    //   assert.equal(getbrttingpoint4/1,60);
+
+    //   await marketInstance.setPrice(2,20);
+    //   const getPrice5 = await marketInstance.getPrice(2);
+    //   assert.equal(getPrice5/1,20);
+    //   await marketInstance.placeBet(2,{value: 2000000000000000000,from: user6});
+    //   const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
+    //   assert.equal(getbrttingpoint5/1,100);
+
+    //   await marketInstance.setPrice(5,30);
+    //   const getPrice6 = await marketInstance.getPrice(5);
+    //   assert.equal(getPrice6/1,30);
+    //   await marketInstance.placeBet(5,{value: 5000000000000000000,from: user7});
+    //   const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
+    //   assert.equal(getbrttingpoint6/1,166);
+
+    //   await marketInstance.setPrice(6,20);
+    //   const getPrice7 = await marketInstance.getPrice(6);
+    //   assert.equal(getPrice7/1,20);
+    //   await marketInstance.placeBet(6,{value: 5000000000000000000,from: user8});
+    //   const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
+    //   assert.equal(getbrttingpoint7/1,250);
+
+    //   await marketInstance.setPrice(7,50);
+    //   const getPrice8= await marketInstance.getPrice(7);
+    //   assert.equal(getPrice8/1,50);
+    //   await marketInstance.placeBet(7,{value: 7000000000000000000,from: user9}); 
+    //   const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);   
+    //   assert.equal(getbrttingpoint8/1,140);
+    //   const ClaimDonation = await web3.eth.getBalance("0x81A69EE30637601356ff15d6c4a905079b53FCE1")
+
+    //   await increaseTime(1800);
+    //   await marketInstance._closeBet(100);
+
+
+    //   const ClaimDonation1 = await web3.eth.getBalance("0x81A69EE30637601356ff15d6c4a905079b53FCE1")
+    //   assert.equal(ClaimDonation1/1,ClaimDonation/1+1.24e+18)
+     
+    //   const beforeClaimUser1 = await web3.eth.getBalance(user1);
+    //   await marketInstance.claimReward({from: user1});
+    //   const afterClaimUser1 = await web3.eth.getBalance(user1);
+    //   // 0.00107126
+    //   // 29.87826087
+    //   // 29.8771896096
+    //   let num1 = (afterClaimUser1/1)/1e+18;
+    //   let num = ((beforeClaimUser1/1)/1e18)/1+29.87826087-0.00107126;
+    //   assert.equal(num1.toFixed(8),num.toFixed(8));
+
+    //   const beforeClaimUser5 = await web3.eth.getBalance(user5);
+    //   await marketInstance.claimReward({from: user5});
+    //   const afterClaimUser5 = await web3.eth.getBalance(user5);
+    //   // gas limit 0.00107126
+    //   // it should be add this ammount 7.043478261
+    //   // 7.04240700087 but it adding this
+    //   let num2 = (afterClaimUser5/1)/1e+18;
+    //   let num3 = ((beforeClaimUser5/1)/1e18)/1+6.88173913-0.00107126;
+    //   assert.equal(num2.toFixed(8),num3.toFixed(8));
+    // })
+
+    // test case for 0% commision and 0% donation 
+  it('place bet from nine users with 0% commision and 0% Donation',async function() {
 
       await marketInstance.setPrice(1,10);
       const getPrice = await marketInstance.getPrice(1);
@@ -132,63 +234,40 @@ contract('Market', function([
       const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);   
       assert.equal(getbrttingpoint8/1,140);
       const ClaimDonation = await web3.eth.getBalance("0x81A69EE30637601356ff15d6c4a905079b53FCE1")
-
-      await increaseTime(315);
+      await increaseTime(3610);
       await marketInstance._closeBet(100);
-
-      // const checkBettingPoint1 = await marketInstance.userBettingPoints(user1,1);
-      // const checkBettingPoint2 = await marketInstance.userBettingPoints(user5,1);
-      // const checkBettingPoint3 = await marketInstance.userBettingPoints(user2,2);
-      // const checkBettingPoint4 = await marketInstance.userBettingPoints(user3,3);
-      // const checkBettingPoint5 = await marketInstance.userBettingPoints(user4,4);
-      // const checkBettingPoint6 = await marketInstance.userBettingPoints(user6,2);
-      // const checkBettingPoint7 = await marketInstance.userBettingPoints(user7,5);
-      // const checkBettingPoint8 = await marketInstance.userBettingPoints(user8,6);
-      // const checkBettingPoint9 = await marketInstance.userBettingPoints(user9,7);
-
-
       const ClaimDonation1 = await web3.eth.getBalance("0x81A69EE30637601356ff15d6c4a905079b53FCE1")
-      assert.equal(ClaimDonation1/1,ClaimDonation/1+1240000000000000000)
-
+      assert.equal(ClaimDonation1/1,ClaimDonation/1)
+     
       const beforeClaimUser1 = await web3.eth.getBalance(user1);
       await marketInstance.claimReward({from: user1});
-      // accordind to doc
-      // 2.9878261e+19
-      // 6.8817391e+18
-      // 1.2571474e+20
       const afterClaimUser1 = await web3.eth.getBalance(user1);
-      assert.equal(afterClaimUser1/1,125713673069565210000);
-
-      // const anothereward = 6.88173913*1e18
+      // user1 balance before close bet 95.83785637999999
+      // user1 balance after  close bet 126.79330685913044
+      // 30.95652174 difference should be this 
+      // 30.9554504791 but it coming this
+      //  taking gas limit to performing this task 0.00107126
+      let num1 = (afterClaimUser1/1)/1e+18;
+      let num = ((beforeClaimUser1/1)/1e18)/1+30.95652174-0.00107126
+      assert.equal(num1.toFixed(8),num.toFixed(8));
       const beforeClaimUser5 = await web3.eth.getBalance(user5);
-      await marketInstance.claimReward({from: user5});
+      const txInfo = await marketInstance.claimReward({from: user5});
+      const tx = await web3.eth.getTransaction(txInfo.tx);
+      const gasCost = tx.gasPrice * txInfo.receipt.gasUsed
+      // 0.00107126
       const afterClaimUser5 = await web3.eth.getBalance(user5);
-      assert.equal(afterClaimUser5/1,103879115670434780000)
+      // await marketInstance.claimReward({from: user5});
+      // const afterClaimUser5 = await web3.eth.getBalance(user5);
 
-    })
-    // it('user bet reward',async function() {
-    //   // const checkBettingPoint = await marketInstance.userBettingPoints(user1,1);
-    //   // console.log(checkBettingPoint/1, 400);
-    //   // await marketInstance._closeBet(100);
-    //   // const checkBettingPoint1 = await marketInstance.userBettingPoints(user1,1);
-    //   // const checkBettingPoint2 = await marketInstance.userBettingPoints(user5,1);
-    //   // const checkBettingPoint3 = await marketInstance.userBettingPoints(user2,2);
-    //   // const checkBettingPoint4 = await marketInstance.userBettingPoints(user3,3);
-    //   // const checkBettingPoint5 = await marketInstance.userBettingPoints(user4,4);
-    //   // const checkBettingPoint6 = await marketInstance.userBettingPoints(user6,2);
-    //   // const checkBettingPoint7 = await marketInstance.userBettingPoints(user7,5);
-    //   // const checkBettingPoint8 = await marketInstance.userBettingPoints(user8,6);
-    //   // const checkBettingPoint9 = await marketInstance.userBettingPoints(user9,7);
-    //   // console.log("user1 betting points after close bet ",checkBettingPoint1/1);
-    //   // console.log("user2 betting points after close bet ",checkBettingPoint2/1);
-    //   // console.log("use3 betting points after close bet  ",checkBettingPoint3/1);
-    //   // console.log("user4 betting points after close bet ",checkBettingPoint4/1);
-    //   // console.log("user5 betting points after close bet ",checkBettingPoint5/1);
-    //   // console.log("user6 betting points after close bet ",checkBettingPoint6/1);
-    //   // console.log("user7 betting points after close bet ",checkBettingPoint7/1);
-    //   // console.log("user8 betting points after close bet ",checkBettingPoint8/1);
-    //   // console.log("user8 betting points after close bet ",checkBettingPoint9/1);
-    // })
+      // user5 balance before close bet 96.99844780000001
+      // user5 balance after  close bet 104.04085480086957
+      // it should be add this ammount 7.043478261
+      // 7.04240700087 but it adding this
+      let num2 = (afterClaimUser5/1)/1e+18;
+      let num3 = ((beforeClaimUser5/1)/1e18)/1+7.043478261-0.00107126;
+      assert.equal(num2.toFixed(8),num3.toFixed(8));
+
+  })
      
      
 })
