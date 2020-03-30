@@ -22,6 +22,8 @@ contract Market is usingProvable {
     uint public commissionPerc;
     uint public donationPerc;
     uint public delta;
+    uint public commision;
+    uint public donation;
     PlotusData pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
@@ -69,7 +71,7 @@ contract Market is usingProvable {
       delta = _uintparams[10];
       optionsAvailable[0] = option(0,0,0,0);
       setOptionRanges(currentPrice,delta,totalOptions);
-      provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+      //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
       emit BetQuestion(address(this), stockName, betType);
     }
 
@@ -116,24 +118,36 @@ contract Market is usingProvable {
       emit Bet(msg.sender,msg.value, betValue, _prediction);
     }
 
-    function _closeBet(uint _value) internal {      
+    function _closeBet(uint _value) public {      
       require(now > expireTime,"bet not yet expired");
       require(!betClosed,"bet closed");
       uint totalReward;
-      betClosed = true;    
+      betClosed = true;
       for(uint i=1;i <= totalOptions;i++){
-         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
+        if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
            WinningOption = i;
-         }        
-          else{
-             totalReward = totalReward.add(optionsAvailable[i].ethStaked);
-          }        
-      } 
-      uint commision = commissionPerc.mul(totalReward).div(100);
-      uint donation = donationPerc.mul(totalReward).div(100);
+         }         
+       else{
+            totalReward = totalReward.add(optionsAvailable[i].ethStaked);
+          }
+      }
+      if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward > 0){
+      commision = commissionPerc.mul(totalReward).div(100);
+      donation = donationPerc.mul(totalReward).div(100);
       rewardToDistribute = totalReward.sub(commision).sub(donation);
       CommissionAccount.transfer(commision);
       DonationAccount.transfer(donation);
+      }
+      else if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0 ){
+           rewardToDistribute = address(this).balance.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
+      }
+       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
+           commision = commissionPerc.mul(address(this).balance).div(100);
+           donation = donationPerc.mul(address(this).balance).div(100);
+           CommissionAccount.transfer(commision);
+           DonationAccount.transfer(donation);
+           //remaining balance going to common pool.
+       }
     }
 
     function claimReward() public {
