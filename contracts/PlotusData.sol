@@ -18,7 +18,7 @@ contract PlotusData {
         _;
     }
 
-    constructor() public {
+    constructor() public payable {
         allMarkets.push(address(0));
     }
 
@@ -32,10 +32,21 @@ contract PlotusData {
     {
         return allMarkets.length;
     }
-
+  
     
     function changePlotusAddress(address _newAddress) public OnlyInternal{
       PlotusAddress = _newAddress;
     }
+     function deposit() external payable {
+        
+    }
+    function withdraw (uint amount,address payable _address) external {
+      require(amount<= address(this).balance);
+        _address.transfer(address(this).balance);
+
+    }
     
+    function balanceOf()external view returns(uint){
+        return address(this).balance;
+    }
 }

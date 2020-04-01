@@ -25,7 +25,7 @@ contract Plotus{
       ) public payable{
         require(msg.sender == _owner);
         pd = PlotusData(plotusDataContract);
-        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
+        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams,plotusDataContract);
         pd.pushMarket(address(marketCon), _feedsource, _uintparams[2]);
     }
 }

@@ -24,7 +24,9 @@ contract Market is usingProvable {
     uint public delta;
     uint public commision;
     uint public donation;
-    PlotusData pl;
+    uint public cBal;
+    uint public totalReward;
+    PlotusData  private pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
@@ -49,11 +51,13 @@ contract Market is usingProvable {
      uint[] memory _uintparams,
      string memory _feedsource,
      bytes32 _stockName,
-      address payable[] memory _addressParams
+     address payable[] memory _addressParams,
+     address plotusData
     ) 
     public
     payable 
     {
+      pl = PlotusData(plotusData);
       startTime = _uintparams[0];
       expireTime = _uintparams[1];
       FeedSource = _feedsource;
@@ -70,7 +74,7 @@ contract Market is usingProvable {
       commissionPerc  = _uintparams[9];
       delta = _uintparams[10];
       optionsAvailable[0] = option(0,0,0,0);
-      setOptionRanges(currentPrice,delta,totalOptions);
+      setOptionRanges(currentPrice,delta,totalOptions);     
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
       emit BetQuestion(address(this), stockName, betType);
     }
@@ -121,8 +125,8 @@ contract Market is usingProvable {
     function _closeBet(uint _value) public {      
       require(now > expireTime,"bet not yet expired");
       require(!betClosed,"bet closed");
-      uint totalReward;
       betClosed = true;
+      cBal = pl.balanceOf();
       for(uint i=1;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
            WinningOption = i;
@@ -131,6 +135,7 @@ contract Market is usingProvable {
             totalReward = totalReward.add(optionsAvailable[i].ethStaked);
           }
       }
+      // when  some wins some losses.
       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward > 0){
       commision = commissionPerc.mul(totalReward).div(100);
       donation = donationPerc.mul(totalReward).div(100);
@@ -138,15 +143,27 @@ contract Market is usingProvable {
       CommissionAccount.transfer(commision);
       DonationAccount.transfer(donation);
       }
-      else if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0 ){
-           rewardToDistribute = address(this).balance.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
-      }
-       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
-           commision = commissionPerc.mul(address(this).balance).div(100);
-           donation = donationPerc.mul(address(this).balance).div(100);
+      // when all win.
+       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
+           cBal = pl.balanceOf();
+           commissionPerc = 0;
+           donationPerc = 0;
+           commision = commissionPerc.mul(totalReward).div(100);
+           donation = donationPerc.mul(totalReward).div(100);
+           rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);
            CommissionAccount.transfer(commision);
            DonationAccount.transfer(donation);
-           //remaining balance going to common pool.
+           // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
+      }
+      // when all looses. 
+       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
+          uint Reward = address(this).balance;
+          commision = commissionPerc.mul(Reward).div(100);
+          donation = donationPerc.mul(Reward).div(100);
+          uint loseReward = Reward.sub(commision).sub(donation);
+          pl.deposit.value(loseReward)();
+          CommissionAccount.transfer(commision);
+          DonationAccount.transfer(donation);       
        }
     }
 
@@ -157,7 +174,7 @@ contract Market is usingProvable {
       userPoints = userBettingPoints[msg.sender][WinningOption];
       require(userPoints > 0,"must have atleast 0 points");
       uint reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
-      (msg.sender).transfer(reward);  
+      (msg.sender).transfer(reward);
       emit Claimed(msg.sender, reward);
     }
 
