@@ -126,7 +126,6 @@ contract Market is usingProvable {
       require(now > expireTime,"bet not yet expired");
       require(!betClosed,"bet closed");
       betClosed = true;
-      cBal = pl.balanceOf();
       for(uint i=1;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
            WinningOption = i;
@@ -135,6 +134,7 @@ contract Market is usingProvable {
             totalReward = totalReward.add(optionsAvailable[i].ethStaked);
           }
       }
+      cBal = address(pl).balance; 
       // when  some wins some losses.
       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward > 0){
       commision = commissionPerc.mul(totalReward).div(100);
@@ -145,12 +145,12 @@ contract Market is usingProvable {
       }
       // when all win.
        if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
-           cBal = pl.balanceOf();
            commissionPerc = 0;
            donationPerc = 0;
+          // only for test
            commision = commissionPerc.mul(totalReward).div(100);
            donation = donationPerc.mul(totalReward).div(100);
-           rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);
+           rewardToDistribute = totalReward.sub(commision).sub(donation);
            CommissionAccount.transfer(commision);
            DonationAccount.transfer(donation);
            // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
@@ -164,18 +164,36 @@ contract Market is usingProvable {
           pl.deposit.value(loseReward)();
           CommissionAccount.transfer(commision);
           DonationAccount.transfer(donation);       
-       }
+       }      
     }
 
     function claimReward() public {
       require(!userClaimedReward[msg.sender] && betClosed,"claimed alredy or bet is not closed yet");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
+      uint reward;
+      uint send;
       userPoints = userBettingPoints[msg.sender][WinningOption];
       require(userPoints > 0,"must have atleast 0 points");
-      uint reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
-      (msg.sender).transfer(reward);
-      emit Claimed(msg.sender, reward);
+      if(rewardToDistribute == 0 && cBal > 0){
+          cBal = address(pl).balance;
+          send = (rate).mul(2).div(100).mul(userPoints);
+          reward = ethStaked[msg.sender][WinningOption];
+          (msg.sender).transfer(reward);
+          pl.withdraw(send,msg.sender); 
+      }else if(rewardToDistribute == 0 && cBal == 0){
+        // if(rewardToDistribute == 0 ){
+          cBal = address(pl).balance;
+          send = (rate).mul(2).div(100).mul(userPoints);
+          reward = ethStaked[msg.sender][WinningOption];
+          (msg.sender).transfer(reward);
+          // pl.withdraw(send,msg.sender); 
+      }
+      else{   
+          reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
+          (msg.sender).transfer(reward);
+      }
+      emit Claimed(msg.sender, reward.add(send));
     }
 
     function __callback(string memory result) public{      

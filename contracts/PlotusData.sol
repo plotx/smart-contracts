@@ -40,13 +40,10 @@ contract PlotusData {
      function deposit() external payable {
         
     }
-    function withdraw (uint amount,address payable _address) external {
-      require(amount<= address(this).balance);
-        _address.transfer(address(this).balance);
+    function withdraw(uint amount,address payable _address) external {
+      require(amount<= address(this).balance,"insufficient amount");
+        _address.transfer(amount);
 
     }
     
-    function balanceOf()external view returns(uint){
-        return address(this).balance;
-    }
 }
