@@ -45,11 +45,6 @@ contract Plotus{
         emit MarketQuestion(address(marketCon), _feedsource, _uintparams[2]);
     }
 
-    function getAllMarketsLen() public view returns(uint)
-    {
-        return allMarkets.length;
-    }
-
     function deposit() external payable {
     }
 
