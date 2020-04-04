@@ -1,20 +1,36 @@
 pragma solidity 0.5.7;
 
 import "./Market.sol";
-import "./PlotusData.sol";
 
 contract Plotus{
-    using SafeMath for uint;
 
-    PlotusData pd;
-    address plotusDataContract;
-    address public _owner;
+    address[] public allMarkets;
+    mapping(address => bool) private isMarketAdd;
 
-    constructor(address _plotusDataContract) public
-    {
-     _owner = msg.sender;
-      plotusDataContract = _plotusDataContract;
+    address public owner;
+    address public masterAddress;
 
+    event MarketQuestion(address indexed MarketAdd, string question, uint _type);
+  
+    modifier OnlyOwner() {
+      require(msg.sender == owner);
+      _;
+    }
+
+    modifier OnlyMaster() {
+      require(msg.sender == masterAddress);
+      _;
+    }
+
+    function initiatePlotus(address _owner) public {
+      masterAddress = msg.sender;
+      owner = _owner;
+      allMarkets.push(address(0));
+    }
+
+    function transferOwnership(address newOwner) public OnlyMaster {
+      require(newOwner != address(0));
+      owner = newOwner;
     }
 
     function addNewMarket( 
@@ -22,10 +38,23 @@ contract Plotus{
      string memory _feedsource,
      bytes32 _stockName,
      address payable[] memory _addressParams     
-      ) public payable{
-        require(msg.sender == _owner);
-        pd = PlotusData(plotusDataContract);
-        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams,plotusDataContract);
-        pd.pushMarket(address(marketCon), _feedsource, _uintparams[2]);
+      ) public payable OnlyOwner {
+        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
+        allMarkets.push(address(marketCon));
+        isMarketAdd[address(marketCon)] = true;
+        emit MarketQuestion(address(marketCon), _feedsource, _uintparams[2]);
+    }
+
+    function getAllMarketsLen() public view returns(uint)
+    {
+        return allMarkets.length;
+    }
+
+    function deposit() external payable {
+    }
+
+    function withdraw(uint amount,address payable _address) external {
+      require(amount<= address(this).balance,"insufficient amount");
+        _address.transfer(amount);
     }
 }

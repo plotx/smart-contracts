@@ -1,6 +1,7 @@
 pragma solidity 0.5.7;
-import "./PlotusData.sol";
+import "./Plotus.sol";
 import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 
 contract Market is usingProvable {
     using SafeMath for uint;
@@ -26,7 +27,7 @@ contract Market is usingProvable {
     uint public donation;
     uint public cBal;
     uint public totalReward;
-    PlotusData  private pl;
+    Plotus private pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
@@ -51,13 +52,12 @@ contract Market is usingProvable {
      uint[] memory _uintparams,
      string memory _feedsource,
      bytes32 _stockName,
-     address payable[] memory _addressParams,
-     address plotusData
+     address payable[] memory _addressParams
     ) 
     public
     payable 
     {
-      pl = PlotusData(plotusData);
+      pl = Plotus(msg.sender);
       startTime = _uintparams[0];
       expireTime = _uintparams[1];
       FeedSource = _feedsource;
