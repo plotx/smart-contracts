@@ -27,6 +27,9 @@ contract Market is usingProvable {
     uint public donation;
     uint public cBal;
     uint public totalReward;
+    uint public totalMarketValue;
+    uint public noOfPlayers;
+    address[] public players;
     Plotus private pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
@@ -43,10 +46,9 @@ contract Market is usingProvable {
     }
 
     mapping(uint=>option) public optionsAvailable;
-  
-    event BetQuestion(address indexed MarketAdd, bytes32 _stockName, uint betType);
-    event Bet(address indexed _user,uint indexed _value, uint _betAmount, uint _prediction);
-    event Claimed(address _user, uint _reward);
+    mapping(address =>bool) public userPlaceBet;
+
+    
 
     constructor(
      uint[] memory _uintparams,
@@ -76,7 +78,6 @@ contract Market is usingProvable {
       optionsAvailable[0] = option(0,0,0,0);
       setOptionRanges(currentPrice,delta,totalOptions);     
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
-      emit BetQuestion(address(this), stockName, betType);
     }
 
     function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) internal{
@@ -113,13 +114,20 @@ contract Market is usingProvable {
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
       require(msg.value >= minBet,"value less than min bet amount");
+        if(!userPlaceBet[msg.sender]){
+        noOfPlayers = noOfPlayers+1;
+        players.push(msg.sender);
+      }
+      userPlaceBet[msg.sender] = true;
       uint value = uint(msg.value).div(rate);        
       uint betValue = value.div(getPrice(_prediction));
+      totalMarketValue = totalMarketValue.add(msg.value);
       userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
-      emit Bet(msg.sender,msg.value, betValue, _prediction);
+
+      pl.callPlaceBetEvent(msg.sender,msg.value, _prediction);
     }
 
     function _closeBet(uint _value) public {      
@@ -128,9 +136,9 @@ contract Market is usingProvable {
       betClosed = true;
       for(uint i=1;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
-           WinningOption = i;
+          WinningOption = i;
          }         
-       else{
+      else{
             totalReward = totalReward.add(optionsAvailable[i].ethStaked);
           }
       }
@@ -144,19 +152,19 @@ contract Market is usingProvable {
       DonationAccount.transfer(donation);
       }
       // when all win.
-       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
-           commissionPerc = 0;
-           donationPerc = 0;
+      if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
+          commissionPerc = 0;
+          donationPerc = 0;
           // only for test
-           commision = commissionPerc.mul(totalReward).div(100);
-           donation = donationPerc.mul(totalReward).div(100);
-           rewardToDistribute = totalReward.sub(commision).sub(donation);
-           CommissionAccount.transfer(commision);
-           DonationAccount.transfer(donation);
-           // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
+          commision = commissionPerc.mul(totalReward).div(100);
+          donation = donationPerc.mul(totalReward).div(100);
+          rewardToDistribute = totalReward.sub(commision).sub(donation);
+          CommissionAccount.transfer(commision);
+          DonationAccount.transfer(donation);
+          // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
       }
       // when all looses. 
-       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
+      else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
           uint Reward = address(this).balance;
           commision = commissionPerc.mul(Reward).div(100);
           donation = donationPerc.mul(Reward).div(100);
@@ -164,7 +172,23 @@ contract Market is usingProvable {
           pl.deposit.value(loseReward)();
           CommissionAccount.transfer(commision);
           DonationAccount.transfer(donation);       
-       }      
+      }  
+
+      pl.callCloseMarketEvent(betType);    
+    }
+
+    function getReward(address _user)public view returns(uint){
+      require(userPlaceBet[_user] && betClosed,"not placed bet or bet is not closed yet");
+      uint userPoints = userBettingPoints[_user][WinningOption];
+      require(userPoints > 0,"must have atleast 0 points"); 
+      uint reward;
+      uint send = (rate).mul(2).div(100).mul(userPoints);
+        if(rewardToDistribute == 0 && cBal > send){
+        reward = ethStaked[_user][WinningOption].add(send);        
+      }else if(rewardToDistribute == 0 && cBal < send){
+        reward = ethStaked[_user][WinningOption];
+      }
+      return reward;
     }
 
     function claimReward() public {
@@ -175,31 +199,31 @@ contract Market is usingProvable {
       uint send;
       userPoints = userBettingPoints[msg.sender][WinningOption];
       require(userPoints > 0,"must have atleast 0 points");
-      if(rewardToDistribute == 0 && cBal > 0){
-          cBal = address(pl).balance;
-          send = (rate).mul(2).div(100).mul(userPoints);
-          reward = ethStaked[msg.sender][WinningOption];
-          (msg.sender).transfer(reward);
-          pl.withdraw(send,msg.sender); 
-      }else if(rewardToDistribute == 0 && cBal == 0){
-        // if(rewardToDistribute == 0 ){
-          cBal = address(pl).balance;
-          send = (rate).mul(2).div(100).mul(userPoints);
-          reward = ethStaked[msg.sender][WinningOption];
-          (msg.sender).transfer(reward);
-          // pl.withdraw(send,msg.sender); 
-      }
-      else{   
-          reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
-          (msg.sender).transfer(reward);
-      }
-      emit Claimed(msg.sender, reward.add(send));
+       if(rewardToDistribute == 0 && cBal > 0){
+           cBal = address(pl).balance;
+           send = (rate).mul(2).div(100).mul(userPoints);
+           reward = ethStaked[msg.sender][WinningOption];
+           (msg.sender).transfer(reward);
+           pl.withdraw(send,msg.sender); 
+       }else if(rewardToDistribute == 0 && cBal == 0){
+         // if(rewardToDistribute == 0 ){
+           cBal = address(pl).balance;
+           send = (rate).mul(2).div(100).mul(userPoints);
+           reward = ethStaked[msg.sender][WinningOption];
+           (msg.sender).transfer(reward);
+           pl.withdraw(send,msg.sender); 
+       }
+       else{   
+           reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
+           (msg.sender).transfer(reward);
+       }
+       pl.callClaimedEvent(msg.sender,reward.add(send));
     }
 
-    function __callback(string memory result) public{      
-        if (msg.sender != provable_cbAddress()) revert();
-        uint resultVal = safeParseInt(result);
-        _closeBet(resultVal);
-    }
+    // function __callback(string memory result) public{      
+    //     if (msg.sender != provable_cbAddress()) revert();
+    //     uint resultVal = safeParseInt(result);
+    //     _closeBet(resultVal);
+    // }
     
 }
