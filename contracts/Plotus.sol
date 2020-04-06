@@ -24,10 +24,11 @@ using SafeMath for uint;
       _;
     }
 
-    function initiatePlotus(address _owner) public {
+    constructor(address _owner) public {
       masterAddress = msg.sender;
       owner = _owner;
       allMarkets.push(address(0));
+      openIndex = 1;
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -58,7 +59,7 @@ using SafeMath for uint;
                  firstOpen = true;
                }
                else if(isClosed[allMarkets[i]] && !firstOpen){
-              openIndex = allMarkets.length.sub(1);
+              openIndex = allMarkets.length;
               }
          } 
         }
