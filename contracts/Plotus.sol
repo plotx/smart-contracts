@@ -24,7 +24,7 @@ using SafeMath for uint;
       _;
     }
 
-    constructor(address _owner) public {
+    function initiatePlotus(address _owner) public {
       masterAddress = msg.sender;
       owner = _owner;
       allMarkets.push(address(0));
@@ -59,7 +59,7 @@ using SafeMath for uint;
                  firstOpen = true;
                }
                else if(isClosed[allMarkets[i]] && !firstOpen){
-              openIndex = allMarkets.length;
+               openIndex = allMarkets.length;
               }
          } 
         }

@@ -6,7 +6,7 @@ import "./Plotus.sol";
 
 contract Master is Ownable{
 
-    address payable plotusAddress;
+    address payable public plotusAddress;
 
     constructor(address _plotusAddress) public {
         _generateProxy(_plotusAddress);
