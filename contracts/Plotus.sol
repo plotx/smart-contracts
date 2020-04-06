@@ -1,15 +1,14 @@
 pragma solidity 0.5.7;
 import "./Market.sol";
-
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 contract Plotus{
-
+using SafeMath for uint;
     address[] public allMarkets;
     mapping(address => bool) private isMarketAdd;
-    mapping(address => bool) private isClosed;
+    mapping(address => bool) public isClosed;
     address public owner;
     address public masterAddress;
     uint public openIndex;
-    
     event MarketQuestion(address indexed MarketAdd, string question, uint _type);
     event placeBet(address indexed _user,uint _value,uint _prediction);
     event BetClosed(uint _type, address marketAdd);
@@ -50,19 +49,20 @@ contract Plotus{
 
    function callCloseMarketEvent(uint _type) public {
         require(isMarketAdd[msg.sender]);
+         isClosed[msg.sender] = true;
         bool firstOpen;
         if(allMarkets[openIndex] == msg.sender){
-             for(uint i = openIndex +1;i<=allMarkets.length;i++){
-              if(!isClosed[allMarkets[i]]  && !firstOpen){
-                openIndex =i;
-                firstOpen = true;
+              for(uint i = openIndex;i<allMarkets.length;i++){
+               if(!isClosed[allMarkets[i]] && !firstOpen){
+                 openIndex =i;
+                 firstOpen = true;
+               }
+               else if(isClosed[allMarkets[i]] && !firstOpen){
+              openIndex = allMarkets.length.sub(1);
               }
-             else{
-              openIndex = allMarkets.length;
-             }
          } 
         }
-        isClosed[msg.sender];
+       
         emit BetClosed(_type, msg.sender);
     }
     
@@ -74,10 +74,9 @@ contract Plotus{
     }
 
     function getMarketDetails(address _marketAdd)public view returns
-    (string memory _feedsource,uint _totalMarketValue){
+    (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,uint[] memory optionprice){
       Market _market = Market(_marketAdd);
-       _totalMarketValue = _market.totalMarketValue();
-       _feedsource = _market.FeedSource();
+      return _market.getData();
     }
 
     function deposit() external payable {

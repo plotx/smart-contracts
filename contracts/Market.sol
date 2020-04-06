@@ -1,4 +1,5 @@
 pragma solidity 0.5.7;
+
 import "./Plotus.sol";
 import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
@@ -35,8 +36,9 @@ contract Market is usingProvable {
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
     mapping(uint => uint) public optionPrice;
-    uint rewardToDistribute;
+    uint public rewardToDistribute;
     uint maxLim = 10**12;
+  
     struct option
     {
       uint minValue;
@@ -79,6 +81,7 @@ contract Market is usingProvable {
       setOptionRanges(currentPrice,delta,totalOptions);     
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
+    
 
     function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) internal{
     uint primaryOption = uint(_totalOptions).div(2).add(1);
@@ -111,6 +114,20 @@ contract Market is usingProvable {
 
      } 
 
+   function getData() public view returns
+       (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,uint[] memory optionprice){
+        _totalMarketValue = totalMarketValue;
+        _feedsource = FeedSource;
+        minvalue = new uint[](totalOptions);
+        maxvalue = new uint[](totalOptions);
+        optionprice = new uint[](totalOptions);
+       for (uint i = 0; i < totalOptions; i++) {
+        minvalue[i] = optionsAvailable[i+1].minValue;
+        maxvalue[i] = optionsAvailable[i+1].maxValue;
+        optionprice[i] = optionPrice[i+1];
+       }
+    }
+    
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
       require(msg.value >= minBet,"value less than min bet amount");
@@ -153,15 +170,7 @@ contract Market is usingProvable {
       }
       // when all win.
       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
-          commissionPerc = 0;
-          donationPerc = 0;
-          // only for test
-          commision = commissionPerc.mul(totalReward).div(100);
-          donation = donationPerc.mul(totalReward).div(100);
-          rewardToDistribute = totalReward.sub(commision).sub(donation);
-          CommissionAccount.transfer(commision);
-          DonationAccount.transfer(donation);
-          // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
+          rewardToDistribute = 0;   
       }
       // when all looses. 
       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
@@ -196,22 +205,16 @@ contract Market is usingProvable {
       userClaimedReward[msg.sender] = true;
       uint userPoints;
       uint reward;
-      uint send;
+      uint send= (rate).mul(2).div(100).mul(userPoints);
       userPoints = userBettingPoints[msg.sender][WinningOption];
       require(userPoints > 0,"must have atleast 0 points");
-       if(rewardToDistribute == 0 && cBal > 0){
-           cBal = address(pl).balance;
-           send = (rate).mul(2).div(100).mul(userPoints);
+       if(rewardToDistribute == 0 && cBal > send){
            reward = ethStaked[msg.sender][WinningOption];
            (msg.sender).transfer(reward);
            pl.withdraw(send,msg.sender); 
-       }else if(rewardToDistribute == 0 && cBal == 0){
-         // if(rewardToDistribute == 0 ){
-           cBal = address(pl).balance;
-           send = (rate).mul(2).div(100).mul(userPoints);
+       }else if(rewardToDistribute == 0 && cBal < send){
            reward = ethStaked[msg.sender][WinningOption];
            (msg.sender).transfer(reward);
-           pl.withdraw(send,msg.sender); 
        }
        else{   
            reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
