@@ -75,9 +75,13 @@ using SafeMath for uint;
     }
 
     function getMarketDetails(address _marketAdd)public view returns
-    (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,uint[] memory optionprice){
+    (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
+      uint[] memory optionprice,uint _betType,uint _expireTime){
       Market _market = Market(_marketAdd);
       return _market.getData();
+    }
+    function getAllMarketsLen() public view returns(uint){
+        return allMarkets.length;
     }
 
     function deposit() external payable {

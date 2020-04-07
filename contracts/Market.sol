@@ -115,9 +115,12 @@ contract Market is usingProvable {
      } 
 
    function getData() public view returns
-       (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,uint[] memory optionprice){
+       (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
+        uint[] memory optionprice,uint _betType,uint _expireTime){
         _totalMarketValue = totalMarketValue;
         _feedsource = FeedSource;
+        _betType = betType;
+        _expireTime =expireTime;
         minvalue = new uint[](totalOptions);
         maxvalue = new uint[](totalOptions);
         optionprice = new uint[](totalOptions);
