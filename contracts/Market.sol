@@ -200,6 +200,9 @@ contract Market is usingProvable {
       }else if(rewardToDistribute == 0 && cBal < send){
         reward = ethStaked[_user][WinningOption];
       }
+      else{   
+           reward =ethStaked[_user][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
+       }
       return reward;
     }
 

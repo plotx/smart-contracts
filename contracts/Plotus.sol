@@ -41,7 +41,7 @@ using SafeMath for uint;
      string memory _feedsource,
      bytes32 _stockName,
      address payable[] memory _addressParams     
-      ) public payable {
+      ) public payable OnlyOwner{
         Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
         allMarkets.push(address(marketCon));
         isMarketAdd[address(marketCon)] = true;
