@@ -10,7 +10,7 @@ using SafeMath for uint;
     address public masterAddress;
     uint public openIndex;
     event MarketQuestion(address indexed MarketAdd, string question, uint _type);
-    event placeBet(address indexed _user,uint _value,uint _prediction);
+    event placeBet(address indexed _user,uint _value,uint _prediction,address marketAdd);
     event BetClosed(uint _type, address marketAdd);
     event Claimed(address _user, uint _reward);
    
@@ -68,7 +68,7 @@ using SafeMath for uint;
     }
     
     function callPlaceBetEvent(address _user,uint _value, uint _prediction) public {
-        emit placeBet(_user,_value,_prediction);
+        emit placeBet(_user,_value,_prediction,msg.sender);
     }
     function callClaimedEvent(address _user , uint _reward) public {
         emit Claimed(_user, _reward);
