@@ -12,6 +12,7 @@ contract MarketWeekly is Market {
     payable Market(_uintparams, _feedsource, _addressParams)
     {
       expireTime = startTime + 1 weeks;
+      betType = uint(Plotus.MarketType.WeeklyMarket);
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 

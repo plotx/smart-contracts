@@ -49,9 +49,11 @@ contract Market is usingProvable {
     payable 
     {
       pl = Plotus(msg.sender);
+      require(startTime > now);
+      require(donationPerc <= 100);
+      require(commissionPerc <= 100);
       startTime = _uintparams[0];
       FeedSource = _feedsource;
-      betType = _uintparams[2];
       predictionForDate = _uintparams[3];
       minBet = _uintparams[4];
       totalOptions = _uintparams[5];

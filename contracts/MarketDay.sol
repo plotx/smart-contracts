@@ -13,8 +13,8 @@ contract MarketDaily is Market {
     payable Market(_uintparams, _feedsource, _addressParams)
     {
       expireTime = startTime + 1 days;
+      betType = uint(Plotus.MarketType.DailyMarket);
 
-      
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
