@@ -103,9 +103,9 @@ contract Market is usingProvable {
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
       if(currentPrice > optionsAvailable[_option].maxValue) {
-        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
-      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
         _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
+      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
+        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
       }
     }
 
