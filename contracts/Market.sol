@@ -1,9 +1,26 @@
 pragma solidity 0.5.7;
 
-import "./Plotus.sol";
 import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 
+contract IPlotus {
+
+    enum MarketType {
+      HourlyMarket,
+      DailyMarket,
+      WeeklyMarket
+    }
+    function() external payable{}
+    function callCloseMarketEvent(uint _type, uint _commision, uint _donation) public{
+    }
+    
+    function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public{
+    }
+    function callClaimedEvent(address _user , uint _reward) public {
+    }
+    function withdraw(uint amount,address payable _address) external {
+    }
+}
 contract Market is usingProvable {
     using SafeMath for uint;
 
@@ -24,7 +41,7 @@ contract Market is usingProvable {
     uint public donationPerc;
     uint public totalReward;
     uint public delta;
-    Plotus private pl;
+    IPlotus private pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
@@ -49,23 +66,23 @@ contract Market is usingProvable {
     public
     payable 
     {
-      pl = Plotus(msg.sender);
+      pl = IPlotus(msg.sender);
       require(startTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       startTime = _uintparams[0];
       FeedSource = _feedsource;
-      predictionForDate = _uintparams[3];
-      minBet = _uintparams[4];
-      totalOptions = _uintparams[5];
-      rate = _uintparams[6];
-      currentPrice = _uintparams[7];
+      predictionForDate = _uintparams[2];
+      minBet = _uintparams[3];
+      totalOptions = _uintparams[4];
+      rate = _uintparams[5];
+      currentPrice = _uintparams[6];
       DonationAccount = _addressParams[0];
       CommissionAccount = _addressParams[1];
-      donationPerc = _uintparams[8];
-      commissionPerc  = _uintparams[9];
+      donationPerc = _uintparams[7];
+      commissionPerc  = _uintparams[8];
       optionsAvailable[0] = option(0,0,0,0);
-      delta = _uintparams[10];
+      delta = _uintparams[9];
       setOptionRanges(totalOptions);
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
@@ -77,6 +94,17 @@ contract Market is usingProvable {
     //Need to add check Only Admin or Any authorized address
     function setCurrentPrice(uint _currentPrice) external {
       currentPrice = _currentPrice;
+    }
+
+    function setPrice(uint _prediction) public returns(uint ,uint){
+    }
+
+    function _getDistance(uint _option) internal view returns(uint _distance) {
+      if(currentPrice > optionsAvailable[_option].maxValue) {
+        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
+      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
+        _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
+      }
     }
 
     function setOptionRanges(uint _totalOptions) internal{
@@ -106,10 +134,6 @@ contract Market is usingProvable {
      return optionPrice[_prediction];
     }
 
-    function setPrice(uint _prediction, uint _value) public returns(uint ,uint){
-      optionPrice[_prediction] = _value;
-    }
-
     function getData() public view returns
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice,uint _betType,uint _expireTime){
@@ -136,7 +160,7 @@ contract Market is usingProvable {
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
-      pl.callPlaceBetEvent(msg.sender,msg.value, _prediction);
+      pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
     }
 
     function _closeBet(uint _value) public {      
@@ -171,7 +195,7 @@ contract Market is usingProvable {
         commision = commissionPerc.mul(Reward).div(100);
         donation = donationPerc.mul(Reward).div(100);
         uint loseReward = Reward.sub(commision).sub(donation);
-        pl.deposit.value(loseReward)();
+        address(pl).transfer(loseReward);
         CommissionAccount.transfer(commision);
         DonationAccount.transfer(donation);       
       }  

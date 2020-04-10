@@ -12,7 +12,7 @@ contract MarketHourly is Market {
     payable Market(_uintparams, _feedsource, _addressParams)
     {
       expireTime = startTime + 1 hours;
-      betType = uint(Plotus.MarketType.HourlyMarket);
+      betType = uint(IPlotus.MarketType.HourlyMarket);
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
@@ -38,13 +38,5 @@ contract MarketHourly is Market {
              .div(
               360 * 60
              );
-    }
-
-    function _getDistance(uint _option) internal view returns(uint _distance) {
-      if(currentPrice > optionsAvailable[_option].maxValue) {
-        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
-      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
-        _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
-      }
     }
 }

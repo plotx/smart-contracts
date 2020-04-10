@@ -1,18 +1,25 @@
 pragma solidity 0.5.7;
-import "./Market.sol";
+import "./MarketDay.sol";
+import "./MarketHour.sol";
+import "./MarketWeek.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 contract Plotus{
-using SafeMath for uint;
-    address[] public allMarkets;
+using SafeMath for uint; 
+    
+    enum MarketType {
+      HourlyMarket,
+      DailyMarket,
+      WeeklyMarket
+    }
     mapping(address => bool) private isMarketAdd;
     mapping(address => bool) public isClosed;
     address public owner;
     address public masterAddress;
     uint public openIndex;
-    event MarketQuestion(address indexed MarketAdd, string question, uint _type);
-    event placeBet(address indexed _user,uint _value,uint _prediction,address marketAdd);
-    event BetClosed(uint _type, address marketAdd);
-    event Claimed(address _user, uint _reward);
+    event MarketQuestion(address indexed MarketAdd, string question, bytes32 stockName, uint _type);
+    event PlaceBet(address indexed _user,uint _value, uint betPoints,uint _prediction,address marketAdd);
+    event BetClosed(uint _type, address marketAdd, uint commision, uint donation);
+    event Claimed(address indexed _market, address indexed _user, uint _reward);
    
     modifier OnlyOwner() {
       require(msg.sender == owner);
@@ -24,10 +31,14 @@ using SafeMath for uint;
       _;
     }
 
+    modifier OnlyMarket() {
+      require(isMarketAdd[msg.sender]);
+      _;
+    }
+
     function initiatePlotus(address _owner) public {
       masterAddress = msg.sender;
       owner = _owner;
-      allMarkets.push(address(0));
       openIndex = 1;
     }
 
@@ -37,57 +48,51 @@ using SafeMath for uint;
     }
 
     function addNewMarket( 
-     uint[] memory _uintparams,
-     string memory _feedsource,
-     bytes32 _stockName,
-     address payable[] memory _addressParams     
-      ) public payable OnlyOwner{
-        Market marketCon = (new Market).value(msg.value)(_uintparams, _feedsource, _stockName, _addressParams);
-        allMarkets.push(address(marketCon));
+      uint[] memory _uintparams,
+      string memory _feedsource,
+      bytes32 _stockName,
+      address payable[] memory _addressParams     
+    ) public payable OnlyOwner
+    {
+      if(_uintparams[1] == uint(MarketType.HourlyMarket)) {
+        MarketHourly marketCon = (new MarketHourly).value(msg.value)(_uintparams, _feedsource, _addressParams);
         isMarketAdd[address(marketCon)] = true;
-        emit MarketQuestion(address(marketCon), _feedsource, _uintparams[2]);
+        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
+      } else if(_uintparams[1] == uint(MarketType.DailyMarket)) {
+        MarketDaily marketCon = (new MarketDaily).value(msg.value)(_uintparams, _feedsource, _addressParams);
+        isMarketAdd[address(marketCon)] = true;
+        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
+      } else if(_uintparams[1] == uint(MarketType.WeeklyMarket)) {
+        MarketWeekly marketCon = (new MarketWeekly).value(msg.value)(_uintparams, _feedsource, _addressParams);
+        isMarketAdd[address(marketCon)] = true;
+        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
+      } else {
+        revert("Invalid market");
+      }
     }
 
-   function callCloseMarketEvent(uint _type) public {
-        require(isMarketAdd[msg.sender]);
-         isClosed[msg.sender] = true;
-        bool firstOpen;
-        if(allMarkets[openIndex] == msg.sender){
-              for(uint i = openIndex;i<allMarkets.length;i++){
-               if(!isClosed[allMarkets[i]] && !firstOpen){
-                 openIndex =i;
-                 firstOpen = true;
-               }
-               else if(isClosed[allMarkets[i]] && !firstOpen){
-               openIndex = allMarkets.length;
-              }
-         } 
-        }
-       
-        emit BetClosed(_type, msg.sender);
+    function callCloseMarketEvent(uint _type, uint _commision, uint _donation) public OnlyMarket {
+      emit BetClosed(_type, msg.sender, _commision, _donation);
     }
     
-    function callPlaceBetEvent(address _user,uint _value, uint _prediction) public {
-        emit placeBet(_user,_value,_prediction,msg.sender);
+    function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public OnlyMarket {
+      emit PlaceBet(_user, _value, _betPoints, _prediction, msg.sender);
     }
-    function callClaimedEvent(address _user , uint _reward) public {
-        emit Claimed(_user, _reward);
+    function callClaimedEvent(address _user , uint _reward) public OnlyMarket {
+      emit Claimed(msg.sender, _user, _reward);
     }
 
-    function getMarketDetails(address _marketAdd)public view returns
-    (uint _totalMarketValue,string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
+    function getMarketDetails(address payable _marketAdd)public view returns
+    (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
       uint[] memory optionprice,uint _betType,uint _expireTime){
       Market _market = Market(_marketAdd);
       return _market.getData();
     }
-    function getAllMarketsLen() public view returns(uint){
-        return allMarkets.length;
+
+    function () external payable {
     }
 
-    function deposit() external payable {
-    }
-
-    function withdraw(uint amount,address payable _address) external {
+    function withdraw(uint amount,address payable _address) external OnlyMarket {
       require(amount<= address(this).balance,"insufficient amount");
         _address.transfer(amount);
     }

@@ -13,7 +13,7 @@ contract MarketDaily is Market {
     payable Market(_uintparams, _feedsource, _addressParams)
     {
       expireTime = startTime + 1 days;
-      betType = uint(Plotus.MarketType.DailyMarket);
+      betType = uint(IPlotus.MarketType.DailyMarket);
 
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
@@ -40,13 +40,5 @@ contract MarketDaily is Market {
              .div(
               360 * 24
              );
-    }
-
-    function _getDistance(uint _option) internal view returns(uint _distance) {
-      if(currentPrice > optionsAvailable[_option].maxValue) {
-        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
-      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
-        _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
-      }
     }
 }
