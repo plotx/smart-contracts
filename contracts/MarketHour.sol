@@ -21,6 +21,30 @@ contract MarketHourly is Market {
     }
 
     function setPrice(uint _prediction, uint _value) public returns(uint ,uint){
-      optionPrice[_prediction] = _value;
+      optionPrice[_prediction] = _calculateOptionPrice(_prediction);
+    }
+
+    function _calculateOptionPrice(uint _option) internal view returns(uint _optionPrice) {
+      if(address(this).balance > 20 ether) {
+        _optionPrice = (optionsAvailable[_option].ethStaked).mul(10000)
+                      .div((address(this).balance).mul(40));
+      }
+
+      uint timeElapsed = now - startTime;
+      timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
+      _optionPrice = _optionPrice.add(
+              (_getDistance(_option).sub(6)).mul(10000).mul(timeElapsed.div(1 minutes))
+             )
+             .div(
+              360 * 60
+             );
+    }
+
+    function _getDistance(uint _option) internal view returns(uint _distance) {
+      if(currentPrice > optionsAvailable[_option].maxValue) {
+        _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
+      } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
+        _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
+      }
     }
 }

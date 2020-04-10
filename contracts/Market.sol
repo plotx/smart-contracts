@@ -23,6 +23,7 @@ contract Market is usingProvable {
     uint public commissionPerc;
     uint public donationPerc;
     uint public totalReward;
+    uint public delta;
     Plotus private pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
@@ -64,7 +65,8 @@ contract Market is usingProvable {
       donationPerc = _uintparams[8];
       commissionPerc  = _uintparams[9];
       optionsAvailable[0] = option(0,0,0,0);
-      setOptionRanges(_uintparams[10],totalOptions);
+      delta = _uintparams[10];
+      setOptionRanges(totalOptions);
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
@@ -77,17 +79,17 @@ contract Market is usingProvable {
       currentPrice = _currentPrice;
     }
 
-    function setOptionRanges(uint _delta, uint _totalOptions) internal{
+    function setOptionRanges(uint _totalOptions) internal{
       uint primaryOption = uint(_totalOptions).div(2).add(1);
-      optionsAvailable[primaryOption].minValue = currentPrice.sub(uint(_delta).div(2));
-      optionsAvailable[primaryOption].maxValue = currentPrice.add(uint(_delta).div(2));
+      optionsAvailable[primaryOption].minValue = currentPrice.sub(uint(delta).div(2));
+      optionsAvailable[primaryOption].maxValue = currentPrice.add(uint(delta).div(2));
       uint _increaseOption;
       for(uint i = primaryOption ;i>1 ;i--){
         _increaseOption = ++primaryOption;
         if(i-1 > 1){
           optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
-          optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(_delta);
-          optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(_delta);
+          optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(delta);
+          optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(delta);
           optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
         }
         else{
