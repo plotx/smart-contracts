@@ -67,9 +67,6 @@ contract Market is usingProvable {
     payable 
     {
       pl = IPlotus(msg.sender);
-      require(startTime > now);
-      require(donationPerc <= 100);
-      require(commissionPerc <= 100);
       startTime = _uintparams[0];
       FeedSource = _feedsource;
       predictionForDate = _uintparams[2];
@@ -83,7 +80,12 @@ contract Market is usingProvable {
       commissionPerc  = _uintparams[8];
       optionsAvailable[0] = option(0,0,0,0);
       delta = _uintparams[9];
+      require(startTime > now,"s");
+      require(donationPerc <= 100,"s1");
+      require(commissionPerc <= 100,"s2");
       setOptionRanges(totalOptions);
+      // _oraclizeQuery(4, endTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
+      // provable_query(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price"); //comment to deploy
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
