@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
-import "./MarketDay.sol";
-import "./MarketHour.sol";
-import "./MarketWeek.sol";
+import "./Market.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+
 contract Plotus{
 using SafeMath for uint; 
     
@@ -15,7 +15,7 @@ using SafeMath for uint;
     mapping(address => bool) public isClosed;
     address public owner;
     address public masterAddress;
-    uint public openIndex;
+    address[] public marketImplementations;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd, uint commision, uint donation);
@@ -36,10 +36,10 @@ using SafeMath for uint;
       _;
     }
 
-    function initiatePlotus(address _owner) public {
+    function initiatePlotus(address _owner, address[] memory _marketImplementations) public {
       masterAddress = msg.sender;
       owner = _owner;
-      openIndex = 1;
+      marketImplementations = _marketImplementations;
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -54,22 +54,29 @@ using SafeMath for uint;
       address payable[] memory _addressParams     
     ) public payable OnlyOwner
     {
+      require(_uintparams[1] <= uint(MarketType.WeeklyMarket), "Invalid market");
+      address payable marketConAdd = _generateProxy(marketImplementations[_uintparams[1]]);
+      isMarketAdd[marketConAdd] = true;
+      Market _market= Market(marketConAdd);
+      _market.initiate.value(msg.value)(_uintparams, _feedsource, _addressParams);
+      emit MarketQuestion(marketConAdd, _feedsource, _stockName, _uintparams[1]);
+    }
 
-      // if(_uintparams[1] == uint(MarketType.HourlyMarket)) {
-      //   Market marketCon = (new MarketHourly).value(msg.value)(_uintparams, _feedsource, _addressParams);
-      //   isMarketAdd[address(marketCon)] = true;
-      //   emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      // } else if(_uintparams[1] == uint(MarketType.DailyMarket)) {
-        Market marketCon = (new MarketDaily).value(msg.value)(_uintparams, _feedsource, _addressParams);
-        isMarketAdd[address(marketCon)] = true;
-        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      // } else if(_uintparams[1] == uint(MarketType.WeeklyMarket)) {
-      //   Market marketCon = (new MarketWeekly).value(msg.value)(_uintparams, _feedsource, _addressParams);
-      //   isMarketAdd[address(marketCon)] = true;
-      //   emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      // } else {
-        // revert("Invalid market");
-      // }
+    function upgradeContractImplementation(address _contractsAddress, address payable _proxyAddress) 
+        external OnlyOwner
+    {
+        OwnedUpgradeabilityProxy tempInstance 
+            = OwnedUpgradeabilityProxy(_proxyAddress);
+        tempInstance.upgradeTo(_contractsAddress);
+    }
+
+    /**
+     * @dev to generater proxy 
+     * @param _contractAddress of the proxy
+     */
+    function _generateProxy(address _contractAddress) internal returns(address payable) {
+        OwnedUpgradeabilityProxy tempInstance = new OwnedUpgradeabilityProxy(_contractAddress);
+        return address(tempInstance);
     }
 
     function callCloseMarketEvent(uint _type, uint _commision, uint _donation) public OnlyMarket {

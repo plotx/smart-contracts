@@ -4,17 +4,17 @@ import "./Market.sol";
 
 contract MarketDaily is Market {
 
-    constructor(
+    function initiate(
      uint[] memory _uintparams,
      string memory _feedsource,
      address payable[] memory _addressParams
     ) 
     public
-    payable Market(_uintparams, _feedsource, _addressParams)
+    payable
     {
+      super.initiate(_uintparams, _feedsource, _addressParams);
       expireTime = startTime + 1 days;
       betType = uint(IPlotus.MarketType.DailyMarket);
-
       //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
@@ -22,11 +22,12 @@ contract MarketDaily is Market {
       return optionPrice[_prediction];
     }
 
-    function setPrice(uint _prediction, uint _value) public returns(uint ,uint){
+    function setPrice(uint _prediction) public {
       optionPrice[_prediction] = _calculateOptionPrice(_prediction);
     }
 
     function _calculateOptionPrice(uint _option) internal view returns(uint _optionPrice) {
+      _optionPrice = 0;
       if(address(this).balance > 20 ether) {
         _optionPrice = (optionsAvailable[_option].ethStaked).mul(10000)
                       .div((address(this).balance).mul(40));
@@ -35,7 +36,7 @@ contract MarketDaily is Market {
       uint timeElapsed = now - startTime;
       timeElapsed = timeElapsed > 4 hours ? timeElapsed: 4 hours;
       _optionPrice = _optionPrice.add(
-              (_getDistance(_option).sub(6)).mul(10000).mul(timeElapsed.div(1 hours))
+              (6 - _getDistance(_option)).mul(10000).mul(timeElapsed.div(1 hours))
              )
              .div(
               360 * 24

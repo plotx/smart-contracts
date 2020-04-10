@@ -58,7 +58,7 @@ contract Market is usingProvable {
 
     mapping(uint=>option) public optionsAvailable;
 
-    constructor(
+    function initiate(
      uint[] memory _uintparams,
      string memory _feedsource,
      address payable[] memory _addressParams
@@ -80,9 +80,9 @@ contract Market is usingProvable {
       commissionPerc  = _uintparams[8];
       optionsAvailable[0] = option(0,0,0,0);
       delta = _uintparams[9];
-      require(startTime > now,"s");
-      require(donationPerc <= 100,"s1");
-      require(commissionPerc <= 100,"s2");
+      require(startTime > now);
+      require(donationPerc <= 100);
+      require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
       // _oraclizeQuery(4, endTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
       // provable_query(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price"); //comment to deploy
@@ -98,7 +98,7 @@ contract Market is usingProvable {
       currentPrice = _currentPrice;
     }
 
-    function setPrice(uint _prediction) public returns(uint ,uint){
+    function setPrice(uint _prediction) public {
     }
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
