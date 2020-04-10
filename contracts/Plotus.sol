@@ -54,21 +54,22 @@ using SafeMath for uint;
       address payable[] memory _addressParams     
     ) public payable OnlyOwner
     {
-      if(_uintparams[1] == uint(MarketType.HourlyMarket)) {
-        MarketHourly marketCon = (new MarketHourly).value(msg.value)(_uintparams, _feedsource, _addressParams);
+
+      // if(_uintparams[1] == uint(MarketType.HourlyMarket)) {
+      //   Market marketCon = (new MarketHourly).value(msg.value)(_uintparams, _feedsource, _addressParams);
+      //   isMarketAdd[address(marketCon)] = true;
+      //   emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
+      // } else if(_uintparams[1] == uint(MarketType.DailyMarket)) {
+        Market marketCon = (new MarketDaily).value(msg.value)(_uintparams, _feedsource, _addressParams);
         isMarketAdd[address(marketCon)] = true;
         emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      } else if(_uintparams[1] == uint(MarketType.DailyMarket)) {
-        MarketDaily marketCon = (new MarketDaily).value(msg.value)(_uintparams, _feedsource, _addressParams);
-        isMarketAdd[address(marketCon)] = true;
-        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      } else if(_uintparams[1] == uint(MarketType.WeeklyMarket)) {
-        MarketWeekly marketCon = (new MarketWeekly).value(msg.value)(_uintparams, _feedsource, _addressParams);
-        isMarketAdd[address(marketCon)] = true;
-        emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
-      } else {
-        revert("Invalid market");
-      }
+      // } else if(_uintparams[1] == uint(MarketType.WeeklyMarket)) {
+      //   Market marketCon = (new MarketWeekly).value(msg.value)(_uintparams, _feedsource, _addressParams);
+      //   isMarketAdd[address(marketCon)] = true;
+      //   emit MarketQuestion(address(marketCon), _feedsource, _stockName, _uintparams[1]);
+      // } else {
+        // revert("Invalid market");
+      // }
     }
 
     function callCloseMarketEvent(uint _type, uint _commision, uint _donation) public OnlyMarket {
