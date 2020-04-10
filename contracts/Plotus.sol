@@ -16,10 +16,10 @@ using SafeMath for uint;
     address public owner;
     address public masterAddress;
     uint public openIndex;
-    event MarketQuestion(address indexed MarketAdd, string question, bytes32 stockName, uint _type);
-    event PlaceBet(address indexed _user,uint _value, uint betPoints,uint _prediction,address marketAdd);
-    event BetClosed(uint _type, address marketAdd, uint commision, uint donation);
-    event Claimed(address indexed _market, address indexed _user, uint _reward);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType);
+    event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
+    event BetClosed(uint betType, address indexed marketAdd, uint commision, uint donation);
+    event Claimed(address indexed marketAdd, address indexed user, uint reward);
    
     modifier OnlyOwner() {
       require(msg.sender == owner);
