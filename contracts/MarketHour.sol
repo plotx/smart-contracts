@@ -1,6 +1,7 @@
 pragma solidity 0.5.7;
 
 import "./Market.sol";
+
 contract MarketHourly is Market {
 
     function initiate(
@@ -14,7 +15,7 @@ contract MarketHourly is Market {
       super.initiate(_uintparams, _feedsource, _addressParams);
       expireTime = startTime + 1 hours;
       betType = uint(IPlotus.MarketType.HourlyMarket);
-      //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+      _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
     function getPrice(uint _prediction) public view returns(uint) {
@@ -35,7 +36,7 @@ contract MarketHourly is Market {
       uint timeElapsed = now - startTime;
       timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
       _optionPrice = _optionPrice.add(
-              (6 - _getDistance(_option)).mul(10000).mul(timeElapsed.div(1 minutes))
+              (6 - _getDistance(_option)).mul(10000).mul(timeElapsed.div(10 minutes))
              )
              .div(
               360 * 60

@@ -1,7 +1,7 @@
 pragma solidity 0.5.7;
 
-import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/oraclize/ethereum-api/usingOraclize.sol";
 
 contract IPlotus {
 
@@ -21,7 +21,7 @@ contract IPlotus {
     function withdraw(uint amount,address payable _address) external {
     }
 }
-contract Market is usingProvable {
+contract Market is usingOraclize {
     using SafeMath for uint;
 
     uint public startTime;
@@ -84,9 +84,6 @@ contract Market is usingProvable {
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
-      // _oraclizeQuery(4, endTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
-      // provable_query(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price"); //comment to deploy
-      //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
     }
 
     function () external payable {
@@ -102,8 +99,11 @@ contract Market is usingProvable {
     }
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
+      
       if(currentPrice > optionsAvailable[_option].maxValue) {
-        _distance = (currentPrice - optionsAvailable[_option].maxValue) / delta;
+        _distance = ((currentPrice - optionsAvailable[_option].maxValue) / delta) + 1;
+      } else if(_option == 7) {
+        _distance = (optionsAvailable[_option].minValue + delta - currentPrice) / delta;
       } else if(currentPrice < (optionsAvailable[_option].maxValue - delta)) {
         _distance = (optionsAvailable[_option].maxValue - currentPrice) / delta;
       }
@@ -166,16 +166,25 @@ contract Market is usingProvable {
     }
 
     function _closeBet(uint _value) public {      
+      //Bet should be closed only by oraclize address
+      //Commenting this check for testing purpose. Should be un commented after testing
+      // require (msg.sender == oraclize_cbAddress());
+      
       require(now > expireTime,"bet not yet expired");
+      
       require(!betClosed,"bet closed");
+      
+      require(_value > 0);
+      
+      currentPrice = _value;
       betClosed = true;
       for(uint i=1;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
           WinningOption = i;
-         }         
-      else{
-            totalReward = totalReward.add(optionsAvailable[i].ethStaked);
-          }
+        }         
+        else{
+          totalReward = totalReward.add(optionsAvailable[i].ethStaked);
+        }
       }
       uint commision;
       uint donation;
@@ -184,8 +193,8 @@ contract Market is usingProvable {
         commision = commissionPerc.mul(totalReward).div(100);
         donation = donationPerc.mul(totalReward).div(100);
         rewardToDistribute = totalReward.sub(commision).sub(donation);
-        CommissionAccount.transfer(commision);
-        DonationAccount.transfer(donation);
+        _transferEther(CommissionAccount, commision);
+        _transferEther(DonationAccount, donation);
       } else if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
         // when all win.
         rewardToDistribute = 0;
@@ -197,9 +206,9 @@ contract Market is usingProvable {
         commision = commissionPerc.mul(Reward).div(100);
         donation = donationPerc.mul(Reward).div(100);
         uint loseReward = Reward.sub(commision).sub(donation);
-        address(pl).transfer(loseReward);
-        CommissionAccount.transfer(commision);
-        DonationAccount.transfer(donation);       
+        _transferEther(address(pl), loseReward);
+        _transferEther(CommissionAccount, commision);
+        _transferEther(DonationAccount, donation);
       }  
 
       pl.callCloseMarketEvent(betType, commision, donation);    
@@ -232,23 +241,43 @@ contract Market is usingProvable {
       require(userPoints > 0,"must have atleast 0 points");
        if(rewardToDistribute == 0 && address(pl).balance > send){
            reward = ethStaked[msg.sender][WinningOption];
-           (msg.sender).transfer(reward);
            pl.withdraw(send,msg.sender); 
        }else if(rewardToDistribute == 0 && address(pl).balance < send){
            reward = ethStaked[msg.sender][WinningOption];
-           (msg.sender).transfer(reward);
        }
-       else{   
+       else{
            reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
-           (msg.sender).transfer(reward);
        }
+       _transferEther(msg.sender, reward);
        pl.callClaimedEvent(msg.sender,reward.add(send));
     }
 
-    // function __callback(string memory result) public{      
-    //     if (msg.sender != provable_cbAddress()) revert();
-    //     uint resultVal = safeParseInt(result);
-    //     _closeBet(resultVal);
-    // }
-    
+    function _transferEther(address payable _recipient, uint _amount) internal {
+      _recipient.transfer(_amount);
+    }
+
+    /**
+     * @dev oraclize query
+     * @param timestamp is the current timestamp
+     * @param datasource in concern
+     * @param arg in concern
+     * @param gasLimit required for query
+     * @return id of oraclize query
+     */
+    function _oraclizeQuery(
+        uint timestamp,
+        string memory datasource,
+        string memory arg,
+        uint gasLimit
+    ) 
+        internal
+        returns (bytes32 id)
+    {
+        id = oraclize_query(timestamp, datasource, arg, gasLimit);
+    }
+
+    function __callback(bytes32 myid, string memory result) public {
+        _closeBet(parseInt(result));
+    }
+
 }

@@ -15,7 +15,7 @@ contract MarketDaily is Market {
       super.initiate(_uintparams, _feedsource, _addressParams);
       expireTime = startTime + 1 days;
       betType = uint(IPlotus.MarketType.DailyMarket);
-      //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
+      _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
     function getPrice(uint _prediction) public view returns(uint) {
