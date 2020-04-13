@@ -28,7 +28,7 @@ contract MarketHourly is Market {
     function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(address(this).balance > 20 ether) {
-        _optionPrice = (optionsAvailable[_option].ethStaked).mul(10000)
+        _optionPrice = (optionsAvailable[_option].ethStaked).mul(1000000)
                       .div(_totalStaked.mul(40));
       }
 
@@ -36,11 +36,12 @@ contract MarketHourly is Market {
       uint maxDistance = currentPriceLocation > 3? (currentPriceLocation-1): (7-currentPriceLocation);
       uint timeElapsed = now - startTime;
       timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
-      _optionPrice = _optionPrice.add(
-              (maxDistance + 1 - distance).mul(10000).mul(10000).mul(timeElapsed.div(10 minutes))
+      _optionPrice = _optionPrice.add((
+              (maxDistance + 1 - distance).mul(1000000).mul(timeElapsed.div(10 minutes))
              )
              .div(
               (maxDistance+1) * 60 * 60
-             );
+             ));
+      _optionPrice = _optionPrice.div(100);
     }
 }
