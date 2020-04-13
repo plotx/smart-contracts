@@ -22,14 +22,14 @@ contract MarketDailyMock is MarketMock {
     }
 
     function setPrice(uint _prediction) public {
-      optionPrice[_prediction] = _calculateOptionPrice(_prediction);
+      optionPrice[_prediction] = _calculateOptionPrice(_prediction, address(this).balance);
     }
 
-    function _calculateOptionPrice(uint _option) internal view returns(uint _optionPrice) {
+    function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(address(this).balance > 20 ether) {
         _optionPrice = (optionsAvailable[_option].ethStaked).mul(10000)
-                      .div((address(this).balance).mul(40));
+                      .div(_totalStaked.mul(40));
       }
 
       uint distance = _getDistance(_option);
@@ -41,7 +41,7 @@ contract MarketDailyMock is MarketMock {
               (maxDistance+1 - distance).mul(10000).mul(timeElapsed.div(1 hours))
              )
              .div(
-              360 * 24
+              (maxDistance+1) * 60 * 24
              );
     }
 }

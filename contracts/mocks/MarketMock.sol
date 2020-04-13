@@ -25,6 +25,8 @@ contract MarketMock is Market {
       commissionPerc  = _uintparams[8];
       optionsAvailable[0] = option(0,0,0,0);
       delta = _uintparams[9];
+      maxReturn = _uintparams[10];
+      priceStep = _uintparams[11];
       require(startTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);

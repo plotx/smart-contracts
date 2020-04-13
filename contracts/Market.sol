@@ -37,6 +37,7 @@ contract Market is usingOraclize {
     uint public currentPrice;
     uint public maxReturn;
     uint internal currentPriceLocation;
+    uint public priceStep;
     address payable public DonationAccount;
     address payable public CommissionAccount;
     uint public commissionPerc;
@@ -83,6 +84,7 @@ contract Market is usingOraclize {
       optionsAvailable[0] = option(0,0,0,0);
       delta = _uintparams[9];
       maxReturn = _uintparams[10];
+      priceStep = _uintparams[11];
       require(startTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
@@ -101,6 +103,9 @@ contract Market is usingOraclize {
     }
 
     function setPrice(uint _prediction) public {
+    }
+
+    function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
     }
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
@@ -160,12 +165,34 @@ contract Market is usingOraclize {
         _optionPrice[i] = optionPrice[i+1];
        }
     }
+
+    function estimateBetValue(uint _prediction, uint _stake) public returns(uint _betValue){
+      return _calculateBetValue(_prediction, _stake, address(this).balance);
+    }
+
+    function _calculateBetValue(uint _prediction, uint _stake, uint _totalContribution) internal returns(uint _betValue) {
+      uint value;
+      _betValue = 0;
+      while(_stake > 0) {
+        if(_stake <= (priceStep.mul(10**18))) {
+          value = uint(_stake).div(rate);
+          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution)));
+          break;
+        } else {
+          _stake = _stake.sub(priceStep.mul(10**18));
+          value = uint(priceStep.mul(10**18)).div(rate);
+          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution)));
+          _totalContribution = _totalContribution.add(priceStep.mul(10**18));
+        }
+      } 
+    }
     
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
       require(msg.value >= minBet,"value less than min bet amount");
-      uint value = uint(msg.value).div(rate);
-      uint betValue = value.div(getPrice(_prediction));
+      uint _totalContribution = address(this).balance.sub(msg.value);
+      uint betValue = _calculateBetValue(_prediction, msg.value, _totalContribution);
+      setPrice(_prediction);
       userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
