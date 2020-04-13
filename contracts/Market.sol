@@ -41,7 +41,7 @@ contract Market is usingOraclize {
     uint public donationPerc;
     uint public totalReward;
     uint public delta;
-    IPlotus private pl;
+    IPlotus internal pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
@@ -53,7 +53,7 @@ contract Market is usingOraclize {
       uint minValue;
       uint maxValue;
       uint betPoints;
-      uint ethStaked                                                                                                                                                                                                         ;
+      uint ethStaked;
     }
 
     mapping(uint=>option) public optionsAvailable;
@@ -84,6 +84,7 @@ contract Market is usingOraclize {
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
+      _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
     function () external payable {

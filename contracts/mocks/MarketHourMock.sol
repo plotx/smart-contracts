@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "./Market.sol";
+import "./MarketMock.sol";
 
-contract MarketHourly is Market {
+contract MarketHourlyMock is MarketMock {
 
     function initiate(
      uint[] memory _uintparams,

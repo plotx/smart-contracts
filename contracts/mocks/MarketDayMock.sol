@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "./Market.sol";
+import "./MarketMock.sol";
 
-contract MarketHourly is Market {
+contract MarketDailyMock is MarketMock {
 
     function initiate(
      uint[] memory _uintparams,
@@ -12,9 +12,9 @@ contract MarketHourly is Market {
     public
     payable
     {
-      expireTime = _uintparams[0] + 1 hours;
+      expireTime = _uintparams[0] + 1 days;
       super.initiate(_uintparams, _feedsource, _addressParams);
-      betType = uint(IPlotus.MarketType.HourlyMarket);
+      betType = uint(IPlotus.MarketType.DailyMarket);
     }
 
     function getPrice(uint _prediction) public view returns(uint) {
@@ -33,12 +33,12 @@ contract MarketHourly is Market {
       }
 
       uint timeElapsed = now - startTime;
-      timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
+      timeElapsed = timeElapsed > 4 hours ? timeElapsed: 4 hours;
       _optionPrice = _optionPrice.add(
-              (6 - _getDistance(_option)).mul(10000).mul(timeElapsed.div(10 minutes))
+              (6 - _getDistance(_option)).mul(10000).mul(timeElapsed.div(1 hours))
              )
              .div(
-              360 * 60
+              360 * 24
              );
     }
 }

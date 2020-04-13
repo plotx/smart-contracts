@@ -12,10 +12,9 @@ contract MarketDaily is Market {
     public
     payable
     {
+      expireTime = _uintparams[0] + 1 days;
       super.initiate(_uintparams, _feedsource, _addressParams);
-      expireTime = startTime + 1 days;
       betType = uint(IPlotus.MarketType.DailyMarket);
-      _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
     function getPrice(uint _prediction) public view returns(uint) {
