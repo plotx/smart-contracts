@@ -1,8 +1,8 @@
 const Master = artifacts.require('Master');
 const Plotus = artifacts.require('Plotus');
-const MarketDaily = artifacts.require('MarketDaily');
-const MarketHourly = artifacts.require('MarketHourly');
-const MarketWeekly = artifacts.require('MarketWeekly');
+const MarketDaily = artifacts.require('MarketDailyMock');
+const MarketHourly = artifacts.require('MarketHourlyMock');
+const MarketWeekly = artifacts.require('MarketWeeklyMock');
 
 const BN = web3.utils.BN;
 
@@ -16,6 +16,9 @@ module.exports = function(deployer, network, accounts){
       let deployMaster = await deployer.deploy(Master , deployPlotus.address, [deployMarketHourly.address, deployMarketDaily.address, deployMarketWeekly.address]);
       let plotusAddress = await deployMaster.plotusAddress();
       let plotus = await Plotus.at(plotusAddress);
+      let date = Math.round(Date.now()/1000) + 500;
+      const addNewMarket = await plotus.addNewMarket([date,1,2,1,7,1000000000000000,10000,2,2,100],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+
   });
 };
 
