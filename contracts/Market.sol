@@ -35,6 +35,8 @@ contract Market is usingOraclize {
     uint public totalOptions;
     uint public rate;
     uint public currentPrice;
+    uint public maxReturn;
+    uint internal currentPriceLocation;
     address payable public DonationAccount;
     address payable public CommissionAccount;
     uint public commissionPerc;
@@ -80,11 +82,12 @@ contract Market is usingOraclize {
       commissionPerc  = _uintparams[8];
       optionsAvailable[0] = option(0,0,0,0);
       delta = _uintparams[9];
+      maxReturn = _uintparams[10];
       require(startTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
-      _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
+      // _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
     function () external payable {
@@ -94,6 +97,7 @@ contract Market is usingOraclize {
     //Need to add check Only Admin or Any authorized address
     function setCurrentPrice(uint _currentPrice) external {
       currentPrice = _currentPrice;
+      currentPriceLocation = _getDistance(1) + 1;
     }
 
     function setPrice(uint _prediction) public {
@@ -101,7 +105,11 @@ contract Market is usingOraclize {
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
       
-      if(currentPrice > optionsAvailable[_option].maxValue) {
+      if(currentPrice > optionsAvailable[7].minValue) {
+        _distance = 7 - _option;
+      } else if(currentPrice < optionsAvailable[1].maxValue) {
+        _distance = _option - 1;
+      } else if(currentPrice > optionsAvailable[_option].maxValue) {
         _distance = ((currentPrice - optionsAvailable[_option].maxValue) / delta) + 1;
       } else if(_option == 7) {
         _distance = (optionsAvailable[_option].minValue + delta - currentPrice) / delta;
