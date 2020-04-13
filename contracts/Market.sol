@@ -234,10 +234,16 @@ contract Market is usingOraclize {
       }else if(rewardToDistribute == 0 && address(pl).balance < send){
         reward = ethStaked[_user][WinningOption];
       }
-      else{   
-           reward =ethStaked[_user][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
+      else{
+        uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
+        uint maxReturnCap = maxReturn * _rew;
+        if(_rew > maxReturnCap) {
+          _rew = maxReturnCap;
+        }
+        reward =ethStaked[_user][WinningOption].add(_rew);
        }
-      return reward;
+      uint maxReturnCap = maxReturn * ethStaked[_user][WinningOption];
+      return reward >  maxReturnCap ? maxReturnCap : reward;
     }
 
     function claimReward() public {
@@ -255,7 +261,13 @@ contract Market is usingOraclize {
            reward = ethStaked[msg.sender][WinningOption];
        }
        else{
-           reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
+          uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
+          uint maxReturnCap = maxReturn * _rew;
+          if(_rew > maxReturnCap) {
+            _rew = maxReturnCap;
+            _transferEther(address(pl), _rew.sub(maxReturnCap));
+          }
+          reward =ethStaked[msg.sender][WinningOption].add(_rew);
        }
        _transferEther(msg.sender, reward);
        pl.callClaimedEvent(msg.sender,reward.add(send));
