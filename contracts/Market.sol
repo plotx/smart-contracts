@@ -263,14 +263,13 @@ contract Market is usingOraclize {
       }
       else{
         uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
-        uint maxReturnCap = maxReturn * _rew;
+        uint maxReturnCap = maxReturn * ethStaked[_user][WinningOption];
         if(_rew > maxReturnCap) {
           _rew = maxReturnCap;
         }
-        reward =ethStaked[_user][WinningOption].add(_rew);
+        reward = ethStaked[_user][WinningOption].add(_rew);
        }
-      uint maxReturnCap = maxReturn * ethStaked[_user][WinningOption];
-      return reward >  maxReturnCap ? maxReturnCap : reward;
+      return reward;
     }
 
     function claimReward() public {
@@ -289,10 +288,10 @@ contract Market is usingOraclize {
        }
        else{
           uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
-          uint maxReturnCap = maxReturn * _rew;
+          uint maxReturnCap = maxReturn * ethStaked[msg.sender][WinningOption];
           if(_rew > maxReturnCap) {
-            _rew = maxReturnCap;
             _transferEther(address(pl), _rew.sub(maxReturnCap));
+            _rew = maxReturnCap;
           }
           reward =ethStaked[msg.sender][WinningOption].add(_rew);
        }
