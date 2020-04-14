@@ -162,16 +162,12 @@ contract('Market', function([
         await increaseTime(21600+11);
         // const print = await marketInstance._getDistance(1);
         await marketInstance.setPrice(1);
-        const getPrice0 = await marketInstance.getPrice(4);
-        assert.equal(getPrice0/1,0)
-        
-
+        const getPrice0 = await marketInstance.getPrice(1);
+        assert.equal(getPrice0/1,6)
         const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
         await marketInstance.placeBet(1,{value: 4e18,from: user1});
         const user1BalanceAfterBet = await web3.eth.getBalance(user1)
         const getPrice = await marketInstance.getPrice(1);
-        
-
         assert.equal(getPrice,6)
         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
@@ -179,26 +175,19 @@ contract('Market', function([
         // const getprice
   
         await marketInstance.setPrice(2);
-        const getPrice11 = await marketInstance.getPrice(4);
-        assert.equal(getPrice11/1,0)
-        
-
+        const getPrice11 = await marketInstance.getPrice(2);
+        assert.equal(getPrice11/1,13)
         await marketInstance.placeBet(2,{value: 6e18,from: user2});
         const getPrice1 = await marketInstance.getPrice(2);
-        
-
         assert.equal(getPrice1,13)
         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
         assert.equal(getbrttingpoint1/1,461);
   
         await marketInstance.setPrice(3);
-        const getPrice21 = await marketInstance.getPrice(4);
-        assert.equal(getPrice21/1,0)
-        
-
+        const getPrice21 = await marketInstance.getPrice(3);
+        assert.equal(getPrice21/1,20)
         await marketInstance.placeBet(3,{value: 2e18,from: user3});
         const getPrice2 = await marketInstance.getPrice(3);
-
         assert.equal(getPrice2,20)
         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
         assert.equal(getbrttingpoint2/1,100);
@@ -206,21 +195,17 @@ contract('Market', function([
         await marketInstance.setPrice(4);
         const getPrice31 = await marketInstance.getPrice(4);
         assert.equal(getPrice31/1,27)
-        
         await marketInstance.placeBet(4,{value: 1e19,from: user4});
         const getPrice3 = await marketInstance.getPrice(4);
-        
         assert.equal(getPrice3/1,141)
         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
         assert.equal(getbrttingpoint3/1,370);
   
         await marketInstance.setPrice(1);
         const getPrice14 = await marketInstance.getPrice(1);
-        
         assert.equal(getPrice14,52)
         await marketInstance.placeBet(1,{value: 3e18,from: user5});
         const getPrice4 = await marketInstance.getPrice(1);
-        
         assert.equal(getPrice4/1,76)//52
         // const afterPlaceBetUser1 = await web3.eth.getBalance(user5);
         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,1);
@@ -229,10 +214,8 @@ contract('Market', function([
         await marketInstance.setPrice(2);
         const getPrice51 = await marketInstance.getPrice(2);
         assert.equal(getPrice51/1,73)
-          
         await marketInstance.placeBet(2,{value: 2e18,from: user6});
         const getPrice5 = await marketInstance.getPrice(2);
-        
         assert.equal(getPrice5,87)//73
         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
         assert.equal(getbrttingpoint5/1,27);
@@ -240,10 +223,8 @@ contract('Market', function([
         await marketInstance.setPrice(5);
         const getPrice61 = await marketInstance.getPrice(5);
         assert.equal(getPrice61/1,34)
-        
         await marketInstance.placeBet(5,{value: 5e18,from: user7});
         const getPrice62 = await marketInstance.getPrice(5);
-        
         assert.equal(getPrice62/1,73)
         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
         assert.equal(getbrttingpoint6/1,147);
@@ -251,26 +232,22 @@ contract('Market', function([
         await marketInstance.setPrice(6);
         const getPrice71 = await marketInstance.getPrice(6);
         assert.equal(getPrice71/1,41)
-        
         await marketInstance.placeBet(6,{value: 5e18,from: user8});
         const getPrice7 = await marketInstance.getPrice(6);
         assert.equal(getPrice7/1,75)
-        // const getPrice61 = await marketInstance.getPrice(2);
-        
-        // assert.equal(getPrice7/1,41);
         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
         assert.equal(getbrttingpoint7/1,121);
   
         await marketInstance.setPrice(7);
         const getPrice81 = await marketInstance.getPrice(7);
         assert.equal(getPrice81/1,34)
-        
         await marketInstance.placeBet(7,{value: 7e18,from: user9}); 
         const getPrice8 = await marketInstance.getPrice(7);
         assert.equal(getPrice8/1,74);
-        
         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);
         assert.equal(getbrttingpoint8/1,205);
+
+
         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
         console.log(ClaimDonation/1);
         await increaseTime(64810);
@@ -311,12 +288,14 @@ contract('Market', function([
         // // assert.equal(num1.toFixed(8),num.toFixed(8));
   
   
-        // const beforeClaimUser5 = await web3.eth.getBalance(user5);
-        // const txInfo = await marketInstance.claimReward({from: user5});
+        const beforeClaimUser5 = await web3.eth.getBalance(user5);
+        const txInfo = await marketInstance.claimReward({from: user5});
+        console.log("user5 balance after claimReward",(beforeClaimUser5/1)/1e18.toFixed(0));
         // // const tx = await web3.eth.getTransaction(txInfo.tx);
         // // const gasCost1 = tx.gasPrice * txInfo.receipt.gasUsed;
         // // ce",(gasCost1/1)/1e18);
-        // const afterClaimUser5 = await web3.eth.getBalance(user5);
+        const afterClaimUser5 = await web3.eth.getBalance(user5);
+        console.log("user5 balance after claimReward",(afterClaimUser5/1)/1e18.toFixed(0));
         // // gas limit 0.00107126
         // // 00118998
         // // it should be add this ammount 7.043478261
