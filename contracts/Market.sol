@@ -186,19 +186,19 @@ contract Market is usingOraclize {
         }
       } 
     }
-    
+
     function placeBet(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime,"bet not started yet or expired");
       require(msg.value >= minBet,"value less than min bet amount");
       uint _totalContribution = address(this).balance.sub(msg.value);
       uint betValue = _calculateBetValue(_prediction, msg.value, _totalContribution);
-      setPrice(_prediction);
       userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
       pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
+      setPrice(_prediction);
     }
 
     function _closeBet(uint _value) public {      
