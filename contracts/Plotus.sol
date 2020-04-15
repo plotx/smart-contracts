@@ -92,7 +92,7 @@ using SafeMath for uint;
 
     function getMarketDetails(address payable _marketAdd)public view returns
     (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-      uint[] memory optionprice,uint _betType,uint _expireTime){
+      uint[] memory optionprice,uint[] memory _ethStaked,uint _betType,uint _expireTime){
       Market _market = Market(_marketAdd);
       return _market.getData();
     }

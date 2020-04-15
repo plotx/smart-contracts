@@ -21,10 +21,6 @@ contract MarketHourlyMock is MarketMock {
       return optionPrice[_prediction];
     }
 
-    function setPrice(uint _prediction) public {
-      optionPrice[_prediction] = _calculateOptionPrice(_prediction, address(this).balance);
-    }
-
     function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(address(this).balance > 20 ether) {
@@ -34,7 +30,7 @@ contract MarketHourlyMock is MarketMock {
 
       uint distance = _getDistance(_option);
       uint maxDistance = currentPriceLocation > 3? (currentPriceLocation-1): (7-currentPriceLocation);
-      uint timeElapsed = now - startTime;
+      uint timeElapsed = now > startTime ? now - startTime : 0;
       timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
       _optionPrice = _optionPrice.add((
               (maxDistance + 1 - distance).mul(1000000).mul(timeElapsed.div(10 minutes))

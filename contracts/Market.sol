@@ -85,10 +85,12 @@ contract Market is usingOraclize {
       delta = _uintparams[9];
       maxReturn = _uintparams[10];
       priceStep = _uintparams[11];
-      require(startTime > now);
+      require(expireTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
+      currentPriceLocation = _getDistance(1) + 1;
+      setPrice();
       // _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
@@ -102,7 +104,10 @@ contract Market is usingOraclize {
       currentPriceLocation = _getDistance(1) + 1;
     }
 
-    function setPrice(uint _prediction) public {
+    function setPrice() public {
+      for(uint i = 1; i <= 7 ; i++) {
+        optionPrice[i] = _calculateOptionPrice(i, address(this).balance);
+      }
     }
 
     function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
@@ -152,7 +157,7 @@ contract Market is usingOraclize {
 
     function getData() public view returns
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice,uint _betType,uint _expireTime){
+        uint[] memory _optionPrice, uint[] memory _ethStaked,uint _betType,uint _expireTime){
         _feedsource = FeedSource;
         _betType = betType;
         _expireTime =expireTime;
@@ -160,6 +165,7 @@ contract Market is usingOraclize {
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);
        for (uint i = 0; i < totalOptions; i++) {
+        _ethStaked[i] = optionsAvailable[i+1].ethStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
         _optionPrice[i] = optionPrice[i+1];
@@ -198,7 +204,7 @@ contract Market is usingOraclize {
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
       pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
-      setPrice(_prediction);
+      setPrice();
     }
 
     function _closeBet(uint _value) public {      
@@ -285,8 +291,7 @@ contract Market is usingOraclize {
            pl.withdraw(send,msg.sender); 
        }else if(rewardToDistribute == 0 && address(pl).balance < send){
            reward = ethStaked[msg.sender][WinningOption];
-       }
-       else{
+       } else{
           uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
           uint maxReturnCap = maxReturn * ethStaked[msg.sender][WinningOption];
           if(_rew > maxReturnCap) {

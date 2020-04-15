@@ -21,10 +21,6 @@ contract MarketDaily is Market {
       return optionPrice[_prediction];
     }
 
-    function setPrice(uint _prediction) public {
-      optionPrice[_prediction] = _calculateOptionPrice(_prediction, address(this).balance);
-    }
-
     function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(address(this).balance > 20 ether) {
@@ -35,7 +31,7 @@ contract MarketDaily is Market {
       uint distance = _getDistance(_option);
       uint maxDistance = currentPriceLocation > 3? (currentPriceLocation-1): (7-currentPriceLocation);
       // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
-      uint timeElapsed = now - startTime;
+      uint timeElapsed = now > startTime ? now - startTime : 0;
       timeElapsed = timeElapsed > 4 hours ? timeElapsed: 4 hours;
       _optionPrice = _optionPrice.add((
               (maxDistance+1 - distance).mul(1000000).mul(timeElapsed.div(1 hours))

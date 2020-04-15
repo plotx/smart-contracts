@@ -27,10 +27,12 @@ contract MarketMock is Market {
       delta = _uintparams[9];
       maxReturn = _uintparams[10];
       priceStep = _uintparams[11];
-      require(startTime > now);
+      require(expireTime > now);
       require(donationPerc <= 100);
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
+      currentPriceLocation = _getDistance(1) + 1;
+      setPrice();
       // _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
