@@ -173,11 +173,11 @@ contract Market is usingOraclize {
        }
     }
 
-    function estimateBetValue(uint _prediction, uint _stake) public returns(uint _betValue){
+    function estimateBetValue(uint _prediction, uint _stake) public view returns(uint _betValue){
       return _calculateBetValue(_prediction, _stake, address(this).balance);
     }
 
-    function _calculateBetValue(uint _prediction, uint _stake, uint _totalContribution) internal returns(uint _betValue) {
+    function _calculateBetValue(uint _prediction, uint _stake, uint _totalContribution) internal view returns(uint _betValue) {
       uint value;
       _betValue = 0;
       while(_stake > 0) {
