@@ -23,7 +23,7 @@ contract MarketHourly is Market {
 
     function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
-      if(address(this).balance > 20 ether) {
+      if(_totalStaked > 20 ether) {
         _optionPrice = (optionsAvailable[_option].ethStaked).mul(1000000)
                       .div(_totalStaked.mul(40));
       }
