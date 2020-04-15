@@ -102,6 +102,7 @@ contract Market is usingOraclize {
     function setCurrentPrice(uint _currentPrice) external {
       currentPrice = _currentPrice;
       currentPriceLocation = _getDistance(1) + 1;
+      setPrice();
     }
 
     function setPrice() public {
