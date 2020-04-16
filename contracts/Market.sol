@@ -203,6 +203,7 @@ contract Market is usingOraclize {
       require(msg.value >= minBet,"value less than min bet amount");
       uint _totalContribution = address(this).balance.sub(msg.value);
       uint betValue = _calculateBetValue(_prediction, msg.value, _totalContribution);
+      require(betValue > 0, "Stake too low");
       userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
