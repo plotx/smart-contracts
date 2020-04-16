@@ -21,10 +21,10 @@ contract MarketWeeklyMock is MarketMock {
       return optionPrice[_prediction];
     }
 
-    function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(_totalStaked > 20 ether) {
-        _optionPrice = (optionsAvailable[_option].ethStaked).mul(1000000)
+        _optionPrice = (_ethStakedOnOption).mul(1000000)
                       .div(_totalStaked.mul(40));
       }
 

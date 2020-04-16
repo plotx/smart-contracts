@@ -107,11 +107,11 @@ contract Market is usingOraclize {
 
     function setPrice() public {
       for(uint i = 1; i <= 7 ; i++) {
-        optionPrice[i] = _calculateOptionPrice(i, address(this).balance);
+        optionPrice[i] = _calculateOptionPrice(i, address(this).balance, optionsAvailable[i].ethStaked);
       }
     }
 
-    function _calculateOptionPrice(uint _option, uint _totalStaked) internal view returns(uint _optionPrice) {
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {;
     }
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
@@ -181,16 +181,19 @@ contract Market is usingOraclize {
     function _calculateBetValue(uint _prediction, uint _stake, uint _totalContribution) internal view returns(uint _betValue) {
       uint value;
       _betValue = 0;
+      uint flag = 0;
+      uint _ethStakedOnOption = optionsAvailable[_prediction].ethStaked;
       while(_stake > 0) {
-        if(_stake <= (priceStep.mul(10**18))) {
+        if(_stake <= (priceStep.mul(1 ether))) {
           value = uint(_stake).div(rate);
-          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution)));
+          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
           break;
         } else {
-          _stake = _stake.sub(priceStep.mul(10**18));
-          value = uint(priceStep.mul(10**18)).div(rate);
-          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution)));
-          _totalContribution = _totalContribution.add(priceStep.mul(10**18));
+          _stake = _stake.sub(priceStep.mul(1 ether));
+          value = uint(priceStep.mul(1 ether)).div(rate);
+          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
+          _totalContribution = _totalContribution.add(priceStep.mul(1 ether));
+          flag++;
         }
       } 
     }
