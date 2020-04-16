@@ -165,6 +165,7 @@ contract Market is usingOraclize {
         minvalue = new uint[](totalOptions);
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);
+        _ethStaked = new uint[](totalOptions);
        for (uint i = 0; i < totalOptions; i++) {
         _ethStaked[i] = optionsAvailable[i+1].ethStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
