@@ -111,7 +111,7 @@ contract Market is usingOraclize {
       }
     }
 
-    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {;
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
     }
 
     function _getDistance(uint _option) internal view returns(uint _distance) {
@@ -288,8 +288,8 @@ contract Market is usingOraclize {
       userClaimedReward[msg.sender] = true;
       uint userPoints;
       uint reward;
-      uint send= (rate).mul(2).div(100).mul(userPoints);
       userPoints = userBettingPoints[msg.sender][WinningOption];
+      uint send= (rate).mul(2).div(100).mul(userPoints);
       require(userPoints > 0,"must have atleast 0 points");
        if(rewardToDistribute == 0 && address(pl).balance > send){
            reward = ethStaked[msg.sender][WinningOption];
