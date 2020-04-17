@@ -91,7 +91,7 @@ contract Market is usingOraclize {
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
       setPrice();
-      // _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
+      // oraclize_query(expireTime, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
     }
 
     function () external payable {
@@ -314,25 +314,25 @@ contract Market is usingOraclize {
       _recipient.transfer(_amount);
     }
 
-    /**
-     * @dev oraclize query
-     * @param timestamp is the current timestamp
-     * @param datasource in concern
-     * @param arg in concern
-     * @param gasLimit required for query
-     * @return id of oraclize query
-     */
-    function _oraclizeQuery(
-        uint timestamp,
-        string memory datasource,
-        string memory arg,
-        uint gasLimit
-    ) 
-        internal
-        returns (bytes32 id)
-    {
-        id = oraclize_query(timestamp, datasource, arg, gasLimit);
-    }
+    // /**
+    //  * @dev oraclize query
+    //  * @param timestamp is the current timestamp
+    //  * @param datasource in concern
+    //  * @param arg in concern
+    //  * @param gasLimit required for query
+    //  * @return id of oraclize query
+    //  */
+    // function _oraclizeQuery(
+    //     uint timestamp,
+    //     string memory datasource,
+    //     string memory arg,
+    //     uint gasLimit
+    // ) 
+    //     internal
+    //     returns (bytes32 id)
+    // {
+    //     id = oraclize_query(timestamp, datasource, arg, gasLimit);
+    // }
 
     function __callback(bytes32 myid, string memory result) public {
         _closeBet(parseInt(result));
