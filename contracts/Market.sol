@@ -185,13 +185,13 @@ contract Market is usingOraclize {
       uint _ethStakedOnOption = optionsAvailable[_prediction].ethStaked;
       while(_stake > 0) {
         if(_stake <= (priceStep.mul(1 ether))) {
-          value = uint(_stake).div(rate);
-          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
+          value = (uint(_stake)).div(rate);
+          _betValue = _betValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
           break;
         } else {
           _stake = _stake.sub(priceStep.mul(1 ether));
-          value = uint(priceStep.mul(1 ether)).div(rate);
-          _betValue = _betValue.add(value.div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
+          value = (uint(priceStep.mul(1 ether))).div(rate);
+          _betValue = _betValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(priceStep.mul(1 ether)))));
           _totalContribution = _totalContribution.add(priceStep.mul(1 ether));
           flag++;
         }
@@ -290,7 +290,7 @@ contract Market is usingOraclize {
       uint userPoints;
       uint reward;
       userPoints = userBettingPoints[msg.sender][WinningOption];
-      uint send= (rate).mul(2).div(100).mul(userPoints);
+      uint send= ((rate).mul(2).div(100).mul(userPoints)).div(10**6);
       require(userPoints > 0,"must have atleast 0 points");
        if(rewardToDistribute == 0 && address(pl).balance > send){
            reward = ethStaked[msg.sender][WinningOption];
@@ -306,6 +306,7 @@ contract Market is usingOraclize {
           }
           reward =ethStaked[msg.sender][WinningOption].add(_rew);
        }
+       reward = reward.div(10**6);
        _transferEther(msg.sender, reward);
        pl.callClaimedEvent(msg.sender,reward.add(send));
     }
