@@ -290,7 +290,7 @@ contract Market is usingOraclize {
       uint userPoints;
       uint reward = 0;
       userPoints = userBettingPoints[msg.sender][WinningOption];
-      uint send= ((rate).mul(2).div(100).mul(userPoints.div(10**6))));
+      uint send= ((rate).mul(2).div(100).mul(userPoints.div(10**6)));
       require(userPoints > 0,"must have atleast 0 points");
        if(rewardToDistribute == 0 && address(pl).balance > send){
            pl.withdraw(send,msg.sender); 
