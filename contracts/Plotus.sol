@@ -19,7 +19,7 @@ using SafeMath for uint;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd, uint commision, uint donation);
-    event Claimed(address indexed marketAdd, address indexed user, uint reward);
+    event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
    
     modifier OnlyOwner() {
       require(msg.sender == owner);
@@ -86,8 +86,8 @@ using SafeMath for uint;
     function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public OnlyMarket {
       emit PlaceBet(_user, _value, _betPoints, _prediction, msg.sender);
     }
-    function callClaimedEvent(address _user , uint _reward) public OnlyMarket {
-      emit Claimed(msg.sender, _user, _reward);
+    function callClaimedEvent(address _user , uint _reward, uint _stake) public OnlyMarket {
+      emit Claimed(msg.sender, _user, _reward, _stake);
     }
 
     function getMarketDetails(address payable _marketAdd)public view returns

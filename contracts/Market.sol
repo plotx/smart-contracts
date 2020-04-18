@@ -16,7 +16,7 @@ contract IPlotus {
     
     function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public{
     }
-    function callClaimedEvent(address _user , uint _reward) public {
+    function callClaimedEvent(address _user , uint _reward, uint _stake) public {
     }
     function withdraw(uint amount,address payable _address) external {
     }
@@ -288,27 +288,27 @@ contract Market is usingOraclize {
       require(!userClaimedReward[msg.sender] && betClosed,"claimed alredy or bet is not closed yet");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
-      uint reward;
+      uint reward = 0;
       userPoints = userBettingPoints[msg.sender][WinningOption];
       uint send= ((rate).mul(2).div(100).mul(userPoints)).div(10**6);
       require(userPoints > 0,"must have atleast 0 points");
        if(rewardToDistribute == 0 && address(pl).balance > send){
-           reward = ethStaked[msg.sender][WinningOption];
            pl.withdraw(send,msg.sender); 
        }else if(rewardToDistribute == 0 && address(pl).balance < send){
-           reward = ethStaked[msg.sender][WinningOption];
+           send = 0;
        } else{
-          uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
+          send = 0;
+          reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
           uint maxReturnCap = maxReturn * ethStaked[msg.sender][WinningOption];
-          if(_rew > maxReturnCap) {
-            _transferEther(address(pl), _rew.sub(maxReturnCap));
-            _rew = maxReturnCap;
+          if(reward > maxReturnCap) {
+            _transferEther(address(pl), reward.sub(maxReturnCap));
+            reward = maxReturnCap;
           }
-          reward =ethStaked[msg.sender][WinningOption].add(_rew);
+          reward =reward.div(10**6);
        }
-       reward = reward.div(10**6);
-       _transferEther(msg.sender, reward);
-       pl.callClaimedEvent(msg.sender,reward.add(send));
+       // reward = reward.div(10**6);
+       _transferEther(msg.sender, ethStaked[msg.sender][WinningOption].add(reward));
+       pl.callClaimedEvent(msg.sender,reward.add(send), ethStaked[msg.sender][WinningOption]);
     }
 
     function _transferEther(address payable _recipient, uint _amount) internal {
