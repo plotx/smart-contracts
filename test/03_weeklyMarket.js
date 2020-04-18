@@ -15,7 +15,7 @@
 
 // const ONE_DAY = 24*3600
 
-// contract('hourly Market', function([
+// contract('weekly Market', function([
 //   user1,
 //   user2,
 //   user3,
@@ -39,7 +39,7 @@
 //         masterInstance = await Master.deployed();
 //         plotusNewAddress = await masterInstance.plotusAddress(); 
 //         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//         const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
 //         const length = addNewMarket.logs[0].args.marketAdd; 
 //         console.log("market",length)
 //         marketInstance = await Market.at(length);
@@ -66,7 +66,7 @@
 //         const options7 = await marketInstance.optionsAvailable(7);
 //         assert.equal(options7[0]/1,10251)
 //         assert.equal(options7[1]/1,1.157920892373162e+77)
-//         await increaseTime(600+11);
+//         await increaseTime(100800+11);
 //         await marketInstance.setCurrentPrice(10215);
 //         // console.log((await marketInstance._getDistance(1))/1)
 
@@ -135,7 +135,7 @@
 //         // const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,2);
 //         // assert.equal(getbrttingpoint8/1,0);
 //     })
-//     // 3 test case when all users bet on option 1 and all wins but the pool have zero balance. users will have own ether
+
 //     // 3 test case when all users bet on option 1 and all wins but the pool have zero balance. users will have own ether
 //     it('3. place bet from nine users with  and all users are correct. but pool have zero balance',async function(){
 
@@ -145,7 +145,7 @@
 //         masterInstance = await Master.deployed();
 //         plotusNewAddress = await masterInstance.plotusAddress(); 
 //         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//         const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
 //         const length = addNewMarket.logs[0].args.marketAdd; 
 //         console.log("market",length)
 //         marketInstance = await Market.at(length);
@@ -173,7 +173,7 @@
 //         assert.equal(options7[0]/1,10251)
 //         assert.equal(options7[1]/1,1.157920892373162e+77)
 
-//         await increaseTime(600+11);
+//         await increaseTime(100800+11);
 //         await marketInstance.setCurrentPrice(10215);
 //         // console.log((await marketInstance._getDistance(1))/1)
       
@@ -186,14 +186,17 @@
 //         assert.equal(getPrice,9)
 //         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
 //         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,2);
-//         assert.equal(getbrttingpoint/1,444);
+//         // assert.equal(getbrttingpoint/1,444);
+//         assert.equal(((getbrttingpoint/1)/1e6).toFixed(5),(444.4444444).toFixed(5));
+
 //         const getPrice11 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice11/1,9)
 //         await marketInstance.placeBet(2,{value: 6e18,from: user2});
 //         const getPrice1 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice1,9)
 //         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
-//         assert.equal(getbrttingpoint1/1,666);
+//         // assert.equal(getbrttingpoint1/1,666);
+//         assert.equal(((getbrttingpoint1/1)/1e6).toFixed(5),(666.6666667).toFixed(5));
   
         
 //         const getPrice21 = await marketInstance.getPrice(2);
@@ -202,8 +205,8 @@
 //         const getPrice2 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice2,9)
 //         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,2);
-//         assert.equal(getbrttingpoint2/1,222);
-  
+//         // assert.equal(getbrttingpoint2/1,222);
+//         assert.equal(((getbrttingpoint2/1)/1e6).toFixed(5),(222.2222222).toFixed(5));
         
 //         const getPrice31 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice31/1,9)
@@ -211,7 +214,8 @@
 //         const getPrice3 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice3/1,259)
 //         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,2);
-//         assert.equal(getbrttingpoint3/1,1111);
+//         // assert.equal(getbrttingpoint3/1,1111);
+//         assert.equal(((getbrttingpoint3/1)/1e6).toFixed(5),(1111.111111).toFixed(5));
   
         
 //         const getPrice14 = await marketInstance.getPrice(2);
@@ -220,7 +224,8 @@
 //         const getPrice4 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice4/1,259)//52
 //         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,2);
-//         assert.equal(getbrttingpoint4/1,11);
+//         // assert.equal(getbrttingpoint4/1,11);
+//         assert.equal(((getbrttingpoint4/1)/1e6).toFixed(5),(11.58301158).toFixed(5));
   
         
 //         const getPrice51 = await marketInstance.getPrice(2);
@@ -228,34 +233,30 @@
 //         assert.equal(getPrice51/1,259)
 //         await marketInstance.placeBet(2,{value: 2e18,from: user6});
 //         const getPrice5 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice5,259)//73
 //         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
-        
-//         assert.equal(getbrttingpoint5/1,7);
+//         // assert.equal(getbrttingpoint5/1,7);
+//         assert.equal(((getbrttingpoint5/1)/1e6).toFixed(5),(7.722007722).toFixed(5));
   
         
 //         const getPrice61 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice61/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user7});
 //         const getPrice62 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice62/1,259)
 //         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,2);
-        
-//         assert.equal(getbrttingpoint6/1,19);
+//         // assert.equal(getbrttingpoint6/1,19);
+//         assert.equal(((getbrttingpoint6/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice71 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice71/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user8});
 //         const getPrice7 = await marketInstance.getPrice(2);
-       
 //         assert.equal(getPrice7/1,259)
 //         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,2);
-        
-//         assert.equal(getbrttingpoint7/1,19);
+//         // assert.equal(getbrttingpoint7/1,19);
+//         assert.equal(((getbrttingpoint7/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice81 = await marketInstance.getPrice(2);
@@ -263,15 +264,14 @@
 //         assert.equal(getPrice81/1,259)
 //         await marketInstance.placeBet(2,{value: 7e18,from: user9}); 
 //         const getPrice8 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice8/1,259);
 //         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,2);
-       
-//         assert.equal(getbrttingpoint8/1,27);
+//         // assert.equal(getbrttingpoint8/1,27);
+//         assert.equal(((getbrttingpoint8/1)/1e6).toFixed(5),(27.02702703).toFixed(5));
 
 
 //         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         await increaseTime(3000);
+//         await increaseTime(504000);
 //         await marketInstance._closeBet(9790);
 
 //         const WinningOption = await marketInstance.WinningOption()
@@ -280,23 +280,23 @@
 //         const ClaimDonation1 = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
 //         assert.equal(ClaimDonation1/1,ClaimDonation/1);
 //         const RewardUser1 = await marketInstance.getReward(user1);
-//         assert.equal((RewardUser1/1)/1e18,4)
+//         assert.equal((RewardUser1/1)/1e18,0)
 //         const RewardUser2 = await marketInstance.getReward(user2);
-//         assert.equal((RewardUser2/1)/1e18,6)
+//         assert.equal((RewardUser2/1)/1e18,0)
 //         const RewardUser3 = await marketInstance.getReward(user3);
-//         assert.equal((RewardUser3/1)/1e18,2)
+//         assert.equal((RewardUser3/1)/1e18,0)
 //         const RewardUser4 = await marketInstance.getReward(user4);
-//         assert.equal((RewardUser4/1)/1e18,10);
+//         assert.equal((RewardUser4/1)/1e18,0);
 //         const RewardUser5 = await marketInstance.getReward(user5);
-//         assert.equal((RewardUser5/1)/1e18,3);
+//         assert.equal((RewardUser5/1)/1e18,0);
 //         const RewardUser6 = await marketInstance.getReward(user6);
-//         assert.equal((RewardUser6/1)/1e18,2);
+//         assert.equal((RewardUser6/1)/1e18,0);
 //         const RewardUser7 = await marketInstance.getReward(user7);
-//         assert.equal((RewardUser7/1)/1e18,5);
+//         assert.equal((RewardUser7/1)/1e18,0);
 //         const RewardUser8 = await marketInstance.getReward(user8);
-//         assert.equal((RewardUser8/1)/1e18,5);
+//         assert.equal((RewardUser8/1)/1e18,0);
 //         const RewardUser9 = await marketInstance.getReward(user9);
-//         assert.equal((RewardUser9/1)/1e18,7);
+//         assert.equal((RewardUser9/1)/1e18,0);
 
 
 //         // assert.equal(RewardUser5,5.946902655);
@@ -362,7 +362,7 @@
 //         plotusNewAddress = await masterInstance.plotusAddress(); 
 //         plotusNewInstance = await Plotus.at(plotusNewAddress);
 //         const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//         const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
 //         const length = addNewMarket.logs[0].args.marketAdd; 
 //         console.log("market",length)
 //         marketInstance = await Market.at(length);
@@ -390,11 +390,11 @@
 //         assert.equal(options7[0]/1,10251)
 //         assert.equal(options7[1]/1,1.157920892373162e+77)
         
-//         await increaseTime(600+11);
+//         await increaseTime(100800+11);
 //         await marketInstance.setCurrentPrice(10215);
 //         // console.log((await marketInstance._getDistance(1))/1)
       
-//         const getPrice0 = await marketInstance.getPrice(2);
+//          const getPrice0 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice0/1,9)
 //         const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
 //         await marketInstance.placeBet(2,{value: 4e18,from: user1});
@@ -403,14 +403,17 @@
 //         assert.equal(getPrice,9)
 //         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
 //         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,2);
-//         assert.equal(getbrttingpoint/1,444);
+//         // assert.equal(getbrttingpoint/1,444);
+//         assert.equal(((getbrttingpoint/1)/1e6).toFixed(5),(444.4444444).toFixed(5));
+
 //         const getPrice11 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice11/1,9)
 //         await marketInstance.placeBet(2,{value: 6e18,from: user2});
 //         const getPrice1 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice1,9)
 //         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
-//         assert.equal(getbrttingpoint1/1,666);
+//         // assert.equal(getbrttingpoint1/1,666);
+//         assert.equal(((getbrttingpoint1/1)/1e6).toFixed(5),(666.6666667).toFixed(5));
   
         
 //         const getPrice21 = await marketInstance.getPrice(2);
@@ -419,8 +422,8 @@
 //         const getPrice2 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice2,9)
 //         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,2);
-//         assert.equal(getbrttingpoint2/1,222);
-  
+//         // assert.equal(getbrttingpoint2/1,222);
+//         assert.equal(((getbrttingpoint2/1)/1e6).toFixed(5),(222.2222222).toFixed(5));
         
 //         const getPrice31 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice31/1,9)
@@ -428,7 +431,8 @@
 //         const getPrice3 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice3/1,259)
 //         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,2);
-//         assert.equal(getbrttingpoint3/1,1111);
+//         // assert.equal(getbrttingpoint3/1,1111);
+//         assert.equal(((getbrttingpoint3/1)/1e6).toFixed(5),(1111.111111).toFixed(5));
   
         
 //         const getPrice14 = await marketInstance.getPrice(2);
@@ -437,7 +441,8 @@
 //         const getPrice4 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice4/1,259)//52
 //         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,2);
-//         assert.equal(getbrttingpoint4/1,11);
+//         // assert.equal(getbrttingpoint4/1,11);
+//         assert.equal(((getbrttingpoint4/1)/1e6).toFixed(5),(11.58301158).toFixed(5));
   
         
 //         const getPrice51 = await marketInstance.getPrice(2);
@@ -445,34 +450,30 @@
 //         assert.equal(getPrice51/1,259)
 //         await marketInstance.placeBet(2,{value: 2e18,from: user6});
 //         const getPrice5 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice5,259)//73
 //         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
-        
-//         assert.equal(getbrttingpoint5/1,7);
+//         // assert.equal(getbrttingpoint5/1,7);
+//         assert.equal(((getbrttingpoint5/1)/1e6).toFixed(5),(7.722007722).toFixed(5));
   
         
 //         const getPrice61 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice61/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user7});
 //         const getPrice62 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice62/1,259)
 //         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,2);
-        
-//         assert.equal(getbrttingpoint6/1,19);
+//         // assert.equal(getbrttingpoint6/1,19);
+//         assert.equal(((getbrttingpoint6/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice71 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice71/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user8});
 //         const getPrice7 = await marketInstance.getPrice(2);
-       
 //         assert.equal(getPrice7/1,259)
 //         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,2);
-        
-//         assert.equal(getbrttingpoint7/1,19);
+//         // assert.equal(getbrttingpoint7/1,19);
+//         assert.equal(((getbrttingpoint7/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice81 = await marketInstance.getPrice(2);
@@ -480,13 +481,12 @@
 //         assert.equal(getPrice81/1,259)
 //         await marketInstance.placeBet(2,{value: 7e18,from: user9}); 
 //         const getPrice8 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice8/1,259);
 //         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,2);
+//         assert.equal(((getbrttingpoint8/1)/1e6).toFixed(5),(27.02702703).toFixed(5));
        
-//         assert.equal(getbrttingpoint8/1,27);
 //         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         await increaseTime(3000);
+//         await increaseTime(504000);
 //         // await marketInstance._closeBet(9790);
 //         const balanceOfPool = await web3.eth.getBalance(length);
 //         const balancePlBefore = await web3.eth.getBalance(plotusNewAddress);
@@ -523,7 +523,7 @@
 //         assert.equal(((balancePlBefore1/1)/1e18).toFixed(6),(((balancePlBefore11/1)/1e18)/1+42.24).toFixed(6))
       
 //     })
-//     // 5 test case for when opion 2 win but all sers placing bet on option 2.
+//     // // 5 test case for when opion 2 win but all sers placing bet on option 2.
 //     it('5. place bet from nine users all users win the bet and pool have balance',async function() {
       
 //         let nowTime = await latestTime();
@@ -532,7 +532,7 @@
 //         masterInstance = await Master.deployed();
 //         plotusNewAddress = await masterInstance.plotusAddress(); 
 //         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//         const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
 //         const length = addNewMarket.logs[0].args.marketAdd; 
 //         console.log("market",length);
 //         const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
@@ -561,11 +561,11 @@
 //         assert.equal(options7[0]/1,10251)
 //         assert.equal(options7[1]/1,1.157920892373162e+77)
         
-//         await increaseTime(600+11);
+//         await increaseTime(100800+11);
 //         await marketInstance.setCurrentPrice(10215);
 //         // console.log((await marketInstance._getDistance(1))/1)
       
-//         const getPrice0 = await marketInstance.getPrice(2);
+//          const getPrice0 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice0/1,9)
 //         const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
 //         await marketInstance.placeBet(2,{value: 4e18,from: user1});
@@ -574,14 +574,17 @@
 //         assert.equal(getPrice,9)
 //         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
 //         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,2);
-//         assert.equal(getbrttingpoint/1,444);
+//         // assert.equal(getbrttingpoint/1,444);
+//         assert.equal(((getbrttingpoint/1)/1e6).toFixed(5),(444.4444444).toFixed(5));
+
 //         const getPrice11 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice11/1,9)
 //         await marketInstance.placeBet(2,{value: 6e18,from: user2});
 //         const getPrice1 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice1,9)
 //         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
-//         assert.equal(getbrttingpoint1/1,666);
+//         // assert.equal(getbrttingpoint1/1,666);
+//         assert.equal(((getbrttingpoint1/1)/1e6).toFixed(5),(666.6666667).toFixed(5));
   
         
 //         const getPrice21 = await marketInstance.getPrice(2);
@@ -590,8 +593,8 @@
 //         const getPrice2 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice2,9)
 //         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,2);
-//         assert.equal(getbrttingpoint2/1,222);
-  
+//         // assert.equal(getbrttingpoint2/1,222);
+//         assert.equal(((getbrttingpoint2/1)/1e6).toFixed(5),(222.2222222).toFixed(5));
         
 //         const getPrice31 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice31/1,9)
@@ -599,7 +602,8 @@
 //         const getPrice3 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice3/1,259)
 //         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,2);
-//         assert.equal(getbrttingpoint3/1,1111);
+//         // assert.equal(getbrttingpoint3/1,1111);
+//         assert.equal(((getbrttingpoint3/1)/1e6).toFixed(5),(1111.111111).toFixed(5));
   
         
 //         const getPrice14 = await marketInstance.getPrice(2);
@@ -608,7 +612,8 @@
 //         const getPrice4 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice4/1,259)//52
 //         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,2);
-//         assert.equal(getbrttingpoint4/1,11);
+//         // assert.equal(getbrttingpoint4/1,11);
+//         assert.equal(((getbrttingpoint4/1)/1e6).toFixed(5),(11.58301158).toFixed(5));
   
         
 //         const getPrice51 = await marketInstance.getPrice(2);
@@ -616,34 +621,30 @@
 //         assert.equal(getPrice51/1,259)
 //         await marketInstance.placeBet(2,{value: 2e18,from: user6});
 //         const getPrice5 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice5,259)//73
 //         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
-        
-//         assert.equal(getbrttingpoint5/1,7);
+//         // assert.equal(getbrttingpoint5/1,7);
+//         assert.equal(((getbrttingpoint5/1)/1e6).toFixed(5),(7.722007722).toFixed(5));
   
         
 //         const getPrice61 = await marketInstance.getPrice(2);
 //         assert.equal(getPrice61/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user7});
 //         const getPrice62 = await marketInstance.getPrice(2);
-        
 //         assert.equal(getPrice62/1,259)
 //         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,2);
-        
-//         assert.equal(getbrttingpoint6/1,19);
+//         // assert.equal(getbrttingpoint6/1,19);
+//         assert.equal(((getbrttingpoint6/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice71 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice71/1,259)
 //         await marketInstance.placeBet(2,{value: 5e18,from: user8});
 //         const getPrice7 = await marketInstance.getPrice(2);
-       
 //         assert.equal(getPrice7/1,259)
 //         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,2);
-        
-//         assert.equal(getbrttingpoint7/1,19);
+//         // assert.equal(getbrttingpoint7/1,19);
+//         assert.equal(((getbrttingpoint7/1)/1e6).toFixed(5),(19.30501931).toFixed(5));
   
         
 //         const getPrice81 = await marketInstance.getPrice(2);
@@ -651,14 +652,13 @@
 //         assert.equal(getPrice81/1,259)
 //         await marketInstance.placeBet(2,{value: 7e18,from: user9}); 
 //         const getPrice8 = await marketInstance.getPrice(2);
-         
 //         assert.equal(getPrice8/1,259);
 //         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,2);
-       
-//         assert.equal(getbrttingpoint8/1,27);
+//         // assert.equal(getbrttingpoint8/1,27);
+//         assert.equal(((getbrttingpoint8/1)/1e6).toFixed(5),(27.02702703).toFixed(5));
 
 //         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567");
-//         await increaseTime(3000);
+//         await increaseTime(504000);
 //         const balanceOfPool = await web3.eth.getBalance(length);
 
 //         const balancePlBefore = await web3.eth.getBalance(plotusNewAddress);
@@ -670,23 +670,23 @@
 //         assert.equal(ClaimDonation1/1,ClaimDonation/1);
 
 //         const RewardUser1 = await marketInstance.getReward(user1);
-//         assert.equal((RewardUser1/1)/1e18,4.00888)
+//         assert.equal((RewardUser1/1)/1e18,0.00888)
 //         const RewardUser2 = await marketInstance.getReward(user2); 
-//         assert.equal((RewardUser2/1)/1e18,6.01332)      
+//         assert.equal((RewardUser2/1)/1e18,0.01332)      
 //         const RewardUser3 = await marketInstance.getReward(user3);
-//         assert.equal((RewardUser3/1)/1e18,2.00444)
+//         assert.equal((RewardUser3/1)/1e18,0.00444)
 //         const RewardUser4 = await marketInstance.getReward(user4);
-//         assert.equal((RewardUser4/1)/1e18,10.02222)
+//         assert.equal((RewardUser4/1)/1e18,0.02222)
 //         const RewardUser5 = await marketInstance.getReward(user5);
-//         assert.equal((RewardUser5/1)/1e18,3.00022)
+//         assert.equal((RewardUser5/1)/1e18,0.00022)
 //         const RewardUser6 = await marketInstance.getReward(user6)
-//         assert.equal((RewardUser6/1)/1e18,2.00014)
+//         assert.equal((RewardUser6/1)/1e18,0.00014)
 //         const RewardUser7 = await marketInstance.getReward(user7);
-//         assert.equal((RewardUser7/1)/1e18,5.00038)
+//         assert.equal((RewardUser7/1)/1e18,0.00038)
 //         const RewardUser8 = await marketInstance.getReward(user8);
-//         assert.equal((RewardUser8/1)/1e18,5.00038)
+//         assert.equal((RewardUser8/1)/1e18,0.00038)
 //         const RewardUser9 = await marketInstance.getReward(user9);
-//         assert.equal((RewardUser9/1)/1e18,7.00054);
+//         assert.equal((RewardUser9/1)/1e18,0.00054);
 
 //         await marketInstance.claimReward({from: user1});
 //         await marketInstance.claimReward({from: user2});
@@ -754,455 +754,454 @@
 //     })
 
     
-//     it('1. place bet from nine users with 2% commision and 2% donation',async function(){
+//     // it('1. place bet from nine users with 2% commision and 2% donation',async function(){
 
-//         let nowTime = await latestTime();
-//         nowTime = parseInt(nowTime);
-//         const start = nowTime/1 + 10;
-//         masterInstance = await Master.deployed();
-//         plotusNewAddress = await masterInstance.plotusAddress(); 
-//         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const balancePlBefore1 = await web3.eth.getBalance(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
-//         const length = addNewMarket.logs[0].args.marketAdd; 
-//         console.log("market",length)
-//         marketInstance = await Market.at(length);
-//         assert.ok(marketInstance);
-//         const addressOfMarket = marketInstance.address;
-//         const options1 = await marketInstance.optionsAvailable(1);
-//         assert.equal(options1[0]/1,0)
-//         assert.equal(options1[1]/1,9749)
-//         const options2 = await marketInstance.optionsAvailable(2);
-//         assert.equal(options2[0]/1,9750)
-//         assert.equal(options2[1]/1,9849)
-//         const options3 = await marketInstance.optionsAvailable(3);
-//         assert.equal(options3[0]/1,9850)
-//         assert.equal(options3[1]/1,9949)
-//         const options4 = await marketInstance.optionsAvailable(4);
-//         assert.equal(options4[0]/1,9950)
-//         assert.equal(options4[1]/1,10050)
-//         const options5 = await marketInstance.optionsAvailable(5);
-//         assert.equal(options5[0]/1,10051)
-//         assert.equal(options5[1]/1,10150)
-//         const options6 = await marketInstance.optionsAvailable(6);
-//         assert.equal(options6[0]/1,10151)
-//         assert.equal(options6[1]/1,10250)
-//         const options7 = await marketInstance.optionsAvailable(7);
-//         assert.equal(options7[0]/1,10251)
-//         assert.equal(options7[1]/1,1.157920892373162e+77)
+//     //     let nowTime = await latestTime();
+//     //     nowTime = parseInt(nowTime);
+//     //     const start = nowTime/1 + 10;
+//     //     masterInstance = await Master.deployed();
+//     //     plotusNewAddress = await masterInstance.plotusAddress(); 
+//     //     plotusNewInstance = await Plotus.at(plotusNewAddress);
+//     //     const balancePlBefore1 = await web3.eth.getBalance(plotusNewAddress);
+//     //     const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//     //     const length = addNewMarket.logs[0].args.marketAdd; 
+//     //     console.log("market",length)
+//     //     marketInstance = await Market.at(length);
+//     //     assert.ok(marketInstance);
+//     //     const addressOfMarket = marketInstance.address;
+//     //     const options1 = await marketInstance.optionsAvailable(1);
+//     //     assert.equal(options1[0]/1,0)
+//     //     assert.equal(options1[1]/1,9749)
+//     //     const options2 = await marketInstance.optionsAvailable(2);
+//     //     assert.equal(options2[0]/1,9750)
+//     //     assert.equal(options2[1]/1,9849)
+//     //     const options3 = await marketInstance.optionsAvailable(3);
+//     //     assert.equal(options3[0]/1,9850)
+//     //     assert.equal(options3[1]/1,9949)
+//     //     const options4 = await marketInstance.optionsAvailable(4);
+//     //     assert.equal(options4[0]/1,9950)
+//     //     assert.equal(options4[1]/1,10050)
+//     //     const options5 = await marketInstance.optionsAvailable(5);
+//     //     assert.equal(options5[0]/1,10051)
+//     //     assert.equal(options5[1]/1,10150)
+//     //     const options6 = await marketInstance.optionsAvailable(6);
+//     //     assert.equal(options6[0]/1,10151)
+//     //     assert.equal(options6[1]/1,10250)
+//     //     const options7 = await marketInstance.optionsAvailable(7);
+//     //     assert.equal(options7[0]/1,10251)
+//     //     assert.equal(options7[1]/1,1.157920892373162e+77)
 
-//         await increaseTime(600+11);
-//         await marketInstance.setCurrentPrice(10215);
-//         // console.log((await marketInstance._getDistance(1))/1)
+//     //     await increaseTime(100800+11);
+//     //     await marketInstance.setCurrentPrice(10215);
+//     //     // console.log((await marketInstance._getDistance(1))/1)
       
-//         const getPrice0 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice0/1,4)
-//         // const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
-//         await marketInstance.placeBet(1,{value: 4e18,from: user1});
-//         const user1BalanceAfterBet = await web3.eth.getBalance(user1)
-//         const getPrice = await marketInstance.getPrice(1);
-//         assert.equal(getPrice,4)
-//         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
-//         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
-//         // console.log("user1",getbrttingpoint/1)
-//         assert.equal(getbrttingpoint/1,1000);
-//         // const getprice
+//     //     const getPrice0 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice0/1,4)
+//     //     // const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
+//     //     await marketInstance.placeBet(1,{value: 4e18,from: user1});
+//     //     const user1BalanceAfterBet = await web3.eth.getBalance(user1)
+//     //     const getPrice = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice,4)
+//     //     const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
+//     //     const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
+//     //     // console.log("user1",getbrttingpoint/1)
+//     //     assert.equal(getbrttingpoint/1,1000);
+//     //     // const getprice
   
         
-//         const getPrice11 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice11/1,9)
-//         await marketInstance.placeBet(2,{value: 6e18,from: user2});
-//         const getPrice1 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice1,9)
-//         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
-//         assert.equal(getbrttingpoint1/1,666);
-//         // console.log("user2",getbrttingpoint1/1)
+//     //     const getPrice11 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice11/1,9)
+//     //     await marketInstance.placeBet(2,{value: 6e18,from: user2});
+//     //     const getPrice1 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice1,9)
+//     //     const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
+//     //     assert.equal(getbrttingpoint1/1,666);
+//     //     // console.log("user2",getbrttingpoint1/1)
   
         
-//         const getPrice21 = await marketInstance.getPrice(3);
-//         assert.equal(getPrice21/1,13)
-//         await marketInstance.placeBet(3,{value: 2e18,from: user3});
-//         const getPrice2 = await marketInstance.getPrice(3);
-//         assert.equal(getPrice2,13)
-//         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
-//         assert.equal(getbrttingpoint2/1,153);
-//         // console.log("user3",getbrttingpoint2/1)
+//     //     const getPrice21 = await marketInstance.getPrice(3);
+//     //     assert.equal(getPrice21/1,13)
+//     //     await marketInstance.placeBet(3,{value: 2e18,from: user3});
+//     //     const getPrice2 = await marketInstance.getPrice(3);
+//     //     assert.equal(getPrice2,13)
+//     //     const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
+//     //     assert.equal(getbrttingpoint2/1,153);
+//     //     // console.log("user3",getbrttingpoint2/1)
   
         
-//         const getPrice31 = await marketInstance.getPrice(4);
-//         assert.equal(getPrice31/1,18)
-//         await marketInstance.placeBet(4,{value: 1e19,from: user4});
-//         const getPrice3 = await marketInstance.getPrice(4);
-//         assert.equal(getPrice3/1,132)
-//         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
-//         assert.equal(getbrttingpoint3/1,555);
-//         // console.log("user4",getbrttingpoint3/1)
+//     //     const getPrice31 = await marketInstance.getPrice(4);
+//     //     assert.equal(getPrice31/1,18)
+//     //     await marketInstance.placeBet(4,{value: 1e19,from: user4});
+//     //     const getPrice3 = await marketInstance.getPrice(4);
+//     //     assert.equal(getPrice3/1,132)
+//     //     const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
+//     //     assert.equal(getbrttingpoint3/1,555);
+//     //     // console.log("user4",getbrttingpoint3/1)
   
         
-//         const getPrice14 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice14,50)
-//         await marketInstance.placeBet(1,{value: 3e18,from: user5});
-//         const getPrice4 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice4/1,74)//52
-//         // const afterPlaceBetUser1 = await web3.eth.getBalance(user5);
-//         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,1);
-//         assert.equal(getbrttingpoint4/1,60);
-//         // console.log("user5",getbrttingpoint4/1)
+//     //     const getPrice14 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice14,50)
+//     //     await marketInstance.placeBet(1,{value: 3e18,from: user5});
+//     //     const getPrice4 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice4/1,74)//52
+//     //     // const afterPlaceBetUser1 = await web3.eth.getBalance(user5);
+//     //     const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,1);
+//     //     assert.equal(getbrttingpoint4/1,60);
+//     //     // console.log("user5",getbrttingpoint4/1)
   
         
-//         const getPrice51 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice51/1,69)
-//         await marketInstance.placeBet(2,{value: 2e18,from: user6});
-//         const getPrice5 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice5,83)//73
-//         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
-//         assert.equal(getbrttingpoint5/1,28);
-//         // console.log("user6",getbrttingpoint5/1)
+//     //     const getPrice51 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice51/1,69)
+//     //     await marketInstance.placeBet(2,{value: 2e18,from: user6});
+//     //     const getPrice5 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice5,83)//73
+//     //     const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
+//     //     assert.equal(getbrttingpoint5/1,28);
+//     //     // console.log("user6",getbrttingpoint5/1)
   
         
-//         const getPrice61 = await marketInstance.getPrice(5);
-//         assert.equal(getPrice61/1,23)
-//         await marketInstance.placeBet(5,{value: 5e18,from: user7});
-//         const getPrice62 = await marketInstance.getPrice(5);
-//         assert.equal(getPrice62/1,62)
-//         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
-//         assert.equal(getbrttingpoint6/1,217);
-//         // console.log("user7",getbrttingpoint6/1)
+//     //     const getPrice61 = await marketInstance.getPrice(5);
+//     //     assert.equal(getPrice61/1,23)
+//     //     await marketInstance.placeBet(5,{value: 5e18,from: user7});
+//     //     const getPrice62 = await marketInstance.getPrice(5);
+//     //     assert.equal(getPrice62/1,62)
+//     //     const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
+//     //     assert.equal(getbrttingpoint6/1,217);
+//     //     // console.log("user7",getbrttingpoint6/1)
   
         
-//         const getPrice71 = await marketInstance.getPrice(6);
-//         assert.equal(getPrice71/1,27)
-//         await marketInstance.placeBet(6,{value: 5e18,from: user8});
-//         const getPrice7 = await marketInstance.getPrice(6);
-//         assert.equal(getPrice7/1,61)
-//         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
-//         assert.equal(getbrttingpoint7/1,185);
-//         // console.log("user8",getbrttingpoint7/1)
+//     //     const getPrice71 = await marketInstance.getPrice(6);
+//     //     assert.equal(getPrice71/1,27)
+//     //     await marketInstance.placeBet(6,{value: 5e18,from: user8});
+//     //     const getPrice7 = await marketInstance.getPrice(6);
+//     //     assert.equal(getPrice7/1,61)
+//     //     const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
+//     //     assert.equal(getbrttingpoint7/1,185);
+//     //     // console.log("user8",getbrttingpoint7/1)
   
         
-//         const getPrice81 = await marketInstance.getPrice(7);
-//         assert.equal(getPrice81/1,23)
-//         await marketInstance.placeBet(7,{value: 7e18,from: user9}); 
-//         const getPrice8 = await marketInstance.getPrice(7);
-//         assert.equal(getPrice8/1,62);
-//         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);
-//         assert.equal(getbrttingpoint8/1,304);
-//         // console.log("user9",getbrttingpoint8/1)
+//     //     const getPrice81 = await marketInstance.getPrice(7);
+//     //     assert.equal(getPrice81/1,23)
+//     //     await marketInstance.placeBet(7,{value: 7e18,from: user9}); 
+//     //     const getPrice8 = await marketInstance.getPrice(7);
+//     //     assert.equal(getPrice8/1,62);
+//     //     const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);
+//     //     assert.equal(getbrttingpoint8/1,304);
+//     //     // console.log("user9",getbrttingpoint8/1)
 
 
-//         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         await increaseTime(3000);
-//         await marketInstance._closeBet(100);
-//         // const check = await marketInstance.getReward(user1);
-//         const ClaimDonation1 = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         assert.equal(ClaimDonation1/1,ClaimDonation/1+1.48e+18);
-//         const RewardUser1 = await marketInstance.getReward(user1);
-//         assert.equal((RewardUser1/1)/1e18,24);
-//         const RewardUser5 = await marketInstance.getReward(user5);
-//         // console.log((RewardUser5/1)/1e18)
-//         assert.equal(((RewardUser5/1)/1e18).toFixed(6),(5.010566038).toFixed(6));
-//         // const beforeClaimUser1 = await web3.eth.getBalance(user1);
-//         await marketInstance.claimReward({from: user1});
-//         // // console.log("reward of user5",await marketInstance.getReward(user1)/1)
-//         // // const txInfo = await marketInstance.getReward(user1);
-//         // // const tx = await web3.eth.getTransaction(txInfo.tx);
-//         // // const gasCost1 = tx.gasPrice * txInfo.receipt.gasUsed;
-//         // // console.log("gas ",(gasCost1/1)/1e18);
-//         // const afterClaimUser1 = await web3.eth.getBalance(user1);
-//         // // console
-//         // assert.equal(((afterClaimUser1)/1e18).toFixed(2),(((beforeClaimUser1)/1e18)/1+24-0.00108296).toFixed(2))
-//         // // const beforeClaimUser5 = await web3.eth.getBalance(user5);
-//         await marketInstance.claimReward({from: user5});
-//         const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
-//         assert.equal(((balancePlBefore11/1)/1e18).toFixed(6),(((balancePlBefore1/1)/1e18)/1+13.50943396).toFixed(6))
-//     })
-
-
-//     it('2. place bet from nine users with 0% commision and 0% donation',async function(){
-
-//         let nowTime = await latestTime();
-//         nowTime = parseInt(nowTime);
-//         const start = nowTime/1 + 10;
-//         masterInstance = await Master.deployed();
-//         plotusNewAddress = await masterInstance.plotusAddress(); 
-//         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const balancePlBefore1 = await web3.eth.getBalance(plotusNewAddress);
-//         // console.log("plotus balance in starting  case 2 ",(balancePlBefore1/1)/1e18)
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,0,7,1000000000000000,10000,0,0,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
-//         const length = addNewMarket.logs[0].args.marketAdd; 
-//         console.log("market",length)
-//         marketInstance = await Market.at(length);
-//         assert.ok(marketInstance);
-//         const addressOfMarket = marketInstance.address;
-//         const options1 = await marketInstance.optionsAvailable(1);
-//         assert.equal(options1[0]/1,0)
-//         assert.equal(options1[1]/1,9749)
-//         const options2 = await marketInstance.optionsAvailable(2);
-//         assert.equal(options2[0]/1,9750)
-//         assert.equal(options2[1]/1,9849)
-//         const options3 = await marketInstance.optionsAvailable(3);
-//         assert.equal(options3[0]/1,9850)
-//         assert.equal(options3[1]/1,9949)
-//         const options4 = await marketInstance.optionsAvailable(4);
-//         assert.equal(options4[0]/1,9950)
-//         assert.equal(options4[1]/1,10050)
-//         const options5 = await marketInstance.optionsAvailable(5);
-//         assert.equal(options5[0]/1,10051)
-//         assert.equal(options5[1]/1,10150)
-//         const options6 = await marketInstance.optionsAvailable(6);
-//         assert.equal(options6[0]/1,10151)
-//         assert.equal(options6[1]/1,10250)
-//         const options7 = await marketInstance.optionsAvailable(7);
-//         assert.equal(options7[0]/1,10251)
-//         assert.equal(options7[1]/1,1.157920892373162e+77)
-
-//         await increaseTime(600+11);
-//         await marketInstance.setCurrentPrice(10215);
-//         // console.log((await marketInstance._getDistance(1))/1)
-      
-//         const getPrice0 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice0/1,4)
-//         // const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
-//         await marketInstance.placeBet(1,{value: 4e18,from: user1});
-//         const user1BalanceAfterBet = await web3.eth.getBalance(user1)
-//         const getPrice = await marketInstance.getPrice(1);
-//         assert.equal(getPrice,4)
-//         const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
-//         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
-//         // console.log("user1",getbrttingpoint/1)
-//         assert.equal(getbrttingpoint/1,1000);
-//         // const getprice
-  
-        
-//         const getPrice11 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice11/1,9)
-//         await marketInstance.placeBet(2,{value: 6e18,from: user2});
-//         const getPrice1 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice1,9)
-//         const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
-//         assert.equal(getbrttingpoint1/1,666);
-//         // console.log("user2",getbrttingpoint1/1)
-  
-        
-//         const getPrice21 = await marketInstance.getPrice(3);
-//         assert.equal(getPrice21/1,13)
-//         await marketInstance.placeBet(3,{value: 2e18,from: user3});
-//         const getPrice2 = await marketInstance.getPrice(3);
-//         assert.equal(getPrice2,13)
-//         const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
-//         assert.equal(getbrttingpoint2/1,153);
-//         // console.log("user3",getbrttingpoint2/1)
-  
-        
-//         const getPrice31 = await marketInstance.getPrice(4);
-//         assert.equal(getPrice31/1,18)
-//         await marketInstance.placeBet(4,{value: 1e19,from: user4});
-//         const getPrice3 = await marketInstance.getPrice(4);
-//         assert.equal(getPrice3/1,132)
-//         const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
-//         assert.equal(getbrttingpoint3/1,555);
-//         // console.log("user4",getbrttingpoint3/1)
-  
-        
-//         const getPrice14 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice14,50)
-//         await marketInstance.placeBet(1,{value: 3e18,from: user5});
-//         const getPrice4 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice4/1,74)//52
-//         // const afterPlaceBetUser1 = await web3.eth.getBalance(user5);
-//         const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,1);
-//         assert.equal(getbrttingpoint4/1,60);
-//         // console.log("user5",getbrttingpoint4/1)
-  
-        
-//         const getPrice51 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice51/1,69)
-//         await marketInstance.placeBet(2,{value: 2e18,from: user6});
-//         const getPrice5 = await marketInstance.getPrice(2);
-//         assert.equal(getPrice5,83)//73
-//         const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
-//         assert.equal(getbrttingpoint5/1,28);
-//         // console.log("user6",getbrttingpoint5/1)
-  
-        
-//         const getPrice61 = await marketInstance.getPrice(5);
-//         assert.equal(getPrice61/1,23)
-//         await marketInstance.placeBet(5,{value: 5e18,from: user7});
-//         const getPrice62 = await marketInstance.getPrice(5);
-//         assert.equal(getPrice62/1,62)
-//         const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
-//         assert.equal(getbrttingpoint6/1,217);
-//         // console.log("user7",getbrttingpoint6/1)
-  
-        
-//         const getPrice71 = await marketInstance.getPrice(6);
-//         assert.equal(getPrice71/1,27)
-//         await marketInstance.placeBet(6,{value: 5e18,from: user8});
-//         const getPrice7 = await marketInstance.getPrice(6);
-//         assert.equal(getPrice7/1,61)
-//         const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
-//         assert.equal(getbrttingpoint7/1,185);
-//         // console.log("user8",getbrttingpoint7/1)
-  
-        
-//         const getPrice81 = await marketInstance.getPrice(7);
-//         assert.equal(getPrice81/1,23)
-//         await marketInstance.placeBet(7,{value: 7e18,from: user9}); 
-//         const getPrice8 = await marketInstance.getPrice(7);
-//         assert.equal(getPrice8/1,62);
-//         const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);
-//         assert.equal(getbrttingpoint8/1,304);
-//         // console.log("user9",getbrttingpoint8/1)
-
-
-//         const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         await increaseTime(3000);
-//         await marketInstance._closeBet(100);
-//         // const check = await marketInstance.getReward(user1);
-//         const ClaimDonation1 = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
-//         assert.equal(ClaimDonation1/1,ClaimDonation/1);
-//         const RewardUser1 = await marketInstance.getReward(user1);
-//         assert.equal((RewardUser1/1)/1e18,24);
-//         const RewardUser5 = await marketInstance.getReward(user5);
-//         // console.log((RewardUser5/1)/1e18)
-//         assert.equal(((RewardUser5/1)/1e18).toFixed(6),(5.094339623).toFixed(6));
-//         // const beforeClaimUser1 = await web3.eth.getBalance(user1);
-//         await marketInstance.claimReward({from: user1});
-//         // // console.log("reward of user5",await marketInstance.getReward(user1)/1)
-//         // // const txInfo = await marketInstance.getReward(user1);
-//         // // const tx = await web3.eth.getTransaction(txInfo.tx);
-//         // // const gasCost1 = tx.gasPrice * txInfo.receipt.gasUsed;
-//         // // console.log("gas ",(gasCost1/1)/1e18);
-//         // const afterClaimUser1 = await web3.eth.getBalance(user1);
-//         // // console
-//         // assert.equal(((afterClaimUser1)/1e18).toFixed(2),(((beforeClaimUser1)/1e18)/1+24-0.00108296).toFixed(2))
-//         // // const beforeClaimUser5 = await web3.eth.getBalance(user5);
-//         await marketInstance.claimReward({from: user5});
-//         const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
-//         // console.log("plotus balance",(balancePlBefore11/1)/1e18);
-//         assert.equal(((balancePlBefore11/1)/1e18).toFixed(6),(((balancePlBefore1/1)/1e18)/1+14.90566038).toFixed(6))
-//         // assert.equal(((paisa1/1)/1e18).toFixed(6),(((paisa11/1)/1e18)/1+14.90566038).toFixed(6))
-//     })
+//     //     const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
+//     //     await increaseTime(504000);
+//     //     await marketInstance._closeBet(100);
+//     //     // const check = await marketInstance.getReward(user1);
+//     //     const ClaimDonation1 = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
+//     //     assert.equal(ClaimDonation1/1,ClaimDonation/1+1.48e+18);
+//     //     const RewardUser1 = await marketInstance.getReward(user1);
+//     //     assert.equal((RewardUser1/1)/1e18,24);
+//     //     const RewardUser5 = await marketInstance.getReward(user5);
+//     //     // console.log((RewardUser5/1)/1e18)
+//     //     assert.equal(((RewardUser5/1)/1e18).toFixed(6),(5.010566038).toFixed(6));
+//     //     // const beforeClaimUser1 = await web3.eth.getBalance(user1);
+//     //     await marketInstance.claimReward({from: user1});
+//     //     // // console.log("reward of user5",await marketInstance.getReward(user1)/1)
+//     //     // // const txInfo = await marketInstance.getReward(user1);
+//     //     // // const tx = await web3.eth.getTransaction(txInfo.tx);
+//     //     // // const gasCost1 = tx.gasPrice * txInfo.receipt.gasUsed;
+//     //     // // console.log("gas ",(gasCost1/1)/1e18);
+//     //     // const afterClaimUser1 = await web3.eth.getBalance(user1);
+//     //     // // console
+//     //     // assert.equal(((afterClaimUser1)/1e18).toFixed(2),(((beforeClaimUser1)/1e18)/1+24-0.00108296).toFixed(2))
+//     //     // // const beforeClaimUser5 = await web3.eth.getBalance(user5);
+//     //     await marketInstance.claimReward({from: user5});
+//     //     const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
+//     //     assert.equal(((balancePlBefore11/1)/1e18).toFixed(6),(((balancePlBefore1/1)/1e18)/1+13.50943396).toFixed(6))
+//     // })
     
-//     it("6. If user invest large amount of ether.",async function(){
-//         let nowTime = await latestTime();
-//         nowTime = parseInt(nowTime);
-//         const start = nowTime/1 + 10;
-//         masterInstance = await Master.deployed();
-//         plotusNewAddress = await masterInstance.plotusAddress(); 
-//         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,1,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
-//         const length = addNewMarket.logs[0].args.marketAdd; 
-//         console.log("market",length)
-//         marketInstance = await Market.at(length);
-//         assert.ok(marketInstance);
-//         const addressOfMarket = marketInstance.address;
-//         const options1 = await marketInstance.optionsAvailable(1);
-//         assert.equal(options1[0]/1,0)
-//         assert.equal(options1[1]/1,9749)
-//         const options2 = await marketInstance.optionsAvailable(2);
-//         assert.equal(options2[0]/1,9750)
-//         assert.equal(options2[1]/1,9849)
-//         const options3 = await marketInstance.optionsAvailable(3);
-//         assert.equal(options3[0]/1,9850)
-//         assert.equal(options3[1]/1,9949)
-//         const options4 = await marketInstance.optionsAvailable(4);
-//         assert.equal(options4[0]/1,9950)
-//         assert.equal(options4[1]/1,10050)
-//         const options5 = await marketInstance.optionsAvailable(5);
-//         assert.equal(options5[0]/1,10051)
-//         assert.equal(options5[1]/1,10150)
-//         const options6 = await marketInstance.optionsAvailable(6);
-//         assert.equal(options6[0]/1,10151)
-//         assert.equal(options6[1]/1,10250)
-//         const options7 = await marketInstance.optionsAvailable(7);
-//         assert.equal(options7[0]/1,10251)
-//         assert.equal(options7[1]/1,1.157920892373162e+77)
+//     // it('2. place bet from nine users with 0% commision and 0% donation',async function(){
 
-//         await increaseTime(600+11);
-//         await marketInstance.setCurrentPrice(10215);
+//     //     let nowTime = await latestTime();
+//     //     nowTime = parseInt(nowTime);
+//     //     const start = nowTime/1 + 10;
+//     //     masterInstance = await Master.deployed();
+//     //     plotusNewAddress = await masterInstance.plotusAddress(); 
+//     //     plotusNewInstance = await Plotus.at(plotusNewAddress);
+//     //     const balancePlBefore1 = await web3.eth.getBalance(plotusNewAddress);
+//     //     // console.log("plotus balance in starting  case 2 ",(balancePlBefore1/1)/1e18)
+//     //     const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,0,7,1000000000000000,10000,0,0,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//     //     const length = addNewMarket.logs[0].args.marketAdd; 
+//     //     console.log("market",length)
+//     //     marketInstance = await Market.at(length);
+//     //     assert.ok(marketInstance);
+//     //     const addressOfMarket = marketInstance.address;
+//     //     const options1 = await marketInstance.optionsAvailable(1);
+//     //     assert.equal(options1[0]/1,0)
+//     //     assert.equal(options1[1]/1,9749)
+//     //     const options2 = await marketInstance.optionsAvailable(2);
+//     //     assert.equal(options2[0]/1,9750)
+//     //     assert.equal(options2[1]/1,9849)
+//     //     const options3 = await marketInstance.optionsAvailable(3);
+//     //     assert.equal(options3[0]/1,9850)
+//     //     assert.equal(options3[1]/1,9949)
+//     //     const options4 = await marketInstance.optionsAvailable(4);
+//     //     assert.equal(options4[0]/1,9950)
+//     //     assert.equal(options4[1]/1,10050)
+//     //     const options5 = await marketInstance.optionsAvailable(5);
+//     //     assert.equal(options5[0]/1,10051)
+//     //     assert.equal(options5[1]/1,10150)
+//     //     const options6 = await marketInstance.optionsAvailable(6);
+//     //     assert.equal(options6[0]/1,10151)
+//     //     assert.equal(options6[1]/1,10250)
+//     //     const options7 = await marketInstance.optionsAvailable(7);
+//     //     assert.equal(options7[0]/1,10251)
+//     //     assert.equal(options7[1]/1,1.157920892373162e+77)
+
+//     //     await increaseTime(100800+11);
+//     //     await marketInstance.setCurrentPrice(10215);
+//     //     // console.log((await marketInstance._getDistance(1))/1)
       
-//         const getPrice0 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice0/1,4)
+//     //     const getPrice0 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice0/1,4)
+//     //     // const user1BalanceBeforeBet = await web3.eth.getBalance(user1)
+//     //     await marketInstance.placeBet(1,{value: 4e18,from: user1});
+//     //     const user1BalanceAfterBet = await web3.eth.getBalance(user1)
+//     //     const getPrice = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice,4)
+//     //     const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
+//     //     const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
+//     //     // console.log("user1",getbrttingpoint/1)
+//     //     assert.equal(getbrttingpoint/1,1000);
+//     //     // const getprice
+  
+        
+//     //     const getPrice11 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice11/1,9)
+//     //     await marketInstance.placeBet(2,{value: 6e18,from: user2});
+//     //     const getPrice1 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice1,9)
+//     //     const getbrttingpoint1 = await marketInstance.userBettingPoints(user2,2);
+//     //     assert.equal(getbrttingpoint1/1,666);
+//     //     // console.log("user2",getbrttingpoint1/1)
+  
+        
+//     //     const getPrice21 = await marketInstance.getPrice(3);
+//     //     assert.equal(getPrice21/1,13)
+//     //     await marketInstance.placeBet(3,{value: 2e18,from: user3});
+//     //     const getPrice2 = await marketInstance.getPrice(3);
+//     //     assert.equal(getPrice2,13)
+//     //     const getbrttingpoint2 = await marketInstance.userBettingPoints(user3,3);
+//     //     assert.equal(getbrttingpoint2/1,153);
+//     //     // console.log("user3",getbrttingpoint2/1)
+  
+        
+//     //     const getPrice31 = await marketInstance.getPrice(4);
+//     //     assert.equal(getPrice31/1,18)
+//     //     await marketInstance.placeBet(4,{value: 1e19,from: user4});
+//     //     const getPrice3 = await marketInstance.getPrice(4);
+//     //     assert.equal(getPrice3/1,132)
+//     //     const getbrttingpoint3 = await marketInstance.userBettingPoints(user4,4);
+//     //     assert.equal(getbrttingpoint3/1,555);
+//     //     // console.log("user4",getbrttingpoint3/1)
+  
+        
+//     //     const getPrice14 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice14,50)
+//     //     await marketInstance.placeBet(1,{value: 3e18,from: user5});
+//     //     const getPrice4 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice4/1,74)//52
+//     //     // const afterPlaceBetUser1 = await web3.eth.getBalance(user5);
+//     //     const getbrttingpoint4  = await marketInstance.userBettingPoints(user5,1);
+//     //     assert.equal(getbrttingpoint4/1,60);
+//     //     // console.log("user5",getbrttingpoint4/1)
+  
+        
+//     //     const getPrice51 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice51/1,69)
+//     //     await marketInstance.placeBet(2,{value: 2e18,from: user6});
+//     //     const getPrice5 = await marketInstance.getPrice(2);
+//     //     assert.equal(getPrice5,83)//73
+//     //     const getbrttingpoint5 = await marketInstance.userBettingPoints(user6,2);
+//     //     assert.equal(getbrttingpoint5/1,28);
+//     //     // console.log("user6",getbrttingpoint5/1)
+  
+        
+//     //     const getPrice61 = await marketInstance.getPrice(5);
+//     //     assert.equal(getPrice61/1,23)
+//     //     await marketInstance.placeBet(5,{value: 5e18,from: user7});
+//     //     const getPrice62 = await marketInstance.getPrice(5);
+//     //     assert.equal(getPrice62/1,62)
+//     //     const getbrttingpoint6 = await marketInstance.userBettingPoints(user7,5);
+//     //     assert.equal(getbrttingpoint6/1,217);
+//     //     // console.log("user7",getbrttingpoint6/1)
+  
+        
+//     //     const getPrice71 = await marketInstance.getPrice(6);
+//     //     assert.equal(getPrice71/1,27)
+//     //     await marketInstance.placeBet(6,{value: 5e18,from: user8});
+//     //     const getPrice7 = await marketInstance.getPrice(6);
+//     //     assert.equal(getPrice7/1,61)
+//     //     const getbrttingpoint7 = await marketInstance.userBettingPoints(user8,6);
+//     //     assert.equal(getbrttingpoint7/1,185);
+//     //     // console.log("user8",getbrttingpoint7/1)
+  
+        
+//     //     const getPrice81 = await marketInstance.getPrice(7);
+//     //     assert.equal(getPrice81/1,23)
+//     //     await marketInstance.placeBet(7,{value: 7e18,from: user9}); 
+//     //     const getPrice8 = await marketInstance.getPrice(7);
+//     //     assert.equal(getPrice8/1,62);
+//     //     const getbrttingpoint8 = await marketInstance.userBettingPoints(user9,7);
+//     //     assert.equal(getbrttingpoint8/1,304);
+//     //     // console.log("user9",getbrttingpoint8/1)
 
-//         await marketInstance.placeBet(1,{value: 1e19,from: user1});
-//         const getPrice = await marketInstance.getPrice(1);
-//         assert.equal(getPrice/1,4)
-//         const getbrttingpoint1  = await marketInstance.userBettingPoints(user1,1);
-//         assert.equal(getbrttingpoint1/1,2500);
 
+//     //     const ClaimDonation = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
+//     //     await increaseTime(504000);
+//     //     await marketInstance._closeBet(100);
+//     //     // const check = await marketInstance.getReward(user1);
+//     //     const ClaimDonation1 = await web3.eth.getBalance("0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567")
+//     //     assert.equal(ClaimDonation1/1,ClaimDonation/1);
+//     //     const RewardUser1 = await marketInstance.getReward(user1);
+//     //     assert.equal((RewardUser1/1)/1e18,24);
+//     //     const RewardUser5 = await marketInstance.getReward(user5);
+//     //     // console.log((RewardUser5/1)/1e18)
+//     //     assert.equal(((RewardUser5/1)/1e18).toFixed(6),(5.094339623).toFixed(6));
+//     //     // const beforeClaimUser1 = await web3.eth.getBalance(user1);
+//     //     await marketInstance.claimReward({from: user1});
+//     //     // // console.log("reward of user5",await marketInstance.getReward(user1)/1)
+//     //     // // const txInfo = await marketInstance.getReward(user1);
+//     //     // // const tx = await web3.eth.getTransaction(txInfo.tx);
+//     //     // // const gasCost1 = tx.gasPrice * txInfo.receipt.gasUsed;
+//     //     // // console.log("gas ",(gasCost1/1)/1e18);
+//     //     // const afterClaimUser1 = await web3.eth.getBalance(user1);
+//     //     // // console
+//     //     // assert.equal(((afterClaimUser1)/1e18).toFixed(2),(((beforeClaimUser1)/1e18)/1+24-0.00108296).toFixed(2))
+//     //     // // const beforeClaimUser5 = await web3.eth.getBalance(user5);
+//     //     await marketInstance.claimReward({from: user5});
+//     //     const balancePlBefore11 = await web3.eth.getBalance(plotusNewAddress);
+//     //     // console.log("plotus balance",(balancePlBefore11/1)/1e18);
+//     //     assert.equal(((balancePlBefore11/1)/1e18).toFixed(6),(((balancePlBefore1/1)/1e18)/1+14.90566038).toFixed(6))
+//     //     // assert.equal(((paisa1/1)/1e18).toFixed(6),(((paisa11/1)/1e18)/1+14.90566038).toFixed(6))
+//     // })
+        
+//     // it("6. If user invest large amount of ether.",async function(){
+//     //     let nowTime = await latestTime();
+//     //     nowTime = parseInt(nowTime);
+//     //     const start = nowTime/1 + 10;
+//     //     masterInstance = await Master.deployed();
+//     //     plotusNewAddress = await masterInstance.plotusAddress(); 
+//     //     plotusNewInstance = await Plotus.at(plotusNewAddress);
+//     //     const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,1,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//     //     const length = addNewMarket.logs[0].args.marketAdd; 
+//     //     console.log("market",length)
+//     //     marketInstance = await Market.at(length);
+//     //     assert.ok(marketInstance);
+//     //     const addressOfMarket = marketInstance.address;
+//     //     const options1 = await marketInstance.optionsAvailable(1);
+//     //     assert.equal(options1[0]/1,0)
+//     //     assert.equal(options1[1]/1,9749)
+//     //     const options2 = await marketInstance.optionsAvailable(2);
+//     //     assert.equal(options2[0]/1,9750)
+//     //     assert.equal(options2[1]/1,9849)
+//     //     const options3 = await marketInstance.optionsAvailable(3);
+//     //     assert.equal(options3[0]/1,9850)
+//     //     assert.equal(options3[1]/1,9949)
+//     //     const options4 = await marketInstance.optionsAvailable(4);
+//     //     assert.equal(options4[0]/1,9950)
+//     //     assert.equal(options4[1]/1,10050)
+//     //     const options5 = await marketInstance.optionsAvailable(5);
+//     //     assert.equal(options5[0]/1,10051)
+//     //     assert.equal(options5[1]/1,10150)
+//     //     const options6 = await marketInstance.optionsAvailable(6);
+//     //     assert.equal(options6[0]/1,10151)
+//     //     assert.equal(options6[1]/1,10250)
+//     //     const options7 = await marketInstance.optionsAvailable(7);
+//     //     assert.equal(options7[0]/1,10251)
+//     //     assert.equal(options7[1]/1,1.157920892373162e+77)
 
-//         await marketInstance.placeBet(1,{value: 1e19,from: user1});
-//         const getPrice1 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice1/1,4)
-//         const getbrttingpoint2  = await marketInstance.userBettingPoints(user1,1);
-//         assert.equal(getbrttingpoint2/1,5000);
-
-
-
-//         await marketInstance.placeBet(1,{value: 1e19,from: user1});
-//         const getPrice3 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice3/1,254)
-//         const getbrttingpoint3  = await marketInstance.userBettingPoints(user1,1);
-//         assert.equal(getbrttingpoint3/1,7500);
-//         await marketInstance.placeBet(1,{value: 1e19,from: user1});
-//         const getPrice2 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice2/1,254)
-//         const getbrttingpoint4  = await marketInstance.userBettingPoints(user1,1);
-//         assert.equal(getbrttingpoint4/1,7539);
-//         await marketInstance.placeBet(1,{value: 1e19,from: user1});
-//         // const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
-//         const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
-//         assert.equal(getbrttingpoint/1,7578);
-
-//     })
-
-//     it("7. If user invest large amount of ether.",async function(){
-//         let nowTime = await latestTime();
-//         nowTime = parseInt(nowTime);
-//         const start = nowTime/1 + 10;
-//         masterInstance = await Master.deployed();
-//         plotusNewAddress = await masterInstance.plotusAddress(); 
-//         plotusNewInstance = await Plotus.at(plotusNewAddress);
-//         const addNewMarket = await plotusNewInstance.addNewMarket([start,0,2,1,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
-//         const length = addNewMarket.logs[0].args.marketAdd; 
-//         console.log("market",length)
-//         marketInstance = await Market.at(length);
-//         assert.ok(marketInstance);
-//         const addressOfMarket = marketInstance.address;
-//         const options1 = await marketInstance.optionsAvailable(1);
-//         assert.equal(options1[0]/1,0)
-//         assert.equal(options1[1]/1,9749)
-//         const options2 = await marketInstance.optionsAvailable(2);
-//         assert.equal(options2[0]/1,9750)
-//         assert.equal(options2[1]/1,9849)
-//         const options3 = await marketInstance.optionsAvailable(3);
-//         assert.equal(options3[0]/1,9850)
-//         assert.equal(options3[1]/1,9949)
-//         const options4 = await marketInstance.optionsAvailable(4);
-//         assert.equal(options4[0]/1,9950)
-//         assert.equal(options4[1]/1,10050)
-//         const options5 = await marketInstance.optionsAvailable(5);
-//         assert.equal(options5[0]/1,10051)
-//         assert.equal(options5[1]/1,10150)
-//         const options6 = await marketInstance.optionsAvailable(6);
-//         assert.equal(options6[0]/1,10151)
-//         assert.equal(options6[1]/1,10250)
-//         const options7 = await marketInstance.optionsAvailable(7);
-//         assert.equal(options7[0]/1,10251)
-//         assert.equal(options7[1]/1,1.157920892373162e+77)
-
-//         await increaseTime(600+11);
-//         await marketInstance.setCurrentPrice(10215);
+//     //     await increaseTime(100800+11);
+//     //     await marketInstance.setCurrentPrice(10215);
       
-//         const getPrice0 = await marketInstance.getPrice(1);
-//         assert.equal(getPrice0/1,4)
+//     //     const getPrice0 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice0/1,4)
 
-//         await marketInstance.placeBet(1,{value: 5e19,from: user2});
-//         const getPrice = await marketInstance.getPrice(1);
-//         assert.equal(getPrice/1,254)
-//         const getbrttingpoint1  = await marketInstance.userBettingPoints(user2,1);
-//         assert.equal(getbrttingpoint1/1,7578);
-//     })
-    
+//     //     await marketInstance.placeBet(1,{value: 1e19,from: user1});
+//     //     const getPrice = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice/1,4)
+//     //     const getbrttingpoint1  = await marketInstance.userBettingPoints(user1,1);
+//     //     assert.equal(getbrttingpoint1/1,2500);
+
+
+//     //     await marketInstance.placeBet(1,{value: 1e19,from: user1});
+//     //     const getPrice1 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice1/1,4)
+//     //     const getbrttingpoint2  = await marketInstance.userBettingPoints(user1,1);
+//     //     assert.equal(getbrttingpoint2/1,5000);
+
+
+
+//     //     await marketInstance.placeBet(1,{value: 1e19,from: user1});
+//     //     const getPrice3 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice3/1,254)
+//     //     const getbrttingpoint3  = await marketInstance.userBettingPoints(user1,1);
+//     //     assert.equal(getbrttingpoint3/1,7500);
+//     //     await marketInstance.placeBet(1,{value: 1e19,from: user1});
+//     //     const getPrice2 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice2/1,254)
+//     //     const getbrttingpoint4  = await marketInstance.userBettingPoints(user1,1);
+//     //     assert.equal(getbrttingpoint4/1,7539);
+//     //     await marketInstance.placeBet(1,{value: 1e19,from: user1});
+//     //     // const afterPlaceBetUser1 = await web3.eth.getBalance(user1);
+//     //     const getbrttingpoint  = await marketInstance.userBettingPoints(user1,1);
+//     //     assert.equal(getbrttingpoint/1,7578);
+
+//     // })
+
+//     // it("7. If user invest large amount of ether.",async function(){
+//     //     let nowTime = await latestTime();
+//     //     nowTime = parseInt(nowTime);
+//     //     const start = nowTime/1 + 10;
+//     //     masterInstance = await Master.deployed();
+//     //     plotusNewAddress = await masterInstance.plotusAddress(); 
+//     //     plotusNewInstance = await Plotus.at(plotusNewAddress);
+//     //     const addNewMarket = await plotusNewInstance.addNewMarket([start,2,2,1,7,1000000000000000,10000,2,2,100,5,10],"firstBet","0x47",["0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567","0xcd7e5d0cF2908850D185Ee9cc6377D6bb6DF0567"])
+//     //     const length = addNewMarket.logs[0].args.marketAdd; 
+//     //     console.log("market",length)
+//     //     marketInstance = await Market.at(length);
+//     //     assert.ok(marketInstance);
+//     //     const addressOfMarket = marketInstance.address;
+//     //     const options1 = await marketInstance.optionsAvailable(1);
+//     //     assert.equal(options1[0]/1,0)
+//     //     assert.equal(options1[1]/1,9749)
+//     //     const options2 = await marketInstance.optionsAvailable(2);
+//     //     assert.equal(options2[0]/1,9750)
+//     //     assert.equal(options2[1]/1,9849)
+//     //     const options3 = await marketInstance.optionsAvailable(3);
+//     //     assert.equal(options3[0]/1,9850)
+//     //     assert.equal(options3[1]/1,9949)
+//     //     const options4 = await marketInstance.optionsAvailable(4);
+//     //     assert.equal(options4[0]/1,9950)
+//     //     assert.equal(options4[1]/1,10050)
+//     //     const options5 = await marketInstance.optionsAvailable(5);
+//     //     assert.equal(options5[0]/1,10051)
+//     //     assert.equal(options5[1]/1,10150)
+//     //     const options6 = await marketInstance.optionsAvailable(6);
+//     //     assert.equal(options6[0]/1,10151)
+//     //     assert.equal(options6[1]/1,10250)
+//     //     const options7 = await marketInstance.optionsAvailable(7);
+//     //     assert.equal(options7[0]/1,10251)
+//     //     assert.equal(options7[1]/1,1.157920892373162e+77)
+
+//     //     await increaseTime(100800+11);
+//     //     await marketInstance.setCurrentPrice(10215);
+      
+//     //     const getPrice0 = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice0/1,4)
+
+//     //     await marketInstance.placeBet(1,{value: 5e19,from: user2});
+//     //     const getPrice = await marketInstance.getPrice(1);
+//     //     assert.equal(getPrice/1,254)
+//     //     const getbrttingpoint1  = await marketInstance.userBettingPoints(user2,1);
+//     //     assert.equal(getbrttingpoint1/1,7578);
+//     // })
+        
 //  })
