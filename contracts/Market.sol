@@ -91,7 +91,7 @@ contract Market is usingOraclize {
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
       setPrice();
-      oraclize_query(expireTime-now, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
+      // oraclize_query(expireTime-now, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
     }
 
     function () external payable {

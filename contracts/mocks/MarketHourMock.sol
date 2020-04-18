@@ -32,8 +32,9 @@ contract MarketHourlyMock is MarketMock {
       uint maxDistance = currentPriceLocation > 3? (currentPriceLocation-1): (7-currentPriceLocation);
       uint timeElapsed = now > startTime ? now - startTime : 0;
       timeElapsed = timeElapsed > 10 minutes ? timeElapsed: 10 minutes;
+      timeElapsed = (timeElapsed / 10 minutes) * 10 minutes;
       _optionPrice = _optionPrice.add((
-              (maxDistance + 1 - distance).mul(1000000).mul(timeElapsed.div(10 minutes))
+              (maxDistance + 1 - distance).mul(1000000).mul(timeElapsed.div(1 minutes))
              )
              .div(
               (maxDistance+1) * 60 * 60
