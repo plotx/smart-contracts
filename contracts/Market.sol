@@ -263,24 +263,24 @@ contract Market is usingOraclize {
     }
 
     function getReward(address _user)public view returns(uint){
-      require(betClosed,"Bet not closed");
       uint userPoints = userBettingPoints[_user][WinningOption];
-      require(userPoints > 0,"must have atleast 0 points"); 
-      uint reward;
-      uint send = (rate).mul(2).div(100).mul(userPoints);
-      if(rewardToDistribute == 0 && address(pl).balance > send){
-        reward = ethStaked[_user][WinningOption].add(send);        
-      }else if(rewardToDistribute == 0 && address(pl).balance < send){
-        reward = ethStaked[_user][WinningOption];
+      if(!betClosed || userPoints == 0) {
+        return 0;
       }
-      else{
-        uint _rew = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
-        uint maxReturnCap = maxReturn * ethStaked[_user][WinningOption];
-        if(_rew > maxReturnCap) {
-          _rew = maxReturnCap;
+      uint reward = 0;
+      if(rewardToDistribute == 0){
+        uint send = ((rate).mul(2).div(100).mul(userPoints)).div(10**6);
+        if(address(pl).balance > send) {
+          reward = send;
         }
-        reward = ethStaked[_user][WinningOption].add(_rew);
-       }
+      } else{
+        reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints);
+        uint maxReturnCap = maxReturn * ethStaked[_user][WinningOption];
+        if(reward > maxReturnCap) {
+          reward = maxReturnCap;
+        }
+        reward = reward.div(10**6);
+      }
       return reward;
     }
 
