@@ -16,7 +16,7 @@ using SafeMath for uint;
     address public owner;
     address public masterAddress;
     address[] public marketImplementations;
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betTypem, uint startTime);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd, uint commision, uint donation);
     event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
@@ -59,7 +59,7 @@ using SafeMath for uint;
       isMarketAdd[marketConAdd] = true;
       Market _market= Market(marketConAdd);
       _market.initiate.value(msg.value)(_uintparams, _feedsource, _addressParams);
-      emit MarketQuestion(marketConAdd, _feedsource, _stockName, _uintparams[1]);
+      emit MarketQuestion(marketConAdd, _feedsource, _stockName, _uintparams[1], _uintparams[0]);
     }
 
     function upgradeContractImplementation(address _contractsAddress, address payable _proxyAddress) 
