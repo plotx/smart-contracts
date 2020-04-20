@@ -279,7 +279,6 @@ contract Market is usingOraclize {
         if(reward > maxReturnCap) {
           reward = maxReturnCap;
         }
-        reward = reward.div(10**6);
       }
       return reward;
     }
@@ -304,9 +303,7 @@ contract Market is usingOraclize {
             _transferEther(address(pl), reward.sub(maxReturnCap));
             reward = maxReturnCap;
           }
-          reward =reward.div(10**6);
        }
-       // reward = reward.div(10**6);
        _transferEther(msg.sender, ethStaked[msg.sender][WinningOption].add(reward));
        pl.callClaimedEvent(msg.sender,reward.add(send), ethStaked[msg.sender][WinningOption]);
     }
