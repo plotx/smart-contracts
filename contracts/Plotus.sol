@@ -16,7 +16,7 @@ using SafeMath for uint;
     address public owner;
     address public masterAddress;
     address[] public marketImplementations;
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betTypem, uint startTime);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType, uint startTime);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd, uint commision, uint donation);
     event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
