@@ -1198,11 +1198,10 @@ contract('hourly Market', function([
         const stakedUser5 = claimEvent1[0].returnValues[3];
         assert.equal((stakedUser5/1)/1e18,3);
         const balancePlBefore1 = await web3.eth.getBalance(plotusNewAddress);
-        assert.equal(((balancePlBefore1/1e18)/1).toFixed(7),(((balancePlBefore11/1e18)+14.90566038)/1).toFixed(7))
         // assert.equal(((balancePlBefore1/1e18)/1).toFixed(9),(((balancePlBefore11/1e18)+14.90566038)/1).toFixed(9))
-        // console.log("plotus balance",(balancePlBefore11/1)/1e18);
-        // assert.equal(((balancePlBefore11/1)/1e18).toFixed(6),(((balancePlBefore1/1)/1e18)/1+14.90566038).toFixed(6))
-        // assert.equal(((paisa1/1)/1e18).toFixed(6),(((paisa11/1)/1e18)/1+14.90566038).toFixed(6))
+        assert.equal(((balancePlBefore1/1e18)/1).toFixed(7),(((balancePlBefore11/1e18)+14.90566038)/1).toFixed(7))
+        
+
     })
     
     it("6. If user invest large amount of ether.",async function(){
