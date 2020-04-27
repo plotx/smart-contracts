@@ -10,13 +10,15 @@ contract IPlotus {
       DailyMarket,
       WeeklyMarket
     }
+    address public owner;
     function() external payable{}
-    function callCloseMarketEvent(uint _type, uint _commision, uint _donation) public{
+    function callCloseMarketEvent(uint _type) public{
     }
-    
     function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public{
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake) public {
+    }
+    function callMarketResultEvent(uint _commision, uint _donation) public {
     }
     function withdraw(uint amount,address payable _address) external {
     }
@@ -28,7 +30,7 @@ contract Market is usingOraclize {
     uint public expireTime;
     string public FeedSource;
     uint public betType;
-    bool public betClosed;
+    BetStatus public betStatus;
     uint public WinningOption;
     uint public predictionForDate;
     uint public minBet;
@@ -37,20 +39,27 @@ contract Market is usingOraclize {
     uint public currentPrice;
     uint public maxReturn;
     uint internal currentPriceLocation;
-    uint public priceStep;
+    uint internal priceStep;
     address payable public DonationAccount;
     address payable public CommissionAccount;
     uint public commissionPerc;
     uint public donationPerc;
     uint public totalReward;
     uint public delta;
+    bytes32 internal closeMarketId;
+    bytes32 internal marketResultId;
     IPlotus internal pl;
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
     mapping(uint => uint) public optionPrice;
     uint public rewardToDistribute;
-  
+    
+    enum BetStatus {
+      Started,
+      Closed,
+      ResultDeclared
+    }
     struct option
     {
       uint minValue;
@@ -60,6 +69,11 @@ contract Market is usingOraclize {
     }
 
     mapping(uint=>option) public optionsAvailable;
+
+    modifier OnlyOwner() {
+      require(msg.sender == pl.owner() || msg.sender == address(pl));
+      _;
+    }
 
     function initiate(
      uint[] memory _uintparams,
@@ -90,8 +104,9 @@ contract Market is usingOraclize {
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
-      setPrice();
-      // oraclize_query(expireTime-now, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
+      _setPrice();
+      // closeMarketId = oraclize_query(expireTime-now, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
+      // marketResultId = oraclize_query(expireTime.add(predictionForDate).sub(now), "", "");
     }
 
     function () external payable {
@@ -99,13 +114,18 @@ contract Market is usingOraclize {
     }
 
     //Need to add check Only Admin or Any authorized address
-    function setCurrentPrice(uint _currentPrice) external {
+    function setCurrentPrice(uint _currentPrice) external OnlyOwner {
+      require(betStatus == BetStatus.Started,"bet not closed");
       currentPrice = _currentPrice;
       currentPriceLocation = _getDistance(1) + 1;
-      setPrice();
+      _setPrice();
     }
 
-    function setPrice() public {
+    function setPrice() public OnlyOwner {
+      _setPrice();
+    }
+
+    function _setPrice() internal {
       for(uint i = 1; i <= 7 ; i++) {
         optionPrice[i] = _calculateOptionPrice(i, address(this).balance, optionsAvailable[i].ethStaked);
       }
@@ -199,8 +219,9 @@ contract Market is usingOraclize {
     }
 
     function placeBet(uint _prediction) public payable {
-      require(now >= startTime && now <= expireTime,"bet not started yet or expired");
-      require(msg.value >= minBet,"value less than min bet amount");
+      require(betStatus == BetStatus.Started);
+      require(now >= startTime && now <= expireTime);
+      require(msg.value >= minBet,"Min bet amount required");
       uint _totalContribution = address(this).balance.sub(msg.value);
       uint betValue = _calculateBetValue(_prediction, msg.value, _totalContribution);
       require(betValue > 0, "Stake too low");
@@ -210,22 +231,29 @@ contract Market is usingOraclize {
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
       pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
-      setPrice();
+      _setPrice();
     }
 
-    function _closeBet(uint _value) public {      
+    function _closeBet() public {      
       //Bet should be closed only by oraclize address
       //Commenting this check for testing purpose. Should be un commented after testing
       // require (msg.sender == oraclize_cbAddress());
       
-      require(now > expireTime,"bet not yet expired");
+      require(betStatus == BetStatus.Started && now >= expireTime,"bet not yet expired");
       
-      require(!betClosed,"bet closed");
-      
+      betStatus = BetStatus.Closed;
+      pl.callCloseMarketEvent(betType);    
+    }
+
+    function calculateBetResult(uint _value) public {
+      require(now >= expireTime.add(predictionForDate),"bet not yet expired");
+
+      require(betStatus == BetStatus.Closed,"bet not closed");
+
       require(_value > 0);
-      
+
       currentPrice = _value;
-      betClosed = true;
+      betStatus = BetStatus.ResultDeclared;
       for(uint i=1;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
           WinningOption = i;
@@ -258,13 +286,12 @@ contract Market is usingOraclize {
         _transferEther(CommissionAccount, commision);
         _transferEther(DonationAccount, donation);
       }  
-
-      pl.callCloseMarketEvent(betType, commision, donation);    
+      pl.callMarketResultEvent(commision, donation);    
     }
 
     function getReward(address _user)public view returns(uint){
       uint userPoints = userBettingPoints[_user][WinningOption];
-      if(!betClosed || userPoints == 0) {
+      if(betStatus != BetStatus.ResultDeclared || userPoints == 0) {
         return 0;
       }
       uint reward = 0;
@@ -284,7 +311,8 @@ contract Market is usingOraclize {
     }
 
     function claimReward() public {
-      require(!userClaimedReward[msg.sender] && betClosed,"claimed alredy or bet is not closed yet");
+      require(!userClaimedReward[msg.sender],"Already claimed");
+      require(betStatus == BetStatus.ResultDeclared,"Result not declared");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
       uint reward = 0;
@@ -312,28 +340,12 @@ contract Market is usingOraclize {
       _recipient.transfer(_amount);
     }
 
-    // /**
-    //  * @dev oraclize query
-    //  * @param timestamp is the current timestamp
-    //  * @param datasource in concern
-    //  * @param arg in concern
-    //  * @param gasLimit required for query
-    //  * @return id of oraclize query
-    //  */
-    // function _oraclizeQuery(
-    //     uint timestamp,
-    //     string memory datasource,
-    //     string memory arg,
-    //     uint gasLimit
-    // ) 
-    //     internal
-    //     returns (bytes32 id)
-    // {
-    //     id = oraclize_query(timestamp, datasource, arg, gasLimit);
-    // }
-
     function __callback(bytes32 myid, string memory result) public {
-        _closeBet(parseInt(result));
+      if(myid == closeMarketId) {
+        _closeBet();
+      } else if(myid == marketResultId) {
+        calculateBetResult(parseInt(result));
+      }
     }
 
 }
