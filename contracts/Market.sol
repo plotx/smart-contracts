@@ -173,7 +173,7 @@ contract Market is usingOraclize {
     }
 
     function getPrice(uint _prediction) public view returns(uint) {
-     return optionPrice[_prediction];
+     return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked);
     }
 
     function getData() public view returns
