@@ -105,8 +105,8 @@ contract Market is usingOraclize {
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
       _setPrice();
-      // closeMarketId = oraclize_query(expireTime-now, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
-      // marketResultId = oraclize_query(expireTime.add(predictionForDate).sub(now), "", "");
+      closeMarketId = oraclize_query(expireTime.sub(now), "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
+      marketResultId = oraclize_query((expireTime.sub(now)).add(predictionForDate), "", "");
     }
 
     function () external payable {
