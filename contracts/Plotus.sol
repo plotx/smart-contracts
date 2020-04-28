@@ -48,6 +48,10 @@ using SafeMath for uint;
       owner = newOwner;
     }
 
+    function updateMarketImplementations(address[] memory _marketImplementations) public OnlyOwner {
+      marketImplementations = _marketImplementations;      
+    }
+
     function addNewMarket( 
       uint[] memory _uintparams,
       string memory _feedsource,

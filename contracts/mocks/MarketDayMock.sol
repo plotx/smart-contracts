@@ -17,10 +17,6 @@ contract MarketDailyMock is MarketMock {
       betType = uint(IPlotus.MarketType.DailyMarket);
     }
 
-    function getPrice(uint _prediction) public view returns(uint) {
-      return optionPrice[_prediction];
-    }
-
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       if(_totalStaked > 20 ether) {

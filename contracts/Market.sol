@@ -52,7 +52,7 @@ contract Market is usingOraclize {
     mapping(address => mapping(uint=>uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) public userBettingPoints;
     mapping(address => bool) public userClaimedReward;
-    mapping(uint => uint) public optionPrice;
+    // mapping(uint => uint) public optionPrice;
     uint public rewardToDistribute;
     
     enum BetStatus {
@@ -104,9 +104,8 @@ contract Market is usingOraclize {
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
-      _setPrice();
-      closeMarketId = oraclize_query(expireTime.sub(now), "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
-      marketResultId = oraclize_query((expireTime.sub(now)).add(predictionForDate), "", "");
+      // _setPrice();
+      closeMarketId = oraclize_query(expireTime.sub(now), "", "");
     }
 
     function () external payable {
@@ -118,18 +117,18 @@ contract Market is usingOraclize {
       require(betStatus == BetStatus.Started,"bet not closed");
       currentPrice = _currentPrice;
       currentPriceLocation = _getDistance(1) + 1;
-      _setPrice();
+      // _setPrice();
     }
 
-    function setPrice() public OnlyOwner {
-      _setPrice();
-    }
+    // function setPrice() public OnlyOwner {
+    //   _setPrice();
+    // }
 
-    function _setPrice() internal {
-      for(uint i = 1; i <= 7 ; i++) {
-        optionPrice[i] = _calculateOptionPrice(i, address(this).balance, optionsAvailable[i].ethStaked);
-      }
-    }
+    // function _setPrice() internal {
+    //   for(uint i = 1; i <= 7 ; i++) {
+    //     optionPrice[i] = _calculateOptionPrice(i, address(this).balance, optionsAvailable[i].ethStaked);
+    //   }
+    // }
 
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
     }
@@ -172,7 +171,7 @@ contract Market is usingOraclize {
       }
     }
 
-    function getPrice(uint _prediction) public view returns(uint) {
+    function getPrice(uint _prediction) external view returns(uint) {
      return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked);
     }
 
@@ -190,7 +189,7 @@ contract Market is usingOraclize {
         _ethStaked[i] = optionsAvailable[i+1].ethStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = optionPrice[i+1];
+        _optionPrice[i] = _calculateOptionPrice(i+1, address(this).balance, optionsAvailable[i+1].ethStaked);
        }
     }
 
@@ -231,7 +230,7 @@ contract Market is usingOraclize {
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
       pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
-      _setPrice();
+      // _setPrice();
     }
 
     function _closeBet() public {      
@@ -242,7 +241,13 @@ contract Market is usingOraclize {
       require(betStatus == BetStatus.Started && now >= expireTime,"bet not yet expired");
       
       betStatus = BetStatus.Closed;
-      pl.callCloseMarketEvent(betType);    
+      pl.callCloseMarketEvent(betType);
+      if(now >= expireTime.add(predictionForDate)) {
+        predictionForDate = 0;
+      } else {
+        predictionForDate.sub(now.sub(expireTime));
+      }
+      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
     }
 
     function calculateBetResult(uint _value) public {

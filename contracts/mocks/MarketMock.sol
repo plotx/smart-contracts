@@ -32,7 +32,7 @@ contract MarketMock is Market {
       require(commissionPerc <= 100);
       setOptionRanges(totalOptions);
       currentPriceLocation = _getDistance(1) + 1;
-      setPrice();
+      // setPrice();
       // _oraclizeQuery(expireTime, "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price", "", 0);
     }
 
