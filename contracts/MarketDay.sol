@@ -19,6 +19,9 @@ contract MarketDaily is Market {
 
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
+      if(betStatus == BetStatus.ResultDeclared) {
+        return _optionPrice;
+      }
       if(_totalStaked > 20 ether) {
         _optionPrice = (_ethStakedOnOption).mul(1000000)
                       .div(_totalStaked.mul(40));
