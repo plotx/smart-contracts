@@ -11,10 +11,12 @@ using SafeMath for uint;
       DailyMarket,
       WeeklyMarket
     }
-    mapping(address => bool) private isMarketAdd;
+    address[] internal markets;
+    mapping(address => bool) private marketIndex;
     address public owner;
     address public masterAddress;
     address[] public marketConfigs;
+    uint public marketOpenIndex;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType, uint startTime);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd);
@@ -32,7 +34,7 @@ using SafeMath for uint;
     }
 
     modifier OnlyMarket() {
-      require(isMarketAdd[msg.sender]);
+      require(marketIndex[msg.sender] > 0);
       _;
     }
 
@@ -40,6 +42,7 @@ using SafeMath for uint;
       masterAddress = msg.sender;
       owner = _owner;
       marketConfigs = _marketConfigs;
+      markets.push(address(0));
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -61,7 +64,8 @@ using SafeMath for uint;
       require(_marketType <= uint(MarketType.WeeklyMarket), "Invalid market");
       // address payable marketConAdd = _generateProxy(marketImplementations[_marketType]);
       Market _market=  new Market();
-      isMarketAdd[address(_market)] = true;
+      markets.push(address(_market));
+      marketIndex[address(_market)] = markets.length;
       _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType]);
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
@@ -71,6 +75,7 @@ using SafeMath for uint;
     }
 
     function callMarketResultEvent(uint _commision, uint _donation) public OnlyMarket {
+      // if marketIndex[msg.sender]
       emit MarketResult(msg.sender, _commision, _donation);
     }
     
