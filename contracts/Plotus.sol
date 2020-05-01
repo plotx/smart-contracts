@@ -12,10 +12,9 @@ using SafeMath for uint;
       WeeklyMarket
     }
     mapping(address => bool) private isMarketAdd;
-    mapping(address => bool) public isClosed;
     address public owner;
     address public masterAddress;
-    address[] public marketImplementations;
+    address[] public marketConfigs;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType, uint startTime);
     event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
     event BetClosed(uint betType, address indexed marketAdd);
@@ -37,10 +36,10 @@ using SafeMath for uint;
       _;
     }
 
-    function initiatePlotus(address _owner, address[] memory _marketImplementations) public {
+    function initiatePlotus(address _owner, address[] memory _marketConfigs) public {
       masterAddress = msg.sender;
       owner = _owner;
-      marketImplementations = _marketImplementations;
+      marketConfigs = _marketConfigs;
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -48,40 +47,23 @@ using SafeMath for uint;
       owner = newOwner;
     }
 
-    function updateMarketImplementations(address[] memory _marketImplementations) public OnlyOwner {
-      marketImplementations = _marketImplementations;      
+    function updateMarketConifigs(address[] memory _marketConfigs) public OnlyOwner {
+      marketConfigs = _marketConfigs;
     }
 
     function addNewMarket( 
-      uint[] memory _uintparams,
+      uint _marketType,
+      uint[] memory _marketparams,
       string memory _feedsource,
-      bytes32 _stockName,
-      address payable[] memory _addressParams     
+      bytes32 _stockName
     ) public payable OnlyOwner
     {
-      require(_uintparams[1] <= uint(MarketType.WeeklyMarket), "Invalid market");
-      address payable marketConAdd = _generateProxy(marketImplementations[_uintparams[1]]);
-      isMarketAdd[marketConAdd] = true;
-      Market _market= Market(marketConAdd);
-      _market.initiate.value(msg.value)(_uintparams, _feedsource, _addressParams);
-      emit MarketQuestion(marketConAdd, _feedsource, _stockName, _uintparams[1], _uintparams[0]);
-    }
-
-    function upgradeContractImplementation(address _contractsAddress, address payable _proxyAddress) 
-        external OnlyOwner
-    {
-        OwnedUpgradeabilityProxy tempInstance 
-            = OwnedUpgradeabilityProxy(_proxyAddress);
-        tempInstance.upgradeTo(_contractsAddress);
-    }
-
-    /**
-     * @dev to generater proxy 
-     * @param _contractAddress of the proxy
-     */
-    function _generateProxy(address _contractAddress) internal returns(address payable) {
-        OwnedUpgradeabilityProxy tempInstance = new OwnedUpgradeabilityProxy(_contractAddress);
-        return address(tempInstance);
+      require(_marketType <= uint(MarketType.WeeklyMarket), "Invalid market");
+      // address payable marketConAdd = _generateProxy(marketImplementations[_marketType]);
+      Market _market=  new Market();
+      isMarketAdd[address(_market)] = true;
+      _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType]);
+      emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
     function callCloseMarketEvent(uint _type) public OnlyMarket {
@@ -101,16 +83,16 @@ using SafeMath for uint;
 
     function getMarketDetails(address payable _marketAdd)public view returns
     (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-      uint[] memory optionprice,uint[] memory _ethStaked,uint _betType,uint _expireTime){
-      Market _market = Market(_marketAdd);
-      return _market.getData();
+      uint[] memory optionprice,uint[] memory _ethStaked,uint _betType,uint _expireTime, uint _betStatus){
+      // Market _market = Market(_marketAdd);
+      return Market(_marketAdd).getData();
     }
 
     function () external payable {
     }
 
-    function withdraw(uint amount,address payable _address) external OnlyMarket {
+    function withdraw(uint amount) external OnlyMarket {
       require(amount<= address(this).balance,"insufficient amount");
-        _address.transfer(amount);
+        msg.sender.transfer(amount);
     }
 }
