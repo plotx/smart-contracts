@@ -12,7 +12,7 @@ using SafeMath for uint;
       WeeklyMarket
     }
     address[] internal markets;
-    mapping(address => bool) private marketIndex;
+    mapping(address => uint) private marketIndex;
     address public owner;
     address public masterAddress;
     address[] public marketConfigs;
@@ -50,7 +50,7 @@ using SafeMath for uint;
       owner = newOwner;
     }
 
-    function updateMarketConifigs(address[] memory _marketConfigs) public OnlyOwner {
+    function updateMarketConfigs(address[] memory _marketConfigs) public OnlyOwner {
       marketConfigs = _marketConfigs;
     }
 
@@ -75,7 +75,20 @@ using SafeMath for uint;
     }
 
     function callMarketResultEvent(uint _commision, uint _donation) public OnlyMarket {
-      // if marketIndex[msg.sender]
+      if (marketOpenIndex <= marketIndex[msg.sender]) {
+        uint i;
+        for(i = marketOpenIndex+1;i<markets.length;i++){
+          //Convert to payable address
+          ( , , , , , , , uint _status) = Market(address(uint160(markets[i]))).getData();
+          if(_status == uint(Market.BetStatus.Started)) {
+            marketOpenIndex = i;
+            break;
+          }
+        }
+        if(i == markets.length) {
+          marketOpenIndex = i-1;
+        }
+      }
       emit MarketResult(msg.sender, _commision, _donation);
     }
     
