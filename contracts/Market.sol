@@ -28,6 +28,7 @@ contract Market is usingOraclize {
 
     enum BetStatus {
       Started,
+      Closed,
       ResultDeclared
     }
   
@@ -95,9 +96,17 @@ contract Market is usingOraclize {
       revert("Can be deposited only through placeBet");
     }
 
+    function marketStatus() internal view returns(BetStatus){
+      if(betStatus == BetStatus.Started && now >= expireTime) {
+        return BetStatus.Closed;
+      }
+      return betStatus;
+    }
+
     //Need to add check Only Admin or Any authorized address
     function setCurrentPrice(uint _currentPrice) public OnlyOwner {
-      require(betStatus == BetStatus.Started,"bet not closed");
+      require(now <= expireTime, "bet closed");
+      // require(betStatus == BetStatus.Started,"bet closed");
       // currentPrice = _currentPrice;
       currentPriceLocation = _getCPDistanceFromFirstOption(_currentPrice).add(1);
     }
@@ -179,7 +188,7 @@ contract Market is usingOraclize {
         (_betType, totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
         _feedsource = FeedSource;
         _expireTime =expireTime;
-        _betStatus = uint(betStatus);
+        _betStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);

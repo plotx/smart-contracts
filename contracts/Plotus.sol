@@ -77,9 +77,10 @@ using SafeMath for uint;
     function callMarketResultEvent(uint _commision, uint _donation) public OnlyMarket {
       if (marketOpenIndex <= marketIndex[msg.sender]) {
         uint i;
-        for(i = marketOpenIndex+1;i<markets.length;i++){
+        uint _status;
+        for(i = marketOpenIndex+1;i < markets.length;i++){
           //Convert to payable address
-          ( , , , , , , , uint _status) = Market(address(uint160(markets[i]))).getData();
+          ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
           if(_status == uint(Market.BetStatus.Started)) {
             marketOpenIndex = i;
             break;
@@ -104,6 +105,19 @@ using SafeMath for uint;
       uint[] memory optionprice,uint[] memory _ethStaked,uint _betType,uint _expireTime, uint _betStatus){
       // Market _market = Market(_marketAdd);
       return Market(_marketAdd).getData();
+    }
+
+    function getOpenMarkets() public view returns(address[] memory _openMarkets) {
+      uint  count = 0;
+      uint _status;
+      _openMarkets = new address[](markets.length - marketOpenIndex);
+      for(uint i = marketOpenIndex; i < markets.length; i++) {
+        ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
+        if(_status == uint(Market.BetStatus.Started)) {
+          _openMarkets[count] = markets[i];
+          count++;
+        }
+      }
     }
 
     function () external payable {
