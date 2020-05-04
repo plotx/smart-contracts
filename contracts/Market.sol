@@ -75,7 +75,7 @@ contract Market is usingOraclize {
     public 
     {
       pl = IPlotus(msg.sender);
-      marketConfig = MarketConfig(marketConfig);
+      marketConfig = MarketConfig(marketConfigs);
       startTime = _uintparams[0];
       FeedSource = _feedsource;
       predictionForDate = _uintparams[1];
