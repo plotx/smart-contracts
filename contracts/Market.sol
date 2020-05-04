@@ -79,13 +79,13 @@ contract Market is usingOraclize {
       startTime = _uintparams[0];
       FeedSource = _feedsource;
       predictionForDate = _uintparams[1];
-      rate = _uintparams[3];
+      rate = _uintparams[2];
       optionsAvailable[0] = option(0,0,0,0);
       require(expireTime > now);
 
       // currentPrice = _uintparams[6];
-      setOptionRanges(_uintparams[4]);
-      setCurrentPrice(_uintparams[4]);
+      setOptionRanges(_uintparams[3]);
+      setCurrentPrice(_uintparams[3]);
       // currentPriceLocation = _getDistance(OPTION_START_INDEX) + 1;
       // _setPrice();
       // closeMarketId = oraclize_query(expireTime.sub(now), "", "");
