@@ -17,9 +17,8 @@ using SafeMath for uint;
     address public masterAddress;
     address[] public marketConfigs;
     uint public marketOpenIndex;
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint betType, uint startTime);
-    event PlaceBet(address indexed user,uint value, uint betPoints,uint prediction,address marketAdd);
-    event BetClosed(uint betType, address indexed marketAdd);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint predictionType, uint startTime);
+    event PlacePrediction(address indexed user,uint value, uint predictionPoints,uint prediction,address marketAdd);
     event MarketResult(address indexed marketAdd, uint commision, uint donation);
     event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
    
@@ -70,10 +69,6 @@ using SafeMath for uint;
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
-    function callCloseMarketEvent(uint _type) public OnlyMarket {
-      emit BetClosed(_type, msg.sender);
-    }
-
     function callMarketResultEvent(uint _commision, uint _donation) public OnlyMarket {
       if (marketOpenIndex <= marketIndex[msg.sender]) {
         uint i;
@@ -81,7 +76,7 @@ using SafeMath for uint;
         for(i = marketOpenIndex+1;i < markets.length;i++){
           //Convert to payable address
           ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
-          if(_status == uint(Market.BetStatus.Started)) {
+          if(_status == uint(Market.PredictionStatus.Started)) {
             marketOpenIndex = i;
             break;
           }
@@ -93,8 +88,8 @@ using SafeMath for uint;
       emit MarketResult(msg.sender, _commision, _donation);
     }
     
-    function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public OnlyMarket {
-      emit PlaceBet(_user, _value, _betPoints, _prediction, msg.sender);
+    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction) public OnlyMarket {
+      emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender);
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake) public OnlyMarket {
       emit Claimed(msg.sender, _user, _reward, _stake);
@@ -102,7 +97,7 @@ using SafeMath for uint;
 
     function getMarketDetails(address payable _marketAdd)public view returns
     (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-      uint[] memory optionprice,uint[] memory _ethStaked,uint _betType,uint _expireTime, uint _betStatus){
+      uint[] memory optionprice,uint[] memory _ethStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
       // Market _market = Market(_marketAdd);
       return Market(_marketAdd).getData();
     }
@@ -113,7 +108,7 @@ using SafeMath for uint;
       _openMarkets = new address[](markets.length - marketOpenIndex);
       for(uint i = marketOpenIndex; i < markets.length; i++) {
         ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
-        if(_status == uint(Market.BetStatus.Started)) {
+        if(_status == uint(Market.PredictionStatus.Started)) {
           _openMarkets[count] = markets[i];
           count++;
         }

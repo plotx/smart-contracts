@@ -12,9 +12,7 @@ contract IPlotus {
     }
     address public owner;
     function() external payable{}
-    function callCloseMarketEvent(uint _type) public{
-    }
-    function callPlaceBetEvent(address _user,uint _value, uint _betPoints, uint _prediction) public{
+    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction) public{
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake) public {
     }
@@ -26,7 +24,7 @@ contract IPlotus {
 contract Market is usingOraclize {
     using SafeMath for uint;
 
-    enum BetStatus {
+    enum PredictionStatus {
       Started,
       Closed,
       ResultDeclared
@@ -39,14 +37,13 @@ contract Market is usingOraclize {
     // uint public currentPrice; //*
     uint internal currentPriceLocation;
     uint internal totalReward;//
-    bytes32 internal closeMarketId;
     bytes32 internal marketResultId;
     uint internal rewardToDistribute;
-    BetStatus internal betStatus;//
+    PredictionStatus internal predictionStatus;//
     uint public predictionForDate;//
     
     mapping(address => mapping(uint=>uint)) internal ethStaked;
-    mapping(address => mapping(uint => uint)) internal userBettingPoints;
+    mapping(address => mapping(uint => uint)) internal userPredictionPoints;
     mapping(address => bool) internal userClaimedReward;
     
     IPlotus internal pl;
@@ -56,7 +53,7 @@ contract Market is usingOraclize {
     {
       uint minValue;
       uint maxValue;
-      uint betPoints;
+      uint predictionPoints;
       uint ethStaked;
     }
 
@@ -93,20 +90,20 @@ contract Market is usingOraclize {
     }
 
     function () external payable {
-      revert("Can be deposited only through placeBet");
+      revert("Can be deposited only through placePrediction");
     }
 
-    function marketStatus() internal view returns(BetStatus){
-      if(betStatus == BetStatus.Started && now >= expireTime) {
-        return BetStatus.Closed;
+    function marketStatus() internal view returns(PredictionStatus){
+      if(predictionStatus == PredictionStatus.Started && now >= expireTime) {
+        return PredictionStatus.Closed;
       }
-      return betStatus;
+      return predictionStatus;
     }
 
     //Need to add check Only Admin or Any authorized address
     function setCurrentPrice(uint _currentPrice) public OnlyOwner {
-      require(now <= expireTime, "bet closed");
-      // require(betStatus == BetStatus.Started,"bet closed");
+      require(now <= expireTime, "prediction closed");
+      // require(predictionStatus == PredictionStatus.Started,"bet closed");
       // currentPrice = _currentPrice;
       currentPriceLocation = _getCPDistanceFromFirstOption(_currentPrice).add(1);
     }
@@ -183,12 +180,12 @@ contract Market is usingOraclize {
 
     function getData() public view returns
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice, uint[] memory _ethStaked,uint _betType,uint _expireTime, uint _betStatus){
+        uint[] memory _optionPrice, uint[] memory _ethStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
         uint totalOptions;
-        (_betType, totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
+        (_predictionType, totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
         _feedsource = FeedSource;
         _expireTime =expireTime;
-        _betStatus = uint(marketStatus());
+        _predictionStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);
@@ -201,53 +198,53 @@ contract Market is usingOraclize {
        }
     }
 
-    function estimateBetValue(uint _prediction, uint _stake) public view returns(uint _betValue){
+    function estimatePredictionValue(uint _prediction, uint _stake) public view returns(uint _predictionValue){
       (, uint totalOptions, , uint priceStep , , ) = marketConfig.getBasicMarketDetails();
-      return _calculateBetValue(_prediction, _stake, address(this).balance, priceStep, totalOptions);
+      return _calculatePredictionValue(_prediction, _stake, address(this).balance, priceStep, totalOptions);
     }
 
-    function _calculateBetValue(uint _prediction, uint _stake, uint _totalContribution, uint _priceStep, uint _totalOptions) internal view returns(uint _betValue) {
+    function _calculatePredictionValue(uint _prediction, uint _stake, uint _totalContribution, uint _priceStep, uint _totalOptions) internal view returns(uint _predictionValue) {
       uint value;
       uint flag = 0;
       uint _ethStakedOnOption = optionsAvailable[_prediction].ethStaked;
-      _betValue = 0;
+      _predictionValue = 0;
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
           value = (uint(_stake)).div(rate);
-          _betValue = _betValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep), _totalOptions)));
+          _predictionValue = _predictionValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep), _totalOptions)));
           break;
         } else {
           _stake = _stake.sub(_priceStep);
           value = (uint(_priceStep)).div(rate);
-          _betValue = _betValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep), _totalOptions)));
+          _predictionValue = _predictionValue.add(value.mul(10**6).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep), _totalOptions)));
           _totalContribution = _totalContribution.add(_priceStep);
           flag++;
         }
       } 
     }
 
-    function placeBet(uint _prediction) public payable {
+    function placePrediction(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime);
-      (, uint totalOptions, uint minBet, uint priceStep, , ) = marketConfig.getBasicMarketDetails();
-      require(msg.value >= minBet,"Min bet amount required");
+      (, uint totalOptions, uint minPrediction, uint priceStep, , ) = marketConfig.getBasicMarketDetails();
+      require(msg.value >= minPrediction,"Min prediction amount required");
       uint _totalContribution = address(this).balance.sub(msg.value);
-      uint betValue = _calculateBetValue(_prediction, msg.value, _totalContribution, priceStep, totalOptions);
-      require(betValue > 0, "Stake too low");
-      userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
+      uint predictionValue = _calculatePredictionValue(_prediction, msg.value, _totalContribution, priceStep, totalOptions);
+      require(predictionValue > 0, "Stake too low");
+      userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionValue);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
-      optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
+      optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
 
-      pl.callPlaceBetEvent(msg.sender,msg.value, betValue, _prediction);
+      pl.callPlacePredictionEvent(msg.sender,msg.value, predictionValue, _prediction);
     }
 
     // function _closeBet() public {      
     //   //Bet will be closed by oraclize address
     //   // require (msg.sender == oraclize_cbAddress());
       
-    //   require(betStatus == BetStatus.Started && now >= expireTime,"bet not yet expired");
+    //   require(predictionStatus == PredictionStatus.Started && now >= expireTime,"bet not yet expired");
       
-    //   betStatus = BetStatus.Closed;
+    //   predictionStatus = PredictionStatus.Closed;
     //   pl.callCloseMarketEvent(betType);
     //   if(now >= expireTime.add(predictionForDate)) {
     //     predictionForDate = 0;
@@ -257,14 +254,14 @@ contract Market is usingOraclize {
     //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
     // }
 
-    function calculateBetResult(uint _value) public {
+    function calculatePredictionResult(uint _value) public {
       require(now >= expireTime.add(predictionForDate),"Time not reached");
 
       require(_value > 0);
       (, uint totalOptions, , , , uint bonuReturnPerc) = marketConfig.getBasicMarketDetails();
       (, uint optionStartIndex, , , , , ) = marketConfig.getPriceCalculationParams();
 
-      betStatus = BetStatus.ResultDeclared;
+      predictionStatus = PredictionStatus.ResultDeclared;
       for(uint i=optionStartIndex;i <= totalOptions;i++){
         if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
           // WinningOption = i;
@@ -305,8 +302,8 @@ contract Market is usingOraclize {
     }
 
     function getReward(address _user)public view returns(uint){
-      uint userPoints = userBettingPoints[_user][currentPriceLocation];
-      if(betStatus != BetStatus.ResultDeclared || userPoints == 0) {
+      uint userPoints = userPredictionPoints[_user][currentPriceLocation];
+      if(predictionStatus != PredictionStatus.ResultDeclared || userPoints == 0) {
         return 0;
       }
       (uint reward, ) = _calculateReward(userPoints);
@@ -318,7 +315,7 @@ contract Market is usingOraclize {
       _postCappedRemaining = 0;
       (, , , , uint maxReturn, uint bonuReturnPerc) = marketConfig.getBasicMarketDetails();
        if(rewardToDistribute > 0) {
-          _reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[currentPriceLocation].betPoints);
+          _reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[currentPriceLocation].predictionPoints);
           uint maxReturnCap = maxReturn * ethStaked[msg.sender][currentPriceLocation];
           if(_reward > maxReturnCap) {
             _postCappedRemaining = _reward.sub(maxReturnCap);
@@ -331,10 +328,10 @@ contract Market is usingOraclize {
 
     function claimReward() public {
       require(!userClaimedReward[msg.sender],"Already claimed");
-      require(betStatus == BetStatus.ResultDeclared,"Result not declared");
+      require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
-      userPoints = userBettingPoints[msg.sender][currentPriceLocation];
+      userPoints = userPredictionPoints[msg.sender][currentPriceLocation];
       require(userPoints > 0,"must have atleast 0 points");
       (uint reward, uint postCappedRemaining) = _calculateReward(userPoints);
       if(postCappedRemaining > 0) {
@@ -352,7 +349,7 @@ contract Market is usingOraclize {
       // if(myid == closeMarketId) {
       //   _closeBet();
       // } else if(myid == marketResultId) {
-        calculateBetResult(parseInt(result));
+        calculatePredictionResult(parseInt(result));
       // }
     }
 
