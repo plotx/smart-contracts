@@ -10,18 +10,18 @@ contract MarketConfig {
     uint constant priceStep = 10 ether;
     uint constant STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;//
     //Two extra decimals added for percentage
-    uint public bonusRewardPerc = 50;
+    uint internal bonusRewardPerc = 50;
 
-    uint public betType;//
-    uint public totalOptions;//
-    uint public delta;//
-    uint public PREDICTION_TIME;//
-    uint public donationPerc;//
-    uint public commissionPerc;//
-    uint public MIN_TIME_ELAPSED;//
+    uint internal betType;//
+    uint internal totalOptions;//
+    uint internal delta;//
+    uint internal PREDICTION_TIME;//
+    uint internal donationPerc;//
+    uint internal commissionPerc;//
+    uint internal MIN_TIME_ELAPSED;//
     
-    address payable public donationAccount;//
-    address payable public commissionAccount;//
+    address payable internal donationAccount;//
+    address payable internal commissionAccount;//
     constructor(uint[] memory _uintParams, address payable[] memory _addressParams) public {
         betType = _uintParams[0];
         delta = _uintParams[1];
