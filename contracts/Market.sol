@@ -255,6 +255,7 @@ contract Market is usingOraclize {
     // }
 
     function calculatePredictionResult(uint _value) public {
+      require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
       require(now >= expireTime.add(predictionForDate),"Time not reached");
 
       require(_value > 0);
@@ -297,7 +298,7 @@ contract Market is usingOraclize {
         _transferEther(donationAccount, donation);
         //Transfer remaining amount to Plotus contract
         _transferEther(address(pl), address(this).balance);
-      }  
+      }
       pl.callMarketResultEvent(commission, donation);    
     }
 
