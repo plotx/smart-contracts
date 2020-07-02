@@ -78,6 +78,8 @@ contract Market is usingOraclize {
       predictionForDate = _uintparams[1];
       rate = _uintparams[2];
       optionsAvailable[0] = option(0,0,0,0);
+      (uint predictionTime, , , , , , ) = marketConfig.getPriceCalculationParams();
+      expireTime = startTime + predictionTime;
       require(expireTime > now);
 
       // currentPrice = _uintparams[6];
@@ -105,7 +107,7 @@ contract Market is usingOraclize {
       require(now <= expireTime, "prediction closed");
       // require(predictionStatus == PredictionStatus.Started,"bet closed");
       // currentPrice = _currentPrice;
-      currentPriceLocation = _getCPDistanceFromFirstOption(_currentPrice).add(1);
+      currentPriceLocation = _getCPDistanceFromFirstOption(_currentPrice);
     }
 
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption, uint _totalOptions) internal view returns(uint _optionPrice) {
@@ -144,33 +146,41 @@ contract Market is usingOraclize {
       } else if(_currentPrice < optionsAvailable[optionStartIndex].maxValue) {
         _distance = 0;
       } else if(_currentPrice > optionsAvailable[optionStartIndex].maxValue) {
-        _distance = ((_currentPrice.sub(optionsAvailable[optionStartIndex].maxValue)).div(delta)).add(optionStartIndex);
+        _distance = 1;
       }
     }
 
     function setOptionRanges(uint _currentPrice) internal{
       (, , , , , , uint delta) = marketConfig.getPriceCalculationParams();
         (, uint totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
-      uint primaryOption = totalOptions.div(2).add(1);
-      optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(delta).div(2));
-      optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(delta).div(2));
-      uint _increaseOption;
-      for(uint i = primaryOption ;i>1 ;i--){
-        _increaseOption = ++primaryOption;
-        if(i-1 > 1){
-          optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
-          optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(delta);
-          optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(delta);
-          optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
-        }
-        else{
-          optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
-          optionsAvailable[i-1].minValue = 0;
-          //Max uint value
-          optionsAvailable[_increaseOption].maxValue = ~uint256(0);
-          optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
-        }
-      }
+     // uint primaryOption = totalOptions.div(2).add(1);
+     
+     // optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(delta).div(2));
+      //optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(delta).div(2));
+      //uint _increaseOption;
+    //   for(uint i = primaryOption ;i>1 ;i--){
+    //     _increaseOption = ++primaryOption;
+    //     if(i-1 > 1){
+    //       optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+    //       optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(delta);
+    //       optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(delta);
+    //       optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+    //     }
+    //     else{
+    //       optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+    //       optionsAvailable[i-1].minValue = 0;
+    //       //Max uint value
+    //       optionsAvailable[_increaseOption].maxValue = ~uint256(0);
+    //       optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+    //     }
+    //   }
+     optionsAvailable[1].minValue = 0;
+     optionsAvailable[1].maxValue = _currentPrice.sub(1);
+     optionsAvailable[2].minValue = _currentPrice;
+     optionsAvailable[2].maxValue = _currentPrice.add(200);
+     optionsAvailable[3].minValue = _currentPrice.add(1);
+     optionsAvailable[3].maxValue = ~uint256(0);
+     
     }
 
     function getPrice(uint _prediction) external view returns(uint) {
