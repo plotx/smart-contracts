@@ -107,11 +107,11 @@ using SafeMath for uint;
       uint _status;
       _openMarkets = new address[](markets.length - marketOpenIndex);
       for(uint i = marketOpenIndex; i < markets.length; i++) {
-        ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
-        if(_status == uint(Market.PredictionStatus.Started)) {
+        // ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
+        // if(_status == uint(Market.PredictionStatus.Started)) {
           _openMarkets[count] = markets[i];
           count++;
-        }
+       // }
       }
     }
 

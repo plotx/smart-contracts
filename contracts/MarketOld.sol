@@ -35,10 +35,10 @@ contract Market is usingOraclize {
     string internal FeedSource;//
     uint internal rate; //*
     // uint public currentPrice; //*
-    uint public currentPriceLocation;
-    uint public totalReward;//
+    uint internal currentPriceLocation;
+    uint internal totalReward;//
     bytes32 internal marketResultId;
-    uint public rewardToDistribute;
+    uint internal rewardToDistribute;
     PredictionStatus internal predictionStatus;//
     uint public predictionForDate;//
     
@@ -57,16 +57,6 @@ contract Market is usingOraclize {
       uint ethStaked;
     }
 
-  struct SentTx
-  {
-      address payable _userAdd;
-      uint _userStakedEth;
-      uint _userPredictionPoints;
-      uint _userLeverage;
-      uint _userDistance;
-      uint _userReturn;
-  }
-    mapping(uint=>SentTx[]) public _sentTx;
     mapping(uint=>option) public optionsAvailable;
 
     modifier OnlyOwner() {
@@ -163,6 +153,27 @@ contract Market is usingOraclize {
     function setOptionRanges(uint _currentPrice) internal{
       (, , , , , , uint delta) = marketConfig.getPriceCalculationParams();
         (, uint totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
+     // uint primaryOption = totalOptions.div(2).add(1);
+     
+     // optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(delta).div(2));
+      //optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(delta).div(2));
+      //uint _increaseOption;
+    //   for(uint i = primaryOption ;i>1 ;i--){
+    //     _increaseOption = ++primaryOption;
+    //     if(i-1 > 1){
+    //       optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+    //       optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(delta);
+    //       optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(delta);
+    //       optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+    //     }
+    //     else{
+    //       optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
+    //       optionsAvailable[i-1].minValue = 0;
+    //       //Max uint value
+    //       optionsAvailable[_increaseOption].maxValue = ~uint256(0);
+    //       optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+    //     }
+    //   }
      optionsAvailable[1].minValue = 0;
      optionsAvailable[1].maxValue = _currentPrice.sub(1);
      optionsAvailable[2].minValue = _currentPrice;
@@ -222,7 +233,7 @@ contract Market is usingOraclize {
       } 
     }
 
-    function placePrediction(uint _prediction,uint _leverage) public payable {
+    function placePrediction(uint _prediction) public payable {
       require(now >= startTime && now <= expireTime);
       (, uint totalOptions, uint minPrediction, uint priceStep, , ) = marketConfig.getBasicMarketDetails();
       require(msg.value >= minPrediction,"Min prediction amount required");
@@ -233,10 +244,25 @@ contract Market is usingOraclize {
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionValue);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
-      _sentTx[_prediction].push(SentTx(msg.sender,msg.value,(predictionValue.mul(_leverage)), _leverage,0,0));
-      
+
       pl.callPlacePredictionEvent(msg.sender,msg.value, predictionValue, _prediction);
     }
+
+    // function _closeBet() public {      
+    //   //Bet will be closed by oraclize address
+    //   // require (msg.sender == oraclize_cbAddress());
+      
+    //   require(predictionStatus == PredictionStatus.Started && now >= expireTime,"bet not yet expired");
+      
+    //   predictionStatus = PredictionStatus.Closed;
+    //   pl.callCloseMarketEvent(betType);
+    //   if(now >= expireTime.add(predictionForDate)) {
+    //     predictionForDate = 0;
+    //   } else {
+    //     predictionForDate.sub(now.sub(expireTime));
+    //   }
+    //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://financialmodelingprep.com/api/v3/majors-indexes/.DJI).price");
+    // }
 
     function calculatePredictionResult(uint _value) public {
       require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
@@ -253,49 +279,62 @@ contract Market is usingOraclize {
           currentPriceLocation = i;
         }         
         else{
-         for(uint j = 0;j<_sentTx[i].length;j++){
-          if(currentPriceLocation > i){
-            _sentTx[i][j]._userDistance = currentPriceLocation.sub(i);
-          }   
-           else{
-            _sentTx[i][j]._userDistance = i.sub(currentPriceLocation); 
-           }    
-          uint totalLoss = (_sentTx[i][j]._userDistance.mul(10).mul(_sentTx[i][j]._userStakedEth).mul(_sentTx[i][j]._userLeverage)).div(100);
-          _sentTx[i][j]._userReturn = _sentTx[i][j]._userStakedEth.sub(totalLoss);
-          totalReward = totalReward.add(totalLoss);  
-          _transferEther(_sentTx[i][j]._userAdd, _sentTx[i][j]._userReturn); 
-        }
+          totalReward = totalReward.add(optionsAvailable[i].ethStaked);
         }
       }
       //Get donation, commission addresses and percentage
-      
-       (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+      (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+      if(optionsAvailable[currentPriceLocation].ethStaked > 0 && totalReward > 0){
+        // when  some wins some losses.
         commission = commission.mul(totalReward).div(100);
         donation = donation.mul(totalReward).div(100);
         rewardToDistribute = totalReward.sub(commission).sub(donation);
         _transferEther(commissionAccount, commission);
         _transferEther(donationAccount, donation);
+      } else if(optionsAvailable[currentPriceLocation].ethStaked > 0 && totalReward == 0){
+        // when all win.
+        commission = 0;
+        donation = 0;
+        rewardToDistribute = 0;
+        //Extra 2 decimals were added to percentage
+        if(address(pl).balance > (optionsAvailable[currentPriceLocation].ethStaked.mul(bonuReturnPerc)).div(10000)) {
+          pl.withdraw((optionsAvailable[currentPriceLocation].ethStaked.mul(bonuReturnPerc)).div(10000));
+        }
+      } else if(optionsAvailable[currentPriceLocation].ethStaked == 0 && totalReward > 0){
+        // when all looses. 
+        commission = commission.mul(totalReward).div(100);
+        donation = donation.mul(totalReward).div(100);
+        _transferEther(commissionAccount, commission);
+        _transferEther(donationAccount, donation);
         //Transfer remaining amount to Plotus contract
-        // _transferEther(address(pl), address(this).balance);
-       pl.callMarketResultEvent(commission, donation);    
+        _transferEther(address(pl), address(this).balance);
+      }
+      pl.callMarketResultEvent(commission, donation);    
     }
 
     function getReward(address _user)public view returns(uint){
-      uint userPoints;
-      for(uint i=0;i<_sentTx[currentPriceLocation].length;i++){
-        if(_sentTx[currentPriceLocation][i]._userAdd == msg.sender){
-         userPoints = userPoints.add(_sentTx[currentPriceLocation][i]._userPredictionPoints);
-        }
-      }
+      uint userPoints = userPredictionPoints[_user][currentPriceLocation];
       if(predictionStatus != PredictionStatus.ResultDeclared || userPoints == 0) {
         return 0;
       }
-      (uint reward) = _calculateReward(userPoints);
+      (uint reward, ) = _calculateReward(userPoints);
       return reward;
     }
 
-    function _calculateReward(uint userPoints) internal view returns(uint _reward) {
-      _reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[currentPriceLocation].predictionPoints);
+    function _calculateReward(uint userPoints) internal view returns(uint _reward, uint _postCappedRemaining) {
+      _reward = 0;
+      _postCappedRemaining = 0;
+      (, , , , uint maxReturn, uint bonuReturnPerc) = marketConfig.getBasicMarketDetails();
+       if(rewardToDistribute > 0) {
+          _reward = userPoints.mul(rewardToDistribute).div(optionsAvailable[currentPriceLocation].predictionPoints);
+          uint maxReturnCap = maxReturn * ethStaked[msg.sender][currentPriceLocation];
+          if(_reward > maxReturnCap) {
+            _postCappedRemaining = _reward.sub(maxReturnCap);
+            _reward = maxReturnCap;
+          }
+        } else if(address(this).balance > 0){
+          _reward = (ethStaked[msg.sender][currentPriceLocation].mul(bonuReturnPerc)).div(10000);
+        }
     }
 
     function claimReward() public {
@@ -303,13 +342,12 @@ contract Market is usingOraclize {
       require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
       userClaimedReward[msg.sender] = true;
       uint userPoints;
-      for(uint i=0;i<_sentTx[currentPriceLocation].length;i++){
-        if(_sentTx[currentPriceLocation][i]._userAdd == msg.sender){
-         userPoints = userPoints.add(_sentTx[currentPriceLocation][i]._userPredictionPoints);
-        }
-      }
+      userPoints = userPredictionPoints[msg.sender][currentPriceLocation];
       require(userPoints > 0,"must have atleast 0 points");
-      (uint reward) = _calculateReward(userPoints);
+      (uint reward, uint postCappedRemaining) = _calculateReward(userPoints);
+      if(postCappedRemaining > 0) {
+        _transferEther(address(pl), postCappedRemaining);
+      }
       _transferEther(msg.sender, ethStaked[msg.sender][currentPriceLocation].add(reward));
       pl.callClaimedEvent(msg.sender,reward, ethStaked[msg.sender][currentPriceLocation]);
     }
