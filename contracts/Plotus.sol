@@ -18,7 +18,7 @@ using SafeMath for uint;
     address[] public marketConfigs;
     uint public marketOpenIndex;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint predictionType, uint startTime);
-    event PlacePrediction(address indexed user,uint value, uint predictionPoints,uint prediction,address marketAdd);
+    event PlacePrediction(address indexed user,uint value, uint predictionPoints,uint prediction,address marketAdd,uint _leverage);
     event MarketResult(address indexed marketAdd, uint commision, uint donation);
     event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
    
@@ -88,8 +88,8 @@ using SafeMath for uint;
       emit MarketResult(msg.sender, _commision, _donation);
     }
     
-    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction) public OnlyMarket {
-      emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender);
+    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction, uint _leverage) public OnlyMarket {
+      emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender,_leverage);
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake) public OnlyMarket {
       emit Claimed(msg.sender, _user, _reward, _stake);
@@ -118,8 +118,4 @@ using SafeMath for uint;
     function () external payable {
     }
 
-    function withdraw(uint amount) external OnlyMarket {
-      require(amount<= address(this).balance,"insufficient amount");
-        msg.sender.transfer(amount);
-    }
 }
