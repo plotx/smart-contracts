@@ -34,13 +34,13 @@ contract Market is usingOraclize {
     uint internal rate;
     uint public WinningOption;
     bytes32 internal marketResultId;
-    uint internal rewardToDistribute;
+    uint public rewardToDistribute;
     PredictionStatus internal predictionStatus;
     uint internal predictionForDate;
     
-    mapping(address => mapping(uint => uint)) internal ethStaked;
+    mapping(address => mapping(uint => uint)) public ethStaked;
     mapping(address => mapping(uint => uint)) internal LeverageEth;
-    mapping(address => mapping(uint => uint)) internal userPredictionPoints;
+    mapping(address => mapping(uint => uint)) public userPredictionPoints;
     mapping(address => bool) internal userClaimedReward;
 
     IPlotus internal pl;
@@ -115,7 +115,7 @@ contract Market is usingOraclize {
      optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
-    function getOptionPrice(uint _prediction) internal view returns(uint) {
+    function getOptionPrice(uint _prediction) public view returns(uint) {
       (, uint totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
      return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked, totalOptions);
     }
@@ -169,8 +169,7 @@ contract Market is usingOraclize {
         }
         } 
        for(uint i=1;i <= totalOptions;i++){
-        uint distance = i.sub(WinningOption);
-        distanceFromWinningOption = distance >= 0 ? distance : -distance;    
+        distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
         totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
        }
        //Get donation, commission addresses and percentage
@@ -191,8 +190,7 @@ contract Market is usingOraclize {
         return 0;
        }
      for(uint i=1;i<=totalOptions;i++){
-      uint distance = i.sub(WinningOption);
-      distanceFromWinningOption = distance >= 0 ? distance : -distance;  
+      distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
       ethReturn =  _calEthReturn(ethReturn,_user,i,lossPercentage,distanceFromWinningOption);
       }     
      uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
