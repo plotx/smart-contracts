@@ -22,6 +22,7 @@ contract MarketConfig {
     
     address payable internal donationAccount;//
     address payable internal commissionAccount;//
+    address payable chainLinkPriceOracle;
     constructor(uint[] memory _uintParams, address payable[] memory _addressParams) public {
         betType = _uintParams[0];
         //Check for odd number of options
@@ -35,6 +36,7 @@ contract MarketConfig {
         MIN_TIME_ELAPSED = (PREDICTION_TIME) / 6;
         donationAccount = _addressParams[0]; 
         commissionAccount = _addressParams[1];
+        chainLinkPriceOracle = _addressParams[2];
     }
 
     function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint) {

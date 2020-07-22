@@ -3,6 +3,9 @@ pragma solidity 0.5.7;
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/oraclize/ethereum-api/usingOraclize.sol";
 import "./config/MarketConfig.sol";
+
+import "./IChainLinkOracle.sol";
+
 contract IPlotus {
 
     enum MarketType {
@@ -57,6 +60,8 @@ contract Market is usingOraclize {
 
     mapping(uint=>option) public optionsAvailable;
 
+    IChainLinkOracle chainLinkOracle;
+
     modifier OnlyOwner() {
       require(msg.sender == pl.owner() || msg.sender == address(pl));
       _;
@@ -75,6 +80,7 @@ contract Market is usingOraclize {
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
       marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      chainLinkOracle = IChainLinkOracle(marketConfigs.....);
     }
 
     function () external payable {
@@ -97,8 +103,10 @@ contract Market is usingOraclize {
       if(_totalStaked > stakeWeightageMinAmount) {
         _optionPrice = (_ethStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
       }
-      uint distance = WinningOption > _option ? WinningOption.sub(_option) : _option.sub(WinningOption);
-      uint maxDistance = WinningOption > (_totalOptions.div(2))? (WinningOption.sub(optionStartIndex)): (_totalOptions.sub(WinningOption));
+      uint currentPrice = chainLinkOracle.getAnswer()/10^8;
+      uint currentPriceOption = //get winning option as per latest price received from chainlink
+      uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
+      uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
       // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
       uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
       timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
