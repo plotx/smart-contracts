@@ -3,8 +3,7 @@ pragma solidity 0.5.7;
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/oraclize/ethereum-api/usingOraclize.sol";
 import "./config/MarketConfig.sol";
-
-import "./IChainLinkOracle.sol";
+import "./interface/IChainLinkOracle.sol";
 
 contract IPlotus {
 
@@ -60,7 +59,7 @@ contract Market is usingOraclize {
 
     mapping(uint=>option) public optionsAvailable;
 
-    IChainLinkOracle chainLinkOracle;
+    IChainLinkOracle internal chainLinkOracle;
 
     modifier OnlyOwner() {
       require(msg.sender == pl.owner() || msg.sender == address(pl));
@@ -80,7 +79,7 @@ contract Market is usingOraclize {
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
       marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
-      chainLinkOracle = IChainLinkOracle(marketConfigs.....);
+      chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
     }
 
     function () external payable {
@@ -93,9 +92,10 @@ contract Market is usingOraclize {
       }
         return predictionStatus;
     }
-
+  
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption, uint _totalOptions) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
+      uint currentPriceOption = 0;
       (uint predictionTime,uint optionStartIndex,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed) = marketConfig.getPriceCalculationParams();
       if(now > expireTime) {
         return 0;
@@ -103,15 +103,19 @@ contract Market is usingOraclize {
       if(_totalStaked > stakeWeightageMinAmount) {
         _optionPrice = (_ethStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
       }
-      uint currentPrice = chainLinkOracle.getAnswer()/10^8;
-      uint currentPriceOption = //get winning option as per latest price received from chainlink
+      uint currentPrice = uint(chainLinkOracle.latestAnswer()).div(10**8);
+         for(uint i=1;i <= _totalOptions;i++){
+        if(currentPrice <= optionsAvailable[i].maxValue && currentPrice >= optionsAvailable[i].minValue){
+          currentPriceOption = i;
+        }
+        }    
       uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
       uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
       // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
       uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
       timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
       _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
-      _optionPrice = _optionPrice.div(100);
+       _optionPrice = _optionPrice.div(100);
     }
 
     function setOptionRanges(uint _midRangeMin, uint _midRangeMax) internal{

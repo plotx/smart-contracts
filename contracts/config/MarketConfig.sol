@@ -50,4 +50,8 @@ contract MarketConfig {
     function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint) {
         return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED);
     }
+
+    function getChainLinkPriceOracle() public view returns (address){
+        return chainLinkPriceOracle;
+    }
 }
