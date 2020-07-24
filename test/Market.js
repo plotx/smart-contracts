@@ -241,10 +241,16 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const userPredictionPoints9 = await marketInstance.userPredictionPoints(user9,2);
         assert.equal(userPredictionPoints9/1,(user9EthStaked*4)/getPrice9);
 
+        // const plotusBalBefore = await web3.eth.getBalance(plotusNewAddress);
+        // console.log("Plotus balance before result declared",plotusBalBefore)
+        
         // check winning option.
         await marketInstance.calculatePredictionResult(900,{from: user1});
         const winningOption = await marketInstance.WinningOption();
         assert.equal(winningOption/1,1);
+
+        // const plotusBalAfter = await web3.eth.getBalance(plotusNewAddress);
+        // console.log("Plotus balance after result declared",plotusBalAfter)
 
         //reward to distribute for winners.
         const rewardToDistribute = await marketInstance.rewardToDistribute();

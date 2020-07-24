@@ -185,12 +185,16 @@ contract Market is usingOraclize {
         totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
        }
        //Get donation, commission addresses and percentage
-        (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+       (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
         commission = commission.mul(totalReward).div(100);
         donation = donation.mul(totalReward).div(100);
         rewardToDistribute = totalReward.sub(commission).sub(donation);
         commissionAccount.transfer(commission);
         donationAccount.transfer(donation);
+       if(optionsAvailable[WinningOption].ethStaked == 0){
+        address(pl).transfer(rewardToDistribute);
+       }
+
        pl.callMarketResultEvent(commission, donation);    
     }
 

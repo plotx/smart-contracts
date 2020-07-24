@@ -118,4 +118,8 @@ using SafeMath for uint;
     function () external payable {
     }
 
+    function withdraw(uint amount) external OnlyOwner {
+      require(amount<= address(this).balance,"insufficient amount");
+        msg.sender.transfer(amount);
+    }
 }
