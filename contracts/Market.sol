@@ -33,7 +33,8 @@ contract Market is usingOraclize {
     uint internal startTime;
     uint internal expireTime;
     string internal FeedSource;
-    uint internal rate;
+    uint public rate;
+    uint public minBet;
     uint public WinningOption;
     bytes32 internal marketResultId;
     uint public rewardToDistribute;
@@ -156,6 +157,7 @@ contract Market is usingOraclize {
       require(now >= startTime && now <= expireTime);
       (, ,uint minPrediction, , , ) = marketConfig.getBasicMarketDetails();
       require(msg.value >= minPrediction,"Min prediction amount required");
+      minBet = minPrediction;
       uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
       uint predictionPoints = (msg.value.div(optionPrice)).mul(_leverage);
       userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
