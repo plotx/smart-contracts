@@ -4,7 +4,7 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 
 contract Plotus{
-using SafeMath for uint; 
+using SafeMath for uint256; 
     
     enum MarketType {
       HourlyMarket,
@@ -12,19 +12,20 @@ using SafeMath for uint;
       WeeklyMarket
     }
     address[] internal markets;
-    mapping(address => uint) private marketIndex;
-    mapping(address => uint) internal totalStaked;
-    mapping(address => uint) internal rewardClaimed;
+    mapping(address => uint256) private marketIndex;
+    mapping(address => uint256) internal totalStaked;
+    mapping(address => uint256) internal rewardClaimed;
+    mapping(address => uint256) lastClaimedIndex;
     mapping(address => address[]) internal marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) internal marketsParticipatedFlag; //Markets participated by user
     address public owner;
     address public masterAddress;
     address[] public marketConfigs;
-    uint public marketOpenIndex;
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint predictionType, uint startTime);
-    event PlacePrediction(address indexed user,uint value, uint predictionPoints,uint prediction,address indexed marketAdd,uint _leverage);
-    event MarketResult(address indexed marketAdd, uint commision, uint donation, uint totalReward);
-    event Claimed(address indexed marketAdd, address indexed user, uint reward, uint stake);
+    uint256 public marketOpenIndex;
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 predictionType, uint256 startTime);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints,uint256 prediction,address indexed marketAdd,uint256 _leverage);
+    event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward);
+    event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake);
    
     modifier OnlyOwner() {
       require(msg.sender == owner);
@@ -58,13 +59,13 @@ using SafeMath for uint;
     }
 
     function addNewMarket( 
-      uint _marketType,
-      uint[] memory _marketparams,
+      uint256 _marketType,
+      uint256[] memory _marketparams,
       string memory _feedsource,
       bytes32 _stockName
     ) public payable OnlyOwner
     {
-      require(_marketType <= uint(MarketType.WeeklyMarket), "Invalid market");
+      require(_marketType <= uint256(MarketType.WeeklyMarket), "Invalid market");
       // address payable marketConAdd = _generateProxy(marketImplementations[_marketType]);
       Market _market=  new Market();
       markets.push(address(_market));
@@ -73,14 +74,14 @@ using SafeMath for uint;
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
-    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward) public OnlyMarket {
+    function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward) public OnlyMarket {
       if (marketOpenIndex <= marketIndex[msg.sender]) {
-        uint i;
-        uint _status;
+        uint256 i;
+        uint256 _status;
         for(i = marketOpenIndex+1;i < markets.length;i++){
           //Convert to payable address
           ( , , , , , , , _status) = getMarketDetails(address(uint160(markets[i])));
-          if(_status == uint(Market.PredictionStatus.Started)) {
+          if(_status == uint256(Market.PredictionStatus.Started)) {
             marketOpenIndex = i;
             break;
           }
@@ -92,22 +93,23 @@ using SafeMath for uint;
       emit MarketResult(msg.sender, _commision, _donation, _totalReward);
     }
     
-    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction, uint _leverage) public OnlyMarket {
-      totalStaked[_user] += _value;
+    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint256 _prediction, uint256 _leverage) public OnlyMarket {
+      totalStaked[_user] = totalStaked[_user].add(_value);
       if(!marketsParticipatedFlag[_user][msg.sender]) {
         marketsParticipated[_user].push(msg.sender);
         marketsParticipatedFlag[_user][msg.sender] = true;
       }
       emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender,_leverage);
     }
-    function callClaimedEvent(address _user , uint _reward, uint _stake) public OnlyMarket {
-      rewardClaimed[_user] += _reward + _stake;
+
+    function callClaimedEvent(address _user , uint256 _reward, uint256 _stake) public OnlyMarket {
+      rewardClaimed[_user] = rewardClaimed[_user].add(_reward).add(_stake);
       emit Claimed(msg.sender, _user, _reward, _stake);
     }
 
     function getMarketDetails(address payable _marketAdd)public view returns
-    (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
-      uint[] memory optionprice,uint[] memory _ethStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
+    (string memory _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
+      uint256[] memory optionprice,uint256[] memory _ethStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
       // Market _market = Market(_marketAdd);
       return Market(_marketAdd).getData();
     }
@@ -127,14 +129,14 @@ using SafeMath for uint;
     }
 
     function getOpenMarkets() public view returns(address[] memory _openMarkets, uint256[] memory _marketTypes) {
-      uint  count = 0;
-      uint _status;
-      uint _marketType;
+      uint256  count = 0;
+      uint256 _status;
+      uint256 _marketType;
       _openMarkets = new address[](markets.length - marketOpenIndex);
-      _marketTypes = new uint[](markets.length - marketOpenIndex);
-      for(uint i = marketOpenIndex; i < markets.length; i++) {
+      _marketTypes = new uint256[](markets.length - marketOpenIndex);
+      for(uint256 i = marketOpenIndex; i < markets.length; i++) {
         ( , , , , , _marketType, , _status) = getMarketDetails(address(uint160(markets[i])));
-        if(_status == uint(Market.PredictionStatus.Started)) {
+        if(_status == uint256(Market.PredictionStatus.Started)) {
           _openMarkets[count] = markets[i];
           _marketTypes[count] = _marketType;
           count++;
@@ -142,12 +144,23 @@ using SafeMath for uint;
       }
     }
 
-    // function calculatePendingReturn()
+    function calculatePendingReturn(address _user) public {
+      for(uint256 i = lastClaimedIndex[_user]+1; i < marketsParticipated[_user].length; i++) {
+        Market(address(uint160(marketsParticipated[_user][i]))).getPendingReturn(_user);
+      }
+    }
+
+    function claimPendingReturn() public {
+      for(uint256 i = lastClaimedIndex[msg.sender]+1; i < marketsParticipated[msg.sender].length; i++) {
+        Market(address(uint160(marketsParticipated[msg.sender][i]))).claimReturn(msg.sender);
+        lastClaimedIndex[msg.sender] = i;
+      }
+    }
 
     function () external payable {
     }
 
-    function withdraw(uint amount) external OnlyOwner {
+    function withdraw(uint256 amount) external OnlyOwner {
       require(amount<= address(this).balance,"insufficient amount");
         msg.sender.transfer(amount);
     }

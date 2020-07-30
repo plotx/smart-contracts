@@ -245,13 +245,13 @@ contract Market is usingOraclize {
         return ethReturn.add(ethStaked[_user][i].sub((LeverageEth[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
     }
 
-    function claimReturn() public {
-      require(!userClaimedReward[msg.sender],"Already claimed");
+    function claimReturn(address payable _user) public {
+      require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
-      userClaimedReward[msg.sender] = true;
-      (uint returnAmount) = getReturn(msg.sender);
-       msg.sender.transfer(returnAmount);
-      pl.callClaimedEvent(msg.sender,returnAmount, ethStaked[msg.sender][WinningOption]);
+      userClaimedReward[_user] = true;
+      (uint returnAmount) = getReturn(_user);
+       _user.transfer(returnAmount);
+      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption]);
     }
 
     function __callback(bytes32 myid, string memory result) public {
