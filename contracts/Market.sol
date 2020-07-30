@@ -18,7 +18,7 @@ contract IPlotus {
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake) public {
     }
-    function callMarketResultEvent(uint _commision, uint _donation) public {
+    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward) public {
     }
 }
 contract Market is usingOraclize {
@@ -56,6 +56,7 @@ contract Market is usingOraclize {
       uint predictionPoints;
       uint ethStaked;
       uint ethLeveraged;
+      address[] stakers;
     }
 
     mapping(uint=>option) public optionsAvailable;
@@ -74,7 +75,7 @@ contract Market is usingOraclize {
       FeedSource = _feedsource;
       predictionForDate = _uintparams[1];
       rate = _uintparams[2];
-      optionsAvailable[0] = option(0,0,0,0,0);
+      // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       (uint predictionTime, , , , , ) = marketConfig.getPriceCalculationParams();
       expireTime = startTime + predictionTime;
       require(expireTime > now);
@@ -94,7 +95,7 @@ contract Market is usingOraclize {
         return predictionStatus;
     }
   
-    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption, uint _totalOptions) internal view returns(uint _optionPrice) {
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
       (uint predictionTime,uint optionStartIndex,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed) = marketConfig.getPriceCalculationParams();
@@ -105,13 +106,24 @@ contract Market is usingOraclize {
         _optionPrice = (_ethStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
       }
       uint currentPrice = uint(chainLinkOracle.latestAnswer()).div(10**8);
-         for(uint i=1;i <= _totalOptions;i++){
-        if(currentPrice <= optionsAvailable[i].maxValue && currentPrice >= optionsAvailable[i].minValue){
-          currentPriceOption = i;
-        }
-        }    
+      uint maxDistance;
+      if(currentPrice < optionsAvailable[2].minValue) {
+        currentPriceOption = 1;
+        maxDistance = 2;
+      } else if(currentPrice > optionsAvailable[2].maxValue) {
+        currentPriceOption = 3;
+        maxDistance = 2;
+      } else {
+        currentPriceOption = 2;
+        maxDistance = 1;
+      }
+        //  for(uint i=1;i <= _totalOptions;i++){
+        // if(currentPrice <= optionsAvailable[i].maxValue && currentPrice >= optionsAvailable[i].minValue){
+        //   currentPriceOption = i;
+        // }
+        // }    
       uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
-      uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
+      // uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
       // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
       uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
       timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
@@ -130,7 +142,7 @@ contract Market is usingOraclize {
 
     function getOptionPrice(uint _prediction) public view returns(uint) {
       (, uint totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
-     return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked, totalOptions);
+     return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked);
     }
 
     function getData() public view returns
@@ -149,8 +161,12 @@ contract Market is usingOraclize {
         _ethStaked[i] = optionsAvailable[i+1].ethStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, address(this).balance, optionsAvailable[i+1].ethStaked, totalOptions);
+        _optionPrice[i] = _calculateOptionPrice(i+1, address(this).balance, optionsAvailable[i+1].ethStaked);
        }
+    }
+
+    function getMarketResults() public view returns(uint256, uint256, uint256, address[] memory, uint256) {
+      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].stakers, optionsAvailable[WinningOption].ethStaked);
     }
 
     function placePrediction(uint _prediction,uint _leverage) public payable {
@@ -159,7 +175,10 @@ contract Market is usingOraclize {
       require(msg.value >= minPrediction,"Min prediction amount required");
       minBet = minPrediction;
       uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
-      uint predictionPoints = (msg.value.div(optionPrice)).mul(_leverage);
+      uint predictionPoints = (msg.value.div(optionPrice*rate)).mul(_leverage);
+      if(userPredictionPoints[msg.sender][_prediction] == 0) {
+        optionsAvailable[_prediction].stakers.push(msg.sender);
+      }
       userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
       LeverageEth[msg.sender][_prediction] = LeverageEth[msg.sender][_prediction].add(msg.value.mul(_leverage));
@@ -197,7 +216,7 @@ contract Market is usingOraclize {
         address(pl).transfer(rewardToDistribute);
        }
 
-       pl.callMarketResultEvent(commission, donation);    
+       pl.callMarketResultEvent(commission, donation, rewardToDistribute);    
     }
 
     function getReturn(address _user)public view returns(uint){
@@ -214,6 +233,11 @@ contract Market is usingOraclize {
      uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
      uint returnAmount =  reward.add(ethReturn);
      return returnAmount;
+    }
+
+    function getPendingReturn(address _user)public view returns(uint){
+     if(userClaimedReward[_user]) return 0;
+     return getReturn(_user);
     }
     
     //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
