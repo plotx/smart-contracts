@@ -119,11 +119,26 @@ using SafeMath for uint256;
 
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
     (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
-      require(fromIndex < marketsParticipated[user].length && toIndex < marketsParticipated[user].length);
+      require(fromIndex < marketsParticipated[user].length && toIndex <= marketsParticipated[user].length);
       _market = new address payable[](toIndex.sub(fromIndex).add(1));
       _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
       _reward = new uint256[](toIndex.sub(fromIndex).add(1));
       for(uint256 i = fromIndex; i < toIndex; i++) {
+        Market _marketInstance = Market(marketsParticipated[user][i]);
+        _market[i] = marketsParticipated[user][i];
+        _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
+        _reward[i] = _marketInstance.getReturn(user);
+      }
+    }
+
+    function getMarketDetailsUser1(address user, uint256 noOfRecords) external view returns
+    (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
+      require(noOfRecords < marketsParticipated[user].length);
+      _market = new address payable[](noOfRecords);
+      _winnigOption = new uint256[](noOfRecords);
+      _reward = new uint256[](noOfRecords);
+      uint records = marketsParticipated[user].length < noOfRecords ? marketsParticipated[user].length : noOfRecords;
+      for(uint256 i = 0; i < records; i++) {
         Market _marketInstance = Market(marketsParticipated[user][i]);
         _market[i] = marketsParticipated[user][i];
         _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
