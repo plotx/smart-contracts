@@ -117,7 +117,7 @@ using SafeMath for uint256;
       return Market(_marketAdd).getData();
     }
 
-    function getMarketDetails(address user, uint256 fromIndex, uint256 toIndex) external view returns
+    function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
     (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
       require(fromIndex < marketsParticipated[user].length && toIndex < marketsParticipated[user].length);
       _market = new address payable[](toIndex.sub(fromIndex).add(1));
