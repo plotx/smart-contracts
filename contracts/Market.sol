@@ -16,9 +16,9 @@ contract IPlotus {
     function() external payable{}
     function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction,uint _leverage) public{
     }
-    function callClaimedEvent(address _user , uint _reward, uint _stake, uint winningOption) public {
+    function callClaimedEvent(address _user , uint _reward, uint _stake) public {
     }
-    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward) public {
+    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward, uint winningOption) public {
     }
 }
 contract Market is usingOraclize {
@@ -216,7 +216,7 @@ contract Market is usingOraclize {
         address(pl).transfer(rewardToDistribute);
        }
 
-       pl.callMarketResultEvent(commission, donation, rewardToDistribute);    
+       pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
     }
 
     function getReturn(address _user)public view returns(uint){
@@ -251,7 +251,7 @@ contract Market is usingOraclize {
       userClaimedReward[_user] = true;
       (uint returnAmount) = getReturn(_user);
        _user.transfer(returnAmount);
-      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption], WinningOption);
+      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption]);
     }
 
     function __callback(bytes32 myid, string memory result) public {

@@ -24,8 +24,8 @@ using SafeMath for uint256;
     uint256 public marketOpenIndex;
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward);
-    event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 winningOption);
+    event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward, uint256 winningOption);
+    event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake);
    
     modifier OnlyOwner() {
       require(msg.sender == owner);
@@ -75,7 +75,7 @@ using SafeMath for uint256;
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
-    function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward) public OnlyMarket {
+    function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward, uint256 winningOption) public OnlyMarket {
       if (marketOpenIndex <= marketIndex[msg.sender]) {
         uint256 i;
         uint256 _status;
@@ -91,7 +91,7 @@ using SafeMath for uint256;
           marketOpenIndex = i-1;
         }
       }
-      emit MarketResult(msg.sender, _commision, _donation, _totalReward);
+      emit MarketResult(msg.sender, _commision, _donation, _totalReward, winningOption);
     }
     
     function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint256 _prediction, uint256 _leverage) public OnlyMarket {
@@ -103,9 +103,9 @@ using SafeMath for uint256;
       emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender,_leverage);
     }
 
-    function callClaimedEvent(address _user , uint256 _reward, uint256 _stake, uint256 winningOption) public OnlyMarket {
+    function callClaimedEvent(address _user , uint256 _reward, uint256 _stake) public OnlyMarket {
       rewardClaimed[_user] = rewardClaimed[_user].add(_reward).add(_stake);
-      emit Claimed(msg.sender, _user, _reward, _stake, winningOption);
+      emit Claimed(msg.sender, _user, _reward, _stake);
     }
 
     function getMarketDetails(address payable _marketAdd)public view returns
