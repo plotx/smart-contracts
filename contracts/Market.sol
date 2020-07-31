@@ -174,8 +174,9 @@ contract Market is usingOraclize {
       (, ,uint minPrediction, , , ) = marketConfig.getBasicMarketDetails();
       require(msg.value >= minPrediction,"Min prediction amount required");
       minBet = minPrediction;
-      uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
-      uint predictionPoints = (msg.value.div(optionPrice*rate)).mul(_leverage);
+      uint optionPrice = _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
+      // uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
+      uint predictionPoints = (((msg.value).mul(10^6)).mul(_leverage)).div(optionPrice*rate);
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
       }
