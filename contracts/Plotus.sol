@@ -154,13 +154,13 @@ using SafeMath for uint256;
       }
     }
 
-    // function claimPendingReturn() public {
-    //   for(uint256 i = lastClaimedIndex[msg.sender]+1; i < marketsParticipated[msg.sender].length; i++) {
-    //     // marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user));
-    //     Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
-    //     lastClaimedIndex[msg.sender] = i;
-    //   }
-    // }
+    function claimPendingReturn() public {
+      for(uint256 i = lastClaimedIndex[msg.sender]+1; i < marketsParticipated[msg.sender].length; i++) {
+        // marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user));
+        Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
+        lastClaimedIndex[msg.sender] = i;
+      }
+    }
 
     // function () external payable {
     // }
