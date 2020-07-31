@@ -147,21 +147,23 @@ using SafeMath for uint256;
       }
     }
 
-    function calculatePendingReturn(address _user) public {
+    function calculatePendingReturn(address _user) public returns(uint256 pendingReturn) {
       for(uint256 i = lastClaimedIndex[_user]+1; i < marketsParticipated[_user].length; i++) {
-        Market(marketsParticipated[_user][i]).getPendingReturn(_user);
+        // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
+        pendingReturn = pendingReturn.add(Market(marketsParticipated[_user][i]).getPendingReturn(_user));
       }
     }
 
     // function claimPendingReturn() public {
     //   for(uint256 i = lastClaimedIndex[msg.sender]+1; i < marketsParticipated[msg.sender].length; i++) {
+    //     // marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user));
     //     Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
     //     lastClaimedIndex[msg.sender] = i;
     //   }
     // }
 
-    function () external payable {
-    }
+    // function () external payable {
+    // }
 
     function withdraw(uint256 amount) external OnlyOwner {
       require(amount<= address(this).balance,"insufficient amount");
