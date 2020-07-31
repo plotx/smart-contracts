@@ -80,7 +80,7 @@ contract Market is usingOraclize {
       expireTime = startTime + predictionTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-      // marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
     }
 
