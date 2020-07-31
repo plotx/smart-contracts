@@ -16,7 +16,7 @@ contract IPlotus {
     function() external payable{}
     function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction,uint _leverage) public{
     }
-    function callClaimedEvent(address _user , uint _reward, uint _stake) public {
+    function callClaimedEvent(address _user , uint _reward, uint _stake, uint winningOption) public {
     }
     function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward) public {
     }
@@ -80,7 +80,7 @@ contract Market is usingOraclize {
       expireTime = startTime + predictionTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      // marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
     }
 
@@ -153,11 +153,11 @@ contract Market is usingOraclize {
         _feedsource = FeedSource;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
-        minvalue = new uint[](totalOptions);
-        maxvalue = new uint[](totalOptions);
-        _optionPrice = new uint[](totalOptions);
-        _ethStaked = new uint[](totalOptions);
-        for (uint i = 0; i < totalOptions; i++) {
+        minvalue = new uint[](3);
+        maxvalue = new uint[](3);
+        _optionPrice = new uint[](3);
+        _ethStaked = new uint[](3);
+        for (uint i = 0; i < 3; i++) {
         _ethStaked[i] = optionsAvailable[i+1].ethStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
@@ -251,7 +251,7 @@ contract Market is usingOraclize {
       userClaimedReward[_user] = true;
       (uint returnAmount) = getReturn(_user);
        _user.transfer(returnAmount);
-      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption]);
+      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption], WinningOption);
     }
 
     function __callback(bytes32 myid, string memory result) public {
