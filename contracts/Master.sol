@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
 
-// import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/ownership/Ownable.sol";
 import "./Plotus.sol";
 
