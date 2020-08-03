@@ -17,7 +17,7 @@ using SafeMath for uint256;
     mapping(address => uint256) rewardClaimed;
     mapping(address => uint256) marketWinningOption;
     mapping(address => uint256) lastClaimedIndex;
-    mapping(address => address payable[]) marketsParticipated; //Markets participated by user
+    mapping(address => address payable[]) public marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
     address public owner;
     address public masterAddress;
@@ -119,30 +119,32 @@ using SafeMath for uint256;
 
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
     (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
-      require(fromIndex < marketsParticipated[user].length && toIndex <= marketsParticipated[user].length);
-      _market = new address payable[](toIndex.sub(fromIndex).add(1));
-      _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
-      _reward = new uint256[](toIndex.sub(fromIndex).add(1));
-      for(uint256 i = fromIndex; i < toIndex; i++) {
-        Market _marketInstance = Market(marketsParticipated[user][i]);
-        _market[i] = marketsParticipated[user][i];
-        _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
-        _reward[i] = _marketInstance.getReturn(user);
+      if(fromIndex < marketsParticipated[user].length && toIndex <= marketsParticipated[user].length) {
+        _market = new address payable[](toIndex.sub(fromIndex).add(1));
+        _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
+        _reward = new uint256[](toIndex.sub(fromIndex).add(1));
+        for(uint256 i = fromIndex; i < toIndex; i++) {
+          Market _marketInstance = Market(marketsParticipated[user][i]);
+          _market[i] = marketsParticipated[user][i];
+          _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
+          _reward[i] = _marketInstance.getReturn(user);
+        }
       }
     }
 
     function getMarketDetailsUser1(address user, uint256 noOfRecords) external view returns
     (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
-      require(noOfRecords < marketsParticipated[user].length);
-      _market = new address payable[](noOfRecords);
-      _winnigOption = new uint256[](noOfRecords);
-      _reward = new uint256[](noOfRecords);
-      uint records = marketsParticipated[user].length < noOfRecords ? marketsParticipated[user].length : noOfRecords;
-      for(uint256 i = 0; i < records; i++) {
-        Market _marketInstance = Market(marketsParticipated[user][i]);
-        _market[i] = marketsParticipated[user][i];
-        _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
-        _reward[i] = _marketInstance.getReturn(user);
+      if(noOfRecords < marketsParticipated[user].length) {
+        _market = new address payable[](noOfRecords);
+        _winnigOption = new uint256[](noOfRecords);
+        _reward = new uint256[](noOfRecords);
+        uint records = marketsParticipated[user].length < noOfRecords ? marketsParticipated[user].length : noOfRecords;
+        for(uint256 i = 0; i < records; i++) {
+          Market _marketInstance = Market(marketsParticipated[user][i]);
+          _market[i] = marketsParticipated[user][i];
+          _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
+          _reward[i] = _marketInstance.getReturn(user);
+        }
       }
     }
 
@@ -164,7 +166,7 @@ using SafeMath for uint256;
       }
     }
 
-    function calculatePendingReturn(address _user) external returns(uint256 pendingReturn) {
+    function calculateUserPendingReturn(address _user) external view returns(uint256 pendingReturn) {
       for(uint256 i = lastClaimedIndex[_user]+1; i < marketsParticipated[_user].length; i++) {
         // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
         pendingReturn = pendingReturn.add(Market(marketsParticipated[_user][i]).getPendingReturn(_user));
@@ -179,8 +181,8 @@ using SafeMath for uint256;
       }
     }
 
-    // function () external payable {
-    // }
+    function () external payable {
+    }
 
     function withdraw(uint256 amount) external OnlyOwner {
       require(amount<= address(this).balance,"insufficient amount");
