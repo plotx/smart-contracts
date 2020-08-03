@@ -14,7 +14,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         masterInstance = await Master.deployed();
         plotusNewAddress = await masterInstance.plotusAddress(); 
         plotusNewInstance = await Plotus.at(plotusNewAddress);
-        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,1000000000000000,9000,9100],"firstBet","0x47");
+        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,100000000000000,9000,9100],"firstBet","0x47");
         const length = addNewMarket.logs[0].args.marketAdd; 
         console.log("market",length)
         marketInstance = await Market.at(length);
@@ -40,20 +40,22 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         masterInstance = await Master.deployed();
         plotusNewAddress = await masterInstance.plotusAddress(); 
         plotusNewInstance = await Plotus.at(plotusNewAddress);
-        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,1000000000000000,9000,9100],"firstBet","0x47");
+        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,100000000000000,9000,9100],"firstBet","0x47");
         const length = addNewMarket.logs[0].args.marketAdd; 
         marketInstance = await Market.at(length);
         assert.ok(marketInstance);
         const addressOfMarket = marketInstance.address;
         
         //place prediction for user1.
-        await marketInstance.placePrediction(2,1,{value: 400000000000000000,from: user1});
         const getPrice0 = await marketInstance.getOptionPrice(2);
+        await marketInstance.placePrediction(2,1,{value: 400000000000000000,from: user1});222222222
         assert.equal(getPrice0/1,18)
+        console.log(getPrice0/1);
         const user0EthStaked = await marketInstance.ethStaked(user1,2);
         assert.equal(user0EthStaked/1,400000000000000000);
         const userPredictionPoints0 = await marketInstance.userPredictionPoints(user1,2);
-        assert.equal(userPredictionPoints0/1,(user0EthStaked*1)/getPrice0);
+        console.log(userPredictionPoints0/1);
+        assert.equal(userPredictionPoints0/1,Math.floor((user0EthStaked*1)/(getPrice0*1e14)));
 
         //place prediction for user1.
         await marketInstance.placePrediction(2,2,{value: 400000000000000000,from: user1});
@@ -62,7 +64,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user1EthStaked = await marketInstance.ethStaked(user1,2);
         assert.equal(user1EthStaked/1, (user0EthStaked*2));
         const userPredictionPoints1 = await marketInstance.userPredictionPoints(user1,2);
-        assert.equal(userPredictionPoints1/1,(user0EthStaked*3)/getPrice1);
+        assert.equal(userPredictionPoints1/1,Math.floor((user0EthStaked*3)/(getPrice1*1e14)));
 
         //place prediction for user2.
         await marketInstance.placePrediction(2,2,{value: 400000000000000000,from: user2});
@@ -71,7 +73,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user2EthStaked = await marketInstance.ethStaked(user2,2);
         assert.equal(user2EthStaked/1,400000000000000000);
         const userPredictionPoints2 = await marketInstance.userPredictionPoints(user2,2);
-        assert.equal(userPredictionPoints2/1,(user2EthStaked*2)/getPrice2);
+        assert.equal(userPredictionPoints2/1,Math.floor((user2EthStaked*2)/(getPrice2*1e14)));
 
         //place prediction for user3.
         await marketInstance.placePrediction(3,3,{value: 200000000000000000,from: user3});
@@ -80,7 +82,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user3EthStaked = await marketInstance.ethStaked(user3,3);
         assert.equal(user3EthStaked/1,200000000000000000);
         const userPredictionPoints3 = await marketInstance.userPredictionPoints(user3,3);
-        //assert.equal(userPredictionPoints3/1,(user3EthStaked*3)/getPrice3);
+        //assert.equal(userPredictionPoints3/1,Math.floor((user3EthStaked*3)/(getPrice3*1e14)));
 
         //place prediction for user4.
         await marketInstance.placePrediction(1,4,{value: 400000000000000000,from: user4});
@@ -89,7 +91,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user4EthStaked = await marketInstance.ethStaked(user4,1);
         assert.equal(user4EthStaked/1,400000000000000000);
         const userPredictionPoints4 = await marketInstance.userPredictionPoints(user4,1);
-        assert.equal(userPredictionPoints4/1,(user4EthStaked*4)/getPrice4);
+        assert.equal(userPredictionPoints4/1,Math.floor((user4EthStaked*4)/(getPrice4*1e14)));
 
         //place prediction for user5.
         await marketInstance.placePrediction(1,5,{value: 300000000000000000,from: user5});
@@ -98,7 +100,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user5EthStaked = await marketInstance.ethStaked(user5,1);
         assert.equal(user5EthStaked/1,300000000000000000);
         const userPredictionPoints5 = await marketInstance.userPredictionPoints(user5,1);
-        assert.equal(userPredictionPoints5/1,(user5EthStaked*5)/getPrice5);
+        assert.equal(userPredictionPoints5/1,Math.floor((user5EthStaked*5)/(getPrice5*1e14)));
 
         //place prediction for user6.
         await marketInstance.placePrediction(2,2,{value: 200000000000000000,from: user6});
@@ -107,7 +109,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user6EthStaked = await marketInstance.ethStaked(user6,2);
         assert.equal(user6EthStaked/1,200000000000000000);
         const userPredictionPoints6 = await marketInstance.userPredictionPoints(user6,2);
-        assert.equal(userPredictionPoints6/1,(user6EthStaked*2)/getPrice6);
+        assert.equal(userPredictionPoints6/1,Math.floor((user6EthStaked*2)/(getPrice6*1e14)));
 
         //place prediction for user7.
         await marketInstance.placePrediction(3,3,{value: 500000000000000000,from: user7});
@@ -116,7 +118,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user7EthStaked = await marketInstance.ethStaked(user7,3);
         assert.equal(user7EthStaked/1,500000000000000000);
         const userPredictionPoints7 = await marketInstance.userPredictionPoints(user7,3);
-        assert.equal(userPredictionPoints7/1,(user7EthStaked*3)/getPrice7);
+        assert.equal(userPredictionPoints7/1,Math.floor((user7EthStaked*3)/(getPrice7*1e14)));
 
         //place prediction for user8.
         await marketInstance.placePrediction(3,1,{value: 500000000000000000,from: user8});
@@ -125,7 +127,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user8EthStaked = await marketInstance.ethStaked(user8,3);
         assert.equal(user8EthStaked/1,500000000000000000);
         const userPredictionPoints8 = await marketInstance.userPredictionPoints(user8,3);
-        assert.equal(userPredictionPoints8/1,(user8EthStaked*1)/getPrice8);
+        assert.equal(userPredictionPoints8/1,Math.floor((user8EthStaked*1)/(getPrice8*1e14)));
 
         //place prediction for user9.
         await marketInstance.placePrediction(2,4,{value: 700000000000000000,from: user9});
@@ -134,18 +136,18 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user9EthStaked = await marketInstance.ethStaked(user9,2);
         assert.equal(user9EthStaked/1,700000000000000000);
         const userPredictionPoints9 = await marketInstance.userPredictionPoints(user9,2);
-        assert.equal(userPredictionPoints9/1,(user9EthStaked*4)/getPrice9);
+        assert.equal(userPredictionPoints9/1,Math.floor((user9EthStaked*4)/(getPrice9*1e14)));
         })
 
         //check reward to distribute, return Amount and claim return for each users.
-        it('3.check reward to distribute, return Amount and claim return',async function(){
+    it('3.check reward to distribute, return Amount and claim return',async function(){
         let nowTime = new Date()/1000;
         nowTime = parseInt(nowTime);
         const start = nowTime/1;
         masterInstance = await Master.deployed();
         plotusNewAddress = await masterInstance.plotusAddress(); 
         plotusNewInstance = await Plotus.at(plotusNewAddress);
-        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,1000000000000000,9000,9100],"firstBet","0x47");
+        const addNewMarket = await plotusNewInstance.addNewMarket(0,[start,start,100000000000000,9000,9100],"firstBet","0x47");
         const length = addNewMarket.logs[0].args.marketAdd; 
         marketInstance = await Market.at(length);
         assert.ok(marketInstance);
@@ -158,7 +160,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user0EthStaked = await marketInstance.ethStaked(user1,2);
         assert.equal(user0EthStaked/1,400000000000000000);
         const userPredictionPoints0 = await marketInstance.userPredictionPoints(user1,2);
-        assert.equal(userPredictionPoints0/1,(user0EthStaked*1)/getPrice0);
+        assert.equal(userPredictionPoints0/1,Math.floor((user0EthStaked*1)/(getPrice0*1e14)));
 
          //place prediction for user1.
          await marketInstance.placePrediction(2,2,{value: 400000000000000000,from: user1});
@@ -167,7 +169,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user1EthStaked = await marketInstance.ethStaked(user1,2);
         assert.equal(user1EthStaked/1, (user0EthStaked*2));
         const userPredictionPoints1 = await marketInstance.userPredictionPoints(user1,2);
-         assert.equal(userPredictionPoints1/1,(user0EthStaked*3)/getPrice1);
+         assert.equal(userPredictionPoints1/1,Math.floor((user0EthStaked*3)/(getPrice1*1e14)));
 
         //place prediction for user2.
         await marketInstance.placePrediction(2,2,{value: 400000000000000000,from: user2});
@@ -176,7 +178,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user2EthStaked = await marketInstance.ethStaked(user2,2);
         assert.equal(user2EthStaked/1,400000000000000000);
         const userPredictionPoints2 = await marketInstance.userPredictionPoints(user2,2);
-        assert.equal(userPredictionPoints2/1,(user2EthStaked*2)/getPrice2);
+        assert.equal(userPredictionPoints2/1,Math.floor((user2EthStaked*2)/(getPrice2*1e14)));
 
         //place prediction for user3.
         await marketInstance.placePrediction(3,3,{value: 200000000000000000,from: user3});
@@ -185,7 +187,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user3EthStaked = await marketInstance.ethStaked(user3,3);
         assert.equal(user3EthStaked/1,200000000000000000);
         const userPredictionPoints3 = await marketInstance.userPredictionPoints(user3,3);
-       // assert.equal(userPredictionPoints3/1,(user3EthStaked*3)/getPrice3);
+       // assert.equal(userPredictionPoints3/1,Math.floor((user3EthStaked*3)/(getPrice3*1e14)));
 
         //place prediction for user4.
         await marketInstance.placePrediction(1,4,{value: 400000000000000000,from: user4});
@@ -194,7 +196,8 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user4EthStaked = await marketInstance.ethStaked(user4,1);
         assert.equal(user4EthStaked/1,400000000000000000);
         const userPredictionPoints4 = await marketInstance.userPredictionPoints(user4,1);
-        assert.equal(userPredictionPoints4/1,(user4EthStaked*4)/getPrice4);
+        console.log(userPredictionPoints4/1);
+        assert.equal(userPredictionPoints4/1,Math.floor((user4EthStaked*4)/(getPrice4*1e14)));
 
         //place prediction for user5.
         await marketInstance.placePrediction(1,5,{value: 300000000000000000,from: user5});
@@ -203,7 +206,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user5EthStaked = await marketInstance.ethStaked(user5,1);
         assert.equal(user5EthStaked/1,300000000000000000);
         const userPredictionPoints5 = await marketInstance.userPredictionPoints(user5,1);
-        assert.equal(userPredictionPoints5/1,(user5EthStaked*5)/getPrice5);
+        assert.equal(userPredictionPoints5/1,Math.floor((user5EthStaked*5)/(getPrice5*1e14)));
 
         //place prediction for user6.
         await marketInstance.placePrediction(2,2,{value: 200000000000000000,from: user6});
@@ -212,7 +215,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user6EthStaked = await marketInstance.ethStaked(user6,2);
         assert.equal(user6EthStaked/1,200000000000000000);
         const userPredictionPoints6 = await marketInstance.userPredictionPoints(user6,2);
-        assert.equal(userPredictionPoints6/1,(user6EthStaked*2)/getPrice6);
+        assert.equal(userPredictionPoints6/1,Math.floor((user6EthStaked*2)/(getPrice6*1e14)));
 
         //place prediction for user7.
         await marketInstance.placePrediction(3,3,{value: 500000000000000000,from: user7});
@@ -221,7 +224,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user7EthStaked = await marketInstance.ethStaked(user7,3);
         assert.equal(user7EthStaked/1,500000000000000000);
         const userPredictionPoints7 = await marketInstance.userPredictionPoints(user7,3);
-        assert.equal(userPredictionPoints7/1,(user7EthStaked*3)/getPrice7);
+        assert.equal(userPredictionPoints7/1,Math.floor((user7EthStaked*3)/(getPrice7*1e14)));
 
         //place prediction for user8.
         await marketInstance.placePrediction(3,1,{value: 500000000000000000,from: user8});
@@ -230,7 +233,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user8EthStaked = await marketInstance.ethStaked(user8,3);
         assert.equal(user8EthStaked/1,500000000000000000);
         const userPredictionPoints8 = await marketInstance.userPredictionPoints(user8,3);
-        assert.equal(userPredictionPoints8/1,(user8EthStaked*1)/getPrice8);
+        assert.equal(userPredictionPoints8/1,Math.floor((user8EthStaked*1)/(getPrice8*1e14)));
 
         //place prediction for user9.
         await marketInstance.placePrediction(2,4,{value: 700000000000000000,from: user9});
@@ -239,7 +242,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         const user9EthStaked = await marketInstance.ethStaked(user9,2);
         assert.equal(user9EthStaked/1,700000000000000000);
         const userPredictionPoints9 = await marketInstance.userPredictionPoints(user9,2);
-        assert.equal(userPredictionPoints9/1,(user9EthStaked*4)/getPrice9);
+        assert.equal(userPredictionPoints9/1,Math.floor((user9EthStaked*4)/(getPrice9*1e14)));
 
         // const plotusBalBefore = await web3.eth.getBalance(plotusNewAddress);
         // console.log("Plotus balance before result declared",plotusBalBefore)
@@ -274,12 +277,12 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         //return amount of user4.
         const user4Return = await marketInstance.getReturn(user4);
         console.log("user4Return",user4Return/1)
-        assert.equal(user4Return/1,915303225806451600);
+        assert.equal(user4Return/1,915293871623584100);
 
         //return amount of user5.
         const user5Return = await marketInstance.getReturn(user5);
         console.log("user5Return",user5Return/1)
-        assert.equal(user5Return/1,783096774193548400);
+        assert.equal(user5Return/1,783106128376415900);
 
         //return amount of user6.
         const user6Return = await marketInstance.getReturn(user6);
@@ -303,7 +306,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
         
         //claim return user1.
         const beforeClaimUser1 = await web3.eth.getBalance(user1);
-        const txInfo1 = await marketInstance.claimReturn({from: user1});
+        const txInfo1 = await plotusNewInstance.claimPendingReturn({from: user1});
         const tx1 = await web3.eth.getTransaction(txInfo1.tx);
         const gasCost1 = tx1.gasPrice * txInfo1.receipt.gasUsed;
         const afterClaimUser1 = await web3.eth.getBalance(user1);
@@ -311,7 +314,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user2.
         const beforeClaimUser2 = await web3.eth.getBalance(user2);
-        const txInfo2 = await marketInstance.claimReturn({from: user2});
+        const txInfo2 = await plotusNewInstance.claimPendingReturn({from: user2});
         const tx2 = await web3.eth.getTransaction(txInfo2.tx);
         const gasCost2 = tx2.gasPrice * txInfo2.receipt.gasUsed;
         const afterClaimUser2 = await web3.eth.getBalance(user2);
@@ -319,7 +322,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user3.
         const beforeClaimUser3 = await web3.eth.getBalance(user3);
-        const txInfo3 = await marketInstance.claimReturn({from: user3});
+        const txInfo3 = await plotusNewInstance.claimPendingReturn({from: user3});
         const tx3 = await web3.eth.getTransaction(txInfo3.tx);
         const gasCost3 = tx3.gasPrice * txInfo3.receipt.gasUsed;
         const afterClaimUser3 = await web3.eth.getBalance(user3);
@@ -327,7 +330,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user4.
         const beforeClaimUser4 = await web3.eth.getBalance(user4);
-        const txInfo4 = await marketInstance.claimReturn({from: user4});
+        const txInfo4 = await plotusNewInstance.claimPendingReturn({from: user4});
         const tx4 = await web3.eth.getTransaction(txInfo4.tx);
         const gasCost4 = tx4.gasPrice * txInfo4.receipt.gasUsed;
         const afterClaimUser4 = await web3.eth.getBalance(user4);
@@ -335,7 +338,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user5.
         const beforeClaimUser5 = await web3.eth.getBalance(user5);
-        const txInfo5 = await marketInstance.claimReturn({from: user5});
+        const txInfo5 = await plotusNewInstance.claimPendingReturn({from: user5});
         const tx5 = await web3.eth.getTransaction(txInfo5.tx);
         const gasCost5 = tx5.gasPrice * txInfo5.receipt.gasUsed;
         const afterClaimUser5 = await web3.eth.getBalance(user5);
@@ -343,7 +346,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user6.
         const beforeClaimUser6 = await web3.eth.getBalance(user6);
-        const txInfo6 = await marketInstance.claimReturn({from: user6});
+        const txInfo6 = await plotusNewInstance.claimPendingReturn({from: user6});
         const tx6 = await web3.eth.getTransaction(txInfo6.tx);
         const gasCost6 = tx6.gasPrice * txInfo6.receipt.gasUsed;
         const afterClaimUser6 = await web3.eth.getBalance(user6);
@@ -351,7 +354,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user7.
         const beforeClaimUser7 = await web3.eth.getBalance(user7);
-        const txInfo7 = await marketInstance.claimReturn({from: user7});
+        const txInfo7 = await plotusNewInstance.claimPendingReturn({from: user7});
         const tx7 = await web3.eth.getTransaction(txInfo7.tx);
         const gasCost7 = tx7.gasPrice * txInfo7.receipt.gasUsed;
         const afterClaimUser7 = await web3.eth.getBalance(user7);
@@ -359,7 +362,7 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user8.
         const beforeClaimUser8 = await web3.eth.getBalance(user8);
-        const txInfo8 = await marketInstance.claimReturn({from: user8});
+        const txInfo8 = await plotusNewInstance.claimPendingReturn({from: user8});
         const tx8 = await web3.eth.getTransaction(txInfo8.tx);
         const gasCost8 = tx8.gasPrice * txInfo8.receipt.gasUsed;
         const afterClaimUser8 = await web3.eth.getBalance(user8);
@@ -367,11 +370,12 @@ contract('Market', function([user1,user2,user3,user4,user5,user6,user7,user8,use
 
         //claim return user9.
         const beforeClaimUser9 = await web3.eth.getBalance(user9);
-        const txInfo9 = await marketInstance.claimReturn({from: user9});
+        const txInfo9 = await plotusNewInstance.claimPendingReturn({from: user9});
         const tx9 = await web3.eth.getTransaction(txInfo9.tx);
         const gasCost9 = tx9.gasPrice * txInfo9.receipt.gasUsed;
         const afterClaimUser9 = await web3.eth.getBalance(user9);
         assert.equal(((beforeClaimUser9/1)/1e18).toFixed(6),((parseFloat(afterClaimUser9)-(parseFloat(user9Return)-parseFloat(gasCost9)))/1e18).toFixed(6));
-        })
-        })
+        console.log(await plotusNewInstance.getOpenMarkets());
+    })
+})
  
