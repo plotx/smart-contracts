@@ -167,18 +167,26 @@ using SafeMath for uint256;
     }
 
     function calculateUserPendingReturn(address _user) external view returns(uint256 pendingReturn) {
-      for(uint256 i = lastClaimedIndex[_user]+1; i < marketsParticipated[_user].length; i++) {
+      for(uint256 i = lastClaimedIndex[_user]; i < marketsParticipated[_user].length; i++) {
         // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
         pendingReturn = pendingReturn.add(Market(marketsParticipated[_user][i]).getPendingReturn(_user));
       }
     }
 
     function claimPendingReturn() external {
-      for(uint256 i = lastClaimedIndex[msg.sender]+1; i < marketsParticipated[msg.sender].length; i++) {
-        // marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user));
-        Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
-        lastClaimedIndex[msg.sender] = i;
+      uint256 claimFlag;
+      uint256 i;
+      for(i = lastClaimedIndex[msg.sender]; i < marketsParticipated[msg.sender].length; i++) {
+        if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0) {
+          Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
+        } else {
+          claimFlag = i;
+        }
       }
+      if(claimFlag == 0) {
+        claimFlag = i;
+      }
+      lastClaimedIndex[msg.sender] = claimFlag + 1;
     }
 
     function () external payable {

@@ -176,7 +176,7 @@ contract Market is usingOraclize {
       minBet = minPrediction;
       uint optionPrice = _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
       // uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
-      uint predictionPoints = (((msg.value).mul(10^6)).mul(_leverage)).div(optionPrice*rate);
+      uint predictionPoints = (((msg.value)).mul(_leverage)).div(optionPrice*rate);
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
       }
@@ -197,25 +197,27 @@ contract Market is usingOraclize {
       uint totalReward = 0;
       uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
+      if(_value < optionsAvailable[2].minValue) {
+        WinningOption = 1;
+      } else if(_value > optionsAvailable[2].maxValue) {
+        WinningOption = 3;
+      } else {
+        WinningOption = 2;
+      }
       for(uint i=1;i <= totalOptions;i++){
-        if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
-          WinningOption = i;
-        }
-        } 
-       for(uint i=1;i <= totalOptions;i++){
-        distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
-        totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
-       }
-       //Get donation, commission addresses and percentage
-       (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
-        commission = commission.mul(totalReward).div(100);
-        donation = donation.mul(totalReward).div(100);
-        rewardToDistribute = totalReward.sub(commission).sub(donation);
-        commissionAccount.transfer(commission);
-        donationAccount.transfer(donation);
-       if(optionsAvailable[WinningOption].ethStaked == 0){
-        address(pl).transfer(rewardToDistribute);
-       }
+       distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
+       totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
+      }
+      //Get donation, commission addresses and percentage
+      (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+       commission = commission.mul(totalReward).div(100);
+       donation = donation.mul(totalReward).div(100);
+       rewardToDistribute = totalReward.sub(commission).sub(donation);
+       commissionAccount.transfer(commission);
+       donationAccount.transfer(donation);
+      if(optionsAvailable[WinningOption].ethStaked == 0){
+       address(pl).transfer(rewardToDistribute);
+      }
 
        pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
     }
