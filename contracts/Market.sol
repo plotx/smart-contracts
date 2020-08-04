@@ -140,8 +140,34 @@ contract Market is usingOraclize {
      optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
+    function _calculatePredictionValue(uint _prediction, uint _stake, uint _totalContribution, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
+      uint value;
+      uint flag = 0;
+      uint _ethStakedOnOption = optionsAvailable[_prediction].ethStaked;
+      _predictionValue = 0;
+      while(_stake > 0) {
+        if(_stake <= (_priceStep)) {
+          value = (uint(_stake)).div(rate);
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep))));
+          break;
+        } else {
+          _stake = _stake.sub(_priceStep);
+          value = (uint(_priceStep)).div(rate);
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep))));
+          _totalContribution = _totalContribution.add(_priceStep);
+          flag++;
+        }
+      } 
+    }
+
+    function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
+      (, uint totalOptions, , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      return _calculatePredictionValue(_prediction, _stake, address(this).balance, priceStep, _leverage);
+    }
+
+
     function getOptionPrice(uint _prediction) public view returns(uint) {
-      (, uint totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
+      (, uint totalOptions, , , , , ) = marketConfig.getBasicMarketDetails();
      return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked);
     }
 
@@ -149,7 +175,7 @@ contract Market is usingOraclize {
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _ethStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
         uint totalOptions;
-        (_predictionType, totalOptions, , , , ) = marketConfig.getBasicMarketDetails();
+        (_predictionType, totalOptions, , , , , ) = marketConfig.getBasicMarketDetails();
         _feedsource = FeedSource;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
@@ -171,12 +197,14 @@ contract Market is usingOraclize {
 
     function placePrediction(uint _prediction,uint _leverage) public payable {
       require(now >= startTime && now <= expireTime);
-      (, ,uint minPrediction, , , ) = marketConfig.getBasicMarketDetails();
+      (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
       require(msg.value >= minPrediction,"Min prediction amount required");
       minBet = minPrediction;
-      uint optionPrice = _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
+      uint optionPrice = _calculatePredictionValue(_prediction, msg.value, address(this).balance.sub(msg.value), priceStep, _leverage);
+       // _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
       // uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
-      uint predictionPoints = (((msg.value)).mul(_leverage)).div(optionPrice*rate);
+      // uint predictionPoints = (((msg.value)).mul(_leverage)).div(optionPrice);
+      uint predictionPoints = optionPrice;
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
       }
@@ -193,7 +221,7 @@ contract Market is usingOraclize {
       require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
       require(now >= predictionForDate,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-     (,uint totalOptions, , , ,uint lossPercentage) = marketConfig.getBasicMarketDetails();
+     (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
       uint totalReward = 0;
       uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
@@ -225,7 +253,7 @@ contract Market is usingOraclize {
     function getReturn(address _user)public view returns(uint){
      uint ethReturn = 0; 
      uint distanceFromWinningOption = 0;
-      (,uint totalOptions, , , ,uint lossPercentage) = marketConfig.getBasicMarketDetails();
+      (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
        if(predictionStatus != PredictionStatus.ResultDeclared ) {
         return 0;
        }

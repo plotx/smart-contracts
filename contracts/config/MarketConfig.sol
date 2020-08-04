@@ -13,6 +13,7 @@ contract MarketConfig {
     uint internal bonusRewardPerc = 50;
 
     uint internal betType;//
+    uint internal priceStep;//
     uint internal totalOptions;//
     uint internal delta;//
     uint internal PREDICTION_TIME;//
@@ -31,6 +32,7 @@ contract MarketConfig {
         PREDICTION_TIME = _uintParams[2];
         donationPerc = _uintParams[3];
         commissionPerc = _uintParams[4];
+        priceStep = _uintParams[5];
         require(donationPerc <= 100);
         require(commissionPerc <= 100);
         MIN_TIME_ELAPSED = (PREDICTION_TIME) / 6;
@@ -39,8 +41,8 @@ contract MarketConfig {
         chainLinkPriceOracle = _addressParams[2];
     }
 
-    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint) {
-        return (betType, totalOptions, minBet, maxReturn, bonusRewardPerc,lossPercentage);
+    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint, uint) {
+        return (betType, totalOptions, minBet, maxReturn, bonusRewardPerc,lossPercentage, priceStep);
     }
 
     function getFundDistributionParams() public view  returns(address payable, uint, address payable, uint) {
