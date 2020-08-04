@@ -18,9 +18,7 @@ contract Master is Ownable{
      * @param newOwner The address to transfer ownership to.
      */
     function transferOwnership(address newOwner) public onlyOwner {
-        require(newOwner != address(0));
-        emit OwnershipTransferred(owner, newOwner);
-        owner = newOwner;
+        _transferOwnership(newOwner);
         Plotus(plotusAddress).transferOwnership(newOwner);
     }
 

@@ -4,11 +4,6 @@ import "../interface/IChainLinkOracle.sol";
 import "../external/openzeppelin-solidity/ownership/Ownable.sol";
 contract MockChainLinkBTC is Ownable,IChainLinkOracle{
 
-    modifier OnlyOwner() {
-      require(msg.sender == owner);
-      _;
-    }
-
 	 int256 latestAns = 934999802346 ;
 
 	 function latestAnswer() external view returns (int256)
@@ -17,9 +12,9 @@ contract MockChainLinkBTC is Ownable,IChainLinkOracle{
 
 	 }
 
-	 function setLatestAnswer(int256 _latestAnswer) public OnlyOwner
+	 function setLatestAnswer(int256 _latestAnswer) public onlyOwner
 	 {
-	 	//latestAnswer = _latestAnswer;
+	 	latestAns = _latestAnswer;
 	 }
 
 }
