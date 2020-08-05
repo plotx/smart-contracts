@@ -64,23 +64,25 @@ using SafeMath for uint256;
       uint256 _marketType,
       uint256[] calldata _marketparams,
       string calldata _feedsource,
-      bytes32 _stockName
+      bytes32 _stockName,
+      address _chainLinkOracle,
+      address _predictionAsset
     ) external payable OnlyOwner
     {
       require(_marketType <= uint256(MarketType.WeeklyMarket), "Invalid market");
       // address payable marketConAdd = _generateProxy(marketImplementations[_marketType]);
       Market _market=  new Market();
-      markets.push(address(_market));
       marketIndex[address(_market)] = markets.length;
-      _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType]);
+      markets.push(address(_market));
+      _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset);
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
     function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
-      if (marketOpenIndex <= marketIndex[msg.sender]) {
+      if (marketOpenIndex < marketIndex[msg.sender]) {
         uint256 i;
         uint256 _status;
-        for(i = marketOpenIndex+1;i < markets.length;i++){
+        for(i = marketOpenIndex;i < markets.length;i++){
           //Convert to payable address
           ( , , , , , , , _status) = getMarketDetails(markets[i]);
           if(_status == uint256(Market.PredictionStatus.Started)) {
@@ -91,6 +93,8 @@ using SafeMath for uint256;
         if(i == markets.length) {
           marketOpenIndex = i-1;
         }
+      } else {
+        marketOpenIndex = marketIndex[msg.sender];
       }
       marketWinningOption[msg.sender] = winningOption;
       emit MarketResult(msg.sender, _commision, _donation, _totalReward, winningOption);
@@ -124,22 +128,6 @@ using SafeMath for uint256;
         _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
         _reward = new uint256[](toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i < toIndex; i++) {
-          Market _marketInstance = Market(marketsParticipated[user][i]);
-          _market[i] = marketsParticipated[user][i];
-          _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
-          _reward[i] = _marketInstance.getReturn(user);
-        }
-      }
-    }
-
-    function getMarketDetailsUser1(address user, uint256 noOfRecords) external view returns
-    (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
-      if(noOfRecords < marketsParticipated[user].length) {
-        _market = new address payable[](noOfRecords);
-        _winnigOption = new uint256[](noOfRecords);
-        _reward = new uint256[](noOfRecords);
-        uint records = marketsParticipated[user].length < noOfRecords ? marketsParticipated[user].length : noOfRecords;
-        for(uint256 i = 0; i < records; i++) {
           Market _marketInstance = Market(marketsParticipated[user][i]);
           _market[i] = marketsParticipated[user][i];
           _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
