@@ -216,6 +216,7 @@ contract Market is usingOraclize {
       if(predictionAsset == address(0)) {
         require(_predictionStake == msg.value);
       } else {
+        require(msg.value == 0);
         require(IERC20(predictionAsset).transferFrom(msg.sender, address(this), _predictionStake));
       }
 

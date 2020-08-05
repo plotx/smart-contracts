@@ -1,7 +1,7 @@
 pragma solidity 0.5.7;
 import "./Market.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
-// import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 
 contract Plotus{
 using SafeMath for uint256; 
@@ -18,12 +18,15 @@ using SafeMath for uint256;
     mapping(address => uint256) lastClaimedIndex;
     mapping(address => address payable[]) public marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
+    mapping(address => uint256) predictionAssetIndex; //Markets participated by user
 
     uint256 public marketOpenIndex;
     address public owner;
     address public masterAddress;
+    address marketImplementation;
     address[] public marketConfigs;
     address payable[] markets;
+    address[] predictionAssets;
 
     address public plotusToken;
 
@@ -32,7 +35,7 @@ using SafeMath for uint256;
     event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 _ploIncentive);
    
-    modifier OnlyOwner() {
+    modifier onlyOwner() {
       require(msg.sender == owner);
       _;
     }
@@ -47,9 +50,10 @@ using SafeMath for uint256;
       _;
     }
 
-    function initiatePlotus(address _owner, address[] memory _marketConfigs, address _plotusToken) public {
+    function initiatePlotus(address _owner, address _marketImplementation, address[] memory _marketConfigs, address _plotusToken) public {
       masterAddress = msg.sender;
       owner = _owner;
+      marketImplementation = _marketImplementation;
       marketConfigs = _marketConfigs;
       plotusToken = _plotusToken;
       markets.push(address(0));
@@ -61,26 +65,70 @@ using SafeMath for uint256;
       owner = newOwner;
     }
 
-    function updateMarketConfigs(address[] memory _marketConfigs) public OnlyOwner {
+    function updateMarketConfigs(address[] memory _marketConfigs) public onlyOwner {
       marketConfigs = _marketConfigs;
+    }
+
+    function updateMarketImplementation(address _marketImplementation) public onlyOwner {
+      marketImplementation = _marketImplementation;
+    }
+
+    function upgradeContractImplementation(address payable _proxyAddress, address _contractsAddress) 
+        external onlyOwner
+    {
+        OwnedUpgradeabilityProxy tempInstance 
+            = OwnedUpgradeabilityProxy(_proxyAddress);
+        tempInstance.upgradeTo(_contractsAddress);
+    }
+
+    function addPredictionAsset(address _predictionAsset) public onlyOwner {
+      require(predictionAssetIndex[_predictionAsset] == 0);
+      predictionAssetIndex[_predictionAsset] = predictionAssets.length;
+      predictionAssets.push(_predictionAsset);
+    }
+
+    function removePredictionAsset(address _predictionAsset) public onlyOwner {
+      require(predictionAssetIndex[_predictionAsset] > 0);
+      predictionAssets[predictionAssetIndex[_predictionAsset]] = predictionAssets[predictionAssets.length - 1];
+      predictionAssets.length--;
+      predictionAssetIndex[_predictionAsset] = 0;
     }
 
     function addNewMarket( 
       uint256 _marketType,
       uint256[] memory _marketparams,
       string memory _feedsource,
-      bytes32 _stockName,
-      address _predictionAsset
-    ) public payable OnlyOwner
+      bytes32 _stockName
+    ) public payable onlyOwner
     {
       require(_marketType <= uint256(MarketType.WeeklyMarket), "Invalid market");
-      // address payable marketConAdd = _generateProxy(marketImplementations[_marketType]);
-      Market _market=  new Market();
-      marketIndex[address(_market)] = markets.length;
-      markets.push(address(_market));
+      for(uint256 i = 0;i < predictionAssets.length; i++) {
+        _createMarket(_marketType, _marketparams, _feedsource, _stockName, predictionAssets[i]);
+      }
+    }
+
+    function _createMarket(uint256 _marketType,
+      uint256[] memory _marketparams,
+      string memory _feedsource,
+      bytes32 _stockName,
+      address _predictionAsset
+    ) internal {
+      address payable _market = _generateProxy(marketImplementation);
+      // Market _market=  new Market();
+      marketIndex[_market] = markets.length;
+      markets.push(_market);
       uint256 _ploIncentive = 0;
-      _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset, _ploIncentive);
-      emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
+      Market(_market).initiate(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset, _ploIncentive);
+      emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _marketparams[0]);
+    }
+
+    /**
+     * @dev to generater proxy 
+     * @param _contractAddress of the proxy
+     */
+    function _generateProxy(address _contractAddress) internal returns(address payable) {
+        OwnedUpgradeabilityProxy tempInstance = new OwnedUpgradeabilityProxy(_contractAddress);
+        return address(tempInstance);
     }
 
     function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
@@ -189,7 +237,7 @@ using SafeMath for uint256;
     function () external payable {
     }
 
-    function withdraw(uint256 amount) external OnlyOwner {
+    function withdraw(uint256 amount) external onlyOwner {
       require(amount<= address(this).balance,"insufficient amount");
         msg.sender.transfer(amount);
     }

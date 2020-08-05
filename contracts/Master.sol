@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
 
-import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+// import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/ownership/Ownable.sol";
 import "./Plotus.sol";
 
@@ -8,9 +8,9 @@ contract Master is Ownable{
 
     address payable public plotusAddress;
 
-    constructor(address _plotusAddress, address[] memory implementations, address _plotusToken) public {
-        _generateProxy(_plotusAddress);
-        Plotus(plotusAddress).initiatePlotus(msg.sender, implementations, _plotusToken);
+    constructor(address _plotusImplementation, address _marketImplementation, address[] memory marketConfigs, address _plotusToken) public {
+        _generateProxy(_plotusImplementation);
+        Plotus(plotusAddress).initiatePlotus(msg.sender, _marketImplementation, marketConfigs, _plotusToken);
     }
 
     /**
