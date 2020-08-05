@@ -14,12 +14,13 @@ contract IPlotus {
       WeeklyMarket
     }
     address public owner;
+    address public plotusToken;
     function() external payable{}
     function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction,uint _leverage) public{
     }
-    function callClaimedEvent(address _user , uint _reward, uint _stake) public {
+    function callClaimedEvent(address _user , uint _reward, uint _stake, uint _ploIncentive) public {
     }
-    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward, uint winningOption) public {
+    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward, uint _winningOption) public {
     }
 }
 contract Market is usingOraclize {
@@ -42,6 +43,8 @@ contract Market is usingOraclize {
     PredictionStatus internal predictionStatus;
     uint internal predictionForDate;
     address public predictionAsset;
+    uint incentiveToDistribute;
+    uint totalStaked;
     
     mapping(address => mapping(uint => uint)) public assetStaked;
     mapping(address => mapping(uint => uint)) internal LeverageAsset;
@@ -70,7 +73,7 @@ contract Market is usingOraclize {
       _;
     }
 
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address _predictionAsset) public {
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address _predictionAsset, uint256 _ploIncentive) public {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(_marketConfig);
       startTime = _uintparams[0];
@@ -85,6 +88,7 @@ contract Market is usingOraclize {
       marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
       predictionAsset = _predictionAsset;
+      incentiveToDistribute = _ploIncentive;
     }
 
     function () external payable {
@@ -95,7 +99,7 @@ contract Market is usingOraclize {
       if(predictionStatus == PredictionStatus.Started && now >= expireTime) {
         return PredictionStatus.Closed;
       }
-        return predictionStatus;
+      return predictionStatus;
     }
 
     function getAssetBalance() internal view returns(uint256) {
@@ -128,44 +132,38 @@ contract Market is usingOraclize {
         currentPriceOption = 2;
         maxDistance = 1;
       }
-        //  for(uint i=1;i <= _totalOptions;i++){
-        // if(currentPrice <= optionsAvailable[i].maxValue && currentPrice >= optionsAvailable[i].minValue){
-        //   currentPriceOption = i;
-        // }
-        // }    
       uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
-      // uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
-      // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
       uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
       timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
       _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
-       _optionPrice = _optionPrice.div(100);
+      _optionPrice = _optionPrice.div(100);
     }
 
     function setOptionRanges(uint _midRangeMin, uint _midRangeMax) internal{
-     optionsAvailable[1].minValue = 0;
-     optionsAvailable[1].maxValue = _midRangeMin.sub(1);
-     optionsAvailable[2].minValue = _midRangeMin;
-     optionsAvailable[2].maxValue = _midRangeMax;
-     optionsAvailable[3].minValue = _midRangeMax.add(1);
-     optionsAvailable[3].maxValue = ~uint256(0) ;
+      optionsAvailable[1].minValue = 0;
+      optionsAvailable[1].maxValue = _midRangeMin.sub(1);
+      optionsAvailable[2].minValue = _midRangeMin;
+      optionsAvailable[2].maxValue = _midRangeMax;
+      optionsAvailable[3].minValue = _midRangeMax.add(1);
+      optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
-    function _calculatePredictionValue(uint _prediction, uint _stake, uint _totalContribution, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
+    function _calculatePredictionValue(uint _prediction, uint _stake, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint value;
       uint flag = 0;
+      uint _totalStaked = totalStaked;
       uint _assetStakedOnOption = optionsAvailable[_prediction].assetStaked;
       _predictionValue = 0;
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
           value = (uint(_stake)).div(rate);
-          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _assetStakedOnOption + flag.mul(_priceStep))));
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
           break;
         } else {
           _stake = _stake.sub(_priceStep);
           value = (uint(_priceStep)).div(rate);
-          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _assetStakedOnOption + flag.mul(_priceStep))));
-          _totalContribution = _totalContribution.add(_priceStep);
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
+          _totalStaked = _totalStaked.add(_priceStep);
           flag++;
         }
       } 
@@ -173,13 +171,13 @@ contract Market is usingOraclize {
 
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
       (, , , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
-      return _calculatePredictionValue(_prediction, _stake, getAssetBalance(), priceStep, _leverage);
+      return _calculatePredictionValue(_prediction, _stake, priceStep, _leverage);
     }
 
 
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
-     return _calculateOptionPrice(_prediction, getAssetBalance(), optionsAvailable[_prediction].assetStaked);
+     return _calculateOptionPrice(_prediction, totalStaked, optionsAvailable[_prediction].assetStaked);
     }
 
     function getData() public view returns
@@ -198,7 +196,7 @@ contract Market is usingOraclize {
         _assetStaked[i] = optionsAvailable[i+1].assetStaked;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, getAssetBalance(), optionsAvailable[i+1].assetStaked);
+        _optionPrice[i] = _calculateOptionPrice(i+1, totalStaked, optionsAvailable[i+1].assetStaked);
        }
     }
 
@@ -210,26 +208,23 @@ contract Market is usingOraclize {
     * @dev Place prediction with '_predictionStake' amount on '_prediction' option with '_leverage' leverage
     */
     function placePrediction(uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-      require(_prediction < 3);
-      require(_leverage < 5);
+      // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
       (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
       require(msg.value >= minPrediction,"Min prediction amount required");
+
       if(predictionAsset == address(0)) {
         require(_predictionStake == msg.value);
       } else {
         require(IERC20(predictionAsset).transferFrom(msg.sender, address(this), _predictionStake));
       }
 
-      // minBet = minPrediction;
-      uint optionPrice = _calculatePredictionValue(_prediction, _predictionStake, (getAssetBalance()).sub(_predictionStake), priceStep, _leverage);
-       // _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
-      // uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
-      // uint predictionPoints = (((msg.value)).mul(_leverage)).div(optionPrice);
+      uint optionPrice = _calculatePredictionValue(_prediction, _predictionStake, priceStep, _leverage);
       uint predictionPoints = optionPrice;
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
       }
+      totalStaked = totalStaked.add(_predictionStake);
       userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
       assetStaked[msg.sender][_prediction] = assetStaked[msg.sender][_prediction].add(_predictionStake);
       LeverageAsset[msg.sender][_prediction] = LeverageAsset[msg.sender][_prediction].add(_predictionStake.mul(_leverage));
@@ -263,60 +258,61 @@ contract Market is usingOraclize {
        commission = commission.mul(totalReward).div(100);
        donation = donation.mul(totalReward).div(100);
        rewardToDistribute = totalReward.sub(commission).sub(donation);
-       // commissionAccount.transfer(commission);
-       _transferAsset(commissionAccount, commission);
-       // donationAccount.transfer(donation);
-       _transferAsset(donationAccount, donation);
+       _transferAsset(predictionAsset, commissionAccount, commission);
+       _transferAsset(predictionAsset, donationAccount, donation);
       if(optionsAvailable[WinningOption].assetStaked == 0){
-       // address(pl).transfer(rewardToDistribute);
-       _transferAsset(address(pl), rewardToDistribute);
+       _transferAsset(predictionAsset, address(pl), rewardToDistribute);
       }
 
        pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
     }
 
-    function _transferAsset(address payable _recipient, uint256 _amount) internal {
-      if(predictionAsset == address(0)) {
+    function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
+      if(_asset == address(0)) {
         _recipient.transfer(_amount);
       } else {
-        require(IERC20(predictionAsset).transfer(_recipient, _amount));
+        require(IERC20(_asset).transfer(_recipient, _amount));
       }
     }
 
-    function getReturn(address _user)public view returns(uint){
-     uint _return = 0; 
-     uint distanceFromWinningOption = 0;
+    function getReturn(address _user)public view returns(uint, uint){
+      uint _return = 0; 
+      uint distanceFromWinningOption = 0;
       (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
-       if(predictionStatus != PredictionStatus.ResultDeclared ) {
-        return 0;
-       }
-     for(uint i=1;i<=totalOptions;i++){
-      distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
-      _return =  _callReturn(_return, _user, i, lossPercentage, distanceFromWinningOption);
-      }     
-     uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
-     uint returnAmount =  reward.add(_return);
-     return returnAmount;
+      if(predictionStatus != PredictionStatus.ResultDeclared ) {
+       return (0,0);
+      }
+      uint totalUserAssetStaked = 0;
+      for(uint i=1;i<=totalOptions;i++){
+        totalUserAssetStaked = totalUserAssetStaked.add(assetStaked[msg.sender][i]);
+        distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
+        _return =  _callReturn(_return, _user, i, lossPercentage, distanceFromWinningOption);
+      }
+      uint incentive =  totalUserAssetStaked.mul(incentiveToDistribute).mul(100).div(totalStaked);
+      uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
+      uint returnAmount =  reward.add(_return);
+      return (returnAmount, incentive);
     }
 
-    function getPendingReturn(address _user)public view returns(uint){
-     if(userClaimedReward[_user]) return 0;
-     return getReturn(_user);
+    function getPendingReturn(address _user) external view returns(uint, uint){
+      if(userClaimedReward[_user]) return (0,0);
+      return getReturn(_user);
     }
     
     //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
     function _callReturn(uint _return,address _user,uint i,uint lossPercentage,uint distanceFromWinningOption)internal view returns(uint){
-        return _return.add(assetStaked[_user][i].sub((LeverageAsset[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
+      return _return.add(assetStaked[_user][i].sub((LeverageAsset[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
     }
 
     function claimReturn(address payable _user) public {
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
       userClaimedReward[_user] = true;
-      (uint returnAmount) = getReturn(_user);
+      (uint returnAmount, uint incentive) = getReturn(_user);
       // _user.transfer(returnAmount);
-      _transferAsset(_user, returnAmount);
-      pl.callClaimedEvent(_user,returnAmount, assetStaked[_user][WinningOption]);
+      _transferAsset(predictionAsset, _user, returnAmount);
+      _transferAsset(pl.plotusToken(), _user, incentive);
+      pl.callClaimedEvent(_user,returnAmount, assetStaked[_user][WinningOption], incentive);
     }
 
     function __callback(bytes32 myid, string memory result) public {

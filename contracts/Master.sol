@@ -8,9 +8,9 @@ contract Master is Ownable{
 
     address payable public plotusAddress;
 
-    constructor(address _plotusAddress, address[] memory implementations) public {
+    constructor(address _plotusAddress, address[] memory implementations, address _plotusToken) public {
         _generateProxy(_plotusAddress);
-        Plotus(plotusAddress).initiatePlotus(msg.sender, implementations);
+        Plotus(plotusAddress).initiatePlotus(msg.sender, implementations, _plotusToken);
     }
 
     /**
