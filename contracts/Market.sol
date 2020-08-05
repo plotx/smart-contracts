@@ -1,205 +1,298 @@
 pragma solidity 0.5.7;
-import "./PlotusData.sol";
-import "./external/oraclize/ethereum-api/provableAPI_0.5.sol";
 
-contract Market is usingProvable {
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/oraclize/ethereum-api/usingOraclize.sol";
+import "./config/MarketConfig.sol";
+import "./interface/IChainLinkOracle.sol";
+
+contract IPlotus {
+
+    enum MarketType {
+      HourlyMarket,
+      DailyMarket,
+      WeeklyMarket
+    }
+    address public owner;
+    function() external payable{}
+    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _prediction,uint _leverage) public{
+    }
+    function callClaimedEvent(address _user , uint _reward, uint _stake) public {
+    }
+    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward, uint winningOption) public {
+    }
+}
+contract Market is usingOraclize {
     using SafeMath for uint;
 
-    uint public startTime;
-    uint public expireTime;
-    string public FeedSource;
-    uint public betType;
-    bytes32 public stockName;
-    bool public betClosed;
-    uint public WinningOption;
-    uint public predictionForDate;
-    uint public minBet;
-    uint public totalOptions;
+    enum PredictionStatus {
+      Started,
+      Closed,
+      ResultDeclared
+    }
+  
+    uint internal startTime;
+    uint internal expireTime;
+    string internal FeedSource;
     uint public rate;
-    uint public currentPrice;
-    address payable public DonationAccount;
-    address payable public CommissionAccount;
-    uint public commissionPerc;
-    uint public donationPerc;
-    uint public delta;
-    uint public commision;
-    uint public donation;
-    uint public cBal;
-    uint public totalReward;
-    PlotusData  private pl;
-    mapping(address => mapping(uint=>uint)) public ethStaked;
-    mapping(address => mapping(uint => uint)) public userBettingPoints;
-    mapping(address => bool) public userClaimedReward;
-    mapping(uint => uint) public optionPrice;
-    uint rewardToDistribute;
-    uint maxLim = 10**12;
+    uint public minBet;
+    uint public WinningOption;
+    bytes32 internal marketResultId;
+    uint public rewardToDistribute;
+    PredictionStatus internal predictionStatus;
+    uint internal predictionForDate;
+    
+    mapping(address => mapping(uint => uint)) public ethStaked;
+    mapping(address => mapping(uint => uint)) internal LeverageEth;
+    mapping(address => mapping(uint => uint)) public userPredictionPoints;
+    mapping(address => bool) internal userClaimedReward;
+
+    IPlotus internal pl;
+    MarketConfig internal marketConfig;
+    
     struct option
     {
       uint minValue;
       uint maxValue;
-      uint betPoints;
-      uint ethStaked                                                                                                                                                                                                         ;
+      uint predictionPoints;
+      uint ethStaked;
+      uint ethLeveraged;
+      address[] stakers;
     }
 
     mapping(uint=>option) public optionsAvailable;
-  
-    event BetQuestion(address indexed MarketAdd, bytes32 _stockName, uint betType);
-    event Bet(address indexed _user,uint indexed _value, uint _betAmount, uint _prediction);
-    event Claimed(address _user, uint _reward);
 
-    constructor(
-     uint[] memory _uintparams,
-     string memory _feedsource,
-     bytes32 _stockName,
-     address payable[] memory _addressParams,
-     address plotusData
-    ) 
-    public
-    payable 
-    {
-      pl = PlotusData(plotusData);
+    IChainLinkOracle internal chainLinkOracle;
+
+    modifier OnlyOwner() {
+      require(msg.sender == pl.owner() || msg.sender == address(pl));
+      _;
+    }
+
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address marketConfigs) public {
+      pl = IPlotus(msg.sender);
+      marketConfig = MarketConfig(marketConfigs);
       startTime = _uintparams[0];
-      expireTime = _uintparams[1];
       FeedSource = _feedsource;
-      betType = _uintparams[2];
-      stockName = _stockName;
-      predictionForDate = _uintparams[3];
-      minBet = _uintparams[4];
-      totalOptions = _uintparams[5];
-      rate = _uintparams[6];
-      currentPrice = _uintparams[7];
-      DonationAccount = _addressParams[0];
-      CommissionAccount = _addressParams[1];
-      donationPerc = _uintparams[8];
-      commissionPerc  = _uintparams[9];
-      delta = _uintparams[10];
-      optionsAvailable[0] = option(0,0,0,0);
-      setOptionRanges(currentPrice,delta,totalOptions);     
-      //provable_query(expireTime.sub(now), "URL", FeedSource, 500000); //comment to deploy
-      emit BetQuestion(address(this), stockName, betType);
+      predictionForDate = _uintparams[1];
+      rate = _uintparams[2];
+      // optionsAvailable[0] = option(0,0,0,0,0,address(0));
+      (uint predictionTime, , , , , ) = marketConfig.getPriceCalculationParams();
+      expireTime = startTime + predictionTime;
+      require(expireTime > now);
+      setOptionRanges(_uintparams[3],_uintparams[4]);
+      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
     }
 
-    function setOptionRanges(uint _currentPrice, uint _delta, uint _totalOptions) internal{
-    uint primaryOption = uint(_totalOptions).div(2).add(1);
-    optionsAvailable[primaryOption].minValue = _currentPrice.sub(uint(_delta).div(2));
-    optionsAvailable[primaryOption].maxValue = _currentPrice.add(uint(_delta).div(2));
-    uint _increaseOption;
-    for(uint i = primaryOption ;i>1 ;i--){
-     _increaseOption = ++primaryOption;
-      if(i-1 > 1){
-        optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
-        optionsAvailable[i-1].minValue = optionsAvailable[i].minValue.sub(_delta);
-        optionsAvailable[_increaseOption].maxValue = optionsAvailable[_increaseOption-1].maxValue.add(_delta);
-        optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
+    function () external payable {
+      revert("Can be deposited only through placePrediction");
+    }
+
+    function marketStatus() internal view returns(PredictionStatus){
+      if(predictionStatus == PredictionStatus.Started && now >= expireTime) {
+        return PredictionStatus.Closed;
       }
-       else{
-        optionsAvailable[i-1].maxValue = optionsAvailable[i].minValue.sub(1);
-        optionsAvailable[i-1].minValue = 0;
-        optionsAvailable[_increaseOption].maxValue = maxLim.sub(1);
-        optionsAvailable[_increaseOption].minValue = optionsAvailable[_increaseOption-1].maxValue.add(1);
-        }     
+        return predictionStatus;
+    }
+  
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _ethStakedOnOption) internal view returns(uint _optionPrice) {
+      _optionPrice = 0;
+      uint currentPriceOption = 0;
+      (uint predictionTime,uint optionStartIndex,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed) = marketConfig.getPriceCalculationParams();
+      if(now > expireTime) {
+        return 0;
       }
-     }
+      if(_totalStaked > stakeWeightageMinAmount) {
+        _optionPrice = (_ethStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
+      }
+      uint currentPrice = uint(chainLinkOracle.latestAnswer()).div(10**8);
+      uint maxDistance;
+      if(currentPrice < optionsAvailable[2].minValue) {
+        currentPriceOption = 1;
+        maxDistance = 2;
+      } else if(currentPrice > optionsAvailable[2].maxValue) {
+        currentPriceOption = 3;
+        maxDistance = 2;
+      } else {
+        currentPriceOption = 2;
+        maxDistance = 1;
+      }
+        //  for(uint i=1;i <= _totalOptions;i++){
+        // if(currentPrice <= optionsAvailable[i].maxValue && currentPrice >= optionsAvailable[i].minValue){
+        //   currentPriceOption = i;
+        // }
+        // }    
+      uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
+      // uint maxDistance = currentPriceOption > (_totalOptions.div(2))? (currentPriceOption.sub(optionStartIndex)): (_totalOptions.sub(currentPriceOption));
+      // uint maxDistance = 7 - (_option > distance ? _option - distance: _option + distance);
+      uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
+      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
+      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
+       _optionPrice = _optionPrice.div(100);
+    }
 
-     function getPrice(uint _prediction) public view returns(uint) {
-      return optionPrice[_prediction];
-     }
+    function setOptionRanges(uint _midRangeMin, uint _midRangeMax) internal{
+     optionsAvailable[1].minValue = 0;
+     optionsAvailable[1].maxValue = _midRangeMin.sub(1);
+     optionsAvailable[2].minValue = _midRangeMin;
+     optionsAvailable[2].maxValue = _midRangeMax;
+     optionsAvailable[3].minValue = _midRangeMax.add(1);
+     optionsAvailable[3].maxValue = ~uint256(0) ;
+    }
 
-     function setPrice(uint _prediction, uint _value) public returns(uint ,uint){
-      optionPrice[_prediction] = _value;
+    function _calculatePredictionValue(uint _prediction, uint _stake, uint _totalContribution, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
+      uint value;
+      uint flag = 0;
+      uint _ethStakedOnOption = optionsAvailable[_prediction].ethStaked;
+      _predictionValue = 0;
+      while(_stake > 0) {
+        if(_stake <= (_priceStep)) {
+          value = (uint(_stake)).div(rate);
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep))));
+          break;
+        } else {
+          _stake = _stake.sub(_priceStep);
+          value = (uint(_priceStep)).div(rate);
+          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalContribution, _ethStakedOnOption + flag.mul(_priceStep))));
+          _totalContribution = _totalContribution.add(_priceStep);
+          flag++;
+        }
+      } 
+    }
 
-     } 
+    function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
+      (, uint totalOptions, , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      return _calculatePredictionValue(_prediction, _stake, address(this).balance, priceStep, _leverage);
+    }
 
-    function placeBet(uint _prediction) public payable {
-      require(now >= startTime && now <= expireTime,"bet not started yet or expired");
-      require(msg.value >= minBet,"value less than min bet amount");
-      uint value = uint(msg.value).div(rate);        
-      uint betValue = value.div(getPrice(_prediction));
-      userBettingPoints[msg.sender][_prediction] = userBettingPoints[msg.sender][_prediction].add(betValue);
+
+    function getOptionPrice(uint _prediction) public view returns(uint) {
+      (, uint totalOptions, , , , , ) = marketConfig.getBasicMarketDetails();
+     return _calculateOptionPrice(_prediction, address(this).balance, optionsAvailable[_prediction].ethStaked);
+    }
+
+    function getData() public view returns
+       (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
+        uint[] memory _optionPrice, uint[] memory _ethStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
+        uint totalOptions;
+        (_predictionType, totalOptions, , , , , ) = marketConfig.getBasicMarketDetails();
+        _feedsource = FeedSource;
+        _expireTime =expireTime;
+        _predictionStatus = uint(marketStatus());
+        minvalue = new uint[](3);
+        maxvalue = new uint[](3);
+        _optionPrice = new uint[](3);
+        _ethStaked = new uint[](3);
+        for (uint i = 0; i < 3; i++) {
+        _ethStaked[i] = optionsAvailable[i+1].ethStaked;
+        minvalue[i] = optionsAvailable[i+1].minValue;
+        maxvalue[i] = optionsAvailable[i+1].maxValue;
+        _optionPrice[i] = _calculateOptionPrice(i+1, address(this).balance, optionsAvailable[i+1].ethStaked);
+       }
+    }
+
+    function getMarketResults() public view returns(uint256, uint256, uint256, address[] memory, uint256) {
+      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].stakers, optionsAvailable[WinningOption].ethStaked);
+    }
+
+    function placePrediction(uint _prediction,uint _leverage) public payable {
+      require(now >= startTime && now <= expireTime);
+      (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      require(msg.value >= minPrediction,"Min prediction amount required");
+      minBet = minPrediction;
+      uint optionPrice = _calculatePredictionValue(_prediction, msg.value, address(this).balance.sub(msg.value), priceStep, _leverage);
+       // _calculateOptionPrice(_prediction, address(this).balance.sub(msg.value), msg.value);
+      // uint optionPrice = getOptionPrice(_prediction); // need to fix getOptionPrice function.
+      // uint predictionPoints = (((msg.value)).mul(_leverage)).div(optionPrice);
+      uint predictionPoints = optionPrice;
+      if(userPredictionPoints[msg.sender][_prediction] == 0) {
+        optionsAvailable[_prediction].stakers.push(msg.sender);
+      }
+      userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
       ethStaked[msg.sender][_prediction] = ethStaked[msg.sender][_prediction].add(msg.value);
-      optionsAvailable[_prediction].betPoints = optionsAvailable[_prediction].betPoints.add(betValue);
+      LeverageEth[msg.sender][_prediction] = LeverageEth[msg.sender][_prediction].add(msg.value.mul(_leverage));
+      optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
       optionsAvailable[_prediction].ethStaked = optionsAvailable[_prediction].ethStaked.add(msg.value);
-      emit Bet(msg.sender,msg.value, betValue, _prediction);
+      optionsAvailable[_prediction].ethLeveraged = optionsAvailable[_prediction].ethLeveraged.add(msg.value.mul(_leverage));
+      pl.callPlacePredictionEvent(msg.sender,msg.value, predictionPoints, _prediction, _leverage);
     }
 
-    function _closeBet(uint _value) public {      
-      require(now > expireTime,"bet not yet expired");
-      require(!betClosed,"bet closed");
-      betClosed = true;
+    function calculatePredictionResult(uint _value) public {
+      require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
+      require(now >= predictionForDate,"Time not reached");
+      require(_value > 0,"value should be greater than 0");
+     (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+      uint totalReward = 0;
+      uint distanceFromWinningOption = 0;
+      predictionStatus = PredictionStatus.ResultDeclared;
+      if(_value < optionsAvailable[2].minValue) {
+        WinningOption = 1;
+      } else if(_value > optionsAvailable[2].maxValue) {
+        WinningOption = 3;
+      } else {
+        WinningOption = 2;
+      }
       for(uint i=1;i <= totalOptions;i++){
-        if(_value <= optionsAvailable[i].maxValue && _value >= optionsAvailable[i].minValue){
-           WinningOption = i;
-         }         
-       else{
-            totalReward = totalReward.add(optionsAvailable[i].ethStaked);
-          }
+       distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
+       totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
       }
-      cBal = address(pl).balance; 
-      // when  some wins some losses.
-      if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward > 0){
-      commision = commissionPerc.mul(totalReward).div(100);
-      donation = donationPerc.mul(totalReward).div(100);
-      rewardToDistribute = totalReward.sub(commision).sub(donation);
-      CommissionAccount.transfer(commision);
-      DonationAccount.transfer(donation);
+      //Get donation, commission addresses and percentage
+      (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+       commission = commission.mul(totalReward).div(100);
+       donation = donation.mul(totalReward).div(100);
+       rewardToDistribute = totalReward.sub(commission).sub(donation);
+       commissionAccount.transfer(commission);
+       donationAccount.transfer(donation);
+      if(optionsAvailable[WinningOption].ethStaked == 0){
+       address(pl).transfer(rewardToDistribute);
       }
-      // when all win.
-       if(optionsAvailable[WinningOption].ethStaked > 0 && totalReward == 0){
-           commissionPerc = 0;
-           donationPerc = 0;
-          // only for test
-           commision = commissionPerc.mul(totalReward).div(100);
-           donation = donationPerc.mul(totalReward).div(100);
-           rewardToDistribute = totalReward.sub(commision).sub(donation);
-           CommissionAccount.transfer(commision);
-           DonationAccount.transfer(donation);
-           // rewardToDistribute = cBal.mul(2).div(100).mul(rate).mul(optionsAvailable[WinningOption].betPoints);   
-      }
-      // when all looses. 
-       else if(optionsAvailable[WinningOption].ethStaked == 0 && totalReward > 0){
-          uint Reward = address(this).balance;
-          commision = commissionPerc.mul(Reward).div(100);
-          donation = donationPerc.mul(Reward).div(100);
-          uint loseReward = Reward.sub(commision).sub(donation);
-          pl.deposit.value(loseReward)();
-          CommissionAccount.transfer(commision);
-          DonationAccount.transfer(donation);       
-       }      
+
+       pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
     }
 
-    function claimReward() public {
-      require(!userClaimedReward[msg.sender] && betClosed,"claimed alredy or bet is not closed yet");
-      userClaimedReward[msg.sender] = true;
-      uint userPoints;
-      uint reward;
-      uint send;
-      userPoints = userBettingPoints[msg.sender][WinningOption];
-      require(userPoints > 0,"must have atleast 0 points");
-      if(rewardToDistribute == 0 && cBal > 0){
-          cBal = address(pl).balance;
-          send = (rate).mul(2).div(100).mul(userPoints);
-          reward = ethStaked[msg.sender][WinningOption];
-          (msg.sender).transfer(reward);
-          pl.withdraw(send,msg.sender); 
-      }else if(rewardToDistribute == 0 && cBal == 0){
-        // if(rewardToDistribute == 0 ){
-          cBal = address(pl).balance;
-          send = (rate).mul(2).div(100).mul(userPoints);
-          reward = ethStaked[msg.sender][WinningOption];
-          (msg.sender).transfer(reward);
-          // pl.withdraw(send,msg.sender); 
-      }
-      else{   
-          reward =ethStaked[msg.sender][WinningOption].add(userPoints.mul(rewardToDistribute).div(optionsAvailable[WinningOption].betPoints));
-          (msg.sender).transfer(reward);
-      }
-      emit Claimed(msg.sender, reward.add(send));
+    function getReturn(address _user)public view returns(uint){
+     uint ethReturn = 0; 
+     uint distanceFromWinningOption = 0;
+      (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+       if(predictionStatus != PredictionStatus.ResultDeclared ) {
+        return 0;
+       }
+     for(uint i=1;i<=totalOptions;i++){
+      distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
+      ethReturn =  _calEthReturn(ethReturn,_user,i,lossPercentage,distanceFromWinningOption);
+      }     
+     uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
+     uint returnAmount =  reward.add(ethReturn);
+     return returnAmount;
     }
 
-    function __callback(string memory result) public{      
-        if (msg.sender != provable_cbAddress()) revert();
-        uint resultVal = safeParseInt(result);
-        _closeBet(resultVal);
+    function getPendingReturn(address _user)public view returns(uint){
+     if(userClaimedReward[_user]) return 0;
+     return getReturn(_user);
     }
     
+    //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
+    function _calEthReturn(uint ethReturn,address _user,uint i,uint lossPercentage,uint distanceFromWinningOption)internal view returns(uint){
+        return ethReturn.add(ethStaked[_user][i].sub((LeverageEth[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
+    }
+
+    function claimReturn(address payable _user) public {
+      require(!userClaimedReward[_user],"Already claimed");
+      require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
+      userClaimedReward[_user] = true;
+      (uint returnAmount) = getReturn(_user);
+       _user.transfer(returnAmount);
+      pl.callClaimedEvent(_user,returnAmount, ethStaked[_user][WinningOption]);
+    }
+
+    function __callback(bytes32 myid, string memory result) public {
+      // if(myid == closeMarketId) {
+      //   _closeBet();
+      // } else if(myid == marketResultId) {
+      require ((myid==marketResultId));
+      //Check oraclise address
+      calculatePredictionResult(parseInt(result));
+      // }
+    }
+
 }
