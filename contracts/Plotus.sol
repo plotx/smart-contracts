@@ -30,7 +30,7 @@ using SafeMath for uint256;
 
     address public plotusToken;
 
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 predictionType, uint256 startTime);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, address indexed predictionAsset, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 _ploIncentive);
@@ -58,6 +58,9 @@ using SafeMath for uint256;
       plotusToken = _plotusToken;
       markets.push(address(0));
       marketOpenIndex = 1;
+      //Adding Default prediction assets Ether and PlotusToken
+      _addPredictionAsset(address(0));
+      _addPredictionAsset(plotusToken);
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -82,6 +85,10 @@ using SafeMath for uint256;
     }
 
     function addPredictionAsset(address _predictionAsset) public onlyOwner {
+      _addPredictionAsset(_predictionAsset);
+    }
+
+    function _addPredictionAsset(address _predictionAsset) internal {
       require(predictionAssetIndex[_predictionAsset] == 0);
       predictionAssetIndex[_predictionAsset] = predictionAssets.length;
       predictionAssets.push(_predictionAsset);
@@ -117,9 +124,10 @@ using SafeMath for uint256;
       // Market _market=  new Market();
       marketIndex[_market] = markets.length;
       markets.push(_market);
-      uint256 _ploIncentive = 0;
-      Market(_market).initiate(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset, _ploIncentive);
-      emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _marketparams[0]);
+      uint256 _ploIncentive = 500 ether;
+      IERC20(plotusToken).mint(_market, _ploIncentive);
+      Market(_market).initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset, _ploIncentive);
+      emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _predictionAsset, _marketparams[0]);
     }
 
     /**

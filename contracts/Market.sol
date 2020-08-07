@@ -73,7 +73,7 @@ contract Market is usingOraclize {
       _;
     }
 
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address _predictionAsset, uint256 _ploIncentive) public {
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address _predictionAsset, uint256 _ploIncentive) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(_marketConfig);
       startTime = _uintparams[0];
@@ -85,7 +85,7 @@ contract Market is usingOraclize {
       expireTime = startTime + predictionTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      // marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
       predictionAsset = _predictionAsset;
       incentiveToDistribute = _ploIncentive;
@@ -211,7 +211,7 @@ contract Market is usingOraclize {
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
       (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
-      require(msg.value >= minPrediction,"Min prediction amount required");
+      require(_predictionStake >= minPrediction,"Min prediction amount required");
 
       if(predictionAsset == address(0)) {
         require(_predictionStake == msg.value);
@@ -285,11 +285,11 @@ contract Market is usingOraclize {
       }
       uint totalUserAssetStaked = 0;
       for(uint i=1;i<=totalOptions;i++){
-        totalUserAssetStaked = totalUserAssetStaked.add(assetStaked[msg.sender][i]);
+        totalUserAssetStaked = totalUserAssetStaked.add(assetStaked[_user][i]);
         distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
         _return =  _callReturn(_return, _user, i, lossPercentage, distanceFromWinningOption);
       }
-      uint incentive =  totalUserAssetStaked.mul(incentiveToDistribute).mul(100).div(totalStaked);
+      uint incentive =  totalUserAssetStaked.mul(incentiveToDistribute).div(totalStaked);
       uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
       uint returnAmount =  reward.add(_return);
       return (returnAmount, incentive);

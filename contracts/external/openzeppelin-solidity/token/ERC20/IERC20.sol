@@ -25,6 +25,14 @@ interface IERC20 {
     function transfer(address recipient, uint256 amount) external returns (bool);
 
     /**
+     * @dev Mints `amount` tokens to address `account`.
+     *
+     * Returns a boolean value indicating whether the operation succeeded.
+     *
+     * Emits a `Transfer` event.
+     */
+    function mint(address account, uint256 amount) external returns (bool);
+    /**
      * @dev Returns the remaining number of tokens that `spender` will be
      * allowed to spend on behalf of `owner` through `transferFrom`. This is
      * zero by default.
