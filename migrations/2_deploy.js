@@ -17,6 +17,8 @@ module.exports = function(deployer, network, accounts){
       let deployMaster = await deployer.deploy(Master , deployPlotus.address, deployMarket.address, [deployMarketHourly.address], deployPlotusToken.address);
       let plotusAddress = await deployMaster.plotusAddress();
       let plotus = await Plotus.at(plotusAddress);
+      let plotusToken = await PlotusToken.at(deployPlotusToken.address);
+      await plotusToken.addMinter(plotusAddress);
   });
 };
 
