@@ -20,7 +20,7 @@ contract IPlotus {
     }
     function callClaimedEvent(address _user , uint _reward, uint _stake, uint _ploIncentive) public {
     }
-    function callMarketResultEvent(uint _commision, uint _donation, uint _totalReward, uint _winningOption) public {
+    function callMarketResultEvent(uint _commision, uint _totalReward, uint _winningOption) public {
     }
 }
 contract Market is usingOraclize {
@@ -42,7 +42,7 @@ contract Market is usingOraclize {
     uint public rewardToDistribute;
     PredictionStatus internal predictionStatus;
     uint internal predictionForDate;
-    address public predictionAsset;
+    address[] public predictionAssets;
     uint incentiveToDistribute;
     uint totalStaked;
     
@@ -73,7 +73,17 @@ contract Market is usingOraclize {
       _;
     }
 
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address _predictionAsset, uint256 _ploIncentive) public payable {
+    modifier onlyAllowedAssets(address _asset) {
+      for(uint256 i;i<predictionAssets.length;i++) {
+        if(_asset == predictionAssets[i]) {
+          _;
+          break;
+        }
+      }
+      revert("Asset not allowed");
+    }
+
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address[] memory _predictionAssets, uint256 _ploIncentive) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(_marketConfig);
       startTime = _uintparams[0];
@@ -85,9 +95,9 @@ contract Market is usingOraclize {
       expireTime = startTime + predictionTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
+    //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
-      predictionAsset = _predictionAsset;
+      predictionAssets = _predictionAssets;
       incentiveToDistribute = _ploIncentive;
     }
 
@@ -102,13 +112,13 @@ contract Market is usingOraclize {
       return predictionStatus;
     }
 
-    function getAssetBalance() internal view returns(uint256) {
-      if(address(predictionAsset) == address(0)) {
-        return address(this).balance;
-      } else {
-        return IERC20(predictionAsset).balanceOf(address(this));
-      }
-    }
+    // function getAssetBalance() internal view returns(uint256) {
+    //   if(address(predictionAsset) == address(0)) {
+    //     return address(this).balance;
+    //   } else {
+    //     return IERC20(predictionAsset).balanceOf(address(this));
+    //   }
+    // }
   
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
@@ -207,17 +217,18 @@ contract Market is usingOraclize {
     /**
     * @dev Place prediction with '_predictionStake' amount on '_prediction' option with '_leverage' leverage
     */
-    function placePrediction(uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
+    function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable onlyAllowedAssets(_asset) {
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
       (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
       require(_predictionStake >= minPrediction,"Min prediction amount required");
 
-      if(predictionAsset == address(0)) {
+      if(_asset == address(0)) {
         require(_predictionStake == msg.value);
       } else {
         require(msg.value == 0);
-        require(IERC20(predictionAsset).transferFrom(msg.sender, address(this), _predictionStake));
+        require(IERC20(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+        // uint256 _stakeValue =_getAssetValue(_asset, _predictionStake);
       }
 
       uint optionPrice = _calculatePredictionValue(_prediction, _predictionStake, priceStep, _leverage);
@@ -251,21 +262,23 @@ contract Market is usingOraclize {
         WinningOption = 2;
       }
       for(uint i=1;i <= totalOptions;i++){
-       distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
-       totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].assetLeveraged)).div(100));
+       // distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);
+        if(i!=WinningOption) {
+          totalReward = totalReward.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged)).div(100));
+        }
       }
       //Get donation, commission addresses and percentage
-      (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+      (, , address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
        commission = commission.mul(totalReward).div(100);
-       donation = donation.mul(totalReward).div(100);
-       rewardToDistribute = totalReward.sub(commission).sub(donation);
-       _transferAsset(predictionAsset, commissionAccount, commission);
-       _transferAsset(predictionAsset, donationAccount, donation);
+       // donation = donation.mul(totalReward).div(100);
+       rewardToDistribute = totalReward.sub(commission);
+       _transferAsset(predictionAssets[0], commissionAccount, commission);
+       // _transferAsset(predictionAsset, donationAccount, donation);
       if(optionsAvailable[WinningOption].assetStaked == 0){
-       _transferAsset(predictionAsset, address(pl), rewardToDistribute);
+       _transferAsset(predictionAssets[0], address(pl), rewardToDistribute);
       }
 
-       pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
+       pl.callMarketResultEvent(commission, rewardToDistribute, WinningOption);    
     }
 
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
@@ -311,7 +324,7 @@ contract Market is usingOraclize {
       userClaimedReward[_user] = true;
       (uint returnAmount, uint incentive) = getReturn(_user);
       // _user.transfer(returnAmount);
-      _transferAsset(predictionAsset, _user, returnAmount);
+      _transferAsset(predictionAssets[0], _user, returnAmount);
       _transferAsset(pl.plotusToken(), _user, incentive);
       pl.callClaimedEvent(_user,returnAmount, assetStaked[_user][WinningOption], incentive);
     }

@@ -30,9 +30,9 @@ using SafeMath for uint256;
 
     address public plotusToken;
 
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, address indexed predictionAsset, uint256 startTime);
+    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAdd, uint256 commision, uint256 donation, uint256 totalReward, uint256 winningOption);
+    event MarketResult(address indexed marketAdd, uint256 commision, uint256 totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 _ploIncentive);
    
     modifier onlyOwner() {
@@ -109,16 +109,15 @@ using SafeMath for uint256;
     ) public payable onlyOwner
     {
       require(_marketType <= uint256(MarketType.WeeklyMarket), "Invalid market");
-      for(uint256 i = 0;i < predictionAssets.length; i++) {
-        _createMarket(_marketType, _marketparams, _feedsource, _stockName, predictionAssets[i]);
-      }
+      // for(uint256 i = 0;i < predictionAssets.length; i++) {
+        _createMarket(_marketType, _marketparams, _feedsource, _stockName);
+      // }
     }
 
     function _createMarket(uint256 _marketType,
       uint256[] memory _marketparams,
       string memory _feedsource,
-      bytes32 _stockName,
-      address _predictionAsset
+      bytes32 _stockName
     ) internal {
       address payable _market = _generateProxy(marketImplementation);
       // Market _market=  new Market();
@@ -126,8 +125,8 @@ using SafeMath for uint256;
       markets.push(_market);
       uint256 _ploIncentive = 500 ether;
       IERC20(plotusToken).mint(_market, _ploIncentive);
-      Market(_market).initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType], _predictionAsset, _ploIncentive);
-      emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _predictionAsset, _marketparams[0]);
+      Market(_market).initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType], predictionAssets, _ploIncentive);
+      emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
     /**
@@ -139,7 +138,7 @@ using SafeMath for uint256;
         return address(tempInstance);
     }
 
-    function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
+    function callMarketResultEvent(uint256 _commision, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
       if (marketOpenIndex < marketIndex[msg.sender]) {
         uint256 i;
         uint256 _status;
@@ -158,7 +157,7 @@ using SafeMath for uint256;
         marketOpenIndex = marketIndex[msg.sender];
       }
       marketWinningOption[msg.sender] = winningOption;
-      emit MarketResult(msg.sender, _commision, _donation, _totalReward, winningOption);
+      emit MarketResult(msg.sender, _commision, _totalReward, winningOption);
     }
     
     function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint256 _prediction, uint256 _leverage) external OnlyMarket {
