@@ -18,7 +18,8 @@
     "pify": "^5.0.0",
     "remixd": "^0.1.8-alpha.14",
     "truffle": "^5.1.18",
-    "web3": "^1.2.9"
+    "web3": "^0.20.4",
+    "solidity-coverage": "^0.7.1",
   },
   "devDependencies": {
     "chai": "^4.2.0"
