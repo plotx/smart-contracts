@@ -68,7 +68,7 @@ contract Market is usingOraclize {
       _;
     }
 
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address marketConfigs) public {
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address marketConfigs) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(marketConfigs);
       startTime = _uintparams[0];
@@ -80,7 +80,7 @@ contract Market is usingOraclize {
       expireTime = startTime + predictionTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price");
+      marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
     }
 
@@ -223,7 +223,6 @@ contract Market is usingOraclize {
       require(_value > 0,"value should be greater than 0");
      (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
       uint totalReward = 0;
-      uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
         WinningOption = 1;
@@ -233,38 +232,44 @@ contract Market is usingOraclize {
         WinningOption = 2;
       }
       for(uint i=1;i <= totalOptions;i++){
-       distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);    
-       totalReward = totalReward.add((distanceFromWinningOption.mul(lossPercentage).mul(optionsAvailable[i].ethLeveraged)).div(100));
+        if(i != WinningOption) {
+          totalReward = totalReward.add((lossPercentage.mul(optionsAvailable[i].ethLeveraged)).div(100));
+        }
       }
       //Get donation, commission addresses and percentage
       (address payable donationAccount, uint donation, address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
-       commission = commission.mul(totalReward).div(100);
-       donation = donation.mul(totalReward).div(100);
-       rewardToDistribute = totalReward.sub(commission).sub(donation);
-       commissionAccount.transfer(commission);
-       donationAccount.transfer(donation);
-      if(optionsAvailable[WinningOption].ethStaked == 0){
-       address(pl).transfer(rewardToDistribute);
+      if(totalReward > 0) {
+        commission = commission.mul(totalReward).div(100);
+        donation = donation.mul(totalReward).div(100);
+        rewardToDistribute = totalReward.sub(commission).sub(donation);
+        commissionAccount.transfer(commission.add(donation));
+        // donationAccount.transfer(donation);
+        if(optionsAvailable[WinningOption].ethStaked == 0){
+         address(pl).transfer(rewardToDistribute);
+         rewardToDistribute = 0;
+        }
       }
 
        pl.callMarketResultEvent(commission, donation, rewardToDistribute, WinningOption);    
     }
 
     function getReturn(address _user)public view returns(uint){
-     uint ethReturn = 0; 
-     uint distanceFromWinningOption = 0;
+      uint ethReturn = 0;
       (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
-       if(predictionStatus != PredictionStatus.ResultDeclared ) {
+      if(predictionStatus != PredictionStatus.ResultDeclared ) {
         return 0;
-       }
-     for(uint i=1;i<=totalOptions;i++){
-      distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
-      ethReturn =  _calEthReturn(ethReturn,_user,i,lossPercentage,distanceFromWinningOption);
+      }
+      for(uint i=1;i<=totalOptions;i++){
+       ethReturn =  _calEthReturn(ethReturn,_user,i,lossPercentage,0);
       }     
-     uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
-     uint returnAmount =  reward.add(ethReturn);
-     return returnAmount;
+      uint returnAmount =  ethReturn;
+      if(userPredictionPoints[_user][WinningOption] > 0) {
+        uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
+        returnAmount = returnAmount.add(reward);
+      }
+      return returnAmount;
     }
+
 
     function getPendingReturn(address _user)public view returns(uint){
      if(userClaimedReward[_user]) return 0;
@@ -273,7 +278,7 @@ contract Market is usingOraclize {
     
     //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
     function _calEthReturn(uint ethReturn,address _user,uint i,uint lossPercentage,uint distanceFromWinningOption)internal view returns(uint){
-        return ethReturn.add(ethStaked[_user][i].sub((LeverageEth[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
+        return ethReturn.add(ethStaked[_user][i].sub((LeverageEth[_user][i].mul(lossPercentage)).div(100)));
     }
 
     function claimReturn(address payable _user) public {

@@ -72,15 +72,15 @@ using SafeMath for uint256;
       Market _market=  new Market();
       markets.push(address(_market));
       marketIndex[address(_market)] = markets.length;
-      _market.initiate(_marketparams, _feedsource,  marketConfigs[_marketType]);
+      _market.initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType]);
       emit MarketQuestion(address(_market), _feedsource, _stockName, _marketType, _marketparams[0]);
     }
 
     function callMarketResultEvent(uint256 _commision, uint256 _donation, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
-      if (marketOpenIndex <= marketIndex[msg.sender]) {
+      if (marketOpenIndex < marketIndex[msg.sender]) {
         uint256 i;
         uint256 _status;
-        for(i = marketOpenIndex+1;i < markets.length;i++){
+        for(i = marketOpenIndex;i < markets.length;i++){
           //Convert to payable address
           ( , , , , , , , _status) = getMarketDetails(markets[i]);
           if(_status == uint256(Market.PredictionStatus.Started)) {
@@ -91,6 +91,8 @@ using SafeMath for uint256;
         if(i == markets.length) {
           marketOpenIndex = i-1;
         }
+      } else {
+        marketOpenIndex = marketIndex[msg.sender];
       }
       marketWinningOption[msg.sender] = winningOption;
       emit MarketResult(msg.sender, _commision, _donation, _totalReward, winningOption);
