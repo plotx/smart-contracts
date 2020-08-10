@@ -73,6 +73,7 @@ contract PlotusToken is LockableToken, MinterRole {
         public
         returns (bool)
     {
+        require(_reason == "VEST" || (_reason == "SM" && _time == 30 days) || _reason == "DR");
         uint256 validUntil = now.add(_time); //solhint-disable-line
 
         // If tokens are already locked, then functions extendLock or
@@ -88,6 +89,43 @@ contract PlotusToken is LockableToken, MinterRole {
         locked[msg.sender][_reason] = lockToken(_amount, validUntil, false);
 
         emit Locked(msg.sender, _reason, _amount, validUntil);
+        return true;
+    }
+
+    /**
+     * @dev Increase number of tokens locked for a specified reason
+     * @param _reason The reason to lock tokens
+     * @param _amount Number of tokens to be increased
+     */
+    function increaseLockAmount(bytes32 _reason, uint256 _amount)
+        public
+        returns (bool)
+    {
+        require(_reason == "VEST" || _reason == "SM" || _reason == "DR");
+        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
+        transfer(address(this), _amount);
+
+        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
+
+        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+        return true;
+    }
+
+    /**
+     * @dev Extends lock for a specified reason and time
+     * @param _reason The reason to lock tokens
+     * @param _time Lock extension time in seconds
+     */
+    function extendLock(bytes32 _reason, uint256 _time)
+        public
+        returns (bool)
+    {
+        require(_reason == "VEST" || _reason == "DR");
+        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
+
+        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
+
+        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
     }
 
