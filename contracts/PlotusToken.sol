@@ -10,12 +10,17 @@ contract PlotusToken is LockableToken, MinterRole {
     uint8 public decimals;
 
     address public plotusInstance;
+    address public bLOTtoken;
 
     mapping(address => uint256) public lockedForGovernanceVote;
 
     modifier notLocked(address _user) {
         //Add check to revert if locked for governance
         require(lockedForGovernanceVote[_user] >= now);
+        _;
+    }
+
+    modifier onlyAuthorized {
         _;
     }
 
@@ -87,6 +92,11 @@ contract PlotusToken is LockableToken, MinterRole {
      */
     function burnFrom(address account, uint256 amount) public {
         _burnFrom(account, amount);
+    }
+
+    function swapBLOT(uint256 amount) public onlyAuthorized {
+        bLOTtoken.burn(amount);
+        _mint(msg.sender, amount);
     }
 
     /**

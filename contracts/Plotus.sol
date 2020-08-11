@@ -32,7 +32,7 @@ using SafeMath for uint256;
     address public plotusToken;
 
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
-    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints,uint256 prediction,address indexed marketAdd,uint256 _leverage);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, uint256 predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAdd, uint256 commision, uint256 totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 _ploIncentive);
    
@@ -161,13 +161,13 @@ using SafeMath for uint256;
       emit MarketResult(msg.sender, _commision, _totalReward, winningOption);
     }
     
-    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint256 _prediction, uint256 _leverage) external OnlyMarket {
+    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
       totalStaked[_user] = totalStaked[_user].add(_value);
       if(!marketsParticipatedFlag[_user][msg.sender]) {
         marketsParticipated[_user].push(msg.sender);
         marketsParticipatedFlag[_user][msg.sender] = true;
       }
-      emit PlacePrediction(_user, _value, _predictionPoints, _prediction, msg.sender,_leverage);
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
 
     function callClaimedEvent(address _user , uint256 _reward, uint256 _stake, uint256 _ploIncentive) external OnlyMarket {
