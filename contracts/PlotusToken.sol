@@ -9,9 +9,13 @@ contract PlotusToken is LockableToken, MinterRole {
     string public symbol;
     uint8 public decimals;
 
+    address public plotusInstance;
+
+    mapping(address => uint256) public lockedForGovernanceVote;
+
     modifier notLocked(address _user) {
         //Add check to revert if locked for governance
-        // require
+        require(lockedForGovernanceVote[_user] >= now);
         _;
     }
 
@@ -29,9 +33,32 @@ contract PlotusToken is LockableToken, MinterRole {
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public notLocked(msg.sender) returns (bool) {
+    function transfer(address recipient, uint256 amount) public returns (bool) {
         _transfer(msg.sender, recipient, amount);
         return true;
+    }
+
+    /**
+     * @dev Moves tokens `amount` from `sender` to `recipient`.
+     *
+     * This is internal function is equivalent to `transfer`, and can be used to
+     * e.g. implement automatic token fees, slashing mechanisms, etc.
+     *
+     * Emits a `Transfer` event.
+     *
+     * Requirements:
+     *
+     * - `sender` cannot be the zero address.
+     * - `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `amount`.
+     */
+    function _transfer(address sender, address recipient, uint256 amount) internal notLocked(sender) {
+        require(sender != address(0), "ERC20: transfer from the zero address");
+        require(recipient != address(0), "ERC20: transfer to the zero address");
+
+        _balances[sender] = _balances[sender].sub(amount);
+        _balances[recipient] = _balances[recipient].add(amount);
+        emit Transfer(sender, recipient, amount);
     }
 
     /**
@@ -127,6 +154,17 @@ contract PlotusToken is LockableToken, MinterRole {
 
         emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
+    }
+
+    function burnLockedTokens(address _user ,bytes32 _reason, uint256 _amount, uint256 _time)
+        public
+        returns (bool)
+    {
+        
+    }
+
+    function lockForGovernanceVote(address _user, uint256 _lockTime) external {
+        lockedForGovernanceVote[_user] = now + _lockTime;
     }
 
 }

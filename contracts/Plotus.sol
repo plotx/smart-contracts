@@ -19,6 +19,7 @@ using SafeMath for uint256;
     mapping(address => address payable[]) public marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
     mapping(address => uint256) predictionAssetIndex; //Markets participated by user
+    mapping(address => uint256) public tokenLockedForGov; //Date upto which User tokens are locked
 
     uint256 public marketOpenIndex;
     address public owner;
@@ -239,6 +240,10 @@ using SafeMath for uint256;
         claimFlag = i;
       }
       lastClaimedIndex[msg.sender] = claimFlag + 1;
+    }
+
+    function votedOnGovernance(address _user, uint256 _lockTime) external {
+      tokenLockedForGov[_user] = now + _lockTime;
     }
 
     function () external payable {

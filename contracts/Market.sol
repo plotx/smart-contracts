@@ -252,7 +252,7 @@ contract Market is usingOraclize {
       require(_value > 0,"value should be greater than 0");
       (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
       uint totalReward = 0;
-      uint distanceFromWinningOption = 0;
+      // uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
         WinningOption = 1;
@@ -275,7 +275,8 @@ contract Market is usingOraclize {
        _transferAsset(predictionAssets[0], commissionAccount, commission);
        // _transferAsset(predictionAsset, donationAccount, donation);
       if(optionsAvailable[WinningOption].assetStaked == 0){
-       _transferAsset(predictionAssets[0], address(pl), rewardToDistribute);
+        _transferAsset(predictionAssets[0], address(pl), rewardToDistribute);
+        rewardToDistribute = 0;
       }
 
        pl.callMarketResultEvent(commission, rewardToDistribute, WinningOption);    
@@ -289,22 +290,23 @@ contract Market is usingOraclize {
       }
     }
 
-    function getReturn(address _user)public view returns(uint, uint){
-      uint _return = 0; 
-      uint distanceFromWinningOption = 0;
+    function getReturn(address _user)public view returns (uint, uint){
+      uint _return = 0;
       (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
-      if(predictionStatus != PredictionStatus.ResultDeclared ) {
+      if(predictionStatus != PredictionStatus.ResultDeclared || totalStaked ==0) {
        return (0,0);
       }
       uint totalUserAssetStaked = 0;
       for(uint i=1;i<=totalOptions;i++){
         totalUserAssetStaked = totalUserAssetStaked.add(assetStaked[_user][i]);
-        distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i); 
-        _return =  _callReturn(_return, _user, i, lossPercentage, distanceFromWinningOption);
+        _return =  _callReturn(_return, _user, i, lossPercentage);
       }
       uint incentive =  totalUserAssetStaked.mul(incentiveToDistribute).div(totalStaked);
-      uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
-      uint returnAmount =  reward.add(_return);
+      uint returnAmount =  _return;
+      if(userPredictionPoints[_user][WinningOption] > 0) {
+        uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
+        returnAmount = returnAmount.add(reward);
+      }
       return (returnAmount, incentive);
     }
 
@@ -314,8 +316,8 @@ contract Market is usingOraclize {
     }
     
     //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
-    function _callReturn(uint _return,address _user,uint i,uint lossPercentage,uint distanceFromWinningOption)internal view returns(uint){
-      return _return.add(assetStaked[_user][i].sub((LeverageAsset[_user][i].mul(distanceFromWinningOption).mul(lossPercentage)).div(100)));
+    function _callReturn(uint _return,address _user,uint i,uint lossPercentage)internal view returns(uint){
+      return _return.add(assetStaked[_user][i].sub((LeverageAsset[_user][i].mul(lossPercentage)).div(100)));
     }
 
     function claimReturn(address payable _user) public {
