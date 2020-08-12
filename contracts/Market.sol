@@ -17,11 +17,13 @@ contract IPlotus {
     address public owner;
     address public plotusToken;
     function() external payable{}
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 stakeForDispute, address user) public {
+    }
     function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _predictionAsset, uint _prediction,uint _leverage) public{
     }
-    function callClaimedEvent(address _user , uint _reward, uint _stake, uint _ploIncentive) public {
+    function callClaimedEvent(address _user , uint[] memory _reward, address[] memory predictionAssets, uint[] memory incentives, address[] memory incentiveTokens) public {
     }
-    function callMarketResultEvent(uint _commision, uint _totalReward, uint _winningOption) public {
+    function callMarketResultEvent(address[] memory predictionAssets, uint[] memory _totalReward, uint[] memory _commision, uint _winningOption) public {
     }
 }
 contract Market is usingOraclize {
@@ -33,25 +35,28 @@ contract Market is usingOraclize {
       ResultDeclared
     }
   
+    uint constant totalOptions = 3;
     uint internal startTime;
     uint internal expireTime;
     string internal FeedSource;
     uint public rate;
     uint public minBet;
     uint public WinningOption;
+    bool public lockedForDispute;
     bytes32 internal marketResultId;
-    uint public rewardToDistribute;
+    uint[] public rewardToDistribute;
     PredictionStatus internal predictionStatus;
     uint internal predictionForDate;
     // address[] public predictionAssets;
-    uint incentiveToDistribute;
+    // uint incentiveToDistribute;
     uint totalStaked;
-    address uniswapFactoryAddress;
+    // address uniswapFactoryAddress;
     
     mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
-    mapping(address => mapping(uint => uint)) public assetStakedValue;
     mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
     mapping(address => mapping(uint => uint)) public userPredictionPoints;
+    mapping(address => uint256) internal commissionAmount;
+    mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
     IPlotus internal pl;
@@ -63,8 +68,9 @@ contract Market is usingOraclize {
       uint minValue;
       uint maxValue;
       uint predictionPoints;
-      uint assetStaked;
-      uint assetLeveraged;
+      uint assetStakedValue;
+      mapping(address => uint256) assetStaked;
+      mapping(address => uint256) assetLeveraged;
       address[] stakers;
     }
 
@@ -79,12 +85,7 @@ contract Market is usingOraclize {
       _;
     }
 
-    modifier onlyAllowedAssets(address _asset) {
-      require(marketConfig.isValidPredictionAsset(_asset));
-      _;
-    }
-
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig, address[] memory _incentiveTokens, address _uniswapFactoryAdd) public payable {
+    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(_marketConfig);
       plotusToken = PlotusToken(pl.plotusToken());
@@ -99,9 +100,9 @@ contract Market is usingOraclize {
       setOptionRanges(_uintparams[3],_uintparams[4]);
     //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
-      incentiveTokens = _incentiveTokens;
-      uniswapFactoryAddress = _uniswapFactoryAdd;
-      factory = Factory(_uniswapFactoryAdd);
+      // incentiveTokens = _incentiveTokens;
+      // uniswapFactoryAddress = _uniswapFactoryAdd;
+      // factory = Factory(_uniswapFactoryAdd);
     }
 
     function () external payable {
@@ -115,9 +116,8 @@ contract Market is usingOraclize {
       return predictionStatus;
     }
 
-    function _getAssetValue(address _assetAddress, uint256 _amount) internal view returns(uint256) {
-      Exchange exchange = Exchange(factory.getExchange(_assetAddress));
-      return exchange.getTokenToEthInputPrice(_amount);
+    function _getAssetValue(address _exchange, uint256 _amount) internal view returns(uint256) {
+      return Exchange(_exchange).getTokenToEthInputPrice(_amount);
     }
   
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
@@ -162,7 +162,7 @@ contract Market is usingOraclize {
       uint value;
       uint flag = 0;
       uint _totalStaked = totalStaked;
-      uint _assetStakedOnOption = optionsAvailable[_prediction].assetStaked;
+      uint _assetStakedOnOption = optionsAvailable[_prediction].assetStakedValue;
       _predictionValue = 0;
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
@@ -180,107 +180,136 @@ contract Market is usingOraclize {
     }
 
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
-      (, , , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      (, , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stake, priceStep, _leverage);
     }
 
 
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
-     return _calculateOptionPrice(_prediction, totalStaked, optionsAvailable[_prediction].assetStaked);
+     return _calculateOptionPrice(_prediction, totalStaked, optionsAvailable[_prediction].assetStakedValue);
     }
 
     function getData() public view returns
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
-        uint totalOptions;
-        (_predictionType, totalOptions, , , , , ) = marketConfig.getBasicMarketDetails();
+        (_predictionType, , , , , ) = marketConfig.getBasicMarketDetails();
         _feedsource = FeedSource;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
-        minvalue = new uint[](3);
-        maxvalue = new uint[](3);
-        _optionPrice = new uint[](3);
-        _assetStaked = new uint[](3);
-        for (uint i = 0; i < 3; i++) {
-        _assetStaked[i] = optionsAvailable[i+1].assetStaked;
+        minvalue = new uint[](totalOptions);
+        maxvalue = new uint[](totalOptions);
+        _optionPrice = new uint[](totalOptions);
+        _assetStaked = new uint[](totalOptions);
+        for (uint i = 0; i < totalOptions; i++) {
+        _assetStaked[i] = optionsAvailable[i+1].assetStakedValue;
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, totalStaked, optionsAvailable[i+1].assetStaked);
+        _optionPrice[i] = _calculateOptionPrice(i+1, totalStaked, optionsAvailable[i+1].assetStakedValue);
        }
     }
 
-    function getMarketResults() public view returns(uint256, uint256, uint256, address[] memory, uint256) {
-      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].stakers, optionsAvailable[WinningOption].assetStaked);
+    function getMarketResults() public view returns(uint256, uint256, uint256[] memory, address[] memory, uint256) {
+      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].stakers, optionsAvailable[WinningOption].assetStakedValue);
     }
 
     /**
     * @dev Place prediction with '_predictionStake' amount on '_prediction' option with '_leverage' leverage
     */
-    function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable onlyAllowedAssets(_asset) {
+    function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
+      (bool _isValidAsset, uint256 _commision, address _exchange) = marketConfig.getAssetData(_asset);
+      require(_isValidAsset);
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
-      (, ,uint minPrediction, , , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      (, ,uint minPrediction, , , uint priceStep) = marketConfig.getBasicMarketDetails();
       require(_predictionStake >= minPrediction,"Min prediction amount required");
       if(_asset == plotusToken.bLOTtoken()) {
         require(_leverage == 5);
         plotusToken.swapBLOT(_predictionStake);
         _asset = address(plotusToken);
       }
-      (uint256 _commision, uint256 _uniswapDeadline, uint256 _lotPurchasePerc) = marketConfig.getCommissionParameters(_asset);
       _commision = _predictionStake.mul(_commision).div(100);
       _predictionStake = _predictionStake.sub(_commision);
+      commissionAmount[_asset] = commissionAmount[_asset].add(_commision);
       uint256 _stakeValue = _predictionStake;
       if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
         require(_predictionStake == msg.value);
       } else {
         require(msg.value == 0);
         require(IERC20(_asset).transferFrom(msg.sender, address(this), _predictionStake));
-        _stakeValue =_getAssetValue(_asset, _predictionStake);
+        _stakeValue =_getAssetValue(_exchange, _predictionStake);
       }
 
-      _transferCommission(_asset, _commision, _uniswapDeadline, _lotPurchasePerc);
+      // _transferCommission(_asset, _commision, _uniswapDeadline, _lotPurchasePerc);
 
       uint optionPrice = _calculatePredictionValue(_prediction, _stakeValue, priceStep, _leverage);
-      uint predictionPoints = optionPrice;
+      uint predictionPoints = _checkMultiplier(_asset, _predictionStake, optionPrice);
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
       }
+      _storePredictionData(_prediction, _predictionStake, _stakeValue, _asset, _leverage, predictionPoints);
+      // pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+    }
+
+    function _storePredictionData(uint _prediction, uint _predictionStake, uint _stakeValue, address _asset, uint _leverage, uint predictionPoints) internal {
       totalStaked = totalStaked.add(_stakeValue);
       userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
       assetStaked[msg.sender][_asset][_prediction] = assetStaked[msg.sender][_asset][_prediction].add(_predictionStake);
-      assetStakedValue[msg.sender][_prediction] = assetStakedValue[msg.sender][_prediction].add(_stakeValue);
       LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
       optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
-      optionsAvailable[_prediction].assetStaked = optionsAvailable[_prediction].assetStaked.add(_stakeValue);
-      optionsAvailable[_prediction].assetLeveraged = optionsAvailable[_prediction].assetLeveraged.add(_predictionStake.mul(_stakeValue));
-      pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      optionsAvailable[_prediction].assetStakedValue = optionsAvailable[_prediction].assetStakedValue.add(_stakeValue);
+      optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_stakeValue);
+      optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
-    function _transferCommission(address _asset, uint256 _commisionAmount, uint256 _uniswapDeadline, uint256 _lotPurchasePerc) internal {
-      if(_asset == address(plotusToken)){
-        plotusToken.burn(_commisionAmount);
-      } else {
-        uint256 _lotPurchaseAmount = _commisionAmount.sub(_commisionAmount.mul(_lotPurchasePerc).div(100));
-        uint256 _amountToPool = _commisionAmount.sub(_lotPurchasePerc);
-        _transferAsset(_asset, address(pl), _amountToPool);
-        Exchange exchange = Exchange(factory.getExchange(address(plotusToken)));
-        uint256 _tokenOutput;
-        if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-          _tokenOutput = exchange.ethToTokenSwapInput(_amount, _uniswapDeadline);
-        } else {
-          _tokenOutput = exchange.tokenToTokenSwapInput(_lotPurchaseAmount, 0, 0, _uniswapDeadline, _asset);
+    function _checkMultiplier(address _asset, uint _predictionStake, uint optionPrice) internal returns(uint) {
+      uint _predictionTime = expireTime.sub(startTime);
+      uint _stakedBalance = plotusToken.tokensLockedAtTime(msg.sender, "SM", _predictionTime.mul(2));
+      uint _stakeRatio;
+      uint _multiplier;
+      (_stakeRatio, _multiplier) = marketConfig.getMultiplierParameters(_asset);
+      if(_predictionStake.mul(_stakeRatio) >= _stakedBalance.sub(stakedTokenApplied[msg.sender])) {
+        optionPrice = optionPrice.mul(_multiplier).div(100);
+        stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
+      }
+      return optionPrice;
+    }
+
+    function transferCommission() external {
+      // (uint256 _commision, uint256 _uniswapDeadline, uint256 _lotPurchasePerc) = marketConfig.getCommissionParameters(_asset);
+      uint256[] memory _commisionPecentages;
+      address[] memory _predictionAssets;
+      uint256 _uniswapDeadline;
+      uint256 _lotPurchasePerc;
+      (_predictionAssets, _commisionPecentages, , _uniswapDeadline, _lotPurchasePerc) = marketConfig.getAssetsAndCommissionParams();
+      for(uint256 i = 0; i < _predictionAssets.length; i++ ) {
+        if(commissionAmount[_predictionAssets[i]] > 0) {
+          if(_predictionAssets[i] == address(plotusToken)){
+            plotusToken.burn(commissionAmount[_predictionAssets[i]]);
+          } else {
+            address _exchange;
+            (, , _exchange) = marketConfig.getAssetData(address(plotusToken));
+            Exchange exchange = Exchange(_exchange);
+            uint256 _lotPurchaseAmount = (commissionAmount[_predictionAssets[i]]).sub((commissionAmount[_predictionAssets[i]]).mul(_lotPurchasePerc).div(100));
+            uint256 _amountToPool = (commissionAmount[_predictionAssets[i]]).sub(_lotPurchasePerc);
+            _transferAsset(_predictionAssets[i], address(pl), _amountToPool);
+            uint256 _tokenOutput;
+            if(_predictionAssets[i] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+              _tokenOutput = exchange.ethToTokenSwapInput.value(_lotPurchaseAmount)(1, _uniswapDeadline);
+            } else {
+              _tokenOutput = exchange.tokenToTokenSwapInput(_lotPurchaseAmount, 1, 1, _uniswapDeadline, _predictionAssets[i]);
+            }
+            incentiveToDistribute[address(plotusToken)] = incentiveToDistribute[address(plotusToken)].add(_tokenOutput);
+          }
         }
-        incentiveToDistribute[address(plotusToken)] = incentiveToDistribute[address(plotusToken)].add(_tokenOutput);
       }
     }
 
     function calculatePredictionResult(uint _value) public {
-      require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
+      require(msg.sender == address(pl) || msg.sender == oraclize_cbAddress());
       require(now >= predictionForDate,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
-      uint totalReward = 0;
+      (, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
       // uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
@@ -290,10 +319,25 @@ contract Market is usingOraclize {
       } else {
         WinningOption = 2;
       }
-      for(uint i=1;i <= totalOptions;i++){
-       // distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);
-        if(i!=WinningOption) {
-          totalReward = totalReward.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged)).div(100));
+      address[] memory _predictionAssets = marketConfig.getPredictionAssets();
+      uint[] memory totalReward = new uint256[](_predictionAssets.length);
+      uint[] memory _commission = new uint[](_predictionAssets.length);
+      if(optionsAvailable[WinningOption].assetStakedValue > 0){
+        for(uint j = 0; j < _predictionAssets.length; j++) {
+          _commission[j] = commissionAmount[_predictionAssets[j]];
+          for(uint i=1;i <= totalOptions;i++){
+         // distanceFromWinningOption = i>WinningOption ? i.sub(WinningOption) : WinningOption.sub(i);
+            if(i!=WinningOption) {
+            totalReward[j] = totalReward[j].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[_predictionAssets[j]])).div(100));
+            }
+          }
+        }
+        rewardToDistribute = totalReward;
+      } else {
+        for(uint i = 0; i< _predictionAssets.length; i++) {
+          for(uint j=1;j <= totalOptions;j++){
+            _transferAsset(_predictionAssets[i], address(pl), optionsAvailable[j].assetStaked[_predictionAssets[i]]);
+          }
         }
       }
       //Get donation, commission addresses and percentage
@@ -301,16 +345,20 @@ contract Market is usingOraclize {
        // commission = commission.mul(totalReward).div(100);
        // donation = donation.mul(totalReward).div(100);
        // rewardToDistribute = totalReward.sub(commission);
-       rewardToDistribute = totalReward;
        // _transferAsset(predictionAssets[0], commissionAccount, commission);
        // _transferAsset(predictionAsset, donationAccount, donation);
-      if(optionsAvailable[WinningOption].assetStaked == 0){
-        address[] memory _predictionAssets = marketConfig.getPredictionAssets();
-        _transferAsset(_predictionAssets[0], address(pl), rewardToDistribute);
-        rewardToDistribute = 0;
-      }
+      // if(optionsAvailable[WinningOption].assetStaked == 0){
+      // }
 
-       pl.callMarketResultEvent(commission, rewardToDistribute, WinningOption);    
+       pl.callMarketResultEvent(_predictionAssets, rewardToDistribute, _commission, WinningOption);    
+    }
+
+    function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
+      require(predictionStatus == PredictionStatus.ResultDeclared);
+      uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
+      require(plotusToken.transferFrom(msg.sender, address(pl), _stakeForDispute));
+      lockedForDispute = true;
+      pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender);
     }
 
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
@@ -321,35 +369,57 @@ contract Market is usingOraclize {
       }
     }
 
-    function getReturn(address _user)public view returns (uint[] memory returnAmount, uint[] memory incentive){
-      (,uint totalOptions, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+    function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
       if(predictionStatus != PredictionStatus.ResultDeclared || totalStaked ==0) {
-       return (0,incentive);
+       return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
-      address[] memory _predictionAssets = marketConfig.getPredictionAssets();
-      uint[] memory _return = new uint256[](_predictionAssets.length);
-      uint totalUserAssetStaked = 0;
-      for(uint i=1;i<=totalOptions;i++){
-        totalUserAssetStaked = totalUserAssetStaked.add(assetStakedValue[_user][i]);
-        for(uint i = 0; i< _predictionAssets.length; i++) {
-          _return[i] =  _callReturn(_return[i], _user, i, lossPercentage, _predictionAssets[i]);
+      (_predictionAssets, , _incentiveTokens, , ) = marketConfig.getAssetsAndCommissionParams();
+      // uint[] memory _return;
+      uint256 _totalUserPredictionPoints = 0;
+      uint256 _totalPredictionPoints = 0;
+      (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user, _predictionAssets);
+      incentive = _calculateIncentives(_totalUserPredictionPoints, _totalPredictionPoints, _incentiveTokens);
+      // returnAmount =  _return;
+      if(userPredictionPoints[_user][WinningOption] > 0) {
+        returnAmount = _addUserReward(_user, _predictionAssets, returnAmount);
+        
+      }
+      return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
+    }
+
+    function _addUserReward(address _user, address[] memory _predictionAssets, uint[] memory returnAmount) internal view returns(uint[] memory){
+      uint reward;
+      for(uint j = 0; j< _predictionAssets.length; j++) {
+        reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute[j]).div(optionsAvailable[WinningOption].predictionPoints);
+        returnAmount[j] = returnAmount[j].add(reward);
+      }
+      return returnAmount;
+    }
+
+    function _calculateUserReturn(address _user, address[] memory _predictionAssets) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
+      (, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+      _return = new uint256[](_predictionAssets.length);
+      for(uint  i=1;i<=totalOptions;i++){
+        _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
+        _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
+        if(i != WinningOption) {
+          for(uint j = 0; j< _predictionAssets.length; j++) {
+            _return[j] =  _callReturn(_return[j], _user, i, lossPercentage, _predictionAssets[j]);
+          }
         }
       }
-      incentive = new uint256[](incentiveTokens.length);
-      for(i = 0; i < incentiveTokens.length; i++) {
-        incentive[i] = totalUserAssetStaked.mul(incentiveToDistribute[incentiveTokens[i]]).div(totalStaked);
+    }
+
+    function _calculateIncentives(uint256 _totalUserPredictionPoints, uint256 _totalPredictionPoints, address[] memory _incentiveTokens) internal view returns(uint256[] memory incentive){
+      incentive = new uint256[](_incentiveTokens.length);
+      for(uint i = 0; i < _incentiveTokens.length; i++) {
+        incentive[i] = _totalUserPredictionPoints.mul(incentiveToDistribute[_incentiveTokens[i]]).div(_totalPredictionPoints);
       }
-      uint returnAmount =  _return;
-      if(userPredictionPoints[_user][WinningOption] > 0) {
-        uint reward = userPredictionPoints[_user][WinningOption].mul(rewardToDistribute).div(optionsAvailable[WinningOption].predictionPoints);
-        returnAmount = returnAmount.add(reward);
-      }
-      return (returnAmount, incentive);
     }
 
     function getPendingReturn(address _user) external view returns(uint, uint){
       if(userClaimedReward[_user]) return (0,0);
-      return getReturn(_user);
+      // return getReturn(_user);
     }
     
     //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
@@ -358,16 +428,20 @@ contract Market is usingOraclize {
     }
 
     function claimReturn(address payable _user) public {
+      require(!lockedForDispute);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
       userClaimedReward[_user] = true;
-      (uint returnAmount, uint incentive) = getReturn(_user);
-      // _user.transfer(returnAmount);
-      address[] memory _predictionAssets = marketConfig.getPredictionAssets();
-
-      _transferAsset(_predictionAssets[0], _user, returnAmount);
-      _transferAsset(plotusToken, _user, incentive);
-      pl.callClaimedEvent(_user,returnAmount, assetStaked[_user][WinningOption], incentive);
+      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, address[] memory _incentiveTokens) = getReturn(_user);
+      // _user.transfer(returnAmount)
+      uint256 i;
+      for(i = 0;i< _predictionAssets.length;i++) {
+        _transferAsset(_predictionAssets[0], _user, _returnAmount[i]);
+      }
+      for(i = 0;i < _incentiveTokens.length; i++) {
+        _transferAsset(_incentiveTokens[i], _user, _incentives[i]);
+      }
+      pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, _incentiveTokens);
     }
 
     function __callback(bytes32 myid, string memory result) public {

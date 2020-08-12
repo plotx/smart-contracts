@@ -20,6 +20,7 @@ using SafeMath for uint256;
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
     mapping(address => uint256) predictionAssetIndex; //Markets participated by user
     mapping(address => uint256) public tokenLockedForGov; //Date upto which User tokens are locked
+    mapping(address => bool) public lockedForDispute;
 
     uint256 public marketOpenIndex;
     address public owner;
@@ -27,14 +28,20 @@ using SafeMath for uint256;
     address marketImplementation;
     address[] public marketConfigs;
     address payable[] markets;
-    address[] predictionAssets;
 
     address public plotusToken;
 
+    struct DisputeStake {
+      address staker;
+      uint256 stakeAmount;
+    }
+
+    mapping(address => DisputeStake) disputeStakes;
+
     event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, uint256 predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAdd, uint256 commision, uint256 totalReward, uint256 winningOption);
-    event Claimed(address indexed marketAdd, address indexed user, uint256 reward, uint256 stake, uint256 _ploIncentive);
+    event MarketResult(address indexed marketAddm, address[] _predictionAssets, uint256[] totalReward, uint256[] commision, uint256 winningOption);
+    event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
    
     modifier onlyOwner() {
       require(msg.sender == owner);
@@ -60,8 +67,6 @@ using SafeMath for uint256;
       markets.push(address(0));
       marketOpenIndex = 1;
       //Adding Default prediction assets Ether and PlotusToken
-      _addPredictionAsset(address(0));
-      _addPredictionAsset(plotusToken);
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -83,23 +88,6 @@ using SafeMath for uint256;
         OwnedUpgradeabilityProxy tempInstance 
             = OwnedUpgradeabilityProxy(_proxyAddress);
         tempInstance.upgradeTo(_contractsAddress);
-    }
-
-    function addPredictionAsset(address _predictionAsset) public onlyOwner {
-      _addPredictionAsset(_predictionAsset);
-    }
-
-    function _addPredictionAsset(address _predictionAsset) internal {
-      require(predictionAssetIndex[_predictionAsset] == 0);
-      predictionAssetIndex[_predictionAsset] = predictionAssets.length;
-      predictionAssets.push(_predictionAsset);
-    }
-
-    function removePredictionAsset(address _predictionAsset) public onlyOwner {
-      require(predictionAssetIndex[_predictionAsset] > 0);
-      predictionAssets[predictionAssetIndex[_predictionAsset]] = predictionAssets[predictionAssets.length - 1];
-      predictionAssets.length--;
-      predictionAssetIndex[_predictionAsset] = 0;
     }
 
     function addNewMarket( 
@@ -124,10 +112,22 @@ using SafeMath for uint256;
       // Market _market=  new Market();
       marketIndex[_market] = markets.length;
       markets.push(_market);
-      uint256 _ploIncentive = 500 ether;
-      IERC20(plotusToken).mint(_market, _ploIncentive);
-      Market(_market).initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType], predictionAssets, _ploIncentive);
+      // uint256 _ploIncentive = 500 ether;
+      // IERC20(plotusToken).mint(_market, _ploIncentive);
+      Market(_market).initiate.value(msg.value)(_marketparams, _feedsource,  marketConfigs[_marketType]);
       emit MarketQuestion(_market, _feedsource, _stockName, _marketType, _marketparams[0]);
+    }
+
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user) public OnlyMarket {
+      lockedForDispute[msg.sender] = true;
+      disputeStakes[msg.sender].staker = _user;
+      disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
+      // createProposalwithSolution(proposalTitle, sd, description, 7, solutionHash, actionHash);
+    }
+
+    function resolveDispute(address _marketAddress, uint256 _result) external {
+      Market(_marketAddress).calculatePredictionResult(_result);
+      IERC20.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
     }
 
     /**
@@ -139,7 +139,7 @@ using SafeMath for uint256;
         return address(tempInstance);
     }
 
-    function callMarketResultEvent(uint256 _commision, uint256 _totalReward, uint256 winningOption) external OnlyMarket {
+    function callMarketResultEvent(address[] calldata _predictionAssets , uint256[] calldata _totalReward, uint256[] calldata _commision, uint256 winningOption) external OnlyMarket {
       if (marketOpenIndex < marketIndex[msg.sender]) {
         uint256 i;
         uint256 _status;
@@ -158,7 +158,7 @@ using SafeMath for uint256;
         marketOpenIndex = marketIndex[msg.sender];
       }
       marketWinningOption[msg.sender] = winningOption;
-      emit MarketResult(msg.sender, _commision, _totalReward, winningOption);
+      emit MarketResult(msg.sender, _predictionAssets, _totalReward, _commision, winningOption);
     }
     
     function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
@@ -170,9 +170,10 @@ using SafeMath for uint256;
       emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
 
-    function callClaimedEvent(address _user , uint256 _reward, uint256 _stake, uint256 _ploIncentive) external OnlyMarket {
-      rewardClaimed[_user] = rewardClaimed[_user].add(_reward).add(_stake);
-      emit Claimed(msg.sender, _user, _reward, _stake, _ploIncentive);
+    function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint[] calldata incentives, address[] calldata incentiveTokens) external OnlyMarket {
+      // rewardClaimed[_user] = rewardClaimed[_user].add(_reward).add(_stake);
+      // emit Claimed(msg.sender, _user, _reward, _stake, _ploIncentive);
+      emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveTokens);
     }
 
     function getMarketDetails(address payable _marketAdd)public view returns
@@ -192,7 +193,7 @@ using SafeMath for uint256;
           Market _marketInstance = Market(marketsParticipated[user][i]);
           _market[i] = marketsParticipated[user][i];
           _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
-          (_reward[i], ) = _marketInstance.getReturn(user);
+          // (_reward[i], ) = _marketInstance.getReturn(user);
         }
       }
     }

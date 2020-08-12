@@ -3,6 +3,10 @@ pragma solidity  0.5.7;
 import "./external/lockable-token/LockableToken.sol";
 import "./external/openzeppelin-solidity/access/roles/MinterRole.sol";
 
+contract IToken {
+    function burn(uint256 amount) public{}
+}
+
 contract PlotusToken is LockableToken, MinterRole {
 
     string public name;
@@ -95,7 +99,7 @@ contract PlotusToken is LockableToken, MinterRole {
     }
 
     function swapBLOT(uint256 amount) public onlyAuthorized {
-        bLOTtoken.burn(amount);
+        IToken(bLOTtoken).burn(amount);
         _mint(msg.sender, amount);
     }
 
