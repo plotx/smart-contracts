@@ -20,7 +20,7 @@ contract PlotusToken is LockableToken, MinterRole {
 
     modifier notLocked(address _user) {
         //Add check to revert if locked for governance
-        require(lockedForGovernanceVote[_user] >= now);
+        require(lockedForGovernanceVote[_user] <= now);
         _;
     }
 

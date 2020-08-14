@@ -27,6 +27,8 @@ contract MarketConfig {
     
     uint internal multiplier;
     uint internal stakeForDispute;
+    uint internal positionDecimals;
+    uint internal marketCoolDownTime;
     
     address payable internal donationAccount;//
     address payable internal commissionAccount;//
@@ -55,12 +57,12 @@ contract MarketConfig {
         uniswapFactory = Factory(_addressParams[3]);
     }
 
-    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint) {
-        return (betType, minBet, maxReturn, bonusRewardPerc,lossPercentage, priceStep);
+    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint, uint) {
+        return (betType, minBet, maxReturn, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint) {
-        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED);
+    function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint, uint) {
+        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, marketCoolDownTime);
     }
 
     function getChainLinkPriceOracle() public view returns (address) {

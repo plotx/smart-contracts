@@ -126,8 +126,9 @@ using SafeMath for uint256;
     }
 
     function resolveDispute(address _marketAddress, uint256 _result) external {
-      Market(_marketAddress).calculatePredictionResult(_result);
+      Market(_marketAddress).resolveDispute(_result);
       IERC20.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
+      lockedForDispute[msg.sender] = false;
     }
 
     /**

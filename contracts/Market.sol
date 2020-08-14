@@ -40,17 +40,14 @@ contract Market is usingOraclize {
     uint internal expireTime;
     string internal FeedSource;
     uint public rate;
-    uint public minBet;
     uint public WinningOption;
     bool public lockedForDispute;
     bytes32 internal marketResultId;
     uint[] public rewardToDistribute;
     PredictionStatus internal predictionStatus;
     uint internal predictionForDate;
-    // address[] public predictionAssets;
-    // uint incentiveToDistribute;
+    uint internal marketCoolDownTime;
     uint totalStaked;
-    // address uniswapFactoryAddress;
     
     mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
     mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
@@ -74,16 +71,10 @@ contract Market is usingOraclize {
       address[] stakers;
     }
 
-    address[] public incentiveTokens;
     mapping(address => uint256) incentiveToDistribute;
     mapping(uint=>option) public optionsAvailable;
 
     IChainLinkOracle internal chainLinkOracle;
-
-    modifier OnlyOwner() {
-      require(msg.sender == pl.owner() || msg.sender == address(pl));
-      _;
-    }
 
     function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig) public payable {
       pl = IPlotus(msg.sender);
@@ -94,8 +85,9 @@ contract Market is usingOraclize {
       predictionForDate = _uintparams[1];
       rate = _uintparams[2];
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
-      (uint predictionTime, , , , , ) = marketConfig.getPriceCalculationParams();
+      (uint predictionTime, , , , , , uint _coolDownTime) = marketConfig.getPriceCalculationParams();
       expireTime = startTime + predictionTime;
+      marketCoolDownTime = predictionTime + _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
     //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
@@ -123,7 +115,7 @@ contract Market is usingOraclize {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint predictionTime, ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed) = marketConfig.getPriceCalculationParams();
+      (uint predictionTime, ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed, ) = marketConfig.getPriceCalculationParams();
       if(now > expireTime) {
         return 0;
       }
@@ -176,12 +168,12 @@ contract Market is usingOraclize {
           _totalStaked = _totalStaked.add(_priceStep);
           flag++;
         }
-      } 
+      }
     }
 
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
-      (, , , , , uint priceStep) = marketConfig.getBasicMarketDetails();
-      return _calculatePredictionValue(_prediction, _stake, priceStep, _leverage);
+      (, , , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      return _calculatePredictionValue(_prediction, _stake.mul(positionDecimals), priceStep, _leverage);
     }
 
 
@@ -193,7 +185,7 @@ contract Market is usingOraclize {
     function getData() public view returns
        (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
-        (_predictionType, , , , , ) = marketConfig.getBasicMarketDetails();
+        (_predictionType, , , , , , ) = marketConfig.getBasicMarketDetails();
         _feedsource = FeedSource;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
@@ -221,7 +213,7 @@ contract Market is usingOraclize {
       require(_isValidAsset);
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
-      (, ,uint minPrediction, , , uint priceStep) = marketConfig.getBasicMarketDetails();
+      (, ,uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_predictionStake >= minPrediction,"Min prediction amount required");
       if(_asset == plotusToken.bLOTtoken()) {
         require(_leverage == 5);
@@ -242,7 +234,7 @@ contract Market is usingOraclize {
 
       // _transferCommission(_asset, _commision, _uniswapDeadline, _lotPurchasePerc);
 
-      uint optionPrice = _calculatePredictionValue(_prediction, _stakeValue, priceStep, _leverage);
+      uint optionPrice = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
       uint predictionPoints = _checkMultiplier(_asset, _predictionStake, optionPrice);
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
@@ -306,10 +298,25 @@ contract Market is usingOraclize {
     }
 
     function calculatePredictionResult(uint _value) public {
-      require(msg.sender == address(pl) || msg.sender == oraclize_cbAddress());
+      //Owner can set the result, for testing. To be removed when deployed on mainnet
+      require(msg.sender == pl.owner() || msg.sender == oraclize_cbAddress());
+      _postResult(_value);
+      //Get donation, commission addresses and percentage
+      // (, , address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
+       // commission = commission.mul(totalReward).div(100);
+       // donation = donation.mul(totalReward).div(100);
+       // rewardToDistribute = totalReward.sub(commission);
+       // _transferAsset(predictionAssets[0], commissionAccount, commission);
+       // _transferAsset(predictionAsset, donationAccount, donation);
+      // if(optionsAvailable[WinningOption].assetStaked == 0){
+      // }
+
+    }
+
+    function _postResult(uint256 _value) internal {
       require(now >= predictionForDate,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      (, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+      (, , , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       // uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
@@ -340,17 +347,7 @@ contract Market is usingOraclize {
           }
         }
       }
-      //Get donation, commission addresses and percentage
-      // (, , address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
-       // commission = commission.mul(totalReward).div(100);
-       // donation = donation.mul(totalReward).div(100);
-       // rewardToDistribute = totalReward.sub(commission);
-       // _transferAsset(predictionAssets[0], commissionAccount, commission);
-       // _transferAsset(predictionAsset, donationAccount, donation);
-      // if(optionsAvailable[WinningOption].assetStaked == 0){
-      // }
-
-       pl.callMarketResultEvent(_predictionAssets, rewardToDistribute, _commission, WinningOption);    
+      pl.callMarketResultEvent(_predictionAssets, rewardToDistribute, _commission, WinningOption);
     }
 
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
@@ -359,6 +356,12 @@ contract Market is usingOraclize {
       require(plotusToken.transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
       pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender);
+    }
+
+    function resolveDispute(uint256 finalResult) external {
+      require(msg.sender == address(pl));
+      _postResult(finalResult);
+      lockedForDispute = false;
     }
 
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
@@ -397,7 +400,7 @@ contract Market is usingOraclize {
     }
 
     function _calculateUserReturn(address _user, address[] memory _predictionAssets) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      (, , , ,uint lossPercentage, ) = marketConfig.getBasicMarketDetails();
+      (, , , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       _return = new uint256[](_predictionAssets.length);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
@@ -428,7 +431,7 @@ contract Market is usingOraclize {
     }
 
     function claimReturn(address payable _user) public {
-      require(!lockedForDispute);
+      require(!lockedForDispute && now > marketCoolDownTime);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
       userClaimedReward[_user] = true;
