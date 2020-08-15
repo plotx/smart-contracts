@@ -1,6 +1,7 @@
 pragma solidity 0.5.7;
 
 import "../external/uniswap/solidity-interface.sol";
+import "./interface/IChainLinkOracle.sol";
 
 contract MarketConfig {
 
@@ -8,7 +9,6 @@ contract MarketConfig {
     uint constant STAKE_WEIGHTAGE = 40;//
     uint constant PRICE_WEIGHTAGE = 60;//
     uint constant OPTION_START_INDEX = 1;//
-    uint constant maxReturn = 5;
     uint constant minBet = 1e15;
     uint constant STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;//
     //Two extra decimals added for percentage
@@ -20,6 +20,7 @@ contract MarketConfig {
     uint internal priceStep;//
     uint internal totalOptions;//
     uint internal delta;//
+    uint internal rate;//
     uint internal PREDICTION_TIME;//
     // uint internal donationPerc;//
     // uint internal commissionPerc;//
@@ -40,6 +41,8 @@ contract MarketConfig {
     mapping(address => bool) internal predictionAssetFlag;
     mapping(address => uint) internal commissionPerc;
     mapping(address => uint) internal stakeRatioForMultiplier;
+
+    IChainLinkOracle internal chainLinkOracle;
     constructor(uint[] memory _uintParams, address payable[] memory _addressParams) public {
         betType = _uintParams[0];
         //Check for odd number of options
@@ -55,14 +58,16 @@ contract MarketConfig {
         commissionAccount = _addressParams[1];
         chainLinkPriceOracle = _addressParams[2];
         uniswapFactory = Factory(_addressParams[3]);
+        chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
-    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint, uint) {
-        return (betType, minBet, maxReturn, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
+    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint) {
+        return (betType, minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint, uint) {
-        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, marketCoolDownTime);
+    function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint, uint, uint, uint) {
+        uint latestAnswer = chainLinkOracle.latestAnswer()
+        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, marketCoolDownTime, rate);
     }
 
     function getChainLinkPriceOracle() public view returns (address) {

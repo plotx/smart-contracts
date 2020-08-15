@@ -1,9 +1,8 @@
 pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
-import "./external/oraclize/ethereum-api/usingOraclize.sol";
+import "./external/oraclize/ethereum-api/provableAPI.sol";
 import "./config/MarketConfig.sol";
-import "./interface/IChainLinkOracle.sol";
 import "./external/openzeppelin-solidity/token/ERC20/IERC20.sol";
 import "./PlotusToken.sol";
 
@@ -26,7 +25,7 @@ contract IPlotus {
     function callMarketResultEvent(address[] memory predictionAssets, uint[] memory _totalReward, uint[] memory _commision, uint _winningOption) public {
     }
 }
-contract Market is usingOraclize {
+contract Market is usingProvable {
     using SafeMath for uint;
 
     enum PredictionStatus {
@@ -38,14 +37,14 @@ contract Market is usingOraclize {
     uint constant totalOptions = 3;
     uint internal startTime;
     uint internal expireTime;
-    string internal FeedSource;
+    bytes32 internal marketCurrency;
     uint public rate;
     uint public WinningOption;
     bool public lockedForDispute;
     bytes32 internal marketResultId;
     uint[] public rewardToDistribute;
     PredictionStatus internal predictionStatus;
-    uint internal predictionForDate;
+    uint internal settleTime;
     uint internal marketCoolDownTime;
     uint totalStaked;
     
@@ -76,22 +75,23 @@ contract Market is usingOraclize {
 
     IChainLinkOracle internal chainLinkOracle;
 
-    function initiate(uint[] memory _uintparams,string memory _feedsource,address _marketConfig) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketConfig) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(_marketConfig);
       plotusToken = PlotusToken(pl.plotusToken());
-      startTime = _uintparams[0];
-      FeedSource = _feedsource;
-      predictionForDate = _uintparams[1];
-      rate = _uintparams[2];
+      startTime = _startTime;
+      marketCurrency = _marketCurrency;
+      settleTime = _settleTime;
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
-      (uint predictionTime, , , , , , uint _coolDownTime) = marketConfig.getPriceCalculationParams();
+      (, , , , , , uint _coolDownTime, , uint _rate) = marketConfig.getPriceCalculationParams();
+      rate = _rate;
+      uint predictionTime = _predictionTime; 
       expireTime = startTime + predictionTime;
-      marketCoolDownTime = predictionTime + _coolDownTime;
+      marketCoolDownTime = expireTime + _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_uintparams[3],_uintparams[4]);
-    //   marketResultId = oraclize_query(predictionForDate, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
-      chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
+      marketResultId = oraclize_query(settleTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
+      // chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
       // incentiveTokens = _incentiveTokens;
       // uniswapFactoryAddress = _uniswapFactoryAdd;
       // factory = Factory(_uniswapFactoryAdd);
@@ -115,14 +115,14 @@ contract Market is usingOraclize {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint predictionTime, ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed, ) = marketConfig.getPriceCalculationParams();
+      (uint predictionTime, ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed, , uint256 latestAnswer) = marketConfig.getPriceCalculationParams();
       if(now > expireTime) {
         return 0;
       }
       if(_totalStaked > stakeWeightageMinAmount) {
         _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
       }
-      uint currentPrice = uint(chainLinkOracle.latestAnswer()).div(10**8);
+      uint currentPrice = latestAnswer;
       uint maxDistance;
       if(currentPrice < optionsAvailable[2].minValue) {
         currentPriceOption = 1;
@@ -172,7 +172,7 @@ contract Market is usingOraclize {
     }
 
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
-      (, , , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      (, , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stake.mul(positionDecimals), priceStep, _leverage);
     }
 
@@ -183,10 +183,10 @@ contract Market is usingOraclize {
     }
 
     function getData() public view returns
-       (string memory _feedsource,uint[] memory minvalue,uint[] memory maxvalue,
+       (bytes32 marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
-        (_predictionType, , , , , , ) = marketConfig.getBasicMarketDetails();
-        _feedsource = FeedSource;
+        (_predictionType, , , , , ) = marketConfig.getBasicMarketDetails();
+        _marketCurrency = marketCurrency;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
@@ -213,7 +213,7 @@ contract Market is usingOraclize {
       require(_isValidAsset);
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
-      (, ,uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      (, uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_predictionStake >= minPrediction,"Min prediction amount required");
       if(_asset == plotusToken.bLOTtoken()) {
         require(_leverage == 5);
@@ -314,9 +314,9 @@ contract Market is usingOraclize {
     }
 
     function _postResult(uint256 _value) internal {
-      require(now >= predictionForDate,"Time not reached");
+      require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      (, , , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      (, , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       // uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
@@ -400,7 +400,7 @@ contract Market is usingOraclize {
     }
 
     function _calculateUserReturn(address _user, address[] memory _predictionAssets) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      (, , , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      (, , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       _return = new uint256[](_predictionAssets.length);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
