@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
   
-import "../interface/IChainLinkOracle.sol";
+import "../interfaces/IChainLinkOracle.sol";
 import "../external/openzeppelin-solidity/ownership/Ownable.sol";
 contract MockChainLinkBTC is Ownable,IChainLinkOracle{
 

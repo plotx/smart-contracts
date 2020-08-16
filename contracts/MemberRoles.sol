@@ -14,14 +14,14 @@ pragma solidity 0.5.7;
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Governance.sol";
-import "./PlotusToken.sol";
+import "./TokenController.sol";
 import "./Iupgradable.sol";
 
 
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     Governance internal gv;
-    PlotusToken internal dAppToken;
+    TokenController internal tokenController;
     struct MemberRoleDetails {
         uint memberCounter;
         mapping(address => uint) memberIndex;
@@ -64,7 +64,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      */
     function changeDependentContractAddress() public {
         gv = Governance(ms.getLatestAddress("GV"));
-        dAppToken = PlotusToken(ms.dAppLocker());
+        tokenController = TokenController(ms.getLatestAddress("TC"));
     }
 
     /**
@@ -173,7 +173,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
                 counter++;
             }
         }
-        if (dAppToken.totalBalanceOf(_memberAddress) > 0) {
+        if (tokenController.totalBalanceOf(_memberAddress) > 0) {
             assignedRoles[counter] = uint(Role.TokenHolder);
         }
         return assignedRoles;
@@ -188,7 +188,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             return true;
         }
         else if (_roleId == uint(Role.TokenHolder)) {
-            if (dAppToken.totalBalanceOf(_memberAddress) > 0) {
+            if (tokenController.totalBalanceOf(_memberAddress) > 0) {
                 return true;
             }
         }

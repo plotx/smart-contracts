@@ -1,8 +1,9 @@
 pragma solidity 0.5.7;
 
-// import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/ownership/Ownable.sol";
-import "./Plotus.sol";
+// import "./Plotus.sol";
+import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
 
 contract Master is Ownable {
@@ -110,7 +111,7 @@ contract Master is Ownable {
      */
     function transferOwnership(address newOwner) public onlyOwner {
         _transferOwnership(newOwner);
-        Plotus(plotusAddress).transferOwnership(newOwner);
+        // Plotus(plotusAddress).transferOwnership(newOwner);
     }
 
     function upgradeContractImplementation(address _contractsAddress) 

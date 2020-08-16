@@ -1,10 +1,15 @@
-pragma solidity 0.5.7;
+pragma solidity  0.5.7;
 
-import '../openzeppelin-solidity/token/ERC20/ERC20.sol';
-import './ERC1132.sol';
+import "./external/lockable-token/IERC1132.sol";
+import "./PlotusToken.sol";
+import "./bLOTToken.sol";
+import "./Iupgradable.sol";
+import "./interfaces/IToken.sol";
 
+contract TokenController is IERC1132, Iupgradable {
+    using SafeMath for uint256;
 
-contract LockableToken is ERC1132, ERC20 {
+    event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
 
    /**
     * @dev Error messages for require statements
@@ -12,6 +17,53 @@ contract LockableToken is ERC1132, ERC20 {
     string internal constant ALREADY_LOCKED = 'Tokens already locked';
     string internal constant NOT_LOCKED = 'No tokens locked';
     string internal constant AMOUNT_ZERO = 'Amount can not be 0';
+
+    uint internal smLockPeriod = 30;
+
+    PlotusToken public token;
+    address public bLOTToken;
+
+    modifier onlyAuthorized {
+        _;
+    }
+
+    /**
+    * @dev Just for interface
+    */
+    function changeDependentContractAddress() public {
+        token = PlotusToken(ms.dAppToken());
+    }
+
+    /**
+     * @dev to change the operator address
+     * @param _newOperator is the new address of operator
+     */
+    function changeOperator(address _newOperator) public onlyInternal {
+        token.changeOperator(_newOperator);
+    }
+
+    function swapBLOT(uint256 amount) public onlyAuthorized {
+        IToken(bLOTToken).burn(amount);
+        token.mint(msg.sender, amount);
+    }
+
+    /**
+     * @dev Updates Uint Parameters of a code
+     * @param code whose details we want to update
+     * @param val value to set
+     */
+    function updateUintParameters(bytes8 code, uint val) public {
+        if(code == "SMLP") {
+            smLockPeriod = val * 1 days;
+        }
+    }
+
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint val) {
+        codeVal = code;
+        if(code == "SMLP") {
+            val= smLockPeriod / 1 days;
+        }
+    }
 
     /**
      * @dev Locks a specified amount of tokens against an address,
@@ -24,24 +76,28 @@ contract LockableToken is ERC1132, ERC20 {
         public
         returns (bool)
     {
-        uint256 validUntil = now.add(_time); //solhint-disable-line
 
+        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
         // If tokens are already locked, then functions extendLock or
         // increaseLockAmount should be used to make any changes
         require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
+        
+        uint256 validUntil = _time.add(now); //solhint-disable-line
 
         if (locked[msg.sender][_reason].amount == 0)
             lockReason[msg.sender].push(_reason);
 
-        transfer(address(this), _amount);
+        token.operatorTransfer(msg.sender, _amount);
+        // transfer(address(this), _amount);
 
-        locked[msg.sender][_reason] = lockToken(_amount, validUntil, false);
+        locked[msg.sender][_reason] = LockToken(_amount, validUntil, false);
 
         emit Locked(msg.sender, _reason, _amount, validUntil);
         return true;
     }
-    
+
+
     /**
      * @dev Transfers and Locks a specified amount of tokens,
      *      for a specified reason and time
@@ -54,17 +110,19 @@ contract LockableToken is ERC1132, ERC20 {
         public
         returns (bool)
     {
-        uint256 validUntil = now.add(_time); //solhint-disable-line
 
+        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
         require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
+
+        uint256 validUntil = now.add(_time); //solhint-disable-line
 
         if (locked[_to][_reason].amount == 0)
             lockReason[_to].push(_reason);
 
-        transfer(address(this), _amount);
+        token.operatorTransfer(msg.sender, _amount);
 
-        locked[_to][_reason] = lockToken(_amount, validUntil, false);
+        locked[_to][_reason] = LockToken(_amount, validUntil, false);
         
         emit Locked(_to, _reason, _amount, validUntil);
         return true;
@@ -112,30 +170,18 @@ contract LockableToken is ERC1132, ERC20 {
         view
         returns (uint256 amount)
     {
-        amount = balanceOf(_of);
+        amount = token.balanceOf(_of);
 
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
             amount = amount.add(tokensLocked(_of, lockReason[_of][i]));
         }   
-    }    
-    
-    /**
-     * @dev Extends lock for a specified reason and time
-     * @param _reason The reason to lock tokens
-     * @param _time Lock extension time in seconds
-     */
-    function extendLock(bytes32 _reason, uint256 _time)
-        public
-        returns (bool)
+    }   
+
+    function totalSupply() public view returns (uint256)
     {
-        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-
-        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
-
-        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
-        return true;
+        return token.totalSupply();
     }
-    
+
     /**
      * @dev Increase number of tokens locked for a specified reason
      * @param _reason The reason to lock tokens
@@ -145,10 +191,33 @@ contract LockableToken is ERC1132, ERC20 {
         public
         returns (bool)
     {
+        require(_reason == "VEST" || _reason == "SM" || _reason == "DR");
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-        transfer(address(this), _amount);
+        token.operatorTransfer(msg.sender, _amount);
+        // token.transfer(address(this), _amount);
 
         locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
+        if(_reason == "SM") {
+            locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(smLockPeriod);
+        }
+        
+        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+        return true;
+    }
+
+    /**
+     * @dev Extends lock for a specified reason and time
+     * @param _reason The reason to lock tokens
+     * @param _time Lock extension time in seconds
+     */
+    function extendLock(bytes32 _reason, uint256 _time)
+        public
+        returns (bool)
+    {
+        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
+
+        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
 
         emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
@@ -176,6 +245,7 @@ contract LockableToken is ERC1132, ERC20 {
         public
         returns (uint256 unlockableTokens)
     {
+        require(!(token.isLockedForGV(_of)));
         uint256 lockedTokens;
 
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
@@ -185,10 +255,14 @@ contract LockableToken is ERC1132, ERC20 {
                 locked[_of][lockReason[_of][i]].claimed = true;
                 emit Unlocked(_of, lockReason[_of][i], lockedTokens);
             }
+            if (locked[_of][lockReason[_of][i]].amount == 0) {
+                _removeReason(_of, lockReason[_of][i]);
+                i--;
+            }
         }  
 
         if (unlockableTokens > 0)
-            this.transfer(_of, unlockableTokens);
+            token.transfer(_of, unlockableTokens);
     }
 
     /**
@@ -204,4 +278,64 @@ contract LockableToken is ERC1132, ERC20 {
             unlockableTokens = unlockableTokens.add(tokensUnlockable(_of, lockReason[_of][i]));
         }  
     }
+
+
+    /**
+    * @dev Mints new token for an address
+    * @param _member address to reward the minted tokens
+    * @param _amount number of tokens to mint
+    */
+    function mint(address _member, uint _amount) public onlyInternal {
+        token.mint(_member, _amount);
+    }
+
+    /**
+    * @dev burns an amount of the tokens of the message sender
+    * account.
+    * @param amount The amount that will be burnt.
+    */
+    function burn(uint256 amount) public onlyInternal returns (bool) {
+        token.burn(amount);
+        return true;
+    }
+
+    /**
+     * @dev Lock the user's tokens
+     * @param _of user's address.
+     */
+    function lockForGovernanceVote(address _of, uint _days) public onlyInternal {
+        token.lockForGovernanceVote(_of, _days);
+    }
+
+
+    function burnLockedTokens(address _of, bytes32 _reason, uint256 _amount) public onlyInternal
+        returns (bool)
+    {
+        require(_reason == "DR");
+        uint256 amount = tokensLocked(_of, _reason);
+        require(amount >= _amount);
+
+        if (amount == _amount) {
+            locked[_of][_reason].claimed = true;
+        }
+
+        locked[_of][_reason].amount = locked[_of][_reason].amount.sub(_amount);
+        if (locked[_of][_reason].amount == 0) {
+            _removeReason(_of, _reason);
+        }
+        token.burn(_amount);
+        emit Burned(_of, _reason, _amount);
+    }
+
+    function _removeReason(address _of, bytes32 _reason) internal {
+        uint len = lockReason[_of].length;
+        for (uint i = 0; i < len; i++) {
+            if (lockReason[_of][i] == _reason) {
+                lockReason[_of][i] = lockReason[_of][len.sub(1)];
+                lockReason[_of].pop();
+                break;
+            }
+        }   
+    }
+
 }

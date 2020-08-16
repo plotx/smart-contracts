@@ -1,184 +1,158 @@
-pragma solidity  0.5.7;
+/* Copyright (C) 2017 NexusMutual.io
 
-import "./external/lockable-token/LockableToken.sol";
-import "./external/openzeppelin-solidity/access/roles/MinterRole.sol";
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-contract IToken {
-    function burn(uint256 amount) public{}
-}
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-contract PlotusToken is LockableToken, MinterRole {
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
 
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+pragma solidity 0.5.7;
 
-    address public plotusInstance;
-    address public bLOTtoken;
+import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 
-    mapping(address => uint256) public lockedForGovernanceVote;
 
-    modifier notLocked(address _user) {
-        //Add check to revert if locked for governance
-        require(lockedForGovernanceVote[_user] <= now);
+contract PlotusToken is ERC20 {
+    using SafeMath for uint256;
+
+    mapping (address => mapping (address => uint256)) private _allowed;
+
+    mapping(address => uint) public lockedForGV;
+
+    uint256 private _totalSupply;
+
+    string public name = "PLOT";
+    string public symbol = "PLOT";
+    uint8 public decimals = 18;
+    address public operator;
+
+    modifier onlyOperator() {
+        if (operator != address(0))
+            require(msg.sender == operator);
         _;
     }
 
-    modifier onlyAuthorized {
-        _;
-    }
-
-    constructor () public {
-        name = "PlotusToken";
-        symbol = "LOT";
-        decimals = 18;
+    constructor(address _founderAddress, uint _initialSupply) public {
+        _mint(_founderAddress, _initialSupply);
     }
 
     /**
-     * @dev See `IERC20.transfer`.
-     *
-     * Requirements:
-     *
-     * - `recipient` cannot be the zero address.
-     * - the caller must have a balance of at least `amount`.
-     */
-    function transfer(address recipient, uint256 amount) public returns (bool) {
-        _transfer(msg.sender, recipient, amount);
+    * @dev Total number of tokens in existence
+    */
+    function totalSupply() public view returns (uint256) {
+        return _totalSupply;
+    }
+
+    /**
+    * @dev Gets the balance of the specified address.
+    * @param owner The address to query the balance of.
+    * @return An uint256 representing the amount owned by the passed address.
+    */
+    function balanceOf(address owner) public view returns (uint256) {
+        return _balances[owner];
+    }
+
+    /**
+    * @dev change operator address 
+    * @param _newOperator address of new operator
+    */
+    function changeOperator(address _newOperator) public onlyOperator returns (bool) {
+        operator = _newOperator;
         return true;
     }
 
     /**
-     * @dev Moves tokens `amount` from `sender` to `recipient`.
-     *
-     * This is internal function is equivalent to `transfer`, and can be used to
-     * e.g. implement automatic token fees, slashing mechanisms, etc.
-     *
-     * Emits a `Transfer` event.
-     *
-     * Requirements:
-     *
-     * - `sender` cannot be the zero address.
-     * - `recipient` cannot be the zero address.
-     * - `sender` must have a balance of at least `amount`.
-     */
-    function _transfer(address sender, address recipient, uint256 amount) internal notLocked(sender) {
-        require(sender != address(0), "ERC20: transfer from the zero address");
-        require(recipient != address(0), "ERC20: transfer to the zero address");
-
-        _balances[sender] = _balances[sender].sub(amount);
-        _balances[recipient] = _balances[recipient].add(amount);
-        emit Transfer(sender, recipient, amount);
+    * @dev burns an amount of the tokens of the message sender
+    * account.
+    * @param amount The amount that will be burnt.
+    */
+    function burn(uint256 amount) public returns (bool) {
+        _burn(msg.sender, amount);
+        return true;
     }
 
     /**
-     * @dev See `ERC20._mint`.
-     *
-     * Requirements:
-     *
-     * - the caller must have the `MinterRole`.
-     */
-    function mint(address account, uint256 amount) public onlyMinter returns (bool) {
+    * @dev Burns a specific amount of tokens from the target address and decrements allowance
+    * @param from address The address which you want to send tokens from
+    * @param value uint256 The amount of token to be burned
+    */
+    function burnFrom(address from, uint256 value) public returns (bool) {
+        _burnFrom(from, value);
+        return true;
+    }
+
+    /**
+    * @dev function that mints an amount of the token and assigns it to
+    * an account.
+    * @param account The account that will receive the created tokens.
+    * @param amount The amount that will be created.
+    */
+    function mint(address account, uint256 amount) public onlyOperator returns(bool) {
         _mint(account, amount);
         return true;
     }
 
     /**
-     * @dev Destoys `amount` tokens from the caller.
-     *
-     * See `ERC20._burn`.
-     */
-    function burn(uint256 amount) public {
-        _burn(msg.sender, amount);
-    }
+    * @dev Transfer token for a specified address
+    * @param to The address to transfer to.
+    * @param value The amount to be transferred.
+    */
+    function transfer(address to, uint256 value) public returns (bool) {
 
-    /**
-     * @dev See `ERC20._burnFrom`.
-     */
-    function burnFrom(address account, uint256 amount) public {
-        _burnFrom(account, amount);
-    }
-
-    function swapBLOT(uint256 amount) public onlyAuthorized {
-        IToken(bLOTtoken).burn(amount);
-        _mint(msg.sender, amount);
-    }
-
-    /**
-     * @dev Locks a specified amount of tokens against an address,
-     *      for a specified reason and time
-     * @param _reason The reason to lock tokens
-     * @param _amount Number of tokens to be locked
-     * @param _time Lock time in seconds
-     */
-    function lock(bytes32 _reason, uint256 _amount, uint256 _time)
-        public
-        returns (bool)
-    {
-        require(_reason == "VEST" || (_reason == "SM" && _time == 30 days) || _reason == "DR");
-        uint256 validUntil = now.add(_time); //solhint-disable-line
-
-        // If tokens are already locked, then functions extendLock or
-        // increaseLockAmount should be used to make any changes
-        require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
-        require(_amount != 0, AMOUNT_ZERO);
-
-        if (locked[msg.sender][_reason].amount == 0)
-            lockReason[msg.sender].push(_reason);
-
-        transfer(address(this), _amount);
-
-        locked[msg.sender][_reason] = lockToken(_amount, validUntil, false);
-
-        emit Locked(msg.sender, _reason, _amount, validUntil);
+        require(lockedForGV[msg.sender] < now); // if not voted under governance
+        require(value <= _balances[msg.sender]);
+        _transfer(msg.sender, to, value); 
         return true;
     }
 
     /**
-     * @dev Increase number of tokens locked for a specified reason
-     * @param _reason The reason to lock tokens
-     * @param _amount Number of tokens to be increased
-     */
-    function increaseLockAmount(bytes32 _reason, uint256 _amount)
-        public
-        returns (bool)
-    {
-        require(_reason == "VEST" || _reason == "SM" || _reason == "DR");
-        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-        transfer(address(this), _amount);
-
-        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
-
-        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+    * @dev Transfer tokens to the operator from the specified address
+    * @param from The address to transfer from.
+    * @param value The amount to be transferred.
+    */
+    function operatorTransfer(address from, uint256 value) public onlyOperator returns (bool) {
+        require(value <= _balances[from]);
+        _transferFrom(from, operator, value);
         return true;
     }
 
     /**
-     * @dev Extends lock for a specified reason and time
-     * @param _reason The reason to lock tokens
-     * @param _time Lock extension time in seconds
-     */
-    function extendLock(bytes32 _reason, uint256 _time)
+    * @dev Transfer tokens from one address to another
+    * @param from address The address which you want to send tokens from
+    * @param to address The address which you want to transfer to
+    * @param value uint256 the amount of tokens to be transferred
+    */
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    )
         public
         returns (bool)
     {
-        require(_reason == "VEST" || _reason == "DR");
-        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-
-        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
-
-        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+        require(lockedForGV[from] < now); // if not voted under governance
+        _transferFrom(from, to, value);
         return true;
     }
 
-    function burnLockedTokens(address _user ,bytes32 _reason, uint256 _amount, uint256 _time)
-        public
-        returns (bool)
-    {
-        
+    /**
+     * @dev Lock the user's tokens 
+     * @param _of user's address.
+     */
+    function lockForGovernanceVote(address _of, uint _days) public onlyOperator {
+        if (_days.add(now) > lockedForGV[_of])
+            lockedForGV[_of] = _days.add(now);
     }
 
-    function lockForGovernanceVote(address _user, uint256 _lockTime) external {
-        lockedForGovernanceVote[_user] = now + _lockTime;
+    function isLockedForGV(address _of) public view returns(bool) {
+        return (lockedForGV[_of] > now);
     }
 
 }

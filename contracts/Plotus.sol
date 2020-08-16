@@ -2,8 +2,9 @@ pragma solidity 0.5.7;
 import "./Market.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./interfaces/IToken.sol";
 
-contract Plotus is usingProvable{
+contract Plotus is usingProvable {
 using SafeMath for uint256; 
     
     enum MarketType {
@@ -12,37 +13,43 @@ using SafeMath for uint256;
       WeeklyMarket
     }
 
-    struct MarketData {
+    struct MarketTypeData {
       uint256 predictionTime;
       uint256 settleTime;
       uint256 startTime;
     }
+
+    struct MarketCurrency {
+      address currencyAddress;
+      bytes32 currencyName;
+    }
+
     mapping(address => uint256) marketIndex;
     mapping(address => uint256) totalStaked;
     mapping(address => uint256) rewardClaimed;
     mapping(address => uint256) marketWinningOption;
     mapping(address => uint256) lastClaimedIndex;
-    mapping(address => address payable[]) public marketsParticipated; //Markets participated by user
+    mapping(address => address[]) public marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
     mapping(address => uint256) predictionAssetIndex; //Markets participated by user
-    mapping(address => uint256) public tokenLockedForGov; //Date upto which User tokens are locked
     mapping(address => bool) public lockedForDispute;
 
-    mapping(address => uint256) public marketAddressType;
-    mapping(uint => address) public marketOracleId;
+    mapping(bytes32 => uint256) public marketOracleId;
 
-    uint256 public marketOpenIndex;
+    // uint256 public marketOpenIndex;
     address public owner;
     address public masterAddress;
+    address public marketConfig;
     address marketImplementation;
     address[] public marketConfigs;
-    address payable[] markets;
+    address[] markets;
+    mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
 
-    MarketData[] marketTypes;
+    MarketTypeData[] marketTypes;
+    MarketCurrency[] marketCurrencies;
 
     uint256[] settleTime;
-
-    address[] marketCurrencies;
+    bool public marketCreationPaused;
 
     address public plotusToken;
 
@@ -53,7 +60,7 @@ using SafeMath for uint256;
 
     mapping(address => DisputeStake) disputeStakes;
 
-    event MarketQuestion(address indexed marketAdd, string question, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
+    event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, uint256 predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAddm, address[] _predictionAssets, uint256[] totalReward, uint256[] commision, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
@@ -80,26 +87,23 @@ using SafeMath for uint256;
       marketConfigs = _marketConfigs;
       plotusToken = _plotusToken;
       markets.push(address(0));
-      marketOpenIndex = 1;
+      // marketOpenIndex = 1;
 
       //Adding Default market currencies Ether and PlotusToken
-      marketCurrencies.push(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE);
-      marketCurrencies.push(_plotusToken);
-
+      marketCurrencies.push(MarketCurrency(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, "ETH"));
+      marketCurrencies.push(MarketCurrency(plotusToken, "PLOT"));
     }
 
     function startInitialMarkets() external payable {
       for(uint256 i = 0;i < marketTypes.length; i++) {
         for(uint256 j = 0;j < marketCurrencies.length; j++) {
-          _createMarket(i, marketCurrencies[i]);
+          _createMarket(i, j);
         }
       }
     }
 
     function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _startTime) external {
-      marketTypes.push(Market(_predictionTime, _settleTime, _startTime));
-      // marketPredictionTimes.push(_predictionTime);
-      // settleTime.push(_settleTime)
+      marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _startTime));
     }
 
     function transferOwnership(address newOwner) public OnlyMaster {
@@ -123,44 +127,48 @@ using SafeMath for uint256;
         tempInstance.upgradeTo(_contractsAddress);
     }
 
-//
-//     function addNewMarket( 
-//       uint256 _marketType, uint256 currentPrice
-//     ) public payable
-//     {
-//       require(_marketType <= uint256(MarketType.WeeklyMarket), "Invalid market");
-//       for(uint256 i = 0;i < marketCurrencies.length; i++) {
-//         _createMarket(_marketType, marketCurrencies[i]);
-//       }
-//     }
 
-    function _createMarket(uint256 _marketType, bytes32 _stockName) internal {
-      MarketData storage _marketData = marketTypes[_marketType];
+    function addNewMarkets( 
+      uint256 _marketType, uint256 currentPrice
+    ) internal
+    {
+      require(!marketCreationPaused && _marketType <= marketTypes.length, "Invalid market");
+      for(uint256 i = 0;i < currentMarketsOfType[_marketType].length; i++) {
+        Market(currentMarketsOfType[_marketType][i]).exchangeCommission();
+      }
+      delete currentMarketsOfType[_marketType];
+      for(uint256 i = 0;i < marketCurrencies.length; i++) {
+        _createMarket(_marketType, i);
+      }
+      bytes32 _oraclizeId = provable_query(marketTypes[_marketType].startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
+      marketOracleId[_oraclizeId] = _marketType;
+    }
+
+    function _createMarket(uint256 _marketType, uint _marketCurrencyIndex) internal {
+      MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       address payable _market = _generateProxy(marketImplementation);
       marketIndex[_market] = markets.length;
       markets.push(_market);
-      marketAddressType[_market].push(_marketType);
-      (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange(_currentPrice);
-      Market(_market).initiate.value(msg.value)(_marketData.startTime, _marketData.predictionTime, _marketData.settleTime, _minValue, _maxValue, _stockName, marketConfigs[_stockName]);
-      emit MarketQuestion(_market, _stockName, _marketType, _marketData.startTime);
-      _marketData.startTime =_marketData.startTime.add(_marketData.predictionTime);
-      bytes32 _oraclizeId = oraclize_query(_marketData.startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
-      Market(marketOracleId[_callbackId]).transferCommission();
-      delete marketOracleId[_callbackId];
-      marketOracleId[_oraclizeId] = _market;
+      currentMarketsOfType[_marketType].push(_market);
+      (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
+      Market(_market).initiate.value(msg.value)(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, marketCurrencies[_marketCurrencyIndex].currencyName, marketCurrencies[_marketCurrencyIndex].currencyAddress);
+      emit MarketQuestion(_market, marketCurrencies[_marketCurrencyIndex].currencyName, _marketType, _marketTypeData.startTime);
+      _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
     }
 
     function __callback(bytes32 myid, string memory result) public {
-      // if(myid == closeMarketId) {
-      //   _closeBet();
-      // } else if(myid == marketResultId) {
       //Check oraclise address
-      addNewMarket(myid, parseInt(result));
-      // }
+      addNewMarkets(marketOracleId[myid], parseInt(result));
+      delete marketOracleId[myid];
     }
 
-    function _calculateOptionRange(uint256 _currentPrice) internal view returns(uint256, uint256) {
+    function _calculateOptionRange() internal view returns(uint256, uint256) {
+      uint256 _currentPrice;
       return (_currentPrice - 50, _currentPrice + 50);
+    }
+
+    function toggleMarketCreation(bool value) public onlyInternal {
+        marketCreationPaused = value;
     }
 
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user) public OnlyMarket {
@@ -172,7 +180,7 @@ using SafeMath for uint256;
 
     function resolveDispute(address _marketAddress, uint256 _result) external {
       Market(_marketAddress).resolveDispute(_result);
-      IERC20.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
+      IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       lockedForDispute[msg.sender] = false;
     }
 
@@ -186,23 +194,23 @@ using SafeMath for uint256;
     }
 
     function callMarketResultEvent(address[] calldata _predictionAssets , uint256[] calldata _totalReward, uint256[] calldata _commision, uint256 winningOption) external OnlyMarket {
-      if (marketOpenIndex < marketIndex[msg.sender]) {
-        uint256 i;
-        uint256 _status;
-        for(i = marketOpenIndex;i < markets.length;i++){
-          //Convert to payable address
-          ( , , , , , , , _status) = getMarketDetails(markets[i]);
-          if(_status == uint256(Market.PredictionStatus.Started)) {
-            marketOpenIndex = i;
-            break;
-          }
-        }
-        if(i == markets.length) {
-          marketOpenIndex = i-1;
-        }
-      } else {
-        marketOpenIndex = marketIndex[msg.sender];
-      }
+      // if (marketOpenIndex < marketIndex[msg.sender]) {
+      //   uint256 i;
+      //   uint256 _status;
+      //   for(i = marketOpenIndex;i < markets.length;i++){
+      //     //Convert to payable address
+      //     ( , , , , , , , _status) = getMarketDetails(markets[i]);
+      //     if(_status == uint256(Market.PredictionStatus.Started)) {
+      //       marketOpenIndex = i;
+      //       break;
+      //     }
+      //   }
+      //   if(i == markets.length) {
+      //     marketOpenIndex = i-1;
+      //   }
+      // } else {
+      //   marketOpenIndex = marketIndex[msg.sender];
+      // }
       marketWinningOption[msg.sender] = winningOption;
       emit MarketResult(msg.sender, _predictionAssets, _totalReward, _commision, winningOption);
     }
@@ -223,16 +231,16 @@ using SafeMath for uint256;
     }
 
     function getMarketDetails(address payable _marketAdd)public view returns
-    (string memory _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
+    (bytes32 _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
       uint256[] memory optionprice,uint256[] memory _ethStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
       // Market _market = Market(_marketAdd);
       return Market(_marketAdd).getData();
     }
 
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
-    (address payable[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
+    (address[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
       if(fromIndex < marketsParticipated[user].length && toIndex <= marketsParticipated[user].length) {
-        _market = new address payable[](toIndex.sub(fromIndex).add(1));
+        _market = new address[](toIndex.sub(fromIndex).add(1));
         _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
         _reward = new uint256[](toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i < toIndex; i++) {
@@ -248,18 +256,26 @@ using SafeMath for uint256;
       uint256  count = 0;
       uint256 _status;
       uint256 _marketType;
-      _openMarkets = new address[](markets.length - marketOpenIndex);
-      _marketTypes = new uint256[](markets.length - marketOpenIndex);
-      for(uint256 i = marketOpenIndex; i < markets.length; i++) {
-          // _marketTypes[count] = markets.length;
-          // return (_openMarkets, _marketTypes);
-        ( , , , , , _marketType, , _status) = getMarketDetails(markets[i]);
-        if(_status == uint256(Market.PredictionStatus.Started)) {
-          _openMarkets[count] = markets[i];
-          _marketTypes[count] = _marketType;
+      uint totalOpenMarkets = 0;
+      _openMarkets = new address[]((marketTypes.length).mul(marketCurrencies.length));
+      _marketTypes = new uint256[]((marketTypes.length).mul(marketCurrencies.length));
+      for(uint256 i = 0; i< marketTypes.length; i++) {
+        for(uint256 j = 0; j< currentMarketsOfType[i].length; j++) {
+          _openMarkets[count] = currentMarketsOfType[i][j];
+          _marketTypes[count] = i;
           count++;
-       }
+        }
       }
+      // for(uint256 i = 0; i < totalOpenMarkets; i++) {
+      //     // _marketTypes[count] = markets.length;
+      //     // return (_openMarkets, _marketTypes);
+      //   ( , , , , , _marketType, , _status) = getMarketDetails(markets[i]);
+      //   if(_status == uint256(Market.PredictionStatus.Started)) {
+      //     _openMarkets[count] = markets[i];
+      //     _marketTypes[count] = _marketType;
+      //     count++;
+      //  }
+      // }
     }
 
     function calculateUserPendingReturn(address _user) external view returns(uint256 pendingReturn, uint256 incentive) {
@@ -287,10 +303,6 @@ using SafeMath for uint256;
         claimFlag = i;
       }
       lastClaimedIndex[msg.sender] = claimFlag + 1;
-    }
-
-    function votedOnGovernance(address _user, uint256 _lockTime) external {
-      tokenLockedForGov[_user] = now + _lockTime;
     }
 
     function () external payable {

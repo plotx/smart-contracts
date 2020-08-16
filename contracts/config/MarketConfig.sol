@@ -1,9 +1,13 @@
 pragma solidity 0.5.7;
 
 import "../external/uniswap/solidity-interface.sol";
-import "./interface/IChainLinkOracle.sol";
+import "../external/openzeppelin-solidity/math/SafeMath.sol";
+import "../interfaces/IChainLinkOracle.sol";
+import "../interfaces/IToken.sol";
 
 contract MarketConfig {
+
+    using SafeMath for uint;
 
     uint constant lossPercentage = 10;
     uint constant STAKE_WEIGHTAGE = 40;//
@@ -65,9 +69,23 @@ contract MarketConfig {
         return (betType, minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams() public view  returns(uint, uint, uint, uint, uint, uint, uint, uint, uint) {
-        uint latestAnswer = chainLinkOracle.latestAnswer()
-        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, marketCoolDownTime, rate);
+    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint, uint, uint) {
+        uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress);
+        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, _currencyPrice);
+    }
+
+    function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {
+        latestAnswer = uint(chainLinkOracle.latestAnswer());
+        if(_currencyAddress != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            address _exchange = uniswapFactory.getExchange(_currencyAddress);
+            uint tokenEthPrice = Exchange(_exchange).getTokenToEthInputPrice(IToken(_currencyAddress).decimals());
+            return latestAnswer.mul(tokenEthPrice);
+        }
+    }
+
+    function getLatestPrice() public view returns(uint) {
+        uint latestAnswer = uint(chainLinkOracle.latestAnswer());
+        return latestAnswer;
     }
 
     function getChainLinkPriceOracle() public view returns (address) {
@@ -95,25 +113,21 @@ contract MarketConfig {
         stakeRatioForMultiplier[_asset] = _ratio;
     }
 
-    function getPredictionAssets() public view returns(address[] memory) {
-        return predictionAssets;
+    function getMarketInitialParams() public view returns(address[] memory, address[] memory, uint , uint) {
+        return (predictionAssets, incentiveTokens, marketCoolDownTime, rate);
     }
 
     function isValidPredictionAsset(address _asset) public view returns(bool) {
         return predictionAssetFlag[_asset];
     }
 
-    function getAssetData(address _asset) public view returns(bool isValidAsset, uint _commisionPerc, address _exchange) {
-        uniswapFactory.getExchange(_asset);
-        return ( predictionAssetFlag[_asset], commissionPerc[_asset], _exchange);
+    function getAssetData(address _asset) public view returns(uint _commisionPerc, address _exchange) {
+        _exchange = uniswapFactory.getExchange(_asset);
+        return (commissionPerc[_asset], _exchange);
     }
 
-    function getAssetsAndCommissionParams() public view returns(address[] memory, uint[] memory, address[] memory, uint, uint) {
-        uint[] memory _commisionPerc = new uint[](predictionAssets.length);
-        for(uint i = 0;i<predictionAssets.length;i++) {
-            _commisionPerc[i] = commissionPerc[predictionAssets[i]];
-        }
-        return (predictionAssets, _commisionPerc, incentiveTokens, uniswapDeadline, lotPurchasePerc);
+    function getPurchasePercAndDeadline() public view returns(uint, uint) {
+        return (lotPurchasePerc, uniswapDeadline);
     }
 
     /**

@@ -1,11 +1,11 @@
-pragma solidity ^0.5.7;
+pragma solidity 0.5.7;
 
 /**
  * @title ERC1132 interface
  * @dev see https://github.com/ethereum/EIPs/issues/1132
  */
 
-contract ERC1132 {
+contract IERC1132 {
     /**
      * @dev Reasons why a user's tokens have been locked
      */
@@ -14,7 +14,7 @@ contract ERC1132 {
     /**
      * @dev locked token structure
      */
-    struct lockToken {
+    struct LockToken {
         uint256 amount;
         uint256 validity;
         bool claimed;
@@ -24,7 +24,7 @@ contract ERC1132 {
      * @dev Holds number & validity of tokens locked for a given reason for
      *      a specified address
      */
-    mapping(address => mapping(bytes32 => lockToken)) public locked;
+    mapping(address => mapping(bytes32 => LockToken)) public locked;
 
     /**
      * @dev Records data of all the tokens Locked
