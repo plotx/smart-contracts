@@ -27,12 +27,14 @@ module.exports = function(deployer, network, accounts){
       let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkBTC.address, uniswapFactory.address]);
 
       let master = await deployer.deploy(Master);
-      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address];
-      master.initiateMaster(implementations, deployPlotusToken.address, marketConfig.address);
+      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
+      await master.initiateMaster(implementations, deployPlotusToken.address, marketConfig.address);
 
       // let plotusAddress = await deployMaster.plotusAddress();
       // let plotus = await Plotus.at(plotusAddress);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
+      let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
+      await tc.changeDependentContractAddress();
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
   });
 };

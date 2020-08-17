@@ -27,15 +27,14 @@ using SafeMath for uint256;
       bytes32 currencyName;
     }
 
-    mapping(address => uint256) marketIndex;
+    mapping(address => bool) isMarket;
     mapping(address => uint256) totalStaked;
     mapping(address => uint256) rewardClaimed;
     mapping(address => uint256) marketWinningOption;
     mapping(address => uint256) lastClaimedIndex;
     mapping(address => address[]) public marketsParticipated; //Markets participated by user
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
-    mapping(address => uint256) predictionAssetIndex; //Markets participated by user
-    mapping(address => bool) public lockedForDispute;
+    // mapping(address => bool) public lockedForDispute;
 
     mapping(bytes32 => uint256) public marketOracleId;
 
@@ -51,7 +50,6 @@ using SafeMath for uint256;
     MarketTypeData[] marketTypes;
     MarketCurrency[] marketCurrencies;
 
-    uint256[] settleTime;
     bool public marketCreationPaused;
 
     address public plotusToken;
@@ -79,7 +77,7 @@ using SafeMath for uint256;
     }
 
     modifier OnlyMarket() {
-      require(marketIndex[msg.sender] > 0);
+      require(isMarket[msg.sender]);
       _;
     }
 
@@ -95,6 +93,7 @@ using SafeMath for uint256;
       //Adding Default market currencies Ether and PlotusToken
       marketCurrencies.push(MarketCurrency(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, "ETH"));
       marketCurrencies.push(MarketCurrency(plotusToken, "PLOT"));
+      // marketTypes.push(MarketTypeData(1 hours, 2 hours, _startTime));
     }
 
     function startInitialMarkets() external payable {
@@ -154,7 +153,7 @@ using SafeMath for uint256;
     function _createMarket(uint256 _marketType, uint _marketCurrencyIndex) internal {
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       address payable _market = _generateProxy(marketImplementation);
-      marketIndex[_market] = markets.length;
+      isMarket[_market] = true;
       markets.push(_market);
       currentMarketsOfType[_marketType].push(_market);
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
@@ -179,7 +178,7 @@ using SafeMath for uint256;
     }
 
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user) public OnlyMarket {
-      lockedForDispute[msg.sender] = true;
+      // lockedForDispute[msg.sender] = true;
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
       IGovernance(ms.getLatestAddress("GV")).createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
@@ -188,7 +187,7 @@ using SafeMath for uint256;
     function resolveDispute(address _marketAddress, uint256 _result) external onlyInternal {
       IMarket(_marketAddress).resolveDispute(_result);
       IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
-      lockedForDispute[msg.sender] = false;
+      // lockedForDispute[msg.sender] = false;
     }
 
     /**
