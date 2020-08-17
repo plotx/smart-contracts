@@ -41,60 +41,14 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     mapping (uint => CategoryAction) internal categoryActionData;
     mapping (uint => bytes) public categoryActionHashes;
 
-    bool public categoryActionHashUpdated;
-
-    /**
-    * @dev Restricts calls to deprecated functions
-    */
-    modifier deprecated() {
-        revert("Function deprecated");
-        _;
-    }
-
-    /**
-    * @dev Adds new category (Discontinued, moved functionality to newCategory)
-    * @param _name Category name
-    * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
-    * @param _majorityVotePerc Majority Vote threshold for Each voting layer
-    * @param _quorumPerc minimum threshold percentage required in voting to calculate result
-    * @param _allowedToCreateProposal Member roles allowed to create the proposal
-    * @param _closingTime Vote closing time for Each voting layer
-    * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
-    * @param _contractAddress address of contract to call after proposal is accepted
-    * @param _contractName name of contract to be called after proposal is accepted
-    * @param _incentives rewards to distributed after proposal is accepted
-    */
-    function addCategory(
-        string calldata _name, 
-        uint _memberRoleToVote,
-        uint _majorityVotePerc, 
-        uint _quorumPerc,
-        uint[] calldata _allowedToCreateProposal,
-        uint _closingTime,
-        string calldata _actionHash,
-        address _contractAddress,
-        bytes2 _contractName,
-        uint[] calldata _incentives
-    ) 
-        external
-        deprecated 
-    {
-    }
+    bool public initated;
 
     /**
     * @dev Initiates Default settings for Proposal Category contract (Adding default categories)
     */
-    function proposalCategoryInitiate() external deprecated { //solhint-disable-line
-    }
-
-    /**
-    * @dev Initiates Default action function hashes for existing categories
-    * To be called after the contract has been upgraded by governance
-    */
-    function updateCategoryActionHashes() external onlyOwner {
-
-        require(!categoryActionHashUpdated, "Category action hashes already updated");
-        categoryActionHashUpdated = true;
+    function proposalCategoryInitiate() external { //solhint-disable-line
+        require(!initated, "Category action hashes already updated");
+        initated = true;
         categoryActionHashes[1] = abi.encodeWithSignature("addRole(bytes32,string,address)");
         categoryActionHashes[2] = abi.encodeWithSignature("updateRole(address,uint256,bool)");
         categoryActionHashes[3] = abi.encodeWithSignature("newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)");//solhint-disable-line
@@ -233,38 +187,6 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
         masterAddress = _masterAddress;
         ms = Master(_masterAddress);
         
-    }
-
-    /**
-    * @dev Updates category details (Discontinued, moved functionality to editCategory)
-    * @param _categoryId Category id that needs to be updated
-    * @param _name Category name
-    * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
-    * @param _allowedToCreateProposal Member roles allowed to create the proposal
-    * @param _majorityVotePerc Majority Vote threshold for Each voting layer
-    * @param _quorumPerc minimum threshold percentage required in voting to calculate result
-    * @param _closingTime Vote closing time for Each voting layer
-    * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
-    * @param _contractAddress address of contract to call after proposal is accepted
-    * @param _contractName name of contract to be called after proposal is accepted
-    * @param _incentives rewards to distributed after proposal is accepted
-    */
-    function updateCategory(
-        uint _categoryId, 
-        string memory _name, 
-        uint _memberRoleToVote, 
-        uint _majorityVotePerc, 
-        uint _quorumPerc,
-        uint[] memory _allowedToCreateProposal,
-        uint _closingTime,
-        string memory _actionHash,
-        address _contractAddress,
-        bytes2 _contractName,
-        uint[] memory _incentives
-    )
-        public
-        deprecated
-    {
     }
 
     /**
