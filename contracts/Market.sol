@@ -81,7 +81,7 @@ contract Market is usingProvable {
       marketCoolDownTime = expireTime + _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
-      marketResultId = provable_query(settleTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
+      marketResultId = provable_query(startTime.add(settleTime), "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       // chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
       // incentiveTokens = _incentiveTokens;
       // uniswapFactoryAddress = _uniswapFactoryAdd;
