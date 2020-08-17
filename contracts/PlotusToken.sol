@@ -119,7 +119,7 @@ contract PlotusToken is ERC20 {
     */
     function operatorTransfer(address from, uint256 value) public onlyOperator returns (bool) {
         require(value <= _balances[from]);
-        _transferFrom(from, operator, value);
+        _transfer(from, operator, value);
         return true;
     }
 

@@ -283,7 +283,7 @@ contract Market is usingProvable {
       for(uint256 i = 0; i < predictionAssets.length; i++ ) {
         if(commissionAmount[predictionAssets[i]] > 0) {
           if(predictionAssets[i] == token){
-            IToken(token).burn(commissionAmount[predictionAssets[i]]);
+            tokenController.burnCommissionTokens(commissionAmount[predictionAssets[i]]);
           } else {
             address _exchange;
             ( , _exchange) = marketConfig.getAssetData(token);

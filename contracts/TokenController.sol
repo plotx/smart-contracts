@@ -19,6 +19,7 @@ contract TokenController is IERC1132, Iupgradable {
     string internal constant AMOUNT_ZERO = 'Amount can not be 0';
 
     uint internal smLockPeriod = 30;
+    uint internal burnUptoLimit = 20000000 * 1 ether;
 
     PlotusToken public token;
     address public bLOTToken;
@@ -55,6 +56,8 @@ contract TokenController is IERC1132, Iupgradable {
     function updateUintParameters(bytes8 code, uint val) public {
         if(code == "SMLP") {
             smLockPeriod = val * 1 days;
+        } else if(code == "BRLIM") {
+            burnUptoLimit = val.mul(1 ether);
         }
     }
 
@@ -62,6 +65,8 @@ contract TokenController is IERC1132, Iupgradable {
         codeVal = code;
         if(code == "SMLP") {
             val= smLockPeriod / 1 days;
+        } else if(code == "BRLIM") {
+            val = burnUptoLimit.div(1 ether);
         }
     }
 
@@ -295,6 +300,18 @@ contract TokenController is IERC1132, Iupgradable {
     * @param amount The amount that will be burnt.
     */
     function burn(uint256 amount) public onlyInternal returns (bool) {
+        token.burn(amount);
+        return true;
+    }
+
+    /**
+    * @dev burns an amount of the tokens of the message sender
+    * account.
+    * @param amount The amount that will be burnt.
+    */
+    function burnCommissionTokens(uint256 amount) public returns (bool) {
+        require (token.totalSupply() > burnUptoLimit);
+        token.operatorTransfer(msg.sender, amount);
         token.burn(amount);
         return true;
     }

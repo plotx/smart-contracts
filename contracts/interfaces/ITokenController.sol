@@ -10,4 +10,6 @@ contract ITokenController {
         public
         view
         returns (uint256 amount);
+
+    function burnCommissionTokens(uint256 amount) external;
 }
