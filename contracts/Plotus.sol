@@ -1,10 +1,13 @@
 pragma solidity 0.5.7;
-import "./Market.sol";
+import "./interfaces/IMarket.sol";
+import "./Iupgradable.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IToken.sol";
+import "./external/govblocks-protocol/interfaces/IGovernance.sol";
+import "./external/oraclize/ethereum-api/provableAPI.sol";
 
-contract Plotus is usingProvable {
+contract Plotus is usingProvable, Iupgradable {
 using SafeMath for uint256; 
     
     enum MarketType {
@@ -134,7 +137,7 @@ using SafeMath for uint256;
     {
       require(!marketCreationPaused && _marketType <= marketTypes.length, "Invalid market");
       for(uint256 i = 0;i < currentMarketsOfType[_marketType].length; i++) {
-        Market(currentMarketsOfType[_marketType][i]).exchangeCommission();
+        IMarket(currentMarketsOfType[_marketType][i]).exchangeCommission();
       }
       delete currentMarketsOfType[_marketType];
       for(uint256 i = 0;i < marketCurrencies.length; i++) {
@@ -151,7 +154,7 @@ using SafeMath for uint256;
       markets.push(_market);
       currentMarketsOfType[_marketType].push(_market);
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
-      Market(_market).initiate.value(msg.value)(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, marketCurrencies[_marketCurrencyIndex].currencyName, marketCurrencies[_marketCurrencyIndex].currencyAddress);
+      IMarket(_market).initiate.value(msg.value)(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, marketCurrencies[_marketCurrencyIndex].currencyName, marketCurrencies[_marketCurrencyIndex].currencyAddress);
       emit MarketQuestion(_market, marketCurrencies[_marketCurrencyIndex].currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
     }
@@ -175,11 +178,11 @@ using SafeMath for uint256;
       lockedForDispute[msg.sender] = true;
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
-      // createProposalwithSolution(proposalTitle, sd, description, 7, solutionHash, actionHash);
+      IGovernance(ms.getLatestAddress("GV")).createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
     }
 
     function resolveDispute(address _marketAddress, uint256 _result) external {
-      Market(_marketAddress).resolveDispute(_result);
+      IMarket(_marketAddress).resolveDispute(_result);
       IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       lockedForDispute[msg.sender] = false;
     }
@@ -234,7 +237,7 @@ using SafeMath for uint256;
     (bytes32 _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
       uint256[] memory optionprice,uint256[] memory _ethStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
       // Market _market = Market(_marketAdd);
-      return Market(_marketAdd).getData();
+      return IMarket(_marketAdd).getData();
     }
 
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
@@ -244,7 +247,7 @@ using SafeMath for uint256;
         _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
         _reward = new uint256[](toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i < toIndex; i++) {
-          Market _marketInstance = Market(marketsParticipated[user][i]);
+          // Market _marketInstance = Market(marketsParticipated[user][i]);
           _market[i] = marketsParticipated[user][i];
           _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
           // (_reward[i], ) = _marketInstance.getReturn(user);
@@ -283,7 +286,7 @@ using SafeMath for uint256;
       uint256 _incentive;
       for(uint256 i = lastClaimedIndex[_user]; i < marketsParticipated[_user].length; i++) {
         // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
-        (_return, _incentive) = Market(marketsParticipated[_user][i]).getPendingReturn(_user);
+        (_return, _incentive) = IMarket(marketsParticipated[_user][i]).getPendingReturn(_user);
         pendingReturn = pendingReturn.add(_return);
         incentive = incentive.add(_incentive);
       }
@@ -294,7 +297,7 @@ using SafeMath for uint256;
       uint256 i;
       for(i = lastClaimedIndex[msg.sender]; i < marketsParticipated[msg.sender].length; i++) {
         if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0) {
-          Market(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
+          IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
         } else {
           claimFlag = i;
         }

@@ -12,15 +12,15 @@
 pragma solidity 0.5.7;
 
 import "./external/govblocks-protocol/interfaces/IProposalCategory.sol";
+import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
-import "./MemberRoles.sol";
 
 
 contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
 
     bool public constructorCheck;
-    MemberRoles internal mr;
+    IMemberRoles internal mr;
 
     struct CategoryStruct {
         uint memberRoleToVote;
@@ -166,7 +166,7 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     * @dev Updates dependant contract addresses
     */
     function changeDependentContractAddress() public {
-        mr = MemberRoles(ms.getLatestAddress("MR"));
+        mr = IMemberRoles(ms.getLatestAddress("MR"));
     }
 
     /**

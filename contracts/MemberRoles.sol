@@ -20,7 +20,6 @@ import "./Iupgradable.sol";
 
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
-    Governance internal gv;
     TokenController internal tokenController;
     struct MemberRoleDetails {
         uint memberCounter;
@@ -63,7 +62,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @dev Iupgradable Interface to update dependent contract address
      */
     function changeDependentContractAddress() public {
-        gv = Governance(ms.getLatestAddress("GV"));
         tokenController = TokenController(ms.getLatestAddress("TC"));
     }
 
