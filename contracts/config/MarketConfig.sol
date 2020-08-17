@@ -31,6 +31,7 @@ contract MarketConfig {
     uint internal MIN_TIME_ELAPSED;//
     
     uint internal multiplier;
+    uint internal minStakeForMultiplier;
     uint internal stakeForDispute;
     uint internal positionDecimals;
     uint internal marketCoolDownTime;
@@ -101,8 +102,8 @@ contract MarketConfig {
         commissionPerc[_asset] = _commissionPerc;
     }
 
-    function getMultiplierParameters(address _asset) public view returns(uint, uint) {
-        return (stakeRatioForMultiplier[_asset], multiplier);
+    function getMultiplierParameters(address _asset) public view returns(uint, uint, uint) {
+        return (stakeRatioForMultiplier[_asset], multiplier, minStakeForMultiplier);
     }
 
     function addNewPredictionAsset(address _asset, uint _commisionPerc, uint _ratio) external {

@@ -236,8 +236,8 @@ contract Market is usingProvable {
       (, uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
 
-      uint optionPrice = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
-      uint predictionPoints = _checkMultiplier(_asset, _predictionStake, optionPrice);
+      uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
+      predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _stakeValue, _asset, _leverage, predictionPoints);
       // pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
@@ -273,17 +273,26 @@ contract Market is usingProvable {
       optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
-    function _checkMultiplier(address _asset, uint _predictionStake, uint optionPrice) internal returns(uint) {
-      uint _predictionTime = expireTime.sub(startTime);
-      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", _predictionTime.mul(2));
+    function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
       uint _stakeRatio;
-      uint _multiplier;
-      (_stakeRatio, _multiplier) = marketConfig.getMultiplierParameters(_asset);
-      if(_predictionStake.mul(_stakeRatio) >= _stakedBalance.sub(stakedTokenApplied[msg.sender])) {
-        optionPrice = optionPrice.mul(_multiplier).div(100);
-        stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
+      uint _minMultiplierRatio;
+      uint _minStakeForMultiplier;
+      uint _predictionTime = expireTime.sub(startTime);
+      (_stakeRatio, _minMultiplierRatio, _minStakeForMultiplier) = marketConfig.getMultiplierParameters(_asset);
+      if(_stakeValue < _minStakeForMultiplier) {
+        return predictionPoints;
       }
-      return optionPrice;
+      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
+      // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender])
+      uint _stakedTokenRatio = _stakedBalance.div(_predictionStake.mul(_stakeRatio));
+      if(_stakedTokenRatio > _minMultiplierRatio) {
+        _stakedTokenRatio = _stakedTokenRatio.mul(10);
+        predictionPoints = predictionPoints.mul(_stakedTokenRatio).div(100);
+      }
+      // if(_multiplier > 0) {
+        // stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
+      // }
+      return predictionPoints;
     }
 
     function exchangeCommission() external {
