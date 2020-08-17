@@ -49,14 +49,25 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     function proposalCategoryInitiate() external { //solhint-disable-line
         require(!initated, "Category action hashes already updated");
         initated = true;
-        categoryActionHashes[1] = abi.encodeWithSignature("addRole(bytes32,string,address)");
-        categoryActionHashes[2] = abi.encodeWithSignature("updateRole(address,uint256,bool)");
-        categoryActionHashes[3] = abi.encodeWithSignature("newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)");//solhint-disable-line
-        categoryActionHashes[4] = abi.encodeWithSignature("editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)");//solhint-disable-line
-        categoryActionHashes[5] = abi.encodeWithSignature("upgradeContractImplementation(bytes2,address)");
-        categoryActionHashes[6] = abi.encodeWithSignature("transferEther(uint256,address)");
-        //Upgrade master
-        categoryActionHashes[6] = abi.encodeWithSignature("upgradeTo(address)");
+
+        _addInitialCategories("Uncategorized", "", "EX", "", 0, 0);
+        _addInitialCategories("Add new member role", "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U", "MR", "addRole(bytes32,string,address)", 50, 1);
+        _addInitialCategories("Update member role", "QmXMzSViLBJ22P9oj51Zz7isKTRnXWPHZcQ5hzGvvWD3UV", "MR", "updateRole(address,uint256,bool)", 50, 1);
+        _addInitialCategories("Add new category", "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng", "PC", "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1); // 3
+        _addInitialCategories("Edit category", "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc", "PC", "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1);
+        _addInitialCategories("Transfer Ether", "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa", "GV", "transferEther(uint256,address)", 50, 1);
+        _addInitialCategories("Transfer Token", "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB", "GV", "transferToken(address,address,uint256)", 50, 1); // 7
+        _addInitialCategories(
+            "Upgrade a contract Implementation",
+            "Qme4hGas6RuDYk9LKE2XkK9E46LNeCBUzY12DdT5uQstvh",
+            "MS",
+            "upgradeContractImplementation(bytes2,address)",
+            50, 1
+        );
+        _addInitialCategories("Update master Implementation", "", "MS", "upgradeTo(address)", 50, 1); // 9
+        _addInitialCategories("Raise Dispute", "", "MS", "resolveDispute(address,uint256)", 60, 3); // 9
+        _addInitialCategories("Burn Dispute Resolution Member Tokens", "", "MS", "resolveDispute(address,uint256)", 60, 2); // 9
+
     }
 
     /**
@@ -303,6 +314,46 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
             }
         }
         return 1;
+    }
+
+    /**
+     * @dev to add the initial categories 
+     * @param _name is category name
+     * @param _actionHash hash of category action
+     * @param _contractName is the name of contract
+     * @param _majorityVotePerc percentage of majority vote
+     * @param _memberRoleToVote is the member role the category can vote on
+     */
+    function _addInitialCategories(
+        string memory _name,
+        string memory _solutionHash,
+        bytes2 _contractName,
+        string memory _actionHash,
+        uint _majorityVotePerc,
+        uint _memberRoleToVote
+    ) 
+        internal 
+    {
+        uint[] memory allowedToCreateProposal = new uint[](1);
+        uint[] memory stakeIncentive = new uint[](2);
+        allowedToCreateProposal[0] = 2;
+        stakeIncentive[0] = 0;
+        stakeIncentive[1] = 0;
+        if(bytes(_actionHash).length > 0) {
+            categoryActionHashes[allCategory.length] = abi.encodeWithSignature(_actionHash);
+        }
+        _addCategory(
+                _name,
+                _memberRoleToVote,
+                _majorityVotePerc,
+                10,
+                allowedToCreateProposal,
+                604800,
+                _solutionHash,
+                address(0),
+                _contractName,
+                stakeIncentive
+            );
     }
 
 }

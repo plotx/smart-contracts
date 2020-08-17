@@ -116,6 +116,44 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         _updateRole(_memberAddress, _roleId, _active);
     }
 
+    /**
+     * @dev is used to add initital advisory board members
+     * @param abArray is the list of initial advisory board members
+     */
+    function addInitialABMembers(address[] calldata abArray) external onlyOwner {
+
+        // require(ms.masterInitialised());
+
+        // require(maxABCount >= 
+        //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), abArray.length)
+        // );
+        // //AB count can't exceed maxABCount
+
+        for (uint i = 0; i < abArray.length; i++) {
+            require(checkRole(abArray[i], uint(Role.TokenHolder)));
+            _updateRole(abArray[i], uint(Role.AdvisoryBoard), true);   
+        }
+    }
+
+    /**
+     * @dev is used to add initital advisory board members
+     * @param drArray is the list of initial advisory board members
+     */
+    function addInitialDRMembers(address[] calldata drArray) external onlyOwner {
+
+        // require(ms.masterInitialized());
+
+        // require(maxABCount >= 
+        //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), drArray.length)
+        // );
+        // //AB count can't exceed maxABCount
+
+        for (uint i = 0; i < drArray.length; i++) {
+            require(checkRole(drArray[i], uint(Role.TokenHolder)));
+            _updateRole(drArray[i], uint(Role.DisputeResolution), true);   
+        }
+    }
+
     /// @dev Return number of member roles
     function totalRoles() public view returns(uint256) { //solhint-disable-line
         return memberRoleData.length;
