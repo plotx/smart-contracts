@@ -23,17 +23,17 @@ contract Master is Ownable {
         _;
     }
 
-    function initiateMaster(address[] calldata _implementations, address _token, address _lockableToken, address _marketConfig) external {
+    function initiateMaster(address[] calldata _implementations, address _token, address _marketConfig) external {
     // constructor(address _plotusImplementation, address _marketImplementation, address[] memory marketConfigs, address _plotusToken) public {
-        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!masterInitialised);
         masterInitialised = true;
         _addContractNames();
         require(allContractNames.length == _implementations.length);
         contractsActive[address(this)] = true;
         dAppToken = _token;
-        dAppLocker = _lockableToken;
+        dAppLocker = _token;
         for (uint i = 0; i < allContractNames.length; i++) {
             _generateProxy(allContractNames[i], _implementations[i]);
         }
