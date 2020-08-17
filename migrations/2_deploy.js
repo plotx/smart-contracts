@@ -1,24 +1,39 @@
 const Master = artifacts.require('Master');
 const Plotus = artifacts.require('Plotus');
+const Governance = artifacts.require('Governance');
+const ProposalCategory = artifacts.require('ProposalCategory');
+const MemberRoles = artifacts.require('MemberRoles');
 const PlotusToken = artifacts.require('PlotusToken');
+const TokenController = artifacts.require('TokenController');
+const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MarketConfig');
 const Market = artifacts.require('Market');
 const MockchainLinkBTC = artifacts.require('MockChainLinkBTC');
+const UniswapFactory = artifacts.require('MockUniswapFactory');
 const BN = web3.utils.BN;
 
 module.exports = function(deployer, network, accounts){
   deployer.then(async () => {
       
       let deployPlotus = await deployer.deploy(Plotus);
+      let deployGovernance = await deployer.deploy(Governance);
+      let deployProposalCategory = await deployer.deploy(ProposalCategory);
+      let deployMemberRoles = await deployer.deploy(MemberRoles);
+      let deployTokenController = await deployer.deploy(TokenController);
       let deployMarket = await deployer.deploy(Market);
       let deployPlotusToken = await deployer.deploy(PlotusToken);
-      let deployMockchainLinkBTC = await deployer.deploy(MockchainLinkBTC);
-      let deployMarketHourly = await deployer.deploy(MarketConfig, [0,3,3600,2,2,'1000000000000000000'],[accounts[0],accounts[1],deployMockchainLinkBTC.address]);
-      let deployMaster = await deployer.deploy(Master , deployPlotus.address, deployMarket.address, [deployMarketHourly.address], deployPlotusToken.address);
-      let plotusAddress = await deployMaster.plotusAddress();
-      let plotus = await Plotus.at(plotusAddress);
+      let mockchainLinkBTC = await deployer.deploy(MockchainLinkBTC);
+      let uniswapFactory = await deployer.deploy(UniswapFactory);
+      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkBTC.address, uniswapFactory.address]);
+
+      let master = await deployer.deploy(Master);
+      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address];
+      master.initiateMaster(implementations, deployPlotusToken.address, marketConfig.address);
+
+      // let plotusAddress = await deployMaster.plotusAddress();
+      // let plotus = await Plotus.at(plotusAddress);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
-      await plotusToken.addMinter(plotusAddress);
+      await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
   });
 };
 

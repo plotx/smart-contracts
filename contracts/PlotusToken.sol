@@ -39,10 +39,6 @@ contract PlotusToken is ERC20 {
         _;
     }
 
-    constructor(address _founderAddress, uint _initialSupply) public {
-        _mint(_founderAddress, _initialSupply);
-    }
-
     /**
     * @dev Total number of tokens in existence
     */

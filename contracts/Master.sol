@@ -55,6 +55,7 @@ contract Master is Ownable {
         allContractNames.push("PC");
         allContractNames.push("GV");
         allContractNames.push("PL");
+        allContractNames.push("TC");
     }
 
     /// @dev Gets latest contract address

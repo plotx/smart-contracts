@@ -19,10 +19,10 @@ contract MarketConfig {
     uint internal bonusRewardPerc = 50;
     uint internal uniswapDeadline = 20 minutes;
     uint internal lotPurchasePerc = 50;
+    uint internal positionDecimals = 2;
 
     uint internal betType;//
     uint internal priceStep;//
-    uint internal totalOptions;//
     uint internal delta;//
     uint internal rate;//
     uint internal PREDICTION_TIME;//
@@ -33,7 +33,6 @@ contract MarketConfig {
     uint internal multiplier;
     uint internal minStakeForMultiplier;
     uint internal stakeForDispute;
-    uint internal positionDecimals;
     uint internal marketCoolDownTime;
     
     address payable internal donationAccount;//
@@ -49,30 +48,25 @@ contract MarketConfig {
 
     IChainLinkOracle internal chainLinkOracle;
     constructor(uint[] memory _uintParams, address payable[] memory _addressParams) public {
-        betType = _uintParams[0];
-        //Check for odd number of options
-        require(_uintParams[1]/2 < (_uintParams[1] + 1)/2);
-        PREDICTION_TIME = _uintParams[2];
-        // donationPerc = _uintParams[3];
-        // commissionPerc = _uintParams[4];
-        priceStep = _uintParams[5];
-        // require(donationPerc <= 100);
-        // require(commissionPerc <= 100);
-        MIN_TIME_ELAPSED = (PREDICTION_TIME) / 6;
-        donationAccount = _addressParams[0]; 
-        commissionAccount = _addressParams[1];
-        chainLinkPriceOracle = _addressParams[2];
-        uniswapFactory = Factory(_addressParams[3]);
+        marketCoolDownTime = _uintParams[0];
+        priceStep = _uintParams[1];
+        lotPurchasePerc = _uintParams[2];
+        uniswapDeadline = _uintParams[3];
+        rate = _uintParams[4];
+        stakeForDispute = _uintParams[5];
+        commissionAccount = _addressParams[0];
+        chainLinkPriceOracle = _addressParams[1];
+        uniswapFactory = Factory(_addressParams[2]);
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
-    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint, uint) {
-        return (betType, minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
+    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint) {
+        return (minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint, uint, uint) {
+    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint) {
         uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress);
-        return (PREDICTION_TIME, OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, MIN_TIME_ELAPSED, _currencyPrice);
+        return (OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice);
     }
 
     function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {

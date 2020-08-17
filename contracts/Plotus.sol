@@ -130,6 +130,10 @@ using SafeMath for uint256;
         tempInstance.upgradeTo(_contractsAddress);
     }
 
+    function changeDependentContractAddress() public {
+
+    }
+
 
     function addNewMarkets( 
       uint256 _marketType, uint256 currentPrice
@@ -181,7 +185,7 @@ using SafeMath for uint256;
       IGovernance(ms.getLatestAddress("GV")).createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
     }
 
-    function resolveDispute(address _marketAddress, uint256 _result) external {
+    function resolveDispute(address _marketAddress, uint256 _result) external onlyInternal {
       IMarket(_marketAddress).resolveDispute(_result);
       IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       lockedForDispute[msg.sender] = false;

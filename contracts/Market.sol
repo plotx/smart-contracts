@@ -29,6 +29,7 @@ contract Market is usingProvable {
     uint internal settleTime;
     uint internal marketCoolDownTime;
     uint totalStaked;
+    uint predictionTime;
 
     bool commissionExchanged;
 
@@ -75,8 +76,8 @@ contract Market is usingProvable {
       uint _rate;
       (predictionAssets, incentiveTokens, _coolDownTime, _rate) = marketConfig.getMarketInitialParams();
       rate = _rate;
-      uint predictionTime = _predictionTime; 
-      expireTime = startTime + predictionTime;
+      predictionTime = _predictionTime; 
+      expireTime = startTime + _predictionTime;
       marketCoolDownTime = expireTime + _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
@@ -101,7 +102,8 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint predictionTime, ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage,uint minTimeElapsed, uint currentPrice) = marketConfig.getPriceCalculationParams(marketCurrencyAddress);
+      uint minTimeElapsed = predictionTime.div(predictionTime);
+      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice) = marketConfig.getPriceCalculationParams(marketCurrencyAddress);
       if(now > expireTime) {
         return 0;
       }
@@ -158,7 +160,7 @@ contract Market is usingProvable {
     }
 
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
-      (, , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      ( , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stake.mul(positionDecimals), priceStep, _leverage);
     }
 
@@ -171,7 +173,6 @@ contract Market is usingProvable {
     function getData() public view returns
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
-        (_predictionType, , , , , ) = marketConfig.getBasicMarketDetails();
         _marketCurrency = marketCurrency;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
@@ -214,7 +215,7 @@ contract Market is usingProvable {
         require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
         _stakeValue =_getAssetValue(_exchange, _predictionStake);
       }
-      (, uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
 
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
@@ -323,7 +324,7 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      (, , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       // uint distanceFromWinningOption = 0;
       predictionStatus = PredictionStatus.ResultDeclared;
       if(_value < optionsAvailable[2].minValue) {
@@ -404,7 +405,7 @@ contract Market is usingProvable {
     }
 
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      (, , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       _return = new uint256[](predictionAssets.length);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
