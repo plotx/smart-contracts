@@ -55,6 +55,8 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
         categoryActionHashes[4] = abi.encodeWithSignature("editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)");//solhint-disable-line
         categoryActionHashes[5] = abi.encodeWithSignature("upgradeContractImplementation(bytes2,address)");
         categoryActionHashes[6] = abi.encodeWithSignature("transferEther(uint256,address)");
+        //Upgrade master
+        categoryActionHashes[6] = abi.encodeWithSignature("upgradeTo(address)");
     }
 
     /**
