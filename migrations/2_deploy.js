@@ -40,6 +40,10 @@ module.exports = function(deployer, network, accounts){
       var date = Date.now();
       date = Math.round(date/1000) + 10000
       await plotus.addInitialMarketTypesAndStart(date);
+      let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
+      let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
+      await mr.memberRolesInitiate(accounts[0]);
+      await pc.proposalCategoryInitiate();
       console.log(await plotus.getOpenMarkets());
   });
 };
