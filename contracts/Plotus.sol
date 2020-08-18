@@ -8,7 +8,9 @@ import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";
 
 contract Plotus is usingProvable, Iupgradable {
-using SafeMath for uint256; 
+
+    using SafeMath for uint256; 
+    using strings for *; 
     
     enum MarketType {
       HourlyMarket,
@@ -223,6 +225,12 @@ using SafeMath for uint256;
     */
     function __callback(bytes32 myid, string memory result) public {
       //Check oraclise address
+      strings.slice memory s = result.toSlice();
+      strings.slice memory delim = "-".toSlice();
+      uint[] memory parts = new uint[](s.count(delim) + 1);
+      for (uint i = 0; i < parts.length; i++) {
+          parts[i] = parseInt(s.split(delim).toString());
+      }
       addNewMarkets(marketOracleId[myid], parseInt(result));
       delete marketOracleId[myid];
     }

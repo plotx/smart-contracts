@@ -310,7 +310,9 @@ contract TokenController is IERC1132, Iupgradable {
     * @param amount The amount that will be burnt.
     */
     function burnCommissionTokens(uint256 amount) public returns (bool) {
-        require (token.totalSupply() > burnUptoLimit);
+        if((token.totalSupply()).sub(amount) <= burnUptoLimit) {
+            return false;
+        }
         token.operatorTransfer(msg.sender, amount);
         token.burn(amount);
         return true;

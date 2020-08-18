@@ -10,16 +10,18 @@ contract Market is usingProvable {
     using SafeMath for uint;
 
     enum PredictionStatus {
-      Started,
-      Closed,
-      ResultDeclared
+      Live,
+      InSettlement,
+      Cooling,
+      InDispute,
+      Settled
     }
   
     uint constant totalOptions = 3;
     uint internal startTime;
     uint internal expireTime;
     bytes32 internal marketCurrency;
-    address internal marketCurrencyAddress;
+    address internal marketFeedAddress;
     uint public rate;
     uint public WinningOption;
     bool public lockedForDispute;
@@ -28,7 +30,8 @@ contract Market is usingProvable {
     PredictionStatus internal predictionStatus;
     uint internal settleTime;
     uint internal marketCoolDownTime;
-    uint totalStaked;
+    uint totalStakedETH;
+    uint totalStakedToken;
     uint predictionTime;
 
     bool commissionExchanged;
@@ -72,26 +75,26 @@ contract Market is usingProvable {
     * @param _marketCurrency The stock name of market.
     * @param _marketCurrencyAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketCurrencyAddress) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
       tokenController = ITokenController(pl.tokenController());
       token = tokenController.token();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
-      marketCurrencyAddress = _marketCurrencyAddress;
-      settleTime = _settleTime;
+      marketFeedAddress = _marketFeedAddress;
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;
       (predictionAssets, incentiveTokens, _coolDownTime, _rate) = marketConfig.getMarketInitialParams();
       rate = _rate;
       predictionTime = _predictionTime; 
-      expireTime = startTime + _predictionTime;
-      marketCoolDownTime = expireTime + _coolDownTime;
+      expireTime = startTime.add(_predictionTime);
+      settleTime = startTime.add(_settleTime);
+      marketCoolDownTime = settleTime.add(_coolDownTime);
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
-      marketResultId = provable_query(startTime.add(settleTime), "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
+      marketResultId = provable_query(settleTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 400000);
       // chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
       // incentiveTokens = _incentiveTokens;
       // uniswapFactoryAddress = _uniswapFactoryAdd;
@@ -103,8 +106,10 @@ contract Market is usingProvable {
     * @return PredictionStatus representing the status of market.
     */
     function marketStatus() internal view returns(PredictionStatus){
-      if(predictionStatus == PredictionStatus.Started && now >= expireTime) {
-        return PredictionStatus.Closed;
+      if(predictionStatus == PredictionStatus.Live && now >= expireTime) {
+        return PredictionStatus.InSettlement;
+      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime) {
+        return PredictionStatus.Cooling;
       }
       return predictionStatus;
     }
@@ -130,7 +135,7 @@ contract Market is usingProvable {
       _optionPrice = 0;
       uint currentPriceOption = 0;
       uint minTimeElapsed = predictionTime.div(predictionTime);
-      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice) = marketConfig.getPriceCalculationParams(marketCurrencyAddress);
+      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice) = marketConfig.getPriceCalculationParams(marketFeedAddress);
       if(now > expireTime) {
         return 0;
       }
@@ -385,7 +390,10 @@ contract Market is usingProvable {
       for(uint256 i = 0; i < predictionAssets.length; i++ ) {
         if(commissionAmount[predictionAssets[i]] > 0) {
           if(predictionAssets[i] == token){
-            tokenController.burnCommissionTokens(commissionAmount[predictionAssets[i]]);
+            bool burned = tokenController.burnCommissionTokens(commissionAmount[predictionAssets[i]]);
+            if(!burned) {
+              _transferAsset(predictionAssets[i], address(pl), commissionAmount[predictionAssets[i]);
+            }
           } else {
             address _exchange;
             ( , _exchange) = marketConfig.getAssetData(token);
@@ -435,7 +443,7 @@ contract Market is usingProvable {
       require(_value > 0,"value should be greater than 0");
       ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       // uint distanceFromWinningOption = 0;
-      predictionStatus = PredictionStatus.ResultDeclared;
+      predictionStatus = PredictionStatus.Settled;
       if(_value < optionsAvailable[2].minValue) {
         WinningOption = 1;
       } else if(_value > optionsAvailable[2].maxValue) {
@@ -475,11 +483,12 @@ contract Market is usingProvable {
     * @param solutionHash The ipfs solution hash.
     */
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
-      require(predictionStatus == PredictionStatus.ResultDeclared);
+      require(predictionStatus == PredictionStatus.Settled);
       uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
       require(IToken(token).transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
       pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender);
+      predictionStatus = PredictionStatus.InDispute;
     }
 
     /**
@@ -490,6 +499,7 @@ contract Market is usingProvable {
       require(msg.sender == address(pl));
       _postResult(finalResult);
       lockedForDispute = false;
+      predictionStatus = PredictionStatus.Settled;
     }
 
     /**
@@ -515,7 +525,7 @@ contract Market is usingProvable {
     * @return _incentiveTokens address[] memory representing the incentive token.
     */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
-      if(predictionStatus != PredictionStatus.ResultDeclared || totalStaked ==0) {
+      if(predictionStatus != PredictionStatus.Settled || totalStaked ==0) {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
       // uint[] memory _return;
@@ -603,7 +613,7 @@ contract Market is usingProvable {
     function claimReturn(address payable _user) public {
       require(commissionExchanged && !lockedForDispute && now > marketCoolDownTime);
       require(!userClaimedReward[_user],"Already claimed");
-      require(predictionStatus == PredictionStatus.ResultDeclared,"Result not declared");
+      require(predictionStatus == PredictionStatus.Settled,"Result not declared");
       userClaimedReward[_user] = true;
       (uint[] memory _returnAmount, , uint[] memory _incentives, ) = getReturn(_user);
       // _user.transfer(returnAmount)
