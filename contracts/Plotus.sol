@@ -32,6 +32,12 @@ contract Plotus is usingProvable, Iupgradable {
       string oraclizeType;
     }
 
+    struct MarketOraclize {
+      address marketAddress;
+      uint256 marketType;
+      uint256 marketCurrencyIndex;
+    }
+
     mapping(address => bool) isMarket;
     mapping(address => uint256) totalStaked;
     mapping(address => uint256) rewardClaimed;
@@ -41,7 +47,7 @@ contract Plotus is usingProvable, Iupgradable {
     mapping(address => mapping(address => bool)) marketsParticipatedFlag; //Markets participated by user
     // mapping(address => bool) public lockedForDispute;
 
-    mapping(bytes32 => uint256) public marketOracleId;
+    mapping(bytes32 => MarketOraclize) public marketOracleId;
 
     // uint256 public marketOpenIndex;
     address public owner;
@@ -50,7 +56,8 @@ contract Plotus is usingProvable, Iupgradable {
     address public marketConfig;
     address marketImplementation;
     address[] markets;
-    mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
+    // mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
+    mapping(uint256 => mapping(uint256 =>address)) public currentMarketTypeCurrency; //Markets of type and currency
 
     MarketTypeData[] marketTypes;
     MarketCurrency[] marketCurrencies;
@@ -195,16 +202,12 @@ contract Plotus is usingProvable, Iupgradable {
       uint256 _marketType, uint256 currentPrice
     ) internal
     {
-      require(!marketCreationPaused && _marketType <= marketTypes.length, "Invalid market");
-      for(uint256 i = 0;i < currentMarketsOfType[_marketType].length; i++) {
-        IMarket(currentMarketsOfType[_marketType][i]).exchangeCommission();
-      }
-      delete currentMarketsOfType[_marketType];
+      require(_marketType <= marketTypes.length, "Invalid market");
       for(uint256 i = 0;i < marketCurrencies.length; i++) {
         _createMarket(_marketType, i);
       }
-      bytes32 _oraclizeId = provable_query(marketTypes[_marketType].startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
-      marketOracleId[_oraclizeId] = _marketType;
+      // bytes32 _oraclizeId = provable_query(marketTypes[_marketType].startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
+      // marketOracleId[_oraclizeId] = _marketType;
     }
 
     /**
@@ -213,16 +216,19 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _marketCurrencyIndex the index of market currency.
     */
     function _createMarket(uint256 _marketType, uint _marketCurrencyIndex) internal {
+      require(!marketCreationPaused);
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
-      currentMarketsOfType[_marketType].push(_market);
+      currentMarketTypeCurrency[_marketType][_marketCurrencyIndex] = _market;
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
       IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
+      bytes32 _oraclizeId = provable_query(_marketTypeData.startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
+      marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
     }
 
     /**
@@ -231,6 +237,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @param result The current price of market currency.
     */
     function __callback(bytes32 myid, string memory result) public {
+      require(msg.sender == provable_cbAddress());
       //Check oraclise address
       strings.slice memory s = result.toSlice();
       strings.slice memory delim = "-".toSlice();
@@ -238,7 +245,9 @@ contract Plotus is usingProvable, Iupgradable {
       for (uint i = 0; i < parts.length; i++) {
           parts[i] = parseInt(s.split(delim).toString());
       }
-      addNewMarkets(marketOracleId[myid], parseInt(result));
+      IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
+      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex);
+      // addNewMarkets(marketOracleId[myid], parseInt(result));
       delete marketOracleId[myid];
     }
 
@@ -403,7 +412,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @return _openMarkets address[] memory representing the open market addresses.
     * @return _marketTypes uint256[] memory representing the open market types.
     */
-    function getOpenMarkets() external view returns(address[] memory _openMarkets, uint256[] memory _marketTypes) {
+    function getOpenMarkets() external view returns(address[] memory _openMarkets, uint256[] memory _marketTypes, bytes32[] memory _marketCurrencies) {
       uint256  count = 0;
       uint256 _status;
       uint256 _marketType;
@@ -411,9 +420,10 @@ contract Plotus is usingProvable, Iupgradable {
       _openMarkets = new address[]((marketTypes.length).mul(marketCurrencies.length));
       _marketTypes = new uint256[]((marketTypes.length).mul(marketCurrencies.length));
       for(uint256 i = 0; i< marketTypes.length; i++) {
-        for(uint256 j = 0; j< currentMarketsOfType[i].length; j++) {
-          _openMarkets[count] = currentMarketsOfType[i][j];
+        for(uint256 j = 0; j< marketCurrencies.length; j++) {
+          _openMarkets[count] = currentMarketTypeCurrency[i][j];
           _marketTypes[count] = i;
+          _marketCurrencies[count] = marketCurrencies[j].currencyName;
           count++;
         }
       }
