@@ -3,6 +3,9 @@ pragma solidity 0.5.7;
 import "../Market.sol";
 
 contract MockMarket is Market {
+
+	mapping(uint => uint) optionPrices;
+
 	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
@@ -31,6 +34,21 @@ contract MockMarket is Market {
     */
     function calculatePredictionResult(uint _value) public {
       _postResult(_value);
+    }
+
+    function setOptionPrice(uint _option, uint _price) public {
+    	optionPrices[_option] = _price;
+    }
+    /**
+    * @dev Calculates the price of available option ranges.
+    * @param _option The number of option ranges.
+    * @param _totalStaked The total staked amount on options.
+    * @param _assetStakedOnOption The asset staked on options.
+    * @return _optionPrice uint representing the price of option range.
+    */
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
+      super._calculateOptionPrice(_option, _totalStaked, _assetStakedOnOption);
+      return optionPrices[_option];
     }
 
 }
