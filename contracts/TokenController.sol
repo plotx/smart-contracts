@@ -18,7 +18,7 @@ contract TokenController is IERC1132, Iupgradable {
     string internal constant NOT_LOCKED = 'No tokens locked';
     string internal constant AMOUNT_ZERO = 'Amount can not be 0';
 
-    uint internal smLockPeriod = 30;
+    uint internal smLockPeriod = 30 days;
     uint internal burnUptoLimit = 20000000 * 1 ether;
 
     PlotusToken public token;

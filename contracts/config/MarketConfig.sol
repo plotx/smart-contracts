@@ -15,6 +15,7 @@ contract MarketConfig {
     uint constant OPTION_START_INDEX = 1;//
     uint constant minBet = 1e15;
     uint constant STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;//
+    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     //Two extra decimals added for percentage
     uint internal bonusRewardPerc = 50;
     uint internal uniswapDeadline = 20 minutes;
@@ -34,6 +35,7 @@ contract MarketConfig {
     uint internal minStakeForMultiplier;
     uint internal stakeForDispute;
     uint internal marketCoolDownTime;
+    address internal plotusToken;
     
     address payable internal donationAccount;//
     address payable internal commissionAccount;//
@@ -59,7 +61,7 @@ contract MarketConfig {
         commissionAccount = _addressParams[0];
         chainLinkPriceOracle = _addressParams[1];
         uniswapRouter = IUniswapV2Router02(_addressParams[2]);
-        address plotusToken = _addressParams[3];
+        plotusToken = _addressParams[3];
         address weth = uniswapRouter.WETH();
         uniswapEthToTokenPath.push(weth);
         uniswapEthToTokenPath.push(plotusToken);
@@ -80,11 +82,20 @@ contract MarketConfig {
 
     function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {
         latestAnswer = uint(chainLinkOracle.latestAnswer());
-        if(_currencyAddress != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+        if(_currencyAddress != ETH_ADDRESS) {
             // address _exchange = uniswapFactory.getExchange(_currencyAddress);
             uint[] memory output = uniswapRouter.getAmountsOut(IToken(_currencyAddress).decimals(), uniswapTokenToEthPath);
             uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
+        }
+    }
+
+    function getAssetValueETH(address _currencyAddress, uint _amount) public view returns(uint tokenEthValue) {
+        tokenEthValue = _amount;
+        if(_currencyAddress != ETH_ADDRESS) {
+            // address _exchange = uniswapFactory.getExchange(_currencyAddress);
+            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapTokenToEthPath);
+            tokenEthValue = output[1];
         }
     }
 
@@ -106,10 +117,10 @@ contract MarketConfig {
         commissionPerc[_asset] = _commissionPerc;
     }
 
-    function getMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint, uint) {
+    function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint, uint) {
         uint _value = _amount;
-        if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapTokenToEthPath);
+        if(_asset == ETH_ADDRESS) {
+            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
             _value = output[1];
         }
         return (stakeRatioForMultiplier[_asset], multiplier, minStakeForMultiplier, _value);
@@ -127,17 +138,18 @@ contract MarketConfig {
         stakeRatioForMultiplier[_asset] = _ratio;
     }
 
-    function getMarketInitialParams() public view returns(address[] memory, address[] memory, uint , uint) {
-        return (predictionAssets, incentiveTokens, marketCoolDownTime, rate);
+    function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint) {
+        return (incentiveTokens, marketCoolDownTime, rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotusToken]);
     }
 
     function isValidPredictionAsset(address _asset) public view returns(bool) {
         return predictionAssetFlag[_asset];
     }
 
+ //To be Removed
     function getAssetCommisionAndValue(address _asset, uint _amount) public view returns(uint _commisionPerc, uint _value) {
         _value = _amount;
-        if(_asset != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+        if(_asset != ETH_ADDRESS) {
             uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
             _value = output[1];
         }

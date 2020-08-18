@@ -28,6 +28,8 @@ contract Plotus is usingProvable, Iupgradable {
     struct MarketCurrency {
       address currencyAddress;
       bytes32 currencyName;
+      string oraclizeSource;
+      string oraclizeType;
     }
 
     mapping(address => bool) isMarket;
@@ -66,7 +68,7 @@ contract Plotus is usingProvable, Iupgradable {
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, uint256 predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAddm, address[] _predictionAssets, uint256[] totalReward, uint256[] commision, uint256 winningOption);
+    event MarketResult(address indexed marketAddm, uint256[] totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
    
     /**
@@ -110,15 +112,17 @@ contract Plotus is usingProvable, Iupgradable {
       // marketOpenIndex = 1;
 
       //Adding Default market currencies Ether and PlotusToken
-      marketCurrencies.push(MarketCurrency(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, "ETH"));
-      marketCurrencies.push(MarketCurrency(plotusToken, "PLOT"));
-      // marketTypes.push(MarketTypeData(1 hours, 2 hours, _startTime));
+      marketCurrencies.push(MarketCurrency(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, "ETH", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL"));
+      marketCurrencies.push(MarketCurrency(plotusToken, "PLOT", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL"));
     }
 
     /**
     * @dev Start the initial market.
     */
-    function startInitialMarkets() external payable {
+    function addInitialMarketTypesAndStart(uint _startTime) external payable {
+      marketTypes.push(MarketTypeData(1 hours, 2 hours, _startTime));
+      marketTypes.push(MarketTypeData(24 hours, 2 days, _startTime));
+      marketTypes.push(MarketTypeData(7 days, 14 days, _startTime));
       for(uint256 i = 0;i < marketTypes.length; i++) {
         for(uint256 j = 0;j < marketCurrencies.length; j++) {
           _createMarket(i, j);
@@ -209,13 +213,14 @@ contract Plotus is usingProvable, Iupgradable {
     */
     function _createMarket(uint256 _marketType, uint _marketCurrencyIndex) internal {
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
+      MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
       currentMarketsOfType[_marketType].push(_market);
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
-      IMarket(_market).initiate.value(msg.value)(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, marketCurrencies[_marketCurrencyIndex].currencyName, marketCurrencies[_marketCurrencyIndex].currencyAddress);
-      emit MarketQuestion(_market, marketCurrencies[_marketCurrencyIndex].currencyName, _marketType, _marketTypeData.startTime);
+      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource);
+      emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
     }
 
@@ -292,12 +297,10 @@ contract Plotus is usingProvable, Iupgradable {
 
     /**
     * @dev Emits the MarketResult event.
-    * @param _predictionAssets The prediction assets of market.
     * @param _totalReward The amount of reward to be distribute.
-    * @param _commision The commision amount.
     * @param winningOption The winning option of the market.
     */
-    function callMarketResultEvent(address[] calldata _predictionAssets , uint256[] calldata _totalReward, uint256[] calldata _commision, uint256 winningOption) external OnlyMarket {
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption) external OnlyMarket {
       // if (marketOpenIndex < marketIndex[msg.sender]) {
       //   uint256 i;
       //   uint256 _status;
@@ -316,7 +319,7 @@ contract Plotus is usingProvable, Iupgradable {
       //   marketOpenIndex = marketIndex[msg.sender];
       // }
       marketWinningOption[msg.sender] = winningOption;
-      emit MarketResult(msg.sender, _predictionAssets, _totalReward, _commision, winningOption);
+      emit MarketResult(msg.sender, _totalReward, winningOption);
     }
     
     /**

@@ -10,8 +10,9 @@ contract IMarket {
     * @param _minValue The minimum value of middle option range.
     * @param _maxValue The maximum value of middle option range.
     * @param _marketCurrency The stock name of market.
+    * @param _marketCurrencyAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketCurrencyAddress) external payable; 
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketCurrencyAddress, string calldata _oracliseType, string calldata _oraclizeSource) external payable; 
 	
     /**
     * @dev Exchanges the commission after closing the market.

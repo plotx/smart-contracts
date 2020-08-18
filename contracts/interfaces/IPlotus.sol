@@ -48,11 +48,9 @@ contract IPlotus {
 
         /**
     * @dev Emits the MarketResult event.
-    * @param _predictionAssets The prediction assets of market.
     * @param _totalReward The amount of reward to be distribute.
-    * @param _commision The commision amount.
     * @param _winningOption The winning option of the market.
     */
-    function callMarketResultEvent(address[] memory _predictionAssets, uint[] memory _totalReward, uint[] memory _commision, uint _winningOption) public {
+    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption) public {
     }
 }
