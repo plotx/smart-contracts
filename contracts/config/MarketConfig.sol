@@ -21,6 +21,7 @@ contract MarketConfig {
     uint internal uniswapDeadline = 20 minutes;
     uint internal lotPurchasePerc = 50;
     uint internal positionDecimals = 2;
+    uint internal minTimeElapsedDivisor = 6;
 
     uint internal betType;//
     uint internal priceStep;//
@@ -29,10 +30,9 @@ contract MarketConfig {
     uint internal PREDICTION_TIME;//
     // uint internal donationPerc;//
     // uint internal commissionPerc;//
-    uint internal MIN_TIME_ELAPSED;//
     
     uint internal multiplier;
-    uint internal minStakeForMultiplier;
+    uint internal minStakeForMultiplier = 5e17;
     uint internal stakeForDispute;
     uint internal marketCoolDownTime;
     address internal plotusToken;
@@ -75,9 +75,9 @@ contract MarketConfig {
         return (minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint) {
+    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint, uint) {
         uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress);
-        return (OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice);
+        return (OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
     }
 
     function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {
@@ -117,13 +117,13 @@ contract MarketConfig {
         commissionPerc[_asset] = _commissionPerc;
     }
 
-    function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint, uint) {
+    function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
             uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
             _value = output[1];
         }
-        return (stakeRatioForMultiplier[_asset], multiplier, minStakeForMultiplier, _value);
+        return (multiplier, minStakeForMultiplier, _value);
     }
 
     function getETHtoTokenRouterAndPath() public view returns(address, address[] memory) {

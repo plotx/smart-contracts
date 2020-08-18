@@ -138,8 +138,8 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      uint minTimeElapsed = predictionTime.div(predictionTime);
-      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice) = marketConfig.getPriceCalculationParams(marketFeedAddress);
+      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress);
+      uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
         return 0;
       }
@@ -289,6 +289,7 @@ contract Market is usingProvable {
       // uint256 _stakeValue = _predictionStake;
       uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
       if(_asset == ETH_ADDRESS) {
+      // revert("A");
         require(_predictionStake == msg.value);
       } else {
         require(msg.value == 0);
@@ -368,18 +369,17 @@ contract Market is usingProvable {
     * @return uint256 representing the interest return of the stake.
     */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
-      uint _stakeRatio;
       uint _minMultiplierRatio;
       uint _minStakeForMultiplier;
       uint _predictionTime = expireTime.sub(startTime);
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
       uint _predictionValueInToken;
-      (_stakeRatio, _minMultiplierRatio, _minStakeForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
+      (_minMultiplierRatio, _minStakeForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
       if(_stakeValue < _minStakeForMultiplier) {
         return predictionPoints;
       }
       // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender])
-      uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken.mul(_stakeRatio));
+      uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
       if(_stakedTokenRatio > _minMultiplierRatio) {
         _stakedTokenRatio = _stakedTokenRatio.mul(10);
         predictionPoints = predictionPoints.mul(_stakedTokenRatio).div(100);
