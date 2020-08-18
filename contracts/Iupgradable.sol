@@ -7,16 +7,25 @@ contract Iupgradable {
 
     Master public ms;
 
+    /**
+    * @dev Checks if msg.sender is only internal.
+    */
     modifier onlyInternal {
         require(ms.isInternal(msg.sender));
         _;
     }
 
+    /**
+    * @dev Checks if msg.sender is plotus owner.
+    */
     modifier onlyOwner {
         require(ms.isOwner());
         _;
     }
 
+    /**
+    * @dev Checks if msg.sender is member.
+    */
     modifier isMember {
         // require(ms.isMember(msg.sender), "Not member");
         _;

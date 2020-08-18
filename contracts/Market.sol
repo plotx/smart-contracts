@@ -62,6 +62,16 @@ contract Market is usingProvable {
     mapping(address => uint256) incentiveToDistribute;
     mapping(uint=>option) public optionsAvailable;
 
+    /**
+    * @dev Initialize the market.
+    * @param _startTime The time at which market will create.
+    * @param _predictionTime The time duration of market.
+    * @param _settleTime The time at which result of market will declared.
+    * @param _minValue The minimum value of middle option range.
+    * @param _maxValue The maximum value of middle option range.
+    * @param _marketCurrency The stock name of market.
+    * @param _marketCurrencyAddress The address to gets the price calculation params.
+    */
     function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketCurrencyAddress) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
@@ -88,6 +98,10 @@ contract Market is usingProvable {
       // factory = Factory(_uniswapFactoryAdd);
     }
 
+    /**
+    * @dev Gets the status of market.
+    * @return PredictionStatus representing the status of market.
+    */
     function marketStatus() internal view returns(PredictionStatus){
       if(predictionStatus == PredictionStatus.Started && now >= expireTime) {
         return PredictionStatus.Closed;
@@ -95,10 +109,23 @@ contract Market is usingProvable {
       return predictionStatus;
     }
 
+    /**
+    * @dev Gets the asset value in ether.
+    * @param _exchange The exchange address of token.
+    * @param _amount The amount of token.
+    * @return uint256 representing the token value in ether.
+    */
     function _getAssetValue(address _exchange, uint256 _amount) internal view returns(uint256) {
       return Exchange(_exchange).getTokenToEthInputPrice(_amount);
     }
   
+    /**
+    * @dev Calculates the price of available option ranges.
+    * @param _option The number of option ranges.
+    * @param _totalStaked The total staked amount on options.
+    * @param _assetStakedOnOption The asset staked on options.
+    * @return _optionPrice uint representing the price of option range.
+    */
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
@@ -129,6 +156,11 @@ contract Market is usingProvable {
       _optionPrice = _optionPrice.div(100);
     }
 
+   /**
+    * @dev Calculate the option price of market.
+    * @param _midRangeMin The minimum value of middle option range.
+    * @param _midRangeMax The maximum value of middle option range.
+    */
     function setOptionRanges(uint _midRangeMin, uint _midRangeMax) internal{
       optionsAvailable[1].minValue = 0;
       optionsAvailable[1].maxValue = _midRangeMin.sub(1);
@@ -138,6 +170,14 @@ contract Market is usingProvable {
       optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
+   /**
+    * @dev Calculates the prediction value.
+    * @param _prediction The option range on which user place prediction.
+    * @param _stake The amount staked by user.
+    * @param _priceStep The option price will update according to priceStep.
+    * @param _leverage The leverage opted by user at the time of prediction.
+    * @return uint256 representing the prediction value.
+    */
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint value;
       uint flag = 0;
@@ -159,17 +199,39 @@ contract Market is usingProvable {
       }
     }
 
+   /**
+    * @dev Estimates the prediction value.
+    * @param _prediction The option range on which user place prediction.
+    * @param _stake The amount staked by user.
+    * @param _leverage The leverage opted by user at the time of prediction.
+    * @return uint256 representing the prediction value.
+    */
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
       ( , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stake.mul(positionDecimals), priceStep, _leverage);
     }
 
-
+    /**
+    * @dev Gets the price of specific option.
+    * @param _prediction The option number to query the balance of.
+    * @return uint representing the price owned by the passed prediction.
+    */
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
      return _calculateOptionPrice(_prediction, totalStaked, optionsAvailable[_prediction].assetStakedValue);
     }
 
+    /**
+    * @dev Gets the market data.
+    * @return _marketCurrency bytes32 representing the currency or stock name of the market.
+    * @return minvalue uint[] memory representing the minimum range of all the options of the market.
+    * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
+    * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
+    * @return _assetStaked uint[] memory representing the assets staked on each option ranges of the market.
+    * @return _predictionType uint representing the type of market.
+    * @return _expireTime uint representing the expire time of the market.
+    * @return _predictionStatus uint representing the status of the market.
+    */
     function getData() public view returns
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
@@ -188,12 +250,24 @@ contract Market is usingProvable {
        }
     }
 
+   /**
+    * @dev Gets the result of the market.
+    * @return uint256 representing the winning option of the market.
+    * @return uint256 representing the positions of the winning option range.
+    * @return uint[] memory representing the reward to be distribute of the market.
+    * @return address[] memory representing the users who place prediction on winnning option.
+    * @return uint256 representing the assets staked on winning option.
+    */
     function getMarketResults() public view returns(uint256, uint256, uint256[] memory, address[] memory, uint256) {
       return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].stakers, optionsAvailable[WinningOption].assetStakedValue);
     }
 
     /**
-    * @dev Place prediction with '_predictionStake' amount on '_prediction' option with '_leverage' leverage
+    * @dev Place prediction on the available option ranges of the market.
+    * @param _asset The assets uses by user during prediction whether it is token address or in ether.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _prediction The option range on which user place prediction.
+    * @param _leverage The leverage opted by user at the time of prediction.
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
       // require(_prediction <= 3 && _leverage <= 5);
@@ -233,6 +307,13 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Gets the interest return of the stake after commission.
+    * @param _commision The commission percentage.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _asset The assets uses by user during prediction.
+    * @return uint256 representing the interest return of the stake.
+    */
     function _collectInterestReturnStake(uint256 _commision, uint256 _predictionStake, address _asset) internal returns(uint256) {
       _commision = _predictionStake.mul(_commision).div(100);
       _predictionStake = _predictionStake.sub(_commision);
@@ -240,6 +321,15 @@ contract Market is usingProvable {
       return _predictionStake;
     }
 
+    /**
+    * @dev Stores the prediction data.
+    * @param _prediction The option range on which user place prediction.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _stakeValue The stake value of asset.
+    * @param _asset The assets uses by user during prediction.
+    * @param _leverage The leverage opted by user during prediction.
+    * @param predictionPoints The positions user gets during prediction.
+    */
     function _storePredictionData(uint _prediction, uint _predictionStake, uint _stakeValue, address _asset, uint _leverage, uint predictionPoints) internal {
       if(userPredictionPoints[msg.sender][_prediction] == 0) {
         optionsAvailable[_prediction].stakers.push(msg.sender);
@@ -255,6 +345,14 @@ contract Market is usingProvable {
       optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
+    /**
+    * @dev Check multiplier if user maitained the configurable amount of tokens.
+    * @param _asset The assets uses by user during prediction.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param predictionPoints The positions user gets during prediction.
+    * @param _stakeValue The stake value of asset.
+    * @return uint256 representing the interest return of the stake.
+    */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
       uint _stakeRatio;
       uint _minMultiplierRatio;
@@ -277,6 +375,9 @@ contract Market is usingProvable {
       return predictionPoints;
     }
 
+    /**
+    * @dev Exchanges the commission after closing the market.
+    */
     function exchangeCommission() external {
       uint256 _uniswapDeadline;
       uint256 _lotPurchasePerc;
@@ -305,6 +406,10 @@ contract Market is usingProvable {
       commissionExchanged = true;
     }
 
+    /**
+    * @dev Calculate the result of market.
+    * @param _value The current price of market currency.
+    */
     function calculatePredictionResult(uint _value) public {
       //Owner can set the result, for testing. To be removed when deployed on mainnet
       require(msg.sender == pl.owner() || msg.sender == provable_cbAddress());
@@ -321,6 +426,10 @@ contract Market is usingProvable {
 
     }
 
+    /**
+    * @dev Calculate the result of market here.
+    * @param _value The current price of market currency.
+    */
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
@@ -357,6 +466,14 @@ contract Market is usingProvable {
       pl.callMarketResultEvent(predictionAssets, rewardToDistribute, _commission, WinningOption);
     }
 
+    /**
+    * @dev Raises the dispute by user if wrong value passed at the time of market result declaration.
+    * @param proposedValue The proposed value of market currency.
+    * @param proposalTitle The title of proposal created by user.
+    * @param shortDesc The short description of dispute.
+    * @param description The description of dispute.
+    * @param solutionHash The ipfs solution hash.
+    */
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
       require(predictionStatus == PredictionStatus.ResultDeclared);
       uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
@@ -365,12 +482,22 @@ contract Market is usingProvable {
       pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender);
     }
 
+    /**
+    * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
+    * @param finalResult The final correct value of market currency.
+    */
     function resolveDispute(uint256 finalResult) external {
       require(msg.sender == address(pl));
       _postResult(finalResult);
       lockedForDispute = false;
     }
 
+    /**
+    * @dev Transfer the assets to specified address.
+    * @param _asset The asset transfer to the specific address.
+    * @param _recipient The address to transfer the asset of
+    * @param _amount The amount which is transfer.
+    */
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
       if(_asset == address(0)) {
         _recipient.transfer(_amount);
@@ -379,6 +506,14 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Gets the return amount of the specified address.
+    * @param _user The address to specify the return of
+    * @return returnAmount uint[] memory representing the return amount.
+    * @return _predictionAssets address[] memory representing the address of asset.
+    * @return incentive uint[] memory representing the incentive.
+    * @return _incentiveTokens address[] memory representing the incentive token.
+    */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
       if(predictionStatus != PredictionStatus.ResultDeclared || totalStaked ==0) {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
@@ -395,6 +530,12 @@ contract Market is usingProvable {
       return (returnAmount, predictionAssets, incentive, incentiveTokens);
     }
 
+    /**
+    * @dev Adds the reward in the total return of the specified address.
+    * @param _user The address to specify the return of.
+    * @param returnAmount The return amount.
+    * @return uint[] memory representing the return amount after adding reward.
+    */
     function _addUserReward(address _user, uint[] memory returnAmount) internal view returns(uint[] memory){
       uint reward;
       for(uint j = 0; j< predictionAssets.length; j++) {
@@ -404,6 +545,13 @@ contract Market is usingProvable {
       return returnAmount;
     }
 
+    /**
+    * @dev Calculate the return of the specified address.
+    * @param _user The address to query the return of.
+    * @return _return uint[] memory representing the return amount owned by the passed address.
+    * @return _totalUserPredictionPoints uint representing the positions owned by the passed address.
+    * @return _totalPredictionPoints uint representing the total positions of winners.
+    */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
       ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       _return = new uint256[](predictionAssets.length);
@@ -418,6 +566,12 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Calculates the incentives.
+    * @param _totalUserPredictionPoints The positions of user.
+    * @param _totalPredictionPoints The total positions of winners.
+    * @return incentive uint[] memory representing the calculated incentive.
+    */
     function _calculateIncentives(uint256 _totalUserPredictionPoints, uint256 _totalPredictionPoints) internal view returns(uint256[] memory incentive){
       incentive = new uint256[](incentiveTokens.length);
       for(uint i = 0; i < incentiveTokens.length; i++) {
@@ -425,16 +579,27 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Gets the pending return.
+    * @param _user The address to specify the return of.
+    * @return uint representing the pending return amount.
+    */
     function getPendingReturn(address _user) external view returns(uint, uint){
       if(userClaimedReward[_user]) return (0,0);
       // return getReturn(_user);
     }
     
-    //Split getReturn() function otherwise it shows compilation error(e.g; stack too deep).
+    /**
+    * @dev Calls the total return amount internally.
+    */
     function _callReturn(uint _return,address _user,uint i,uint lossPercentage, address _asset)internal view returns(uint){
       return _return.add(assetStaked[_user][_asset][i].sub((LeverageAsset[_user][_asset][i].mul(lossPercentage)).div(100)));
     }
 
+    /**
+    * @dev Claim the return amount of the specified address.
+    * @param _user The address to query the claim return amount of.
+    */
     function claimReturn(address payable _user) public {
       require(commissionExchanged && !lockedForDispute && now > marketCoolDownTime);
       require(!userClaimedReward[_user],"Already claimed");
@@ -452,6 +617,11 @@ contract Market is usingProvable {
       pl.callClaimedEvent(_user, _returnAmount, predictionAssets, _incentives, incentiveTokens);
     }
 
+    /**
+    * @dev callback for result declaration of market.
+    * @param myid The orcalize market result id.
+    * @param result The current price of market currency.
+    */
     function __callback(bytes32 myid, string memory result) public {
       // if(myid == closeMarketId) {
       //   _closeBet();

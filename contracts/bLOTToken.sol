@@ -12,11 +12,17 @@ contract BLOT is ERC20, MinterRole {
     address public plotusAddress;
     address public plotusToken;
 
+    /**
+    * @dev Checks if msg.sender isauthorized address.
+    */
     modifier onlyAuthorized {
         require(msg.sender == plotusAddress);
         _;
     }
 
+    /**
+    * @dev Checks to revert if locked for governance.
+    */
     modifier notLocked(address _user) {
         //Add check to revert if locked for governance
         // require
