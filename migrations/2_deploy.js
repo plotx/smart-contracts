@@ -9,7 +9,7 @@ const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MarketConfig');
 const Market = artifacts.require('Market');
 const MockchainLinkBTC = artifacts.require('MockChainLinkBTC');
-const UniswapFactory = artifacts.require('MockUniswapFactory');
+const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const BN = web3.utils.BN;
 
 module.exports = function(deployer, network, accounts){
@@ -23,8 +23,8 @@ module.exports = function(deployer, network, accounts){
       let deployMarket = await deployer.deploy(Market);
       let deployPlotusToken = await deployer.deploy(PlotusToken);
       let mockchainLinkBTC = await deployer.deploy(MockchainLinkBTC);
-      let uniswapFactory = await deployer.deploy(UniswapFactory);
-      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkBTC.address, uniswapFactory.address]);
+      let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
+      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkBTC.address, uniswapRouter.address, deployPlotusToken.address]);
 
       let master = await deployer.deploy(Master);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
