@@ -44,8 +44,7 @@ contract TokenController is IERC1132, Iupgradable {
     }
 
     function swapBLOT(uint256 amount) public onlyAuthorized {
-        IToken(bLOTToken).burn(amount);
-        token.mint(msg.sender, amount);
+        IToken(bLOTToken).convertToPLOT(amount);
     }
 
     /**
