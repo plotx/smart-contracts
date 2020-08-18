@@ -4,6 +4,7 @@ import "../Plotus.sol";
 
 contract MockPlotus is Plotus {
 
+	mapping(address => bytes32) marketId;
 	/**
     * @dev Creates the new market.
     * @param _marketType The type of the market.
@@ -21,8 +22,9 @@ contract MockPlotus is Plotus {
       IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
-      // bytes32 _oraclizeId = abi.encode(_marketType, _marketCurrencyIndex);
-      // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
+      bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
+      marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
+      marketId[_market] = _oraclizeId;
     }
 
     /**
@@ -40,5 +42,9 @@ contract MockPlotus is Plotus {
       }
       _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex);
       delete marketOracleId[myid];
+    }
+
+    function getMarketOraclizeId(address _marketAddress) public view returns(bytes32){
+    	return marketId[_marketAddress];
     }
 }
