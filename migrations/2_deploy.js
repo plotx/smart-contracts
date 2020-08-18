@@ -7,7 +7,7 @@ const PlotusToken = artifacts.require('PlotusToken');
 const TokenController = artifacts.require('TokenController');
 const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MarketConfig');
-const Market = artifacts.require('Market');
+const Market = artifacts.require('MockMarket');
 const MockchainLinkBTC = artifacts.require('MockChainLinkBTC');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const BN = web3.utils.BN;
@@ -28,14 +28,18 @@ module.exports = function(deployer, network, accounts){
 
       let master = await deployer.deploy(Master);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
-      await master.initiateMaster(implementations, deployPlotusToken.address, marketConfig.address);
+      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, marketConfig.address);
 
-      // let plotusAddress = await deployMaster.plotusAddress();
-      // let plotus = await Plotus.at(plotusAddress);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       await tc.changeDependentContractAddress();
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
+      let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
+      let plotus = await Plotus.at(plotusAddress);
+      var date = Date.now();
+      date = Math.round(date/1000) + 10000
+      await plotus.addInitialMarketTypesAndStart(date);
+      console.log(await plotus.getOpenMarkets());
   });
 };
 
