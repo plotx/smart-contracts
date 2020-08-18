@@ -5,18 +5,18 @@ import "./external/openzeppelin-solidity/access/roles/MinterRole.sol";
 
 contract BLOT is ERC20, MinterRole {
 
-    string public name;
-    string public symbol;
-    uint8 public decimals;
+    string public name = "PlotusBonusToken";
+    string public symbol = "bLOT";
+    uint8 public decimals = 18;
 
-    address public plotusAddress;
+    address public tokenController;
     address public plotusToken;
 
     /**
     * @dev Checks if msg.sender isauthorized address.
     */
     modifier onlyAuthorized {
-        require(msg.sender == plotusAddress);
+        require(msg.sender == tokenController);
         _;
     }
 
@@ -29,11 +29,8 @@ contract BLOT is ERC20, MinterRole {
         _;
     }
 
-    constructor (address _plotus, address _lotToken) public {
-        name = "PlotusBonusToken";
-        symbol = "bLOT";
-        decimals = 18;
-        plotusAddress = _plotus;
+    constructor (address _tokenController, address _lotToken) public {
+        tokenController = _tokenController;
         plotusToken = _lotToken;
     }
 
@@ -45,8 +42,25 @@ contract BLOT is ERC20, MinterRole {
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
      */
-    function transfer(address recipient, uint256 amount) public returns (bool) {
+    function transfer(address recipient, uint256 amount) public onlyMinter returns (bool) {
         _transfer(msg.sender, recipient, amount);
+        return true;
+    }
+
+    /**
+     * @dev See `IERC20.transferFrom`.
+     *
+     * Emits an `Approval` event indicating the updated allowance. This is not
+     * required by the EIP. See the note at the beginning of `ERC20`;
+     *
+     * Requirements:
+     * - `sender` and `recipient` cannot be the zero address.
+     * - `sender` must have a balance of at least `value`.
+     * - the caller must have allowance for `sender`'s tokens of at least
+     * `amount`.
+     */
+    function transferFrom(address sender, address recipient, uint256 amount) public onlyMinter returns (bool) {
+        _transferFrom(sender, recipient, amount);
         return true;
     }
 
@@ -84,16 +98,6 @@ contract BLOT is ERC20, MinterRole {
         require(IERC20(plotusToken).transferFrom(msg.sender, address(this), amount));
         _mint(account, amount);
         return true;
-    }
-
-    /**
-     * @dev Destoys `amount` tokens from the caller.
-     *
-     * See `ERC20._burn`.
-     */
-    function convert(uint256 amount) public onlyAuthorized {
-        IERC20(plotusToken).mint(msg.sender, amount);
-        _burn(msg.sender, amount);
     }
 
     /**
