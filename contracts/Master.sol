@@ -178,7 +178,6 @@ contract Master is Ownable {
      */
     function _generateProxy(bytes2 _contractName, address _contractAddress) internal {
         OwnedUpgradeabilityProxy tempInstance = new OwnedUpgradeabilityProxy(_contractAddress);
-        contractAddress[_contractName] = address(tempInstance);
-        contractsActive[address(tempInstance)] = true;
+        contractAddress[_contractName] =  address(tempInstance);
     }
 }
