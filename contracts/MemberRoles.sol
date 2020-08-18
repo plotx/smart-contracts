@@ -80,11 +80,10 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /**
      * @dev to initiate the member roles
      * @param _firstAB is the address of the first AB member
-     * @param memberAuthority is the authority (role) of the member
      */
-    function memberRolesInitiate (address _firstAB, address memberAuthority) public {
+    function memberRolesInitiate (address _firstAB) public {
         require(!constructorCheck);
-        _addInitialMemberRoles(_firstAB, memberAuthority);
+        _addInitialMemberRoles(_firstAB);
         constructorCheck = true;
     }
 
@@ -287,9 +286,8 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /**
      * @dev to add initial member roles
      * @param _firstAB is the member address to be added
-     * @param memberAuthority is the member authority(role) to be added for
      */
-    function _addInitialMemberRoles(address _firstAB, address memberAuthority) internal {
+    function _addInitialMemberRoles(address _firstAB) internal {
         _addRole("Unassigned", "Unassigned", address(0));
         _addRole(
             "Advisory Board",
@@ -304,7 +302,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         _addRole(
             "DisputeResolution",
             "Represents members who are assigned to vote on resolving disputes", //solhint-disable-line
-            memberAuthority
+            address(0)
         );
         // _updateRole(_firstAB, uint(Role.AdvisoryBoard), true);
         // _updateRole(_firstAB, uint(Role.Owner), true);
