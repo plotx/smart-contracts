@@ -8,7 +8,7 @@ contract MockUniswapRouter is IUniswapV2Router02 {
 
 	using SafeMath for uint;
 
-	uint priceOfToken = 1e14;
+	uint public priceOfToken = 1e14;
 	address token;
 
 	constructor(address _token) public {
