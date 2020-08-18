@@ -1,44 +1,25 @@
-pragma solidity 0.5.7;
+pragma solidity >=0.5.0;
 
+interface IUniswapV2Factory {
+  event PairCreated(address indexed token0, address indexed token1, address pair, uint);
 
-contract Factory {
-    function getExchange(address token) public view returns (address);
-    function getToken(address exchange) public view returns (address);
+  function getPair(address tokenA, address tokenB) external view returns (address pair);
+  function allPairs(uint) external view returns (address pair);
+  function allPairsLength() external view returns (uint);
+
+  function feeTo() external view returns (address);
+  function feeToSetter() external view returns (address);
+
+  function createPair(address tokenA, address tokenB) external returns (address pair);
 }
 
+interface IUniswapV2Router02 {
+    function WETH() external pure returns (address);
 
-contract Exchange { 
-    function getEthToTokenInputPrice(uint256 ethSold) public view returns(uint256);
+    function swapExactETHForTokens(uint amountOutMin, address[] calldata path, address to, uint deadline)
+        external
+        payable
+        returns (uint[] memory amounts);
+    function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts);
 
-    function getTokenToEthInputPrice(uint256 tokensSold) public view returns(uint256);
-
-    function ethToTokenSwapInput(uint256 minTokens, uint256 deadline) public payable returns (uint256);
-
-    function ethToTokenTransferInput(uint256 minTokens, uint256 deadline, address recipient)
-        public payable returns (uint256);
-
-    function tokenToEthSwapInput(uint256 tokensSold, uint256 minEth, uint256 deadline)
-        public payable returns (uint256);
-
-    function tokenToEthTransferInput(uint256 tokensSold, uint256 minEth, uint256 deadline, address recipient) 
-        public payable returns (uint256);
-
-    function tokenToTokenSwapInput(
-        uint256 tokensSold,
-        uint256 minTokensBought,
-        uint256 minEthBought,
-        uint256 deadline,
-        address tokenAddress
-    ) 
-        public returns (uint256);
-
-    function tokenToTokenTransferInput(
-        uint256 tokensSold,
-        uint256 minTokensBought,
-        uint256 minEthBought,
-        uint256 deadline,
-        address recipient,
-        address tokenAddress
-    )
-        public returns (uint256);
 }

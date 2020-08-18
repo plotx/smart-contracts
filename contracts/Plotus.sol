@@ -3,6 +3,7 @@ import "./interfaces/IMarket.sol";
 import "./Iupgradable.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";

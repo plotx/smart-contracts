@@ -29,7 +29,6 @@ contract Master is Ownable {
     * @dev Initialize the Master.
     * @param _implementations The address of market implementation.
     * @param _token The address of token.
-    * @param _lockableToken The addresses of lockable token.
     * @param _marketConfig The addresses of market configs.
     */
     function initiateMaster(address[] calldata _implementations, address _token, address _marketConfig) external {

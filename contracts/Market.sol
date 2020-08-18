@@ -30,6 +30,7 @@ contract Market is usingProvable {
     PredictionStatus internal predictionStatus;
     uint internal settleTime;
     uint internal marketCoolDownTime;
+    uint totalStaked;
     uint totalStakedETH;
     uint totalStakedToken;
     uint predictionTime;
@@ -73,7 +74,7 @@ contract Market is usingProvable {
     * @param _minValue The minimum value of middle option range.
     * @param _maxValue The maximum value of middle option range.
     * @param _marketCurrency The stock name of market.
-    * @param _marketCurrencyAddress The address to gets the price calculation params.
+    * @param _marketFeedAddress The address to gets the price calculation params.
     */
     function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress) public payable {
       pl = IPlotus(msg.sender);
@@ -114,15 +115,15 @@ contract Market is usingProvable {
       return predictionStatus;
     }
 
-    /**
-    * @dev Gets the asset value in ether.
-    * @param _exchange The exchange address of token.
-    * @param _amount The amount of token.
-    * @return uint256 representing the token value in ether.
-    */
-    function _getAssetValue(address _exchange, uint256 _amount) internal view returns(uint256) {
-      return Exchange(_exchange).getTokenToEthInputPrice(_amount);
-    }
+    // *
+    // * @dev Gets the asset value in ether.
+    // * @param _exchange The exchange address of token.
+    // * @param _amount The amount of token.
+    // * @return uint256 representing the token value in ether.
+    
+    // function _getAssetValue(address _exchange, uint256 _amount) internal view returns(uint256) {
+    //   return Exchange(_exchange).getTokenToEthInputPrice(_amount);
+    // }
   
     /**
     * @dev Calculates the price of available option ranges.
@@ -277,6 +278,17 @@ contract Market is usingProvable {
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
       // require(_prediction <= 3 && _leverage <= 5);
       require(now >= startTime && now <= expireTime);
+
+      // uint256 _stakeValue = _predictionStake;
+      (uint256 _commision, uint256 _stakeValue) = marketConfig.getAssetCommisionAndValue(_asset, _predictionStake);
+      if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+        require(_predictionStake == msg.value);
+      } else {
+        require(msg.value == 0);
+        require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+        // _stakeValue =_getAssetValue(_exchange, _predictionStake);
+      }
+
       if(_asset == tokenController.bLOTToken()) {
         require(_leverage == 5);
         tokenController.swapBLOT(_predictionStake);
@@ -284,16 +296,8 @@ contract Market is usingProvable {
       } else {
         require(_isAllowedToStake(_asset));
       }
-      (uint256 _commision, address _exchange) = marketConfig.getAssetData(_asset);
       _predictionStake = _collectInterestReturnStake(_commision, _predictionStake, _asset);
-      uint256 _stakeValue = _predictionStake;
-      if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-        require(_predictionStake == msg.value);
-      } else {
-        require(msg.value == 0);
-        require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
-        _stakeValue =_getAssetValue(_exchange, _predictionStake);
-      }
+
       (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
 
@@ -363,13 +367,14 @@ contract Market is usingProvable {
       uint _minMultiplierRatio;
       uint _minStakeForMultiplier;
       uint _predictionTime = expireTime.sub(startTime);
-      (_stakeRatio, _minMultiplierRatio, _minStakeForMultiplier) = marketConfig.getMultiplierParameters(_asset);
+      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
+      uint _stakedTokenValue;
+      (_stakeRatio, _minMultiplierRatio, _minStakeForMultiplier, _stakedTokenValue) = marketConfig.getMultiplierParameters(_asset, _stakedBalance);
       if(_stakeValue < _minStakeForMultiplier) {
         return predictionPoints;
       }
-      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
       // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender])
-      uint _stakedTokenRatio = _stakedBalance.div(_predictionStake.mul(_stakeRatio));
+      uint _stakedTokenRatio = _stakedTokenValue.div(_stakeValue.mul(_stakeRatio));
       if(_stakedTokenRatio > _minMultiplierRatio) {
         _stakedTokenRatio = _stakedTokenRatio.mul(10);
         predictionPoints = predictionPoints.mul(_stakedTokenRatio).div(100);
@@ -392,21 +397,24 @@ contract Market is usingProvable {
           if(predictionAssets[i] == token){
             bool burned = tokenController.burnCommissionTokens(commissionAmount[predictionAssets[i]]);
             if(!burned) {
-              _transferAsset(predictionAssets[i], address(pl), commissionAmount[predictionAssets[i]);
+              _transferAsset(predictionAssets[i], address(pl), commissionAmount[predictionAssets[i]]);
             }
           } else {
-            address _exchange;
-            ( , _exchange) = marketConfig.getAssetData(token);
-            Exchange exchange = Exchange(_exchange);
             uint256 _lotPurchaseAmount = (commissionAmount[predictionAssets[i]]).sub((commissionAmount[predictionAssets[i]]).mul(_lotPurchasePerc).div(100));
             uint256 _amountToPool = (commissionAmount[predictionAssets[i]]).sub(_lotPurchasePerc);
             _transferAsset(predictionAssets[i], address(pl), _amountToPool);
             uint256 _tokenOutput;
-            if(predictionAssets[i] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-              _tokenOutput = exchange.ethToTokenSwapInput.value(_lotPurchaseAmount)(1, _uniswapDeadline);
-            } else {
-              _tokenOutput = exchange.tokenToTokenSwapInput(_lotPurchaseAmount, 1, 1, _uniswapDeadline, predictionAssets[i]);
-            }
+            address[] memory path;
+            address _router;
+            (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
+            IUniswapV2Router02 router = IUniswapV2Router02(_router);
+            // if(predictionAssets[i] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+              uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
+              _tokenOutput = output[1];
+            // }
+            //  else {
+            //   _tokenOutput = exchange.tokenToTokenSwapInput(_lotPurchaseAmount, 1, 1, _uniswapDeadline, predictionAssets[i]);
+            // }
             incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
           }
         }

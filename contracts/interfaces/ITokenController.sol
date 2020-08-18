@@ -28,5 +28,5 @@ contract ITokenController {
     * account.
     * @param amount The amount that will be burnt.
     */
-    function burnCommissionTokens(uint256 amount) external;
+    function burnCommissionTokens(uint256 amount) external returns(bool);
 }

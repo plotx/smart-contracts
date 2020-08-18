@@ -40,7 +40,6 @@ contract IPlotus {
     * @dev Emits the claimed event.
     * @param _user The address who claim their reward.
     * @param _reward The reward which is claimed by user.
-    * @param predictionAssets The prediction assets of user.
     * @param incentives The incentives of user.
     * @param incentiveTokens The incentive tokens of user.
     */
@@ -52,8 +51,8 @@ contract IPlotus {
     * @param _predictionAssets The prediction assets of market.
     * @param _totalReward The amount of reward to be distribute.
     * @param _commision The commision amount.
-    * @param winningOption The winning option of the market.
+    * @param _winningOption The winning option of the market.
     */
-    function callMarketResultEvent(address[] memory predictionAssets, uint[] memory _totalReward, uint[] memory _commision, uint _winningOption) public {
+    function callMarketResultEvent(address[] memory _predictionAssets, uint[] memory _totalReward, uint[] memory _commision, uint _winningOption) public {
     }
 }

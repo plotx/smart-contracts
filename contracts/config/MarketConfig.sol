@@ -38,7 +38,9 @@ contract MarketConfig {
     address payable internal donationAccount;//
     address payable internal commissionAccount;//
     address payable chainLinkPriceOracle;
-    Factory uniswapFactory;
+    IUniswapV2Router02 uniswapRouter;
+    address[] uniswapEthToTokenPath;
+    address[] uniswapTokenToEthPath;
 
     address[] internal predictionAssets;
     address[] internal incentiveTokens;
@@ -56,7 +58,14 @@ contract MarketConfig {
         stakeForDispute = _uintParams[5];
         commissionAccount = _addressParams[0];
         chainLinkPriceOracle = _addressParams[1];
-        uniswapFactory = Factory(_addressParams[2]);
+        uniswapRouter = IUniswapV2Router02(_addressParams[2]);
+        address plotusToken = _addressParams[3];
+        address weth = uniswapRouter.WETH();
+        uniswapEthToTokenPath.push(weth);
+        uniswapEthToTokenPath.push(plotusToken);
+        uniswapTokenToEthPath.push(plotusToken);
+        uniswapTokenToEthPath.push(weth);
+
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
@@ -72,8 +81,9 @@ contract MarketConfig {
     function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {
         latestAnswer = uint(chainLinkOracle.latestAnswer());
         if(_currencyAddress != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-            address _exchange = uniswapFactory.getExchange(_currencyAddress);
-            uint tokenEthPrice = Exchange(_exchange).getTokenToEthInputPrice(IToken(_currencyAddress).decimals());
+            // address _exchange = uniswapFactory.getExchange(_currencyAddress);
+            uint[] memory output = uniswapRouter.getAmountsOut(IToken(_currencyAddress).decimals(), uniswapTokenToEthPath);
+            uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
         }
     }
@@ -96,8 +106,17 @@ contract MarketConfig {
         commissionPerc[_asset] = _commissionPerc;
     }
 
-    function getMultiplierParameters(address _asset) public view returns(uint, uint, uint) {
-        return (stakeRatioForMultiplier[_asset], multiplier, minStakeForMultiplier);
+    function getMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint, uint) {
+        uint _value = _amount;
+        if(_asset == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapTokenToEthPath);
+            _value = output[1];
+        }
+        return (stakeRatioForMultiplier[_asset], multiplier, minStakeForMultiplier, _value);
+    }
+
+    function getETHtoTokenRouterAndPath() public view returns(address, address[] memory) {
+        return (address(uniswapRouter), uniswapEthToTokenPath);
     }
 
     function addNewPredictionAsset(address _asset, uint _commisionPerc, uint _ratio) external {
@@ -116,9 +135,13 @@ contract MarketConfig {
         return predictionAssetFlag[_asset];
     }
 
-    function getAssetData(address _asset) public view returns(uint _commisionPerc, address _exchange) {
-        _exchange = uniswapFactory.getExchange(_asset);
-        return (commissionPerc[_asset], _exchange);
+    function getAssetCommisionAndValue(address _asset, uint _amount) public view returns(uint _commisionPerc, uint _value) {
+        _value = _amount;
+        if(_asset != 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
+            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
+            _value = output[1];
+        }
+        return (commissionPerc[_asset], _value);
     }
 
     function getPurchasePercAndDeadline() public view returns(uint, uint) {
