@@ -46,9 +46,9 @@ contract Plotus is usingProvable, Iupgradable {
     // uint256 public marketOpenIndex;
     address public owner;
     address public masterAddress;
+    address public tokenController;
     address public marketConfig;
     address marketImplementation;
-    address[] public marketConfigs;
     address[] markets;
     mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
 
@@ -99,15 +99,16 @@ contract Plotus is usingProvable, Iupgradable {
     * @dev Initialize the Plotus.
     * @param _owner The address of owner.
     * @param _marketImplementation The address of market implementation.
-    * @param _marketConfigs The addresses of market configs.
+    * @param _marketConfig The address of market config.
     * @param _plotusToken The address of plotus token.
     */
-    function initiatePlotus(address _owner, address _marketImplementation, address[] memory _marketConfigs, address _plotusToken) public {
+    function initiatePlotus(address _owner, address _marketImplementation, address _marketConfig, address _plotusToken) public {
       masterAddress = msg.sender;
       owner = _owner;
       marketImplementation = _marketImplementation;
-      marketConfigs = _marketConfigs;
+      marketConfig = _marketConfig;
       plotusToken = _plotusToken;
+      tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
       // marketOpenIndex = 1;
 
@@ -151,10 +152,10 @@ contract Plotus is usingProvable, Iupgradable {
 
      /**
      * @dev Update the configs of the market.
-     * @param _marketConfigs the address of market configs.
+     * @param _marketConfig the address of market configs.
      */
-    function updateMarketConfigs(address[] memory _marketConfigs) public onlyOwner {
-      marketConfigs = _marketConfigs;
+    function updateMarketConfig(address _marketConfig) public onlyInternal {
+      marketConfig = _marketConfig;
     }
 
      /**

@@ -2,7 +2,7 @@ pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/ownership/Ownable.sol";
-// import "./Plotus.sol";
+import "./interfaces/IPlotus.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
 
@@ -31,7 +31,7 @@ contract Master is Ownable {
     * @param _token The address of token.
     * @param _marketConfig The addresses of market configs.
     */
-    function initiateMaster(address[] calldata _implementations, address _token, address _marketConfig) external {
+    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _marketConfig) external {
     // constructor(address _plotusImplementation, address _marketImplementation, address[] memory marketConfigs, address _plotusToken) public {
         // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -50,7 +50,7 @@ contract Master is Ownable {
         _changeAllAddress();
 
         // _generateProxy(_plotusImplementation);
-        // Plotus(plotusAddress).initiatePlotus(msg.sender, _marketImplementation, marketConfigs, _plotusToken);
+        IPlotus(contractAddress["PL"]).initiatePlotus(msg.sender, _marketImplementation, _marketConfig, _token);
     }
 
     /**
