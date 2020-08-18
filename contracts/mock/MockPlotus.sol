@@ -38,7 +38,7 @@ contract MockPlotus is Plotus {
       for (uint i = 0; i < parts.length; i++) {
           parts[i] = parseInt(s.split(delim).toString());
       }
-      // addNewMarkets(marketOracleId[myid], parseInt(result));
-      // delete marketOracleId[myid];
+      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex);
+      delete marketOracleId[myid];
     }
 }

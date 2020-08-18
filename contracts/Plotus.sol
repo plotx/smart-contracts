@@ -194,23 +194,6 @@ contract Plotus is usingProvable, Iupgradable {
     }
 
     /**
-    * @dev Add new market.
-    * @param _marketType The type of the market.
-    * @param currentPrice the current price of market currency.
-    */
-    function addNewMarkets( 
-      uint256 _marketType, uint256 currentPrice
-    ) internal
-    {
-      require(_marketType <= marketTypes.length, "Invalid market");
-      for(uint256 i = 0;i < marketCurrencies.length; i++) {
-        _createMarket(_marketType, i);
-      }
-      // bytes32 _oraclizeId = provable_query(marketTypes[_marketType].startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
-      // marketOracleId[_oraclizeId] = _marketType;
-    }
-
-    /**
     * @dev Creates the new market.
     * @param _marketType The type of the market.
     * @param _marketCurrencyIndex the index of market currency.
@@ -419,6 +402,7 @@ contract Plotus is usingProvable, Iupgradable {
       uint totalOpenMarkets = 0;
       _openMarkets = new address[]((marketTypes.length).mul(marketCurrencies.length));
       _marketTypes = new uint256[]((marketTypes.length).mul(marketCurrencies.length));
+      _marketCurrencies = new bytes32[]((marketTypes.length).mul(marketCurrencies.length));
       for(uint256 i = 0; i< marketTypes.length; i++) {
         for(uint256 j = 0; j< marketCurrencies.length; j++) {
           _openMarkets[count] = currentMarketTypeCurrency[i][j];
