@@ -104,10 +104,6 @@ contract MarketConfig {
         return latestAnswer;
     }
 
-    function getChainLinkPriceOracle() public view returns (address) {
-        return chainLinkPriceOracle;
-    }
-
     function getDisputeResolutionParams() public view returns(uint) {
         return stakeForDispute;
     }
