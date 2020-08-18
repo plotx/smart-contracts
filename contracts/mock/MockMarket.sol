@@ -25,4 +25,12 @@ contract MockMarket is Market {
       setOptionRanges(_minValue,_maxValue);
     }
 
+    /**
+    * @dev Calculate the result of market.
+    * @param _value The current price of market currency.
+    */
+    function calculatePredictionResult(uint _value) public {
+      _postResult(_value);
+    }
+
 }

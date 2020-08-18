@@ -26,8 +26,6 @@ contract PlotusToken is ERC20 {
 
     mapping(address => uint) public lockedForGV;
 
-    uint256 private _totalSupply;
-
     string public name = "PLOT";
     string public symbol = "PLOT";
     uint8 public decimals = 18;
@@ -39,11 +37,8 @@ contract PlotusToken is ERC20 {
         _;
     }
 
-    /**
-    * @dev Total number of tokens in existence
-    */
-    function totalSupply() public view returns (uint256) {
-        return _totalSupply;
+    constructor(uint256 initialSupply) public {
+        _mint(msg.sender, initialSupply);
     }
 
     /**
