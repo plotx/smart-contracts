@@ -83,7 +83,7 @@ contract Governance is IGovernance, Iupgradable {
     bool internal constructorCheck;
     uint public tokenHoldingTime;
     uint internal roleIdAllowedToCatgorize;
-    // uint internal maxVoteWeigthPer;
+    uint internal maxVoteWeigthPer;
     uint internal maxFollowers;
     uint internal totalProposals;
     // uint internal maxDraftTime;
@@ -216,21 +216,6 @@ contract Governance is IGovernance, Iupgradable {
     ) 
         external
     {
-        require(
-            allProposalSolutions[_proposalId].length < 2,
-            "Not allowed"
-        );
-        allProposalData[_proposalId].propStatus = uint(ProposalStatus.Draft);
-        allProposalData[_proposalId].category = 0;
-        allProposalData[_proposalId].commonIncentive = 0;
-        emit Proposal(
-            allProposalData[_proposalId].owner,
-            _proposalId,
-            now,
-            _proposalTitle, 
-            _proposalSD, 
-            _proposalDescHash
-        );
     }
 
     /**
@@ -626,6 +611,7 @@ contract Governance is IGovernance, Iupgradable {
         address leader;
         uint lastUpd;
         DelegateVote memory delegationData = allDelegation[delegationId];
+
         if (delegationId > 0 && delegationData.leader != address(0)) {
             leader = delegationData.leader;
             lastUpd = delegationData.lastUpd;
@@ -702,9 +688,6 @@ contract Governance is IGovernance, Iupgradable {
     * @dev Updates all dependency addresses to latest ones from Master
     */
     function changeDependentContractAddress() public {
-        if(!constructorCheck) {
-            _initiateGovernance();
-        }
         tokenInstance = PlotusToken(ms.dAppLocker());
         memberRole = MemberRoles(ms.getLatestAddress("MR"));
         proposalCategory = ProposalCategory(ms.getLatestAddress("PC"));
@@ -774,7 +757,7 @@ contract Governance is IGovernance, Iupgradable {
             pStatus == uint(ProposalStatus.VotingStarted)
         ) {
             uint numberOfMembers = memberRole.numberOfMembers(_roleId);
-            if (_roleId == uint(MemberRoles.Role.AdvisoryBoard) || _roleId == uint(MemberRoles.Role.DisputeResolution)) {
+            if (_roleId == uint(MemberRoles.Role.AdvisoryBoard)) {
                 if (proposalVoteTally[_proposalId].voteValue[1].mul(100).div(numberOfMembers) >= majority  
                 || proposalVoteTally[_proposalId].voteValue[1].add(proposalVoteTally[_proposalId].voteValue[0]) == numberOfMembers
                 || dateUpdate.add(_closingTime) <= now) {
@@ -970,13 +953,13 @@ contract Governance is IGovernance, Iupgradable {
         // if (mrSequence == uint(MemberRoles.Role.AdvisoryBoard)) {
         //     proposalVoteTally[_proposalId].abVoteValue[_solution]++;
         // }
-        uint voters = 1;
-        uint voteWeight;
-        uint tokenBalance = tokenController.totalBalanceOf(msg.sender);
-        allVotes.push(ProposalVote(msg.sender, _proposalId, _solution, tokenBalance, now));
         if (mrSequence != uint(MemberRoles.Role.AdvisoryBoard) && mrSequence != uint(MemberRoles.Role.DisputeResolution)) {
+            uint voteWeight;
+            uint voters = 1;
+            uint tokenBalance = tokenController.totalBalanceOf(msg.sender);
             uint totalSupply = tokenController.totalSupply();
             voteWeight = tokenBalance;
+            allVotes.push(ProposalVote(msg.sender, _proposalId, _solution, tokenBalance, now));
             DelegateVote memory delegationData;
             for (uint i = 0; i < leaderDelegation[msg.sender].length; i++) {
                 delegationData = allDelegation[leaderDelegation[msg.sender][i]];
@@ -996,12 +979,10 @@ contract Governance is IGovernance, Iupgradable {
                     }
                 }
             }
-        } else {
-            voteWeight = 1;
+            allProposalData[_proposalId].totalVoteValue = allProposalData[_proposalId].totalVoteValue.add(voteWeight); 
+            proposalVoteTally[_proposalId].voteValue[_solution] = proposalVoteTally[_proposalId].voteValue[_solution].add(voteWeight);
+            proposalVoteTally[_proposalId].voters = proposalVoteTally[_proposalId].voters + voters;
         }
-        allProposalData[_proposalId].totalVoteValue = allProposalData[_proposalId].totalVoteValue.add(voteWeight); 
-        proposalVoteTally[_proposalId].voteValue[_solution] = proposalVoteTally[_proposalId].voteValue[_solution].add(voteWeight);
-        proposalVoteTally[_proposalId].voters = proposalVoteTally[_proposalId].voters + voters;
     }
 
     /**
@@ -1152,26 +1133,6 @@ contract Governance is IGovernance, Iupgradable {
         if (proposalVoteTally[_proposalId].voters > 0) {
             tokenController.mint(address(this), allProposalData[_proposalId].commonIncentive);
         }
-    }
-
-
-    /**
-     * @dev to initiate the governance process
-     */
-    function _initiateGovernance() internal {
-        allVotes.push(ProposalVote(address(0), 0, 0, 0, 0));
-        totalProposals = 1;
-        // allProposal.push(ProposalStruct(address(0), now));
-        allDelegation.push(DelegateVote(address(0), address(0), now));
-        tokenHoldingTime = 1 * 7 days;
-        // maxVoteWeigthPer = 5;
-        maxFollowers = 40;
-        constructorCheck = true;
-        roleIdAllowedToCatgorize = uint(MemberRoles.Role.AdvisoryBoard);
-        minTokenLockedForDR = 1000 ether;
-        lockTimeForDR = tokenHoldingTime;
-        actionRejectAuthRole = uint(MemberRoles.Role.AdvisoryBoard);
-        votePercRejectAction = 60;
     }
 
     // /**

@@ -119,9 +119,9 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @dev is used to add initital advisory board members
      * @param abArray is the list of initial advisory board members
      */
-    function addInitialABandDRMembers(address[] calldata abArray, address[] calldata drArray) external onlyOwner {
+    function addInitialABMembers(address[] calldata abArray) external onlyOwner {
 
-        require(ms.masterInitialised());
+        // require(ms.masterInitialised());
 
         // require(maxABCount >= 
         //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), abArray.length)
@@ -132,6 +132,21 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             require(checkRole(abArray[i], uint(Role.TokenHolder)));
             _updateRole(abArray[i], uint(Role.AdvisoryBoard), true);   
         }
+    }
+
+    /**
+     * @dev is used to add initital advisory board members
+     * @param drArray is the list of initial advisory board members
+     */
+    function addInitialDRMembers(address[] calldata drArray) external onlyOwner {
+
+        // require(ms.masterInitialized());
+
+        // require(maxABCount >= 
+        //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), drArray.length)
+        // );
+        // //AB count can't exceed maxABCount
+
         for (uint i = 0; i < drArray.length; i++) {
             require(checkRole(drArray[i], uint(Role.TokenHolder)));
             _updateRole(drArray[i], uint(Role.DisputeResolution), true);   
@@ -247,7 +262,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             require(memberRoleData[_roleId].memberIndex[_memberAddress] > 0);
             uint256 _memberIndex = memberRoleData[_roleId].memberIndex[_memberAddress];
             address _topElement = memberRoleData[_roleId].memberAddress[memberRoleData[_roleId].memberCounter];
-            memberRoleData[_roleId].memberIndex[_topElement] = _memberIndex;
+            memberRoleData[_roleId].memberIndex[memberRoleData[_roleId].memberAddress[memberRoleData[_roleId].memberCounter]] = _memberIndex;
             memberRoleData[_roleId].memberCounter = SafeMath.sub(memberRoleData[_roleId].memberCounter, 1);
             memberRoleData[_roleId].memberAddress[_memberIndex] = _topElement;
             memberRoleData[_roleId].memberAddress.length--;
@@ -265,7 +280,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         address _authorized
     ) internal {
         emit MemberRole(memberRoleData.length, _roleName, _roleDescription);
-        memberRoleData.push(MemberRoleDetails(0, new address[](1), _authorized));
+        memberRoleData.push(MemberRoleDetails(0, new address[](0), _authorized));
     }
 
     /**
@@ -289,8 +304,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             "Represents members who are assigned to vote on resolving disputes", //solhint-disable-line
             address(0)
         );
-        _updateRole(_firstAB, uint(Role.AdvisoryBoard), true);
-        _updateRole(_firstAB, uint(Role.DisputeResolution), true);
+        // _updateRole(_firstAB, uint(Role.AdvisoryBoard), true);
         // _updateRole(_firstAB, uint(Role.Owner), true);
         // _updateRole(_firstAB, uint(Role.Member), true);
     }
