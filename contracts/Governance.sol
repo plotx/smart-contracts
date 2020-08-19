@@ -462,6 +462,13 @@ contract Governance is IGovernance, Iupgradable {
                 uint256(MemberRoles.Role.DisputeResolution)
             )
         );
+        require(
+            memberRole.checkRole(
+                msg.sender,
+                uint256(MemberRoles.Role.TokenHolder)
+            ),
+            "Not a token holder"
+        );
 
         require(followerCount[_add] < maxFollowers);
 
