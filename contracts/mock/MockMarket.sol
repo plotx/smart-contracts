@@ -12,7 +12,7 @@ contract MockMarket is Market {
 		mockFlag = _flag;
 	}
 
-	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource) public payable {
+	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
       tokenController = ITokenController(pl.tokenController());
@@ -20,6 +20,7 @@ contract MockMarket is Market {
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
+      isMarketCurrencyERCToken = _isERCToken;
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;

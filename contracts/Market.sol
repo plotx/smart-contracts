@@ -23,6 +23,7 @@ contract Market is usingProvable {
     uint internal expireTime;
     bytes32 internal marketCurrency;
     address internal marketFeedAddress;
+    bool internal isMarketCurrencyERCToken;
     uint public rate;
     uint public WinningOption;
     bool public lockedForDispute;
@@ -78,7 +79,7 @@ contract Market is usingProvable {
     * @param _marketCurrency The stock name of market.
     * @param _marketFeedAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
       tokenController = ITokenController(pl.tokenController());
@@ -86,6 +87,7 @@ contract Market is usingProvable {
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
+      isMarketCurrencyERCToken = _isERCToken;
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;
@@ -138,7 +140,7 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress);
+      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isMarketCurrencyERCToken);
       uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
         return 0;

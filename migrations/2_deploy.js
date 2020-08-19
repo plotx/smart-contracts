@@ -4,11 +4,11 @@ const Governance = artifacts.require('Governance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const PlotusToken = artifacts.require('PlotusToken');
-const TokenController = artifacts.require('TokenController');
+const TokenController = artifacts.require('MockTokenController');
 const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MarketConfig');
 const Market = artifacts.require('MockMarket');
-const MockchainLinkBTC = artifacts.require('MockChainLinkBTC');
+const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const BN = web3.utils.BN;
 
@@ -22,9 +22,9 @@ module.exports = function(deployer, network, accounts){
       let deployTokenController = await deployer.deploy(TokenController);
       let deployMarket = await deployer.deploy(Market);
       let deployPlotusToken = await deployer.deploy(PlotusToken, "30000000000000000000000000");
-      let mockchainLinkBTC = await deployer.deploy(MockchainLinkBTC);
+      let mockchainLinkAggregaror = await deployer.deploy(MockchainLink);
       let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
-      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkBTC.address, uniswapRouter.address, deployPlotusToken.address]);
+      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000'],[accounts[0], mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address]);
 
       let master = await deployer.deploy(Master);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
@@ -39,7 +39,7 @@ module.exports = function(deployer, network, accounts){
       let plotus = await Plotus.at(plotusAddress);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      await plotus.addInitialMarketTypesAndStart(date);
+      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate(accounts[0]);

@@ -19,7 +19,7 @@ contract MockPlotus is Plotus {
       markets.push(_market);
       currentMarketTypeCurrency[_marketType][_marketCurrencyIndex] = _market;
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
-      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource);
+      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
       bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));

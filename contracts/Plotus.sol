@@ -30,6 +30,7 @@ contract Plotus is usingProvable, Iupgradable {
       bytes32 currencyName;
       string oraclizeSource;
       string oraclizeType;
+      bool isERCToken;
     }
 
     struct MarketOraclize {
@@ -121,16 +122,16 @@ contract Plotus is usingProvable, Iupgradable {
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
       // marketOpenIndex = 1;
-
-      //Adding Default market currencies Ether and PlotusToken
-      marketCurrencies.push(MarketCurrency(0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE, "ETH", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL"));
-      marketCurrencies.push(MarketCurrency(plotusToken, "PLOT", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL"));
+      
     }
 
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint _startTime) external payable {
+    function addInitialMarketTypesAndStart(uint _startTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
+      marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL", false));
+      marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL", true));
+
       marketTypes.push(MarketTypeData(1 hours, 2 hours, _startTime));
       marketTypes.push(MarketTypeData(24 hours, 2 days, _startTime));
       marketTypes.push(MarketTypeData(7 days, 14 days, _startTime));
@@ -210,7 +211,7 @@ contract Plotus is usingProvable, Iupgradable {
       markets.push(_market);
       currentMarketTypeCurrency[_marketType][_marketCurrencyIndex] = _market;
       (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
-      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource);
+      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
       bytes32 _oraclizeId = provable_query(_marketTypeData.startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);

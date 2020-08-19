@@ -75,18 +75,26 @@ contract MarketConfig {
         return (minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress) public view  returns(uint, uint, uint, uint, uint, uint) {
-        uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress);
+    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint, uint, uint) {
+        uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress, _isMarketCurrencyERCToken);
         return (OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
     }
 
-    function getAssetPriceUSD(address _currencyAddress) public view returns(uint latestAnswer) {
-        latestAnswer = uint(chainLinkOracle.latestAnswer());
-        if(_currencyAddress != ETH_ADDRESS) {
+    function getAssetPriceUSD(address _currencyAddress, bool _isCurrencyERCToken) public view returns(uint latestAnswer) {
+        // if(_currencyAddress != ETH_ADDRESS) {
+        //     return latestAnswer = uint(chainLinkOracle.latestAnswer());
+        // }
+        if(_isCurrencyERCToken) {
+            latestAnswer = uint(chainLinkOracle.latestAnswer());
             // address _exchange = uniswapFactory.getExchange(_currencyAddress);
-            uint[] memory output = uniswapRouter.getAmountsOut(IToken(_currencyAddress).decimals(), uniswapTokenToEthPath);
+            address[] memory path = new address[](2);
+            path[0] = _currencyAddress;
+            path[1] = ETH_ADDRESS;
+            uint[] memory output = uniswapRouter.getAmountsOut(IToken(_currencyAddress).decimals(), path);
             uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
+        } else {
+            return uint(IChainLinkOracle(_currencyAddress).latestAnswer());
         }
     }
 

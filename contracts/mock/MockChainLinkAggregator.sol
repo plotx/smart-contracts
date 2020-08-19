@@ -2,7 +2,7 @@ pragma solidity 0.5.7;
   
 import "../interfaces/IChainLinkOracle.sol";
 import "../external/openzeppelin-solidity/ownership/Ownable.sol";
-contract MockChainLinkBTC is Ownable,IChainLinkOracle{
+contract MockChainLinkAggregator is Ownable,IChainLinkOracle{
 
 	 int256 latestAns = 934999802346 ;
 
