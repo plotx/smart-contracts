@@ -93,7 +93,7 @@ contract MarketConfig {
             address[] memory path = new address[](2);
             path[0] = _currencyAddress;
             path[1] = ETH_ADDRESS;
-            uint[] memory output = uniswapRouter.getAmountsOut(IToken(_currencyAddress).decimals(), path);
+            uint[] memory output = uniswapRouter.getAmountsOut(10**(IToken(_currencyAddress).decimals()), path);
             uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
         } else {
@@ -104,8 +104,22 @@ contract MarketConfig {
     function getAssetValueETH(address _currencyAddress, uint _amount) public view returns(uint tokenEthValue) {
         tokenEthValue = _amount;
         if(_currencyAddress != ETH_ADDRESS) {
-            // address _exchange = uniswapFactory.getExchange(_currencyAddress);
-            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapTokenToEthPath);
+            address[] memory path = new address[](2);
+            path[0] = _currencyAddress;
+            path[1] = ETH_ADDRESS;
+            uint[] memory output = uniswapRouter.getAmountsOut(_amount, path);
+            tokenEthValue = output[1];
+        }
+    }
+
+    function getAssetPriceInETH(address _currencyAddress) public view returns(uint tokenEthValue, uint decimals) {
+        tokenEthValue = 1;
+        if(_currencyAddress != ETH_ADDRESS) {
+            address[] memory path = new address[](2);
+            path[0] = _currencyAddress;
+            path[1] = ETH_ADDRESS;
+            decimals = IToken(_currencyAddress).decimals();
+            uint[] memory output = uniswapRouter.getAmountsOut(10**decimals, path);
             tokenEthValue = output[1];
         }
     }

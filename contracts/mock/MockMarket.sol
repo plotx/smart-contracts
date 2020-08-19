@@ -85,8 +85,8 @@ contract MockMarket is Market {
         }
       } 
       if(commissionAmount[ETH_ADDRESS] > 0) {
-        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).sub((commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100));
-        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchasePerc);
+        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
+        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
         _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
         uint256 _tokenOutput;
         address[] memory path;

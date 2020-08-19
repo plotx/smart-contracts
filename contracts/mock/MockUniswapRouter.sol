@@ -29,7 +29,7 @@ contract MockUniswapRouter is IUniswapV2Router02 {
         payable
         returns (uint[] memory amounts) {
         	uint ethSent = msg.value;
-        	uint tokenOutput = ethSent.mul(priceOfToken);
+        	uint tokenOutput = ethSent.mul(1e18).div(priceOfToken);
 	    	IToken(token).transfer(to, tokenOutput); 
             amounts = new uint[](2);
             amounts[0] = ethSent;

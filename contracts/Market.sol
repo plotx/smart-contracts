@@ -192,9 +192,11 @@ contract Market is usingProvable {
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint value;
       uint flag = 0;
-      uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-      uint _totalStaked = totalStakedETH.add(_totalStakedToken);
-      uint _assetStakedOnOption = optionsAvailable[_prediction].assetStakedValue;
+      (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+      uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
+      uint _assetStakedOnOption = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS]
+                                  .add(
+                                    (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[token], _tokenPrice, _decimals)));
       _predictionValue = 0;
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
@@ -209,6 +211,10 @@ contract Market is usingProvable {
           flag++;
         }
       }
+    }
+
+    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal view returns(uint) {
+      return _amount.mul(_price).div(10**_decimals);
     }
 
    /**
@@ -230,8 +236,15 @@ contract Market is usingProvable {
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
-      uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-     return _calculateOptionPrice(_prediction, totalStakedETH.add(_totalStakedToken), optionsAvailable[_prediction].assetStakedValue);
+      (uint _price, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+
+     return _calculateOptionPrice(
+                _prediction,
+                totalStakedETH.add(totalStakedToken.mul(_price).div(10**_decimals)),
+                optionsAvailable[_prediction].assetStaked[ETH_ADDRESS].add(
+                  (optionsAvailable[_prediction].assetStaked[token]).mul(_price).div(10**_decimals)
+                )
+            );
     }
 
     /**
@@ -361,7 +374,7 @@ contract Market is usingProvable {
       LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
       optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
       optionsAvailable[_prediction].assetStakedValue = optionsAvailable[_prediction].assetStakedValue.add(_stakeValue);
-      optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_stakeValue);
+      optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_predictionStake);
       optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
@@ -410,8 +423,8 @@ contract Market is usingProvable {
         }
       } 
       if(commissionAmount[ETH_ADDRESS] > 0) {
-        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).sub((commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100));
-        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchasePerc);
+        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
+        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
         _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
         uint256 _tokenOutput;
         address[] memory path;
@@ -519,7 +532,7 @@ contract Market is usingProvable {
     * @param _amount The amount which is transfer.
     */
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
-      if(_asset == address(0)) {
+      if(_asset == ETH_ADDRESS) {
         _recipient.transfer(_amount);
       } else {
         require(IToken(_asset).transfer(_recipient, _amount));
