@@ -6,6 +6,12 @@ contract MockMarket is Market {
 
 	mapping(uint => uint) optionPrices;
 
+	bool public mockFlag = true;
+
+	function setMockPriceFlag(bool _flag) public {
+		mockFlag = _flag;
+	}
+
 	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource) public payable {
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
@@ -47,8 +53,10 @@ contract MockMarket is Market {
     * @return _optionPrice uint representing the price of option range.
     */
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
-      super._calculateOptionPrice(_option, _totalStaked, _assetStakedOnOption);
-      return optionPrices[_option];
+      if(mockFlag) {
+      	return optionPrices[_option];
+      }
+      return super._calculateOptionPrice(_option, _totalStaked, _assetStakedOnOption);
     }
 
 }
