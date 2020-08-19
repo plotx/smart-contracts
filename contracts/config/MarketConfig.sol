@@ -67,6 +67,9 @@ contract MarketConfig {
         uniswapEthToTokenPath.push(plotusToken);
         uniswapTokenToEthPath.push(plotusToken);
         uniswapTokenToEthPath.push(weth);
+        incentiveTokens.push(plotusToken);
+        commissionPerc[ETH_ADDRESS] = 10;
+        commissionPerc[plotusToken] = 5;
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
@@ -85,7 +88,7 @@ contract MarketConfig {
         //     return latestAnswer = uint(chainLinkOracle.latestAnswer());
         // }
         if(_isCurrencyERCToken) {
-            latestAnswer = uint(chainLinkOracle.latestAnswer());
+            latestAnswer = uint(chainLinkOracle.latestAnswer()).div(1e8);
             // address _exchange = uniswapFactory.getExchange(_currencyAddress);
             address[] memory path = new address[](2);
             path[0] = _currencyAddress;
@@ -94,7 +97,7 @@ contract MarketConfig {
             uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
         } else {
-            return uint(IChainLinkOracle(_currencyAddress).latestAnswer());
+            return uint(IChainLinkOracle(_currencyAddress).latestAnswer()).div(1e8);
         }
     }
 

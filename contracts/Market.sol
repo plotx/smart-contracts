@@ -46,7 +46,7 @@ contract Market is usingProvable {
     mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
     mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
     mapping(address => mapping(uint => uint)) public userPredictionPoints;
-    mapping(address => uint256) internal commissionAmount;
+    mapping(address => uint256) public commissionAmount;
     mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
@@ -331,7 +331,7 @@ contract Market is usingProvable {
     * @return uint256 representing the interest return of the stake.
     */
     function _collectInterestReturnStake(uint256 _predictionStake, address _asset) internal returns(uint256) {
-      uint _commision = _predictionStake.mul(commissionPerc[_asset]).div(100);
+      uint _commision = _predictionStake.mul(commissionPerc[_asset]).div(10000);
       _predictionStake = _predictionStake.sub(_commision);
       commissionAmount[_asset] = commissionAmount[_asset].add(_commision);
       return _predictionStake;
@@ -538,8 +538,8 @@ contract Market is usingProvable {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
       _predictionAssets = new address[](2);
-      _predictionAssets[0] = ETH_ADDRESS;
-      _predictionAssets[1] = token;
+      _predictionAssets[0] = token;
+      _predictionAssets[1] = ETH_ADDRESS;
 
       // uint[] memory _return;
       uint256 _totalUserPredictionPoints = 0;
@@ -581,10 +581,10 @@ contract Market is usingProvable {
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        if(i != WinningOption) {
-          _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, ETH_ADDRESS);
-          _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, token);
-        }
+        // if(i != WinningOption) {
+          _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, token);
+          _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
+        // }
       }
     }
 
@@ -615,6 +615,9 @@ contract Market is usingProvable {
     * @dev Calls the total return amount internally.
     */
     function _callReturn(uint _return,address _user,uint i,uint lossPercentage, address _asset)internal view returns(uint){
+      if(i == WinningOption) {
+        lossPercentage = 0;
+      }
       return _return.add(assetStaked[_user][_asset][i].sub((LeverageAsset[_user][_asset][i].mul(lossPercentage)).div(100)));
     }
 

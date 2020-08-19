@@ -12,6 +12,16 @@ contract MockMarket is Market {
 		mockFlag = _flag;
 	}
 
+  function setOptionRangesPublic(uint _midRangeMin, uint _midRangeMax) public{
+      optionsAvailable[1].minValue = 0;
+      optionsAvailable[1].maxValue = _midRangeMin.sub(1);
+      optionsAvailable[2].minValue = _midRangeMin;
+      optionsAvailable[2].maxValue = _midRangeMax;
+      optionsAvailable[3].minValue = _midRangeMax.add(1);
+      optionsAvailable[3].maxValue = ~uint256(0) ;
+    }
+
+
 	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
       mockFlag = true;
       pl = IPlotus(msg.sender);

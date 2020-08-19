@@ -31,6 +31,9 @@ contract MockUniswapRouter is IUniswapV2Router02 {
         	uint ethSent = msg.value;
         	uint tokenOutput = ethSent.mul(priceOfToken);
 	    	IToken(token).transfer(to, tokenOutput); 
+            amounts = new uint[](2);
+            amounts[0] = ethSent;
+            amounts[1] = tokenOutput;
         }
 
     function getAmountsOut(uint amountIn, address[] calldata path) external view returns (uint[] memory amounts) {
