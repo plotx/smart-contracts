@@ -313,7 +313,7 @@ contract Market is usingProvable {
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _stakeValue, _asset, _leverage, predictionPoints);
-      // pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
     function _isAllowedToStake(address _asset) internal view returns(bool) {

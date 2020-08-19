@@ -99,15 +99,6 @@ contract MarketConfig {
         }
     }
 
-    function getLatestPrice() public view returns(uint) {
-        uint latestAnswer = uint(chainLinkOracle.latestAnswer());
-        return latestAnswer;
-    }
-
-    function getChainLinkPriceOracle() public view returns (address) {
-        return chainLinkPriceOracle;
-    }
-
     function getDisputeResolutionParams() public view returns(uint) {
         return stakeForDispute;
     }

@@ -5,6 +5,7 @@ import "./PlotusToken.sol";
 import "./bLOTToken.sol";
 import "./Iupgradable.sol";
 import "./interfaces/IToken.sol";
+import "./interfaces/IPlotus.sol";
 
 contract TokenController is IERC1132, Iupgradable {
     using SafeMath for uint256;
@@ -22,9 +23,11 @@ contract TokenController is IERC1132, Iupgradable {
     uint internal burnUptoLimit = 20000000 * 1 ether;
 
     PlotusToken public token;
+    IPlotus public plotus;
     address public bLOTToken;
 
     modifier onlyAuthorized {
+        plotus.isMarket(msg.sender);
         _;
     }
 
@@ -33,6 +36,8 @@ contract TokenController is IERC1132, Iupgradable {
     */
     function changeDependentContractAddress() public {
         token = PlotusToken(ms.dAppToken());
+        plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
+
     }
 
     /**

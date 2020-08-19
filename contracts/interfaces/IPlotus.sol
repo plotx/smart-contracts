@@ -10,6 +10,7 @@ contract IPlotus {
     address public owner;
     address public tokenController;
     address public marketConfig;
+    mapping(address => bool) public isMarket;
     function() external payable{}
 
     /**
@@ -42,7 +43,7 @@ contract IPlotus {
     * @param _prediction The option range on which user placed prediction.
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
-    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, uint _predictionAsset, uint _prediction,uint _leverage) public{
+    function callPlacePredictionEvent(address _user,uint _value, uint _predictionPoints, address _predictionAsset, uint _prediction,uint _leverage) public{
     }
 
     /**

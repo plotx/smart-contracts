@@ -38,7 +38,7 @@ contract Plotus is usingProvable, Iupgradable {
       uint256 marketCurrencyIndex;
     }
 
-    mapping(address => bool) isMarket;
+    mapping(address => bool) public isMarket;
     mapping(address => uint256) totalStaked;
     mapping(address => uint256) rewardClaimed;
     mapping(address => uint256) marketWinningOption;
@@ -74,7 +74,7 @@ contract Plotus is usingProvable, Iupgradable {
     mapping(address => DisputeStake) disputeStakes;
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
-    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, uint256 predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAddm, uint256[] totalReward, uint256 winningOption);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
    
@@ -263,6 +263,7 @@ contract Plotus is usingProvable, Iupgradable {
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user) public OnlyMarket {
       // lockedForDispute[msg.sender] = true;
+      require(disputeStakes[msg.sender].staker == address(0));
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
       IGovernance(ms.getLatestAddress("GV")).createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
@@ -324,7 +325,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _prediction The option range on which user placed prediction.
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
-    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, uint _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
+    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
       totalStaked[_user] = totalStaked[_user].add(_value);
       if(!marketsParticipatedFlag[_user][msg.sender]) {
         marketsParticipated[_user].push(msg.sender);
