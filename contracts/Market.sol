@@ -220,7 +220,7 @@ contract Market is usingProvable {
    /**
     * @dev Estimates the prediction value.
     * @param _prediction The option range on which user place prediction.
-    * @param _stake The amount staked by user.
+    * @param _stakeValueInEth The amount staked by user.
     * @param _leverage The leverage opted by user at the time of prediction.
     * @return uint256 representing the prediction value.
     */
