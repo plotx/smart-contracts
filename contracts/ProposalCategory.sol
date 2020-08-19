@@ -50,24 +50,24 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
         require(!initated, "Category action hashes already updated");
         initated = true;
 
-        _addInitialCategories("Uncategorized", "", "EX", "", 0, 0);
-        _addInitialCategories("Add new member role", "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U", "MR", "addRole(bytes32,string,address)", 50, 1); //1
-        _addInitialCategories("Update member role", "QmXMzSViLBJ22P9oj51Zz7isKTRnXWPHZcQ5hzGvvWD3UV", "MR", "updateRole(address,uint256,bool)", 50, 1); // 2
-        _addInitialCategories("Add new category", "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng", "PC", "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1); // 3
-        _addInitialCategories("Edit category", "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc", "PC", "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1); //4
-        _addInitialCategories("Transfer Ether", "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa", "GV", "transferEther(uint256,address)", 50, 1); // 5
-        _addInitialCategories("Transfer Token", "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB", "GV", "transferToken(address,address,uint256)", 50, 1); // 6
+        _addInitialCategories("Uncategorized", "", "EX", "", 0, 0, 0);
+        _addInitialCategories("Add new member role", "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U", "MR", "addRole(bytes32,string,address)", 50, 1, 1); //1
+        _addInitialCategories("Update member role", "QmXMzSViLBJ22P9oj51Zz7isKTRnXWPHZcQ5hzGvvWD3UV", "MR", "updateRole(address,uint256,bool)", 50, 1, 1); // 2
+        _addInitialCategories("Add new category", "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng", "PC", "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1, 1); // 3
+        _addInitialCategories("Edit category", "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc", "PC", "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1, 1); //4
+        _addInitialCategories("Transfer Ether", "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa", "GV", "transferEther(uint256,address)", 50, 1, 2); // 5
+        _addInitialCategories("Transfer Token", "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB", "GV", "transferToken(address,address,uint256)", 50, 1, 2); // 6
         _addInitialCategories(
             "Upgrade a contract Implementation",
             "Qme4hGas6RuDYk9LKE2XkK9E46LNeCBUzY12DdT5uQstvh",
             "MS",
             "upgradeContractImplementation(bytes2,address)",
-            50, 1
+            50, 1, 1
         ); // 7
-        _addInitialCategories("Update master Implementation", "", "MS", "upgradeTo(address)", 50, 1); // 8
-        _addInitialCategories("Raise Dispute", "", "MS", "resolveDispute(address,uint256)", 60, 3); // 9
-        _addInitialCategories("Burn Dispute Resolution Member Tokens", "", "MS", "resolveDispute(address,uint256)", 60, 2); // 10
-        _addInitialCategories("Swap AB member", "", "MS", "swapABMember(address,address)", 60, 2); // 10
+        _addInitialCategories("Update master Implementation", "", "MS", "upgradeTo(address)", 50, 1, 1); // 8
+        _addInitialCategories("Raise Dispute", "", "MS", "resolveDispute(address,uint256)", 60, 3, 2); // 9
+        _addInitialCategories("Burn Dispute Resolution Member Tokens", "", "MS", "resolveDispute(address,uint256)", 60, 2, 2); // 10
+        _addInitialCategories("Swap AB member", "", "MS", "swapABMember(address,address)", 60, 2, 2); // 10
 
     }
 
@@ -331,13 +331,14 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
         bytes2 _contractName,
         string memory _actionHash,
         uint _majorityVotePerc,
-        uint _memberRoleToVote
+        uint _memberRoleToVote,
+        uint _allowedToCreate
     ) 
         internal 
     {
         uint[] memory allowedToCreateProposal = new uint[](1);
         uint[] memory stakeIncentive = new uint[](2);
-        allowedToCreateProposal[0] = 2;
+        allowedToCreateProposal[0] = _allowedToCreate;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
         if(bytes(_actionHash).length > 0) {

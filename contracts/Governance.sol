@@ -297,7 +297,6 @@ contract Governance is IGovernance, Iupgradable {
         external isAllowed(_categoryId)
     {
 
-
         uint proposalId = totalProposals;
 
         _createProposal(_proposalTitle, _proposalSD, _proposalDescHash, _categoryId);
@@ -829,7 +828,8 @@ contract Governance is IGovernance, Iupgradable {
     )
         internal
     {
-        require(_categoryId == 0);
+        (, uint256 roleAuthorizedToVote, , , , , )= proposalCategory.category(_categoryId);
+        require(_categoryId == 0 || roleAuthorizedToVote == uint(MemberRoles.Role.AdvisoryBoard) || roleAuthorizedToVote == uint(MemberRoles.Role.DisputeResolution));
         uint _proposalId = totalProposals;
         allProposalData[_proposalId].owner = msg.sender;
         allProposalData[_proposalId].dateUpd = now;
