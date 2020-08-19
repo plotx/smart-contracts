@@ -9,7 +9,7 @@ contract MarketConfig {
 
     using SafeMath for uint;
 
-    uint constant lossPercentage = 10;
+    uint constant lossPercentage = 20;
     uint constant STAKE_WEIGHTAGE = 40;//
     uint constant PRICE_WEIGHTAGE = 60;//
     uint constant OPTION_START_INDEX = 1;//

@@ -65,7 +65,7 @@ contract Plotus is usingProvable, Iupgradable {
 
     bool public marketCreationPaused;
 
-    address public plotusToken;
+    IToken public plotusToken;
     IGovernance internal governance;
 
     struct DisputeStake {
@@ -76,6 +76,7 @@ contract Plotus is usingProvable, Iupgradable {
     }
 
     mapping(address => DisputeStake) disputeStakes;
+    mapping(uint => address) disputeProposalId;
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
@@ -111,14 +112,14 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _owner The address of owner.
     * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.
-    * @param _plotusToken The address of plotus token.
+    * @param _plotusToken The instance of plotus token.
     */
     function initiatePlotus(address _owner, address _marketImplementation, address _marketConfig, address _plotusToken) public {
       masterAddress = msg.sender;
       owner = _owner;
       marketImplementation = _marketImplementation;
       marketConfig = _marketConfig;
-      plotusToken = _plotusToken;
+      plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
       // marketOpenIndex = 1;
@@ -271,6 +272,7 @@ contract Plotus is usingProvable, Iupgradable {
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
       disputeStakes[msg.sender].proposalId = governance.getProposalLength();
+      disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
       disputeStakes[msg.sender].inDispute = true;
       governance.createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
     }
@@ -281,10 +283,16 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _result The final result of the market.
     */
     function resolveDispute(address _marketAddress, uint256 _result) external onlyInternal {
-      IMarket(_marketAddress).resolveDispute(_result);
-      IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
+      IMarket(_marketAddress).resolveDispute(true, _result);
+      plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
       // lockedForDispute[msg.sender] = false;
+    }
+
+    function burnDisputedProposalTokens(uint _proposaId) external onlyInternal {
+      IMarket(disputeProposalId[_proposaId]).resolveDispute(false, 0);
+      uint _stakedAmount = disputeStakes[disputeProposalId[_proposaId]].stakeAmount;
+      plotusToken.burn(_stakedAmount);
     }
 
     function marketDisputeStatus(address _marketAddress) public view returns(uint _status) {

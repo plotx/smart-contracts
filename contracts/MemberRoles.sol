@@ -17,13 +17,11 @@ import "./Governance.sol";
 import "./TokenController.sol";
 import "./Iupgradable.sol";
 
-
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
-
     TokenController internal tokenController;
     struct MemberRoleDetails {
-        uint memberCounter;
-        mapping(address => uint) memberIndex;
+        uint256 memberCounter;
+        mapping(address => uint256) memberIndex;
         address[] memberAddress;
         address authorized;
     }
@@ -33,11 +31,10 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     MemberRoleDetails[] internal memberRoleData;
     bool internal constructorCheck;
 
-    modifier checkRoleAuthority(uint _memberRoleId) {
+    modifier checkRoleAuthority(uint256 _memberRoleId) {
         if (memberRoleData[_memberRoleId].authorized != address(0))
             require(msg.sender == memberRoleData[_memberRoleId].authorized);
-        else
-            require(isAuthorizedToGovern(msg.sender), "Not Authorized");
+        else require(isAuthorizedToGovern(msg.sender), "Not Authorized");
         _;
     }
 
@@ -46,16 +43,12 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @param _newABAddress is address of new AB member
      * @param _removeAB is advisory board member to be removed
      */
-    function swapABMember (
-        address _newABAddress,
-        address _removeAB
-    )
-    external
-    checkRoleAuthority(uint(Role.AdvisoryBoard)) {
-
-        _updateRole(_newABAddress, uint(Role.AdvisoryBoard), true);
-        _updateRole(_removeAB, uint(Role.AdvisoryBoard), false);
-
+    function swapABMember(address _newABAddress, address _removeAB)
+        external
+        checkRoleAuthority(uint256(Role.AdvisoryBoard))
+    {
+        _updateRole(_newABAddress, uint256(Role.AdvisoryBoard), true);
+        _updateRole(_removeAB, uint256(Role.AdvisoryBoard), false);
     }
 
     /**
@@ -70,18 +63,16 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @param _masterAddress is the new master address
      */
     function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0))
-            require(masterAddress == msg.sender);
+        if (masterAddress != address(0)) require(masterAddress == msg.sender);
         masterAddress = _masterAddress;
         ms = Master(_masterAddress);
-        
     }
-    
+
     /**
      * @dev to initiate the member roles
      * @param _firstAB is the address of the first AB member
      */
-    function memberRolesInitiate (address _firstAB) public {
+    function memberRolesInitiate(address _firstAB) public {
         require(!constructorCheck);
         _addInitialMemberRoles(_firstAB);
         constructorCheck = true;
@@ -91,13 +82,12 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /// @param _roleName New role name
     /// @param _roleDescription New description hash
     /// @param _authorized Authorized member against every role id
-    function addRole( //solhint-disable-line
+    function addRole(
+        //solhint-disable-line
         bytes32 _roleName,
         string memory _roleDescription,
         address _authorized
-    )
-    public
-    onlyAuthorizedToGovern {
+    ) public onlyAuthorizedToGovern {
         _addRole(_roleName, _roleDescription, _authorized);
     }
 
@@ -105,13 +95,12 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /// @param _memberAddress Address of Member
     /// @param _roleId RoleId to update
     /// @param _active active is set to be True if we want to assign this role to member, False otherwise!
-    function updateRole( //solhint-disable-line
+    function updateRole(
+        //solhint-disable-line
         address _memberAddress,
-        uint _roleId,
+        uint256 _roleId,
         bool _active
-    )
-    public
-    checkRoleAuthority(_roleId) {
+    ) public checkRoleAuthority(_roleId) {
         _updateRole(_memberAddress, _roleId, _active);
     }
 
@@ -119,34 +108,53 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @dev is used to add initital advisory board members
      * @param abArray is the list of initial advisory board members
      */
-    function addInitialABandDRMembers(address[] calldata abArray, address[] calldata drArray) external onlyOwner {
+    function addInitialABandDRMembers(
+        address[] calldata abArray,
+        address[] calldata drArray
+    ) external onlyOwner {
+        require(
+            numberOfMembers(uint256(Role.AdvisoryBoard)) == 1,
+            "Already initialized!"
+        );
+        require(ms.masterInitialised(), "Master not initialized");
 
-        require(ms.masterInitialised());
-
-        // require(maxABCount >= 
+        // require(maxABCount >=
         //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), abArray.length)
         // );
         // //AB count can't exceed maxABCount
 
-        for (uint i = 0; i < abArray.length; i++) {
-            require(checkRole(abArray[i], uint(Role.TokenHolder)));
-            _updateRole(abArray[i], uint(Role.AdvisoryBoard), true);   
+        for (uint256 i = 0; i < abArray.length; i++) {
+            require(
+                checkRole(abArray[i], uint256(Role.TokenHolder)),
+                "not a token holder"
+            );
+
+            _updateRole(abArray[i], uint256(Role.AdvisoryBoard), true);
         }
-        for (uint i = 0; i < drArray.length; i++) {
-            require(checkRole(drArray[i], uint(Role.TokenHolder)));
-            _updateRole(drArray[i], uint(Role.DisputeResolution), true);   
+        for (uint256 i = 0; i < drArray.length; i++) {
+            require(
+                checkRole(drArray[i], uint256(Role.TokenHolder)),
+                "not a token holder"
+            );
+
+            _updateRole(drArray[i], uint256(Role.DisputeResolution), true);
         }
     }
 
     /// @dev Return number of member roles
-    function totalRoles() public view returns(uint256) { //solhint-disable-line
+    function totalRoles() public view returns (uint256) {
+        //solhint-disable-line
         return memberRoleData.length;
     }
 
     /// @dev Change Member Address who holds the authority to Add/Delete any member from specific role.
     /// @param _roleId roleId to update its Authorized Address
     /// @param _newAuthorized New authorized address against role id
-    function changeAuthorized(uint _roleId, address _newAuthorized) public checkRoleAuthority(_roleId) { //solhint-disable-line
+    function changeAuthorized(uint256 _roleId, address _newAuthorized)
+        public
+        checkRoleAuthority(_roleId)
+    {
+        //solhint-disable-line
         memberRoleData[_roleId].authorized = _newAuthorized;
     }
 
@@ -154,7 +162,12 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /// @param _memberRoleId Member role id
     /// @return roleId Role id
     /// @return allMemberAddress Member addresses of specified role id
-    function members(uint _memberRoleId) public view returns(uint, address[] memory memberArray) { //solhint-disable-line
+    function members(uint256 _memberRoleId)
+        public
+        view
+        returns (uint256, address[] memory memberArray)
+    {
+        //solhint-disable-line
         // uint length = memberRoleData[_memberRoleId].memberAddress.length;
         // uint i;
         // uint j = 0;
@@ -173,28 +186,39 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /// @dev Gets all members' length
     /// @param _memberRoleId Member role id
     /// @return memberRoleData[_memberRoleId].memberCounter Member length
-    function numberOfMembers(uint _memberRoleId) public view returns(uint) { //solhint-disable-line
+    function numberOfMembers(uint256 _memberRoleId)
+        public
+        view
+        returns (uint256)
+    {
+        //solhint-disable-line
         return memberRoleData[_memberRoleId].memberCounter;
     }
 
     /// @dev Return member address who holds the right to add/remove any member from specific role.
-    function authorized(uint _memberRoleId) public view returns(address) { //solhint-disable-line
+    function authorized(uint256 _memberRoleId) public view returns (address) {
+        //solhint-disable-line
         return memberRoleData[_memberRoleId].authorized;
     }
 
     /// @dev Get All role ids array that has been assigned to a member so far.
-    function roles(address _memberAddress) public view returns(uint[] memory) { //solhint-disable-line
-        uint length = memberRoleData.length;
-        uint[] memory assignedRoles = new uint[](length);
-        uint counter = 0; 
-        for (uint i = 1; i < length; i++) {
+    function roles(address _memberAddress)
+        public
+        view
+        returns (uint256[] memory)
+    {
+        //solhint-disable-line
+        uint256 length = memberRoleData.length;
+        uint256[] memory assignedRoles = new uint256[](length);
+        uint256 counter = 0;
+        for (uint256 i = 1; i < length; i++) {
             if (memberRoleData[i].memberIndex[_memberAddress] > 0) {
                 assignedRoles[counter] = i;
                 counter++;
             }
         }
         if (tokenController.totalBalanceOf(_memberAddress) > 0) {
-            assignedRoles[counter] = uint(Role.TokenHolder);
+            assignedRoles[counter] = uint256(Role.TokenHolder);
         }
         return assignedRoles;
     }
@@ -203,16 +227,20 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /// @param _memberAddress Address of member
     /// @param _roleId Checks member's authenticity with the roleId.
     /// i.e. Returns true if this roleId is assigned to member
-    function checkRole(address _memberAddress, uint _roleId) public view returns(bool) { //solhint-disable-line
-        if (_roleId == uint(Role.UnAssigned)) {
+    function checkRole(address _memberAddress, uint256 _roleId)
+        public
+        view
+        returns (bool)
+    {
+        //solhint-disable-line
+        if (_roleId == uint256(Role.UnAssigned)) {
             return true;
-        }
-        else if (_roleId == uint(Role.TokenHolder)) {
+        } else if (_roleId == uint256(Role.TokenHolder)) {
             if (tokenController.totalBalanceOf(_memberAddress) > 0) {
                 return true;
             }
-        }
-        else if (memberRoleData[_roleId].memberIndex[_memberAddress] > 0) {//solhint-disable-line
+        } else if (memberRoleData[_roleId].memberIndex[_memberAddress] > 0) {
+            //solhint-disable-line
             return true;
         }
         return false;
@@ -220,9 +248,14 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     /// @dev Return total number of members assigned against each role id.
     /// @return totalMembers Total members in particular role id
-    function getMemberLengthForAllRoles() public view returns(uint[] memory totalMembers) { //solhint-disable-line
-        totalMembers = new uint[](memberRoleData.length);
-        for (uint i = 0; i < memberRoleData.length; i++) {
+    function getMemberLengthForAllRoles()
+        public
+        view
+        returns (uint256[] memory totalMembers)
+    {
+        //solhint-disable-line
+        totalMembers = new uint256[](memberRoleData.length);
+        for (uint256 i = 0; i < memberRoleData.length; i++) {
             totalMembers[i] = numberOfMembers(i);
         }
     }
@@ -231,24 +264,46 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @dev to update the member roles
      * @param _memberAddress in concern
      * @param _roleId the id of role
-     * @param _active if active is true, add the member, else remove it 
+     * @param _active if active is true, add the member, else remove it
      */
-    function _updateRole(address _memberAddress,
-        uint _roleId,
-        bool _active) internal {
-        require(_roleId != uint(Role.TokenHolder), "Membership to Token holder is detected automatically");
+    function _updateRole(
+        address _memberAddress,
+        uint256 _roleId,
+        bool _active
+    ) internal {
+        require(
+            _roleId != uint256(Role.TokenHolder),
+            "Membership to Token holder is detected automatically"
+        );
         if (_active) {
-            require(memberRoleData[_roleId].memberIndex[_memberAddress] == 0);
-            memberRoleData[_roleId].memberCounter = SafeMath.add(memberRoleData[_roleId].memberCounter, 1);
-            memberRoleData[_roleId].memberIndex[_memberAddress] = memberRoleData[_roleId].memberAddress.length;
+            require(
+                memberRoleData[_roleId].memberIndex[_memberAddress] == 0,
+                "already active"
+            );
+            memberRoleData[_roleId].memberCounter = SafeMath.add(
+                memberRoleData[_roleId].memberCounter,
+                1
+            );
+            memberRoleData[_roleId]
+                .memberIndex[_memberAddress] = memberRoleData[_roleId]
+                .memberAddress
+                .length;
             memberRoleData[_roleId].memberAddress.push(_memberAddress);
         } else {
             //Remove the selected member and swap its index with the member at last index
-            require(memberRoleData[_roleId].memberIndex[_memberAddress] > 0);
-            uint256 _memberIndex = memberRoleData[_roleId].memberIndex[_memberAddress];
-            address _topElement = memberRoleData[_roleId].memberAddress[memberRoleData[_roleId].memberCounter];
+            require(
+                memberRoleData[_roleId].memberIndex[_memberAddress] > 0,
+                "not active"
+            );
+            uint256 _memberIndex = memberRoleData[_roleId]
+                .memberIndex[_memberAddress];
+            address _topElement = memberRoleData[_roleId]
+                .memberAddress[memberRoleData[_roleId].memberCounter];
             memberRoleData[_roleId].memberIndex[_topElement] = _memberIndex;
-            memberRoleData[_roleId].memberCounter = SafeMath.sub(memberRoleData[_roleId].memberCounter, 1);
+            memberRoleData[_roleId].memberCounter = SafeMath.sub(
+                memberRoleData[_roleId].memberCounter,
+                1
+            );
             memberRoleData[_roleId].memberAddress[_memberIndex] = _topElement;
             memberRoleData[_roleId].memberAddress.length--;
             delete memberRoleData[_roleId].memberIndex[_memberAddress];
@@ -265,7 +320,9 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         address _authorized
     ) internal {
         emit MemberRole(memberRoleData.length, _roleName, _roleDescription);
-        memberRoleData.push(MemberRoleDetails(0, new address[](1), _authorized));
+        memberRoleData.push(
+            MemberRoleDetails(0, new address[](1), _authorized)
+        );
     }
 
     /**
@@ -289,10 +346,9 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             "Represents members who are assigned to vote on resolving disputes", //solhint-disable-line
             address(0)
         );
-        _updateRole(_firstAB, uint(Role.AdvisoryBoard), true);
-        _updateRole(_firstAB, uint(Role.DisputeResolution), true);
+        _updateRole(_firstAB, uint256(Role.AdvisoryBoard), true);
+        _updateRole(_firstAB, uint256(Role.DisputeResolution), true);
         // _updateRole(_firstAB, uint(Role.Owner), true);
         // _updateRole(_firstAB, uint(Role.Member), true);
     }
-
 }

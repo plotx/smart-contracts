@@ -16,73 +16,174 @@ import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
 
-
-contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
-
+contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     bool public constructorCheck;
     IMemberRoles internal mr;
 
     struct CategoryStruct {
-        uint memberRoleToVote;
-        uint majorityVotePerc;
-        uint quorumPerc;
-        uint[] allowedToCreateProposal;
-        uint closingTime;
-        uint minStake;
+        uint256 memberRoleToVote;
+        uint256 majorityVotePerc;
+        uint256 quorumPerc;
+        uint256[] allowedToCreateProposal;
+        uint256 closingTime;
+        uint256 minStake;
     }
 
     struct CategoryAction {
-        uint defaultIncentive;
+        uint256 defaultIncentive;
         address contractAddress;
         bytes2 contractName;
     }
-    
+
     CategoryStruct[] internal allCategory;
-    mapping (uint => CategoryAction) internal categoryActionData;
-    mapping (uint => bytes) public categoryActionHashes;
+    mapping(uint256 => CategoryAction) internal categoryActionData;
+    mapping(uint256 => bytes) public categoryActionHashes;
 
     bool public initated;
 
     /**
-    * @dev Initiates Default settings for Proposal Category contract (Adding default categories)
-    */
-    function proposalCategoryInitiate() external { //solhint-disable-line
+     * @dev Initiates Default settings for Proposal Category contract (Adding default categories)
+     */
+    function proposalCategoryInitiate() external {
+        //solhint-disable-line
         require(!initated, "Category action hashes already updated");
         initated = true;
 
         _addInitialCategories("Uncategorized", "", "EX", "", 0, 0, 0);
-        _addInitialCategories("Add new member role", "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U", "MR", "addRole(bytes32,string,address)", 50, 1, 1); //1
-        _addInitialCategories("Update member role", "QmXMzSViLBJ22P9oj51Zz7isKTRnXWPHZcQ5hzGvvWD3UV", "MR", "updateRole(address,uint256,bool)", 50, 1, 1); // 2
-        _addInitialCategories("Add new category", "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng", "PC", "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1, 1); // 3
-        _addInitialCategories("Edit category", "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc", "PC", "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)", 50, 1, 1); //4
-        _addInitialCategories("Transfer Ether", "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa", "GV", "transferEther(uint256,address)", 50, 1, 2); // 5
-        _addInitialCategories("Transfer Token", "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB", "GV", "transferToken(address,address,uint256)", 50, 1, 2); // 6
+        _addInitialCategories(
+            "Add new member role",
+            "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U",
+            "MR",
+            "addRole(bytes32,string,address)",
+            50,
+            1,
+            1
+        ); //1
+        _addInitialCategories(
+            "Update member role",
+            "QmXMzSViLBJ22P9oj51Zz7isKTRnXWPHZcQ5hzGvvWD3UV",
+            "MR",
+            "updateRole(address,uint256,bool)",
+            50,
+            1,
+            1
+        ); // 2
+        _addInitialCategories(
+            "Add new category",
+            "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng",
+            "PC",
+            "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
+            50,
+            1,
+            1
+        ); // 3
+        _addInitialCategories(
+            "Edit category",
+            "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc",
+            "PC",
+            "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
+            50,
+            1,
+            1
+        ); //4
+        _addInitialCategories(
+            "Transfer Ether",
+            "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa",
+            "GV",
+            "transferEther(uint256,address)",
+            50,
+            1,
+            2
+        ); // 5
+        _addInitialCategories(
+            "Transfer Token",
+            "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB",
+            "GV",
+            "transferToken(address,address,uint256)",
+            50,
+            1,
+            2
+        ); // 6
         _addInitialCategories(
             "Upgrade a contract Implementation",
             "Qme4hGas6RuDYk9LKE2XkK9E46LNeCBUzY12DdT5uQstvh",
             "MS",
             "upgradeContractImplementation(bytes2,address)",
-            50, 1, 1
+            50,
+            1,
+            1
         ); // 7
-        _addInitialCategories("Update master Implementation", "", "MS", "upgradeTo(address)", 50, 1, 1); // 8
-        _addInitialCategories("Raise Dispute", "", "MS", "resolveDispute(address,uint256)", 60, 3, 2); // 9
-        _addInitialCategories("Burn Dispute Resolution Member Tokens", "", "MS", "resolveDispute(address,uint256)", 60, 2, 2); // 10
-        _addInitialCategories("Swap AB member", "", "MS", "swapABMember(address,address)", 60, 2, 2); // 10
-
+        _addInitialCategories(
+            "Update master Implementation",
+            "",
+            "MS",
+            "upgradeTo(address)",
+            50,
+            1,
+            1
+        ); // 8
+        _addInitialCategories(
+            "Raise Dispute",
+            "",
+            "MS",
+            "resolveDispute(address,uint256)",
+            60,
+            3,
+            2
+        ); // 9
+        _addInitialCategories(
+            "Burn Dispute Resolution Member Tokens",
+            "",
+            "MS",
+            "resolveDispute(address,uint256)",
+            60,
+            2,
+            2
+        ); // 10
+        _addInitialCategories(
+            "Swap AB member",
+            "",
+            "MS",
+            "swapABMember(address,address)",
+            60,
+            2,
+            2
+        ); // 11
+        _addInitialCategories(
+            "Update governance parameters",
+            "",
+            "GV",
+            "updateUintParameters(bytes8,uint256)",
+            60,
+            2,
+            2
+        ); // 12
     }
 
     /**
-    * @dev Gets Total number of categories added till now
-    */
-    function totalCategories() external view returns(uint) {
+     * @dev Gets Total number of categories added till now
+     */
+    function totalCategories() external view returns (uint256) {
         return allCategory.length;
     }
 
     /**
-    * @dev Gets category details
-    */
-    function category(uint _categoryId) external view returns(uint, uint, uint, uint, uint[] memory, uint, uint) {
-        return(
+     * @dev Gets category details
+     */
+    function category(uint256 _categoryId)
+        external
+        view
+        returns (
+            uint256,
+            uint256,
+            uint256,
+            uint256,
+            uint256[] memory,
+            uint256,
+            uint256
+        )
+    {
+        return (
             _categoryId,
             allCategory[_categoryId].memberRoleToVote,
             allCategory[_categoryId].majorityVotePerc,
@@ -101,9 +202,17 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
      * @return the contract name
      * @return the default incentive
      */
-    function categoryAction(uint _categoryId) external view returns(uint, address, bytes2, uint) {
-
-        return(
+    function categoryAction(uint256 _categoryId)
+        external
+        view
+        returns (
+            uint256,
+            address,
+            bytes2,
+            uint256
+        )
+    {
+        return (
             _categoryId,
             categoryActionData[_categoryId].contractAddress,
             categoryActionData[_categoryId].contractName,
@@ -112,7 +221,7 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-     * @dev Gets the category acion details of a category id 
+     * @dev Gets the category acion details of a category id
      * @param _categoryId is the category id in concern
      * @return the category id
      * @return the contract address
@@ -120,8 +229,18 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
      * @return the default incentive
      * @return action function hash
      */
-    function categoryActionDetails(uint _categoryId) external view returns(uint, address, bytes2, uint, bytes memory) {
-        return(
+    function categoryActionDetails(uint256 _categoryId)
+        external
+        view
+        returns (
+            uint256,
+            address,
+            bytes2,
+            uint256,
+            bytes memory
+        )
+    {
+        return (
             _categoryId,
             categoryActionData[_categoryId].contractAddress,
             categoryActionData[_categoryId].contractName,
@@ -131,51 +250,53 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-    * @dev Updates dependant contract addresses
-    */
+     * @dev Updates dependant contract addresses
+     */
     function changeDependentContractAddress() public {
         mr = IMemberRoles(ms.getLatestAddress("MR"));
     }
 
     /**
-    * @dev Adds new category
-    * @param _name Category name
-    * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
-    * @param _majorityVotePerc Majority Vote threshold for Each voting layer
-    * @param _quorumPerc minimum threshold percentage required in voting to calculate result
-    * @param _allowedToCreateProposal Member roles allowed to create the proposal
-    * @param _closingTime Vote closing time for Each voting layer
-    * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
-    * @param _contractAddress address of contract to call after proposal is accepted
-    * @param _contractName name of contract to be called after proposal is accepted
-    * @param _incentives rewards to distributed after proposal is accepted
-    * @param _functionHash function signature to be executed
-    */
+     * @dev Adds new category
+     * @param _name Category name
+     * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
+     * @param _majorityVotePerc Majority Vote threshold for Each voting layer
+     * @param _quorumPerc minimum threshold percentage required in voting to calculate result
+     * @param _allowedToCreateProposal Member roles allowed to create the proposal
+     * @param _closingTime Vote closing time for Each voting layer
+     * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
+     * @param _contractAddress address of contract to call after proposal is accepted
+     * @param _contractName name of contract to be called after proposal is accepted
+     * @param _incentives rewards to distributed after proposal is accepted
+     * @param _functionHash function signature to be executed
+     */
     function newCategory(
-        string memory _name, 
-        uint _memberRoleToVote,
-        uint _majorityVotePerc, 
-        uint _quorumPerc,
-        uint[] memory _allowedToCreateProposal,
-        uint _closingTime,
+        string memory _name,
+        uint256 _memberRoleToVote,
+        uint256 _majorityVotePerc,
+        uint256 _quorumPerc,
+        uint256[] memory _allowedToCreateProposal,
+        uint256 _closingTime,
         string memory _actionHash,
         address _contractAddress,
         bytes2 _contractName,
-        uint[] memory _incentives,
+        uint256[] memory _incentives,
         string memory _functionHash
-    ) 
-        public
-        onlyAuthorizedToGovern 
-    {
+    ) public onlyAuthorizedToGovern {
+        require(
+            _quorumPerc <= 100 && _majorityVotePerc <= 100,
+            "Invalid percentage"
+        );
 
-        require(_quorumPerc <= 100 && _majorityVotePerc <= 100, "Invalid percentage");
-
-        require((_contractName == "EX" && _contractAddress == address(0)) || bytes(_functionHash).length > 0);
+        require(
+            (_contractName == "EX" && _contractAddress == address(0)) ||
+                bytes(_functionHash).length > 0
+        );
 
         _addCategory(
-            _name, 
+            _name,
             _memberRoleToVote,
-            _majorityVotePerc, 
+            _majorityVotePerc,
             _quorumPerc,
             _allowedToCreateProposal,
             _closingTime,
@@ -185,9 +306,12 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
             _incentives
         );
 
-
-        if (bytes(_functionHash).length > 0 && abi.encodeWithSignature(_functionHash).length == 4) {
-            categoryActionHashes[allCategory.length - 1] = abi.encodeWithSignature(_functionHash);
+        if (
+            bytes(_functionHash).length > 0 &&
+            abi.encodeWithSignature(_functionHash).length == 4
+        ) {
+            categoryActionHashes[allCategory.length - 1] = abi
+                .encodeWithSignature(_functionHash);
         }
     }
 
@@ -196,59 +320,70 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
      * @param _masterAddress is the new master address
      */
     function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0))
-            require(masterAddress == msg.sender);
+        if (masterAddress != address(0)) require(masterAddress == msg.sender);
         masterAddress = _masterAddress;
         ms = Master(_masterAddress);
-        
     }
 
     /**
-    * @dev Updates category details
-    * @param _categoryId Category id that needs to be updated
-    * @param _name Category name
-    * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
-    * @param _allowedToCreateProposal Member roles allowed to create the proposal
-    * @param _majorityVotePerc Majority Vote threshold for Each voting layer
-    * @param _quorumPerc minimum threshold percentage required in voting to calculate result
-    * @param _closingTime Vote closing time for Each voting layer
-    * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
-    * @param _contractAddress address of contract to call after proposal is accepted
-    * @param _contractName name of contract to be called after proposal is accepted
-    * @param _incentives rewards to distributed after proposal is accepted
-    * @param _functionHash function signature to be executed
-    */
+     * @dev Updates category details
+     * @param _categoryId Category id that needs to be updated
+     * @param _name Category name
+     * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
+     * @param _allowedToCreateProposal Member roles allowed to create the proposal
+     * @param _majorityVotePerc Majority Vote threshold for Each voting layer
+     * @param _quorumPerc minimum threshold percentage required in voting to calculate result
+     * @param _closingTime Vote closing time for Each voting layer
+     * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
+     * @param _contractAddress address of contract to call after proposal is accepted
+     * @param _contractName name of contract to be called after proposal is accepted
+     * @param _incentives rewards to distributed after proposal is accepted
+     * @param _functionHash function signature to be executed
+     */
     function editCategory(
-        uint _categoryId, 
-        string memory _name, 
-        uint _memberRoleToVote, 
-        uint _majorityVotePerc, 
-        uint _quorumPerc,
-        uint[] memory _allowedToCreateProposal,
-        uint _closingTime,
+        uint256 _categoryId,
+        string memory _name,
+        uint256 _memberRoleToVote,
+        uint256 _majorityVotePerc,
+        uint256 _quorumPerc,
+        uint256[] memory _allowedToCreateProposal,
+        uint256 _closingTime,
         string memory _actionHash,
         address _contractAddress,
         bytes2 _contractName,
-        uint[] memory _incentives,
+        uint256[] memory _incentives,
         string memory _functionHash
-    )
-        public
-        onlyAuthorizedToGovern
-    {
-        require(_verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) == 1, "Invalid Role");
+    ) public onlyAuthorizedToGovern {
+        require(
+            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) ==
+                1,
+            "Invalid Role"
+        );
 
-        require(_quorumPerc <= 100 && _majorityVotePerc <= 100, "Invalid percentage");
+        require(
+            _quorumPerc <= 100 && _majorityVotePerc <= 100,
+            "Invalid percentage"
+        );
 
-        require((_contractName == "EX" && _contractAddress == address(0)) || bytes(_functionHash).length > 0);
+        require(
+            (_contractName == "EX" && _contractAddress == address(0)) ||
+                bytes(_functionHash).length > 0
+        );
 
         delete categoryActionHashes[_categoryId];
-        if (bytes(_functionHash).length > 0 && abi.encodeWithSignature(_functionHash).length == 4) {
-            categoryActionHashes[_categoryId] = abi.encodeWithSignature(_functionHash);
+        if (
+            bytes(_functionHash).length > 0 &&
+            abi.encodeWithSignature(_functionHash).length == 4
+        ) {
+            categoryActionHashes[_categoryId] = abi.encodeWithSignature(
+                _functionHash
+            );
         }
         allCategory[_categoryId].memberRoleToVote = _memberRoleToVote;
         allCategory[_categoryId].majorityVotePerc = _majorityVotePerc;
         allCategory[_categoryId].closingTime = _closingTime;
-        allCategory[_categoryId].allowedToCreateProposal = _allowedToCreateProposal;
+        allCategory[_categoryId]
+            .allowedToCreateProposal = _allowedToCreateProposal;
         allCategory[_categoryId].minStake = _incentives[0];
         allCategory[_categoryId].quorumPerc = _quorumPerc;
         categoryActionData[_categoryId].defaultIncentive = _incentives[1];
@@ -258,33 +393,35 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-    * @dev Internal call to add new category
-    * @param _name Category name
-    * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
-    * @param _majorityVotePerc Majority Vote threshold for Each voting layer
-    * @param _quorumPerc minimum threshold percentage required in voting to calculate result
-    * @param _allowedToCreateProposal Member roles allowed to create the proposal
-    * @param _closingTime Vote closing time for Each voting layer
-    * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
-    * @param _contractAddress address of contract to call after proposal is accepted
-    * @param _contractName name of contract to be called after proposal is accepted
-    * @param _incentives rewards to distributed after proposal is accepted
-    */
+     * @dev Internal call to add new category
+     * @param _name Category name
+     * @param _memberRoleToVote Voting Layer sequence in which the voting has to be performed.
+     * @param _majorityVotePerc Majority Vote threshold for Each voting layer
+     * @param _quorumPerc minimum threshold percentage required in voting to calculate result
+     * @param _allowedToCreateProposal Member roles allowed to create the proposal
+     * @param _closingTime Vote closing time for Each voting layer
+     * @param _actionHash hash of details containing the action that has to be performed after proposal is accepted
+     * @param _contractAddress address of contract to call after proposal is accepted
+     * @param _contractName name of contract to be called after proposal is accepted
+     * @param _incentives rewards to distributed after proposal is accepted
+     */
     function _addCategory(
-        string memory _name, 
-        uint _memberRoleToVote,
-        uint _majorityVotePerc, 
-        uint _quorumPerc,
-        uint[] memory _allowedToCreateProposal,
-        uint _closingTime,
+        string memory _name,
+        uint256 _memberRoleToVote,
+        uint256 _majorityVotePerc,
+        uint256 _quorumPerc,
+        uint256[] memory _allowedToCreateProposal,
+        uint256 _closingTime,
         string memory _actionHash,
         address _contractAddress,
         bytes2 _contractName,
-        uint[] memory _incentives
-    ) 
-        internal
-    {
-        require(_verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) == 1, "Invalid Role");
+        uint256[] memory _incentives
+    ) internal {
+        require(
+            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) ==
+                1,
+            "Invalid Role"
+        );
         allCategory.push(
             CategoryStruct(
                 _memberRoleToVote,
@@ -295,21 +432,27 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
                 _incentives[0]
             )
         );
-        uint categoryId = allCategory.length - 1;
-        categoryActionData[categoryId] = CategoryAction(_incentives[1], _contractAddress, _contractName);
+        uint256 categoryId = allCategory.length - 1;
+        categoryActionData[categoryId] = CategoryAction(
+            _incentives[1],
+            _contractAddress,
+            _contractName
+        );
         emit Category(categoryId, _name, _actionHash);
     }
 
     /**
-    * @dev Internal call to check if given roles are valid or not
-    */
-    function _verifyMemberRoles(uint _memberRoleToVote, uint[] memory _allowedToCreateProposal) 
-    internal view returns(uint) { 
-        uint totalRoles = mr.totalRoles();
+     * @dev Internal call to check if given roles are valid or not
+     */
+    function _verifyMemberRoles(
+        uint256 _memberRoleToVote,
+        uint256[] memory _allowedToCreateProposal
+    ) internal view returns (uint256) {
+        uint256 totalRoles = mr.totalRoles();
         if (_memberRoleToVote >= totalRoles) {
             return 0;
         }
-        for (uint i = 0; i < _allowedToCreateProposal.length; i++) {
+        for (uint256 i = 0; i < _allowedToCreateProposal.length; i++) {
             if (_allowedToCreateProposal[i] >= totalRoles) {
                 return 0;
             }
@@ -318,7 +461,7 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-     * @dev to add the initial categories 
+     * @dev to add the initial categories
      * @param _name is category name
      * @param _actionHash hash of category action
      * @param _contractName is the name of contract
@@ -330,32 +473,31 @@ contract ProposalCategory is  Governed, IProposalCategory, Iupgradable {
         string memory _solutionHash,
         bytes2 _contractName,
         string memory _actionHash,
-        uint _majorityVotePerc,
-        uint _memberRoleToVote,
-        uint _allowedToCreate
-    ) 
-        internal 
-    {
-        uint[] memory allowedToCreateProposal = new uint[](1);
-        uint[] memory stakeIncentive = new uint[](2);
+        uint256 _majorityVotePerc,
+        uint256 _memberRoleToVote,
+        uint256 _allowedToCreate
+    ) internal {
+        uint256[] memory allowedToCreateProposal = new uint256[](1);
+        uint256[] memory stakeIncentive = new uint256[](2);
         allowedToCreateProposal[0] = _allowedToCreate;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
-        if(bytes(_actionHash).length > 0) {
-            categoryActionHashes[allCategory.length] = abi.encodeWithSignature(_actionHash);
+        if (bytes(_actionHash).length > 0) {
+            categoryActionHashes[allCategory.length] = abi.encodeWithSignature(
+                _actionHash
+            );
         }
         _addCategory(
-                _name,
-                _memberRoleToVote,
-                _majorityVotePerc,
-                10,
-                allowedToCreateProposal,
-                604800,
-                _solutionHash,
-                address(0),
-                _contractName,
-                stakeIncentive
-            );
+            _name,
+            _memberRoleToVote,
+            _majorityVotePerc,
+            10,
+            allowedToCreateProposal,
+            604800,
+            _solutionHash,
+            address(0),
+            _contractName,
+            stakeIncentive
+        );
     }
-
 }

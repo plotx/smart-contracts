@@ -2,30 +2,28 @@ pragma solidity 0.5.7;
 
 import "./Master.sol";
 
-
 contract Iupgradable {
-
     Master public ms;
 
     /**
-    * @dev Checks if msg.sender is only internal.
-    */
+     * @dev Checks if msg.sender is only internal.
+     */
     modifier onlyInternal {
         require(ms.isInternal(msg.sender));
         _;
     }
 
     /**
-    * @dev Checks if msg.sender is plotus owner.
-    */
+     * @dev Checks if msg.sender is plotus owner.
+     */
     modifier onlyOwner {
-        require(ms.isOwner());
+        require(ms.owner() == msg.sender, "Not owner");
         _;
     }
 
     /**
-    * @dev Checks if msg.sender is member.
-    */
+     * @dev Checks if msg.sender is member.
+     */
     modifier isMember {
         // require(ms.isMember(msg.sender), "Not member");
         _;
@@ -34,7 +32,7 @@ contract Iupgradable {
     /**
      * @dev Iupgradable Interface to update dependent contract address
      */
-    function  changeDependentContractAddress() public;
+    function changeDependentContractAddress() public;
 
     /**
      * @dev change master address
@@ -46,5 +44,4 @@ contract Iupgradable {
         }
         ms = Master(_masterAddress);
     }
-
 }

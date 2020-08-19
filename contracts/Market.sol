@@ -224,9 +224,9 @@ contract Market is usingProvable {
     * @param _leverage The leverage opted by user at the time of prediction.
     * @return uint256 representing the prediction value.
     */
-    function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
+    function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
       ( , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
-      return _calculatePredictionValue(_prediction, _stake, positionDecimals, priceStep, _leverage);
+      return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
     }
 
     /**
@@ -518,9 +518,11 @@ contract Market is usingProvable {
     * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
     * @param finalResult The final correct value of market currency.
     */
-    function resolveDispute(uint256 finalResult) external {
+    function resolveDispute(bool accepted, uint256 finalResult) external {
       require(msg.sender == address(pl));
-      _postResult(finalResult);
+      if(accepted) {
+        _postResult(finalResult);
+      }
       lockedForDispute = false;
       predictionStatus = PredictionStatus.Settled;
     }
@@ -639,8 +641,7 @@ contract Market is usingProvable {
     * @param _user The address to query the claim return amount of.
     */
     function claimReturn(address payable _user) public {
-      _checkIfDisputeResolved();
-      require(commissionExchanged && now > marketCoolDownTime);
+      require(commissionExchanged && now > marketCoolDownTime && !lockedForDispute);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.Settled,"Result not declared");
       userClaimedReward[_user] = true;
@@ -653,16 +654,6 @@ contract Market is usingProvable {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);
       }
       pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
-    }
-
-    function _checkIfDisputeResolved() internal {
-      if(lockedForDispute) {
-        if(pl.marketDisputeStatus(address(this)) > 3) {
-          lockedForDispute = false;
-        } else {
-          revert("In Dispute");
-        }
-      }
     }
 
     /**
