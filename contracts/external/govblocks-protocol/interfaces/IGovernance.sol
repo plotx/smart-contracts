@@ -160,10 +160,4 @@ contract IGovernance {
     
     function allowedToCatgorize() public view returns(uint roleId);
 
-    /**
-     * @dev Gets length of propsal
-     * @return length of propsal
-     */
-    function getProposalLength() external view returns(uint);
-
 }

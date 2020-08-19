@@ -617,8 +617,7 @@ contract Market is usingProvable {
     * @param _user The address to query the claim return amount of.
     */
     function claimReturn(address payable _user) public {
-      _checkIfDisputeResolved();
-      require(commissionExchanged && now > marketCoolDownTime);
+      require(commissionExchanged && !lockedForDispute && now > marketCoolDownTime);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.Settled,"Result not declared");
       userClaimedReward[_user] = true;
@@ -631,16 +630,6 @@ contract Market is usingProvable {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);
       }
       pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
-    }
-
-    function _checkIfDisputeResolved() internal {
-      if(lockedForDispute) {
-        if(pl.marketDisputeStatus(address(this)) > 3) {
-          lockedForDispute = false;
-        } else {
-          revert("In Dispute");
-        }
-      }
     }
 
     /**

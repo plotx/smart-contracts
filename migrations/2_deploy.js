@@ -46,7 +46,6 @@ module.exports = function(deployer, network, accounts){
       console.log(await mr.checkRole(accounts[0], 1));
       await pc.proposalCategoryInitiate();
       console.log(await plotus.getOpenMarkets());
-      await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
   });
 };
 

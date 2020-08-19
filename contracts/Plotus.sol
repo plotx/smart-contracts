@@ -65,13 +65,10 @@ contract Plotus is usingProvable, Iupgradable {
     bool public marketCreationPaused;
 
     address public plotusToken;
-    IGovernance internal governance;
 
     struct DisputeStake {
       address staker;
       uint256 stakeAmount;
-      uint256 proposalId;
-      bool inDispute;
     }
 
     mapping(address => DisputeStake) disputeStakes;
@@ -193,7 +190,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @dev Change the address here if there is any external dependent contract.
      */
     function changeDependentContractAddress() public {
-      governance = IGovernance(ms.getLatestAddress("GV"));
+
     }
 
     /**
@@ -269,9 +266,7 @@ contract Plotus is usingProvable, Iupgradable {
       require(disputeStakes[msg.sender].staker == address(0));
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
-      disputeStakes[msg.sender].proposalId = governance.getProposalLength();
-      disputeStakes[msg.sender].inDispute = true;
-      governance.createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
+      IGovernance(ms.getLatestAddress("GV")).createProposalwithSolution(proposalTitle, description, description, 7, solutionHash, actionHash);
     }
 
     /**
@@ -282,12 +277,7 @@ contract Plotus is usingProvable, Iupgradable {
     function resolveDispute(address _marketAddress, uint256 _result) external onlyInternal {
       IMarket(_marketAddress).resolveDispute(_result);
       IToken(plotusToken).transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
-      disputeStakes[msg.sender].inDispute = false;
       // lockedForDispute[msg.sender] = false;
-    }
-
-    function marketDisputeStatus(address _marketAddress) public view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(disputeStakes[msg.sender].proposalId);
     }
 
     /**
@@ -458,7 +448,7 @@ contract Plotus is usingProvable, Iupgradable {
       uint256 claimFlag;
       uint256 i;
       for(i = lastClaimedIndex[msg.sender]; i < marketsParticipated[msg.sender].length; i++) {
-        if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0 && !(disputeStakes[marketsParticipated[msg.sender][i]].inDispute)) {
+        if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0) {
           IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
         } else {
           claimFlag = i;
