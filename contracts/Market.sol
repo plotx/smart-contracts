@@ -189,7 +189,7 @@ contract Market is usingProvable {
     * @param _leverage The leverage opted by user at the time of prediction.
     * @return uint256 representing the prediction value.
     */
-    function _calculatePredictionValue(uint _prediction, uint _stake, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
+    function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint value;
       uint flag = 0;
       uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
@@ -198,12 +198,12 @@ contract Market is usingProvable {
       _predictionValue = 0;
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
-          value = (uint(_stake)).div(rate);
+          value = (uint(_stake)).mul(_positionDecimals).div(rate);
           _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
           break;
         } else {
           _stake = _stake.sub(_priceStep);
-          value = (uint(_priceStep)).div(rate);
+          value = (uint(_priceStep)).mul(_positionDecimals).div(rate);
           _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
           _totalStaked = _totalStaked.add(_priceStep);
           flag++;
@@ -220,7 +220,7 @@ contract Market is usingProvable {
     */
     function estimatePredictionValue(uint _prediction, uint _stake, uint _leverage) public view returns(uint _predictionValue){
       ( , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
-      return _calculatePredictionValue(_prediction, _stake.mul(positionDecimals), priceStep, _leverage);
+      return _calculatePredictionValue(_prediction, _stake, positionDecimals, priceStep, _leverage);
     }
 
     /**
@@ -292,7 +292,6 @@ contract Market is usingProvable {
       uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
       
       if(_asset == ETH_ADDRESS) {
-      // revert("A");
         require(_predictionStake == msg.value);
       } else {
         require(msg.value == 0);
@@ -311,7 +310,7 @@ contract Market is usingProvable {
 
       (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
-      uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
+      uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _stakeValue, _asset, _leverage, predictionPoints);
@@ -538,8 +537,9 @@ contract Market is usingProvable {
       if(predictionStatus != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
-      _predictionAssets[0] = token;
-      _predictionAssets[1] = ETH_ADDRESS;
+      _predictionAssets = new address[](2);
+      _predictionAssets[0] = ETH_ADDRESS;
+      _predictionAssets[1] = token;
 
       // uint[] memory _return;
       uint256 _totalUserPredictionPoints = 0;
@@ -582,8 +582,8 @@ contract Market is usingProvable {
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
         if(i != WinningOption) {
-          _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, token);
-          _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
+          _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, ETH_ADDRESS);
+          _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, token);
         }
       }
     }
