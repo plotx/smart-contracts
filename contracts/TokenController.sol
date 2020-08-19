@@ -19,7 +19,7 @@ contract TokenController is IERC1132, Iupgradable {
     string internal constant NOT_LOCKED = 'No tokens locked';
     string internal constant AMOUNT_ZERO = 'Amount can not be 0';
 
-    uint internal smLockPeriod
+    uint internal smLockPeriod;
     uint internal burnUptoLimit;
 
     bool internal constructorCheck;
