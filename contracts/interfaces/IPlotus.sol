@@ -13,6 +13,8 @@ contract IPlotus {
     mapping(address => bool) public isMarket;
     function() external payable{}
 
+    function marketDisputeStatus(address _marketAddress) public view returns(uint _status);
+
     /**
     * @dev Initialize the Plotus.
     * @param _owner The address of owner.

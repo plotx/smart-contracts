@@ -8,7 +8,7 @@ contract MockUniswapRouter is IUniswapV2Router02 {
 
 	using SafeMath for uint;
 
-	uint public priceOfToken = 1e14;
+	uint public priceOfToken = 1e16;
 	address token;
 
 	constructor(address _token) public {
@@ -39,7 +39,7 @@ contract MockUniswapRouter is IUniswapV2Router02 {
     	if(path[0] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
     		amounts[1] = amountIn.mul(priceOfToken);
     	} else {
-    		amounts[1] = amountIn.div(priceOfToken);
+    		amounts[1] = amountIn.mul(priceOfToken).div(1e18);
     	}
     }
 

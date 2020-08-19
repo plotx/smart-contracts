@@ -31,7 +31,7 @@ contract Market is usingProvable {
     PredictionStatus internal predictionStatus;
     uint internal settleTime;
     uint internal marketCoolDownTime;
-    uint totalStaked;
+    // uint totalStaked;
     uint totalStakedETH;
     uint totalStakedToken;
     uint predictionTime;
@@ -191,7 +191,7 @@ contract Market is usingProvable {
       uint value;
       uint flag = 0;
       uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-      uint _totalStaked = totalStaked.add(_totalStakedToken);
+      uint _totalStaked = totalStakedETH.add(_totalStakedToken);
       uint _assetStakedOnOption = optionsAvailable[_prediction].assetStakedValue;
       _predictionValue = 0;
       while(_stake > 0) {
@@ -229,7 +229,7 @@ contract Market is usingProvable {
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
       uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-     return _calculateOptionPrice(_prediction, totalStaked.add(_totalStakedToken), optionsAvailable[_prediction].assetStakedValue);
+     return _calculateOptionPrice(_prediction, totalStakedETH.add(_totalStakedToken), optionsAvailable[_prediction].assetStakedValue);
     }
 
     /**
@@ -254,7 +254,7 @@ contract Market is usingProvable {
         _optionPrice = new uint[](totalOptions);
         _assetStaked = new uint[](totalOptions);
         uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-        uint _totalStaked = totalStaked.add(_totalStakedToken);
+        uint _totalStaked = totalStakedETH.add(_totalStakedToken);
         for (uint i = 0; i < totalOptions; i++) {
         _assetStaked[i] = optionsAvailable[i+1].assetStakedValue;
         minvalue[i] = optionsAvailable[i+1].minValue;
@@ -288,6 +288,7 @@ contract Market is usingProvable {
 
       // uint256 _stakeValue = _predictionStake;
       uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
+      
       if(_asset == ETH_ADDRESS) {
       // revert("A");
         require(_predictionStake == msg.value);
@@ -308,7 +309,6 @@ contract Market is usingProvable {
 
       (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
-
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue.mul(positionDecimals), priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
@@ -349,8 +349,12 @@ contract Market is usingProvable {
       // if(userPredictionPoints[msg.sender][_prediction] == 0) {
       //   optionsAvailable[_prediction].stakers.push(msg.sender);
       // }
-
-      totalStaked = totalStaked.add(_stakeValue);
+      if(_asset == ETH_ADDRESS) {
+        totalStakedETH = totalStakedETH.add(_predictionStake);
+      }
+      else {
+        totalStakedToken = totalStakedToken.add(_predictionStake);
+      }
       userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
       assetStaked[msg.sender][_asset][_prediction] = assetStaked[msg.sender][_asset][_prediction].add(_predictionStake);
       LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
@@ -529,7 +533,7 @@ contract Market is usingProvable {
     * @return _incentiveTokens address[] memory representing the incentive token.
     */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
-      if(predictionStatus != PredictionStatus.Settled || totalStaked ==0) {
+      if(predictionStatus != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
       _predictionAssets[0] = token;
@@ -617,7 +621,8 @@ contract Market is usingProvable {
     * @param _user The address to query the claim return amount of.
     */
     function claimReturn(address payable _user) public {
-      require(commissionExchanged && !lockedForDispute && now > marketCoolDownTime);
+      _checkIfDisputeResolved();
+      require(commissionExchanged && now > marketCoolDownTime);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.Settled,"Result not declared");
       userClaimedReward[_user] = true;
@@ -630,6 +635,16 @@ contract Market is usingProvable {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);
       }
       pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
+    }
+
+    function _checkIfDisputeResolved() internal {
+      if(lockedForDispute) {
+        if(pl.marketDisputeStatus(address(this)) > 3) {
+          lockedForDispute = false;
+        } else {
+          revert("In Dispute");
+        }
+      }
     }
 
     /**

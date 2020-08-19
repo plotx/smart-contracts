@@ -20,7 +20,7 @@ contract MarketConfig {
     uint internal bonusRewardPerc = 50;
     uint internal uniswapDeadline = 20 minutes;
     uint internal lotPurchasePerc = 50;
-    uint internal positionDecimals = 2;
+    uint internal positionDecimals = 1e2;
     uint internal minTimeElapsedDivisor = 6;
 
     uint internal betType;//
