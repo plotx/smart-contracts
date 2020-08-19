@@ -19,8 +19,10 @@ contract TokenController is IERC1132, Iupgradable {
     string internal constant NOT_LOCKED = 'No tokens locked';
     string internal constant AMOUNT_ZERO = 'Amount can not be 0';
 
-    uint internal smLockPeriod = 30 days;
-    uint internal burnUptoLimit = 20000000 * 1 ether;
+    uint internal smLockPeriod
+    uint internal burnUptoLimit;
+
+    bool internal constructorCheck;
 
     PlotusToken public token;
     IPlotus public plotus;
@@ -35,6 +37,11 @@ contract TokenController is IERC1132, Iupgradable {
     * @dev Just for interface
     */
     function changeDependentContractAddress() public {
+        if(!constructorCheck) {
+            smLockPeriod = 30 days;
+            burnUptoLimit = 20000000 * 1 ether;
+            constructorCheck = true;
+        }
         token = PlotusToken(ms.dAppToken());
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
 
