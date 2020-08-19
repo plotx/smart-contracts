@@ -5,6 +5,7 @@ const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("PlotusToken");
 const BLOT = artifacts.require("BLOT");
+const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
@@ -27,13 +28,13 @@ contract("Market", async function ([
     masterInstance = await Master.deployed();
     plotusToken = await PlotusToken.deployed();
     BLOTInstance = await BLOT.deployed();
-
+    MockUniswapRouterInstance = await MockUniswapRouter.deployed();
     plotusNewAddress = await masterInstance.getLatestAddress(
       web3.utils.toHex("PL")
     );
     plotusNewInstance = await Plotus.at(plotusNewAddress);
     // console.log(await plotusNewInstance.getOpenMarkets());
-    const openMarkets = await plotusNewInstance.getOpenMarkets();
+    openMarkets = await plotusNewInstance.getOpenMarkets();
 
     console.log(`OpenMaket : ${openMarkets["_openMarkets"][0]}`);
 
@@ -46,7 +47,10 @@ contract("Market", async function ([
     await marketInstance.setOptionPrice(2, 18);
     await marketInstance.setOptionPrice(3, 27);
 
+    // set price
     // user 1
+    // set price lot
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
     await plotusToken.approve(
       openMarkets["_openMarkets"][0],
       "100000000000000000000",
@@ -63,6 +67,7 @@ contract("Market", async function ([
     );
 
     // user 2
+    await MockUniswapRouterInstance.setPrice("2000000000000000");
     await plotusToken.transfer(user2, "500000000000000000000");
 
     await plotusToken.approve(
@@ -104,7 +109,7 @@ contract("Market", async function ([
     // );
 
     // user 3
-
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
     await plotusToken.transfer(user3, "500000000000000000000");
     await plotusToken.approve(
       openMarkets["_openMarkets"][0],
@@ -137,6 +142,8 @@ contract("Market", async function ([
     //   { from: user4 }
     // );
 
+    await MockUniswapRouterInstance.setPrice("15000000000000000");
+
     await plotusToken.transfer(user4, "200000000000000000000");
 
     await plotusToken.approve(
@@ -155,6 +162,7 @@ contract("Market", async function ([
     );
 
     // user 5
+    await MockUniswapRouterInstance.setPrice("12000000000000000");
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "1000000000000000000",
@@ -164,6 +172,7 @@ contract("Market", async function ([
     );
 
     // user 6
+    await MockUniswapRouterInstance.setPrice("14000000000000000");
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "2000000000000000000",
@@ -172,6 +181,8 @@ contract("Market", async function ([
       { value: "2000000000000000000", from: user6 }
     );
     // user 7
+    await MockUniswapRouterInstance.setPrice("10000000000000000");
+
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "1000000000000000000",
@@ -180,6 +191,7 @@ contract("Market", async function ([
       { value: "1000000000000000000", from: user7 }
     );
     // user 8
+    await MockUniswapRouterInstance.setPrice("45000000000000000");
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "3000000000000000000",
@@ -188,6 +200,7 @@ contract("Market", async function ([
       { value: "3000000000000000000", from: user8 }
     );
     // user 9
+    await MockUniswapRouterInstance.setPrice("51000000000000000");
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "1000000000000000000",
@@ -196,6 +209,7 @@ contract("Market", async function ([
       { value: "1000000000000000000", from: user9 }
     );
     // user 10
+    await MockUniswapRouterInstance.setPrice("12000000000000000");
     await marketInstance.placePrediction(
       "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
       "2000000000000000000",
@@ -227,9 +241,9 @@ contract("Market", async function ([
     };
     betPointsExpected = [
       5.552777778,
-      222.1111111,
+      88.84444444,
       23.32166667,
-      341.4958333,
+      204.8975,
       444.0,
       1110,
       111,
@@ -266,7 +280,27 @@ contract("Market", async function ([
     await increaseTime(36001);
     await marketInstance.calculatePredictionResult(1);
     await increaseTime(36001);
+    // plotus contract balance eth balance
+    plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
+    console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
+    lotBalanceBefore = await plotusToken.balanceOf(
+      openMarkets["_openMarkets"][0]
+    );
+    lotBalanceBefore = lotBalanceBefore / 1;
+    console.log(`Lot Balance of market before commision : ${lotBalanceBefore}`);
+    // lot supply , lot balance of market
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
+
     await marketInstance.exchangeCommission();
+
+    plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
+    console.log(`plotus balance after commision : ${plotusBalanceAfter}`);
+    lotBalanceAfter = await plotusToken.balanceOf(
+      openMarkets["_openMarkets"][0]
+    );
+    lotBalanceAfter = lotBalanceAfter / 1;
+    console.log(`Lot Balance of market before commision : ${lotBalanceAfter}`);
+    console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
   });
 
   it("2.check total return for each user bet values in eth", async () => {
@@ -336,16 +370,16 @@ contract("Market", async function ([
       return returnAmountInLot;
     };
     const totalReturnLotExpexted = [
-      79.96903925,
-      0.3615700097,
-      125.9749649,
-      0.5559138899,
-      179.776064,
-      449.44016,
-      0.1806945671,
-      0.5420837014,
-      0.06023152238,
-      0.7227782685,
+      79.96990995,
+      240.0385593,
+      125.9786218,
+      49.54107729,
+      97.25842828,
+      243.1460707,
+      0.1980999262,
+      0.5942997787,
+      0.06603330875,
+      0.792399705,
     ];
     console.log("Rewards in lot");
     for (let index = 0; index < 10; index++) {
@@ -371,10 +405,12 @@ contract("Market", async function ([
     ];
 
     for (let account of accounts) {
+      console.log(`User ${accounts.indexOf(account) + 1}`);
+      beforeClaim = await web3.eth.getBalance(account);
       await marketInstance.claimReturn(account);
-    }
-    for (let account of accounts) {
-      await marketInstance.claimReturn(account);
+      afterClaim = await web3.eth.getBalance(account);
+      diff = afterClaim - beforeClaim;
+      console.log(diff);
     }
   });
 });
