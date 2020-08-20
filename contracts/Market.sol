@@ -305,7 +305,8 @@ contract Market is usingProvable {
 
       if(_asset == tokenController.bLOTToken()) {
         require(_leverage == MAX_LEVERAGE);
-        tokenController.swapBLOT(msg.sender, _predictionStake);
+        require(msg.value == 0);
+        tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
         _asset = token;
       } else {
         require(_isAllowedToStake(_asset));
