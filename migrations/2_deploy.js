@@ -26,15 +26,16 @@ module.exports = function(deployer, network, accounts){
       let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
       let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000000000'],[accounts[0], mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address]);
 
+      let plotusToken = await PlotusToken.at(deployPlotusToken.address);
+      let blotToken = await deployer.deploy(BLOT, plotusToken.address);
       let master = await deployer.deploy(Master);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, marketConfig.address);
+      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, blotToken.address, marketConfig.address);
 
-      let plotusToken = await PlotusToken.at(deployPlotusToken.address);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
-      let blotToken = await deployer.deploy(BLOT, tc.address, plotusToken.address);
       await tc.changeDependentContractAddress();
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
+      await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
       let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
       let plotus = await Plotus.at(plotusAddress);
       var date = Date.now();

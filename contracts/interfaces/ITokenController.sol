@@ -9,7 +9,7 @@ contract ITokenController {
     * account.
     * @param amount The amount that will be swapped.
     */
-    function swapBLOT(uint256 amount) public;
+    function swapBLOT(address _of, uint256 amount) public;
 
     /**
      * @dev Returns tokens locked for a specified address for a

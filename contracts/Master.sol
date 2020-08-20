@@ -12,6 +12,7 @@ contract Master is Ownable {
     address payable public plotusAddress;
     address public dAppToken;
     address public dAppLocker;
+    address public bLOT;
     bool public masterInitialised;
 
     mapping(address => bool) public contractsActive;
@@ -31,7 +32,7 @@ contract Master is Ownable {
     * @param _token The address of token.
     * @param _marketConfig The addresses of market configs.
     */
-    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _marketConfig) external {
+    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _bLot, address _marketConfig) external {
     // constructor(address _plotusImplementation, address _marketImplementation, address[] memory marketConfigs, address _plotusToken) public {
         // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -42,6 +43,7 @@ contract Master is Ownable {
         contractsActive[address(this)] = true;
         dAppToken = _token;
         dAppLocker = _token;
+        bLOT = _bLot;
         for (uint i = 0; i < allContractNames.length; i++) {
             _generateProxy(allContractNames[i], _implementations[i]);
         }

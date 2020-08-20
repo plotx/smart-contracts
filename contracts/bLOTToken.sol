@@ -9,14 +9,15 @@ contract BLOT is ERC20, MinterRole {
     string public symbol = "bLOT";
     uint8 public decimals = 18;
 
-    address public tokenController;
+    address public operator;
     address public plotusToken;
 
     /**
-    * @dev Checks if msg.sender isauthorized address.
+    * @dev Checks if msg.sender is token operator address.
     */
-    modifier onlyAuthorized {
-        require(msg.sender == tokenController);
+    modifier onlyOperator() {
+        if (operator != address(0))
+            require(msg.sender == operator);
         _;
     }
 
@@ -29,9 +30,17 @@ contract BLOT is ERC20, MinterRole {
         _;
     }
 
-    constructor (address _tokenController, address _lotToken) public {
-        tokenController = _tokenController;
+    constructor (address _lotToken) public {
         plotusToken = _lotToken;
+    }
+
+    /**
+    * @dev change operator address 
+    * @param _newOperator address of new operator
+    */
+    function changeOperator(address _newOperator) public onlyOperator returns (bool) {
+        operator = _newOperator;
+        return true;
     }
 
     /**
@@ -59,7 +68,7 @@ contract BLOT is ERC20, MinterRole {
      * - the caller must have allowance for `sender`'s tokens of at least
      * `amount`.
      */
-    function transferFrom(address sender, address recipient, uint256 amount) public onlyMinter returns (bool) {
+    function transferFrom(address sender, address recipient, uint256 amount) public onlyOperator returns (bool) {
         _transferFrom(sender, recipient, amount);
         return true;
     }
@@ -105,9 +114,9 @@ contract BLOT is ERC20, MinterRole {
      *
      * See `ERC20._burn`.
      */
-    function convertToPLOT(uint256 amount) public onlyAuthorized {
-        _burn(msg.sender, amount);
-        require(IERC20(plotusToken).transfer(msg.sender, amount));
+    function convertToPLOT(address _of, uint256 amount) public onlyOperator {
+        _burn(_of, amount);
+        require(IERC20(plotusToken).transfer(_of, amount));
     }
 
 }

@@ -26,10 +26,10 @@ contract TokenController is IERC1132, Iupgradable {
 
     PlotusToken public token;
     IPlotus public plotus;
-    address public bLOTToken;
+    BLOT public bLOTToken;
 
     modifier onlyAuthorized {
-        plotus.isMarket(msg.sender);
+        require(plotus.isMarket(msg.sender));
         _;
     }
 
@@ -43,6 +43,7 @@ contract TokenController is IERC1132, Iupgradable {
             constructorCheck = true;
         }
         token = PlotusToken(ms.dAppToken());
+        bLOTToken = BLOT(ms.bLOT());
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
 
     }
@@ -55,8 +56,8 @@ contract TokenController is IERC1132, Iupgradable {
         token.changeOperator(_newOperator);
     }
 
-    function swapBLOT(uint256 amount) public onlyAuthorized {
-        BLOT(bLOTToken).convertToPLOT(amount);
+    function swapBLOT(address _of, uint256 amount) public onlyAuthorized {
+        bLOTToken.convertToPLOT(_of, amount);
     }
 
     /**

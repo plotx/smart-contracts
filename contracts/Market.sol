@@ -19,6 +19,7 @@ contract Market is usingProvable {
     
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint constant totalOptions = 3;
+    uint constant MAX_LEVERAGE = 5;
     uint internal startTime;
     uint internal expireTime;
     bytes32 internal marketCurrency;
@@ -298,27 +299,25 @@ contract Market is usingProvable {
     * @param _leverage The leverage opted by user at the time of prediction.
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-      // require(_prediction <= 3 && _leverage <= 5);
+      require(_prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
       require(now >= startTime && now <= expireTime);
 
-      // uint256 _stakeValue = _predictionStake;
-      uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
-      
-      if(_asset == ETH_ADDRESS) {
-        require(_predictionStake == msg.value);
-      } else {
-        require(msg.value == 0);
-        require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
-        // _stakeValue =_getAssetValue(_exchange, _predictionStake);
-      }
 
       if(_asset == tokenController.bLOTToken()) {
-        require(_leverage == 5);
-        tokenController.swapBLOT(_predictionStake);
+        require(_leverage == MAX_LEVERAGE);
+        tokenController.swapBLOT(msg.sender, _predictionStake);
         _asset = token;
       } else {
         require(_isAllowedToStake(_asset));
+        if(_asset == ETH_ADDRESS) {
+          require(_predictionStake == msg.value);
+        } else {
+          require(msg.value == 0);
+          require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+        }
       }
+      uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
+
       _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
 
       (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
