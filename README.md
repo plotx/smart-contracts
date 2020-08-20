@@ -1,6 +1,6 @@
 
-<h1><a id="PLOTUS"></a>PLOTUS SMART CONTRACTS</h1>
-<p>Smart contracts for PLOTUS - Curated pprediction markets for crypto traders . https://plotus.io/.</p>
+<h1><a id="PLOTX"></a>PlotX SMART CONTRACTS</h1>
+<p>Smart contracts for PlotX - Curated pprediction markets for crypto traders . https://plotx.io/.</p>
 
 
 ## Getting Started
@@ -18,10 +18,10 @@ Node >= 10.x
 Firstly, you need to clone this repo. You can do so by downloading the repo as a zip and unpacking or using the following git command
 
 ```
-git clone https://github.com/somish/plotus-smart-contracts.git
+git clone https://github.com/plotx/smart-contracts.git
 ```
 
-Now, It's time to install the dependencies. Enter the plotus-smart-contracts directory and use
+Now, It's time to install the dependencies. Enter the smart-contracts directory and use
 
 ```
 npm install
@@ -33,13 +33,13 @@ We need to compile the contracts before deploying.
 npm run compile
 ```
 Now, You should start a private network on port 8545 using Ganache or something similar. To run the private network - </br>
-On Windows, Execute file startGanache.bat present in plotus-smart-contracts/scripts directory </br>
-On Linux or Mac OS Systems, run the startGanache.sh file while in plotus-smart-contracts/scripts directory
+On Windows, Execute file startGanache.bat present in smart-contracts/scripts directory </br>
+On Linux or Mac OS Systems, run the startGanache.sh file while in smart-contracts/scripts directory
 ```
 ./startGanache.sh
 ```
   
-Then, you can deploy Plotus contracts using the migrate script. 
+Then, you can deploy Plotx contracts using the migrate script. 
 ```
 npm run deploy
 ```
