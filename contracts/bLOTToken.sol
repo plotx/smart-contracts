@@ -114,9 +114,9 @@ contract BLOT is ERC20, MinterRole {
      *
      * See `ERC20._burn`.
      */
-    function convertToPLOT(address _of, uint256 amount) public onlyOperator {
+    function convertToPLOT(address _of, address _to, uint256 amount) public onlyOperator {
         _burn(_of, amount);
-        require(IERC20(plotusToken).transfer(_of, amount));
+        require(IERC20(plotusToken).transfer(_to, amount));
     }
 
 }
