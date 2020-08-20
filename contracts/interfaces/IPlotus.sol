@@ -15,6 +15,8 @@ contract IPlotus {
 
     function marketDisputeStatus(address _marketAddress) public view returns(uint _status);
 
+    function burnDisputedProposalTokens(uint _proposaId) external;
+
     /**
     * @dev Initialize the Plotus.
     * @param _owner The address of owner.

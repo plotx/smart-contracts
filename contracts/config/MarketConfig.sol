@@ -93,7 +93,7 @@ contract MarketConfig {
             address[] memory path = new address[](2);
             path[0] = _currencyAddress;
             path[1] = ETH_ADDRESS;
-            uint[] memory output = uniswapRouter.getAmountsOut(10**(IToken(_currencyAddress).decimals()), path);
+            uint[] memory output = uniswapRouter.getAmountsOut(10**uint(IToken(_currencyAddress).decimals()), path);
             uint tokenEthPrice = output[1];
             return latestAnswer.mul(tokenEthPrice);
         } else {

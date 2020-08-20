@@ -18,6 +18,7 @@ pragma solidity 0.5.7;
 import "./ProposalCategory.sol";
 import "./MemberRoles.sol";
 import "./PlotusToken.sol";
+import "./interfaces/IPlotus.sol";
 import "./TokenController.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 
@@ -91,6 +92,7 @@ contract Governance is IGovernance, Iupgradable {
     uint256 internal actionRejectAuthRole;
 
     MemberRoles internal memberRole;
+    IPlotus internal plotus;
     ProposalCategory internal proposalCategory;
     PlotusToken internal tokenInstance;
     TokenController internal tokenController;
@@ -750,6 +752,7 @@ contract Governance is IGovernance, Iupgradable {
         memberRole = MemberRoles(ms.getLatestAddress("MR"));
         proposalCategory = ProposalCategory(ms.getLatestAddress("PC"));
         tokenController = TokenController(ms.getLatestAddress("TC"));
+        plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
     }
 
     /**
@@ -1276,12 +1279,12 @@ contract Governance is IGovernance, Iupgradable {
         // uint isSpecialResolution;
         // uint abMaj;
         // (, abMaj, isSpecialResolution) = proposalCategory.categoryExtendedData(category);
+        uint256 majorityVote;
+        uint256 mrSequence;
+        (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
+            category
+        );
         if (_checkForThreshold(_proposalId, category)) {
-            uint256 majorityVote;
-            uint256 mrSequence;
-            (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
-                category
-            );
             uint256 majSolution = 0;
             for (
                 uint256 i = 1;
@@ -1319,6 +1322,11 @@ contract Governance is IGovernance, Iupgradable {
             }
         } else {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
+        }
+        if(category == 9) {
+            if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
+                plotus.burnDisputedProposalTokens(_proposalId);
+            }
         }
 
         if (proposalVoteTally[_proposalId].voters > 0) {
