@@ -81,7 +81,7 @@ contract("Market", async function ([
       plotusToken.address,
       "400000000000000000000",
       2,
-      1,
+      2,
       { from: user2 }
     );
     // await plotusToken.approve(BLOTInstance.address, "1000000000000000000000");
@@ -156,8 +156,8 @@ contract("Market", async function ([
     await marketInstance.placePrediction(
       plotusToken.address,
       "123000000000000000000",
-      2,
-      1,
+      3,
+      3,
       { from: user4 }
     );
 
@@ -365,7 +365,7 @@ contract("Market", async function ([
 
     getReturnTotalLot = async (user, option) => {
       // return userReturn in Lot
-      const response = await marketInstance.getReturn(user, option);
+      const response = await marketInstance.getReturn(user);
       let returnAmountInLot = response[0][0];
       return returnAmountInLot;
     };
@@ -407,10 +407,14 @@ contract("Market", async function ([
     for (let account of accounts) {
       console.log(`User ${accounts.indexOf(account) + 1}`);
       beforeClaim = await web3.eth.getBalance(account);
+      beforeClaimToken = await plotusToken.balanceOf(account);
       await marketInstance.claimReturn(account);
       afterClaim = await web3.eth.getBalance(account);
+      afterClaimToken = await plotusToken.balanceOf(account);
       diff = afterClaim - beforeClaim;
-      console.log(diff);
+      diffToken = afterClaimToken - beforeClaimToken;
+      console.log(diffToken);
     }
+      console.log((await web3.eth.getBalance(marketInstance.address))/1);
   });
 });
