@@ -5,6 +5,7 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
+import "./interfaces/IConfig.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";
 
@@ -26,7 +27,7 @@ contract Plotus is usingProvable, Iupgradable {
     }
 
     struct MarketCurrency {
-      address currencyAddress;
+      address currencyFeedAddress;
       bytes32 currencyName;
       string oraclizeSource;
       string oraclizeType;
@@ -51,10 +52,9 @@ contract Plotus is usingProvable, Iupgradable {
     mapping(bytes32 => MarketOraclize) public marketOracleId;
 
     // uint256 public marketOpenIndex;
-    address public owner;
+    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public masterAddress;
     address public tokenController;
-    address public marketConfig;
     address marketImplementation;
     address[] markets;
     // mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
@@ -66,6 +66,7 @@ contract Plotus is usingProvable, Iupgradable {
     bool public marketCreationPaused;
 
     IToken public plotusToken;
+    IConfig public marketConfig;
     IGovernance internal governance;
 
     struct DisputeStake {
@@ -84,14 +85,6 @@ contract Plotus is usingProvable, Iupgradable {
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
    
     /**
-    * @dev Checks if msg.sender is plotus owner.
-    */
-    modifier onlyOwner() {
-      require(msg.sender == owner);
-      _;
-    }
-
-    /**
     * @dev Checks if msg.sender is master address.
     */
     modifier OnlyMaster() {
@@ -109,19 +102,18 @@ contract Plotus is usingProvable, Iupgradable {
 
     /**
     * @dev Initialize the Plotus.
-    * @param _owner The address of owner.
     * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.
     * @param _plotusToken The instance of plotus token.
     */
-    function initiatePlotus(address _owner, address _marketImplementation, address _marketConfig, address _plotusToken) public {
+    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public {
       masterAddress = msg.sender;
-      owner = _owner;
       marketImplementation = _marketImplementation;
-      marketConfig = _marketConfig;
       plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
+      marketConfig = IConfig(_marketConfig);
+      marketConfig.setAuthorizedAddres();
       // marketOpenIndex = 1;
       
     }
@@ -129,18 +121,19 @@ contract Plotus is usingProvable, Iupgradable {
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint _startTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
+    function addInitialMarketTypesAndStart(uint _startTime, address _ethPriceFeed, address _plotPriceFeed, uint256[] calldata _initialMinOptionETH, uint256[] calldata _initialMaxOptionETH, uint256[] calldata _initialMinOptionPLOT, uint256[] calldata _initialMaxOptionPLOT) external payable {
       marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL", false));
       marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL", true));
 
       marketTypes.push(MarketTypeData(1 hours, 2 hours, _startTime));
       marketTypes.push(MarketTypeData(24 hours, 2 days, _startTime));
       marketTypes.push(MarketTypeData(7 days, 14 days, _startTime));
-      for(uint256 i = 0;i < marketTypes.length; i++) {
-        for(uint256 j = 0;j < marketCurrencies.length; j++) {
-          _createMarket(i, j);
-        }
-      }
+      // for(uint256 j = 0;j < marketCurrencies.length; j++) {
+          for(uint256 i = 0;i < marketTypes.length; i++) {
+              _createMarket(i, 0, _initialMinOptionETH[i], _initialMaxOptionETH[i]);
+              _createMarket(i, 1, _initialMinOptionPLOT[i], _initialMaxOptionPLOT[i]);
+          }
+      // }
     }
 
     /**
@@ -149,18 +142,13 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _settleTime The time at which result of market will declared.
     * @param _startTime The time at which market will create.
     */
-    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _startTime) external onlyInternal {
+    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _startTime, uint256[] calldata _minValue, uint256[] calldata _maxValue) external onlyInternal {
       require(_startTime > now);
       marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _startTime));
-    }
-
-    /**
-     * @dev transfer the ownership to the new owner address
-     * @param newOwner is the new owner address
-     */
-    function transferOwnership(address newOwner) public OnlyMaster {
-      require(newOwner != address(0));
-      owner = newOwner;
+      uint256 _marketType = marketTypes.length.sub(1);
+      for(uint256 j = 0;j < marketCurrencies.length; j++) {
+        _createMarket(_marketType, j, _minValue[j], _maxValue[j]);
+      }
     }
 
      /**
@@ -168,7 +156,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @param _marketConfig the address of market configs.
      */
     function updateMarketConfig(address _marketConfig) public onlyInternal {
-      marketConfig = _marketConfig;
+      marketConfig = IConfig(_marketConfig);
     }
 
      /**
@@ -204,7 +192,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _marketType The type of the market.
     * @param _marketCurrencyIndex the index of market currency.
     */
-    function _createMarket(uint256 _marketType, uint _marketCurrencyIndex) internal {
+    function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue) internal {
       require(!marketCreationPaused);
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
@@ -212,8 +200,7 @@ contract Plotus is usingProvable, Iupgradable {
       isMarket[_market] = true;
       markets.push(_market);
       currentMarketTypeCurrency[_marketType][_marketCurrencyIndex] = _market;
-      (uint256 _minValue, uint256 _maxValue) = _calculateOptionRange();
-      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
+      IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
       bytes32 _oraclizeId = provable_query(_marketTypeData.startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
@@ -235,7 +222,7 @@ contract Plotus is usingProvable, Iupgradable {
           parts[i] = parseInt(s.split(delim).toString());
       }
       IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
-      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex);
+      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1]);
       // addNewMarkets(marketOracleId[myid], parseInt(result));
       delete marketOracleId[myid];
     }
@@ -432,34 +419,24 @@ contract Plotus is usingProvable, Iupgradable {
           count++;
         }
       }
-      // for(uint256 i = 0; i < totalOpenMarkets; i++) {
-      //     // _marketTypes[count] = markets.length;
-      //     // return (_openMarkets, _marketTypes);
-      //   ( , , , , , _marketType, , _status) = getMarketDetails(markets[i]);
-      //   if(_status == uint256(Market.PredictionStatus.Started)) {
-      //     _openMarkets[count] = markets[i];
-      //     _marketTypes[count] = _marketType;
-      //     count++;
-      //  }
-      // }
     }
 
-    /**
-    * @dev Calculates the user pending return amount.
-    * @param _user The address to query the pending return amount of.
-    * @return pendingReturn uint256 representing the pending return amount of user.
-    * @return incentive uint256 representing the incentive.
-    */
-    function calculateUserPendingReturn(address _user) external view returns(uint256 pendingReturn, uint256 incentive) {
-      uint256 _return;
-      uint256 _incentive;
-      for(uint256 i = lastClaimedIndex[_user]; i < marketsParticipated[_user].length; i++) {
-        // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
-        (_return, _incentive) = IMarket(marketsParticipated[_user][i]).getPendingReturn(_user);
-        pendingReturn = pendingReturn.add(_return);
-        incentive = incentive.add(_incentive);
-      }
-    }
+    // /**
+    // * @dev Calculates the user pending return amount.
+    // * @param _user The address to query the pending return amount of.
+    // * @return pendingReturn uint256 representing the pending return amount of user.
+    // * @return incentive uint256 representing the incentive.
+    // */
+    // function calculateUserPendingReturn(address _user) external view returns(uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens) {
+    //   uint256 _return;
+    //   uint256 _incentive;
+    //   for(uint256 i = lastClaimedIndex[_user]; i < marketsParticipated[_user].length; i++) {
+    //     // pendingReturn = pendingReturn.add(marketsParticipated[_user][i].call(abi.encodeWithSignature("getPendingReturn(uint256)", _user)));
+    //     (_return, _incentive) = IMarket(marketsParticipated[_user][i]).getPendingReturn(_user);
+    //     pendingReturn = pendingReturn.add(_return);
+    //     incentive = incentive.add(_incentive);
+    //   }
+    // }
 
     /**
     * @dev Claim the pending return of the market.
@@ -483,12 +460,20 @@ contract Plotus is usingProvable, Iupgradable {
     function () external payable {
     }
 
-    /**
-    * @dev Withdraw the balance of contract.
-    * @param amount The amount that will be withdraw.
-    */
-    function withdraw(uint256 amount) external onlyOwner {
-      require(amount<= address(this).balance,"insufficient amount");
-        msg.sender.transfer(amount);
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyInternal {
+      if(_asset == ETH_ADDRESS) {
+        _to.transfer(_amount);
+      } else {
+        IToken(_asset).transfer(_to, _amount);
+      }
     }
+
+    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyInternal {
+      marketConfig.updateUintParameters(code, value);
+    }
+
+    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyInternal {
+      marketConfig.updateAddressParameters(code, value);
+    }
+
 }

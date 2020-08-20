@@ -8,60 +8,46 @@ import "../interfaces/IToken.sol";
 contract MarketConfig {
 
     using SafeMath for uint;
-
-    uint constant lossPercentage = 20;
-    uint constant STAKE_WEIGHTAGE = 40;//
-    uint constant PRICE_WEIGHTAGE = 60;//
-    uint constant OPTION_START_INDEX = 1;//
-    uint constant minBet = 1e15;
-    uint constant STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;//
-    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    //Two extra decimals added for percentage
-    uint internal bonusRewardPerc = 50;
-    uint internal uniswapDeadline = 20 minutes;
-    uint internal lotPurchasePerc = 50;
-    uint internal positionDecimals = 1e2;
-    uint internal minTimeElapsedDivisor = 6;
-
-    uint internal betType;//
-    uint internal priceStep;//
-    uint internal delta;//
-    uint internal rate;//
-    uint internal PREDICTION_TIME;//
-    // uint internal donationPerc;//
-    // uint internal commissionPerc;//
     
+    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+
+    uint internal STAKE_WEIGHTAGE = 40;//
+    uint internal PRICE_WEIGHTAGE = 60;//
+    uint internal STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
+    uint internal minTimeElapsedDivisor = 6;
+    uint internal minBet = 1e15;
+    uint internal positionDecimals = 1e2;
+    uint internal lotPurchasePerc = 50;
+    uint internal priceStep = 10 ether;
+    uint internal rate = 1e14;
     uint internal multiplier = 10;
     uint internal minStakeForMultiplier = 5e17;
-    uint internal stakeForDispute;
-    uint internal marketCoolDownTime;
+    uint internal lossPercentage = 20;
+    uint internal uniswapDeadline = 20 minutes;
+    uint internal tokenStakeForDispute = 100 ether;
+    uint internal marketCoolDownTime = 15 minutes;
     address internal plotusToken;
+    address public authorizedAddress;
     
-    address payable internal donationAccount;//
-    address payable internal commissionAccount;//
     address payable chainLinkPriceOracle;
     IUniswapV2Router02 uniswapRouter;
     address[] uniswapEthToTokenPath;
     address[] uniswapTokenToEthPath;
 
-    address[] internal predictionAssets;
     address[] internal incentiveTokens;
-    mapping(address => bool) internal predictionAssetFlag;
     mapping(address => uint) internal commissionPerc;
-    mapping(address => uint) internal stakeRatioForMultiplier;
 
     IChainLinkOracle internal chainLinkOracle;
-    constructor(uint[] memory _uintParams, address payable[] memory _addressParams) public {
-        marketCoolDownTime = _uintParams[0];
-        priceStep = _uintParams[1];
-        lotPurchasePerc = _uintParams[2];
-        uniswapDeadline = _uintParams[3];
-        rate = _uintParams[4];
-        stakeForDispute = _uintParams[5];
-        commissionAccount = _addressParams[0];
-        chainLinkPriceOracle = _addressParams[1];
-        uniswapRouter = IUniswapV2Router02(_addressParams[2]);
-        plotusToken = _addressParams[3];
+
+    modifier onlyAuthorized() {
+        require(msg.sender == authorizedAddress);
+        _;
+    }
+
+    constructor(address payable[] memory _addressParams) public {
+        chainLinkPriceOracle = _addressParams[0];
+        uniswapRouter = IUniswapV2Router02(_addressParams[1]);
+        plotusToken = _addressParams[2];
         address weth = uniswapRouter.WETH();
         uniswapEthToTokenPath.push(weth);
         uniswapEthToTokenPath.push(plotusToken);
@@ -74,13 +60,63 @@ contract MarketConfig {
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
-    function getBasicMarketDetails() public view returns(uint, uint, uint, uint, uint) {
-        return (minBet, bonusRewardPerc,lossPercentage, priceStep, positionDecimals);
+    function setAuthorizedAddres() public {
+        require(authorizedAddress == address(0));
+        authorizedAddress = msg.sender;
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint, uint, uint) {
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorized {
+        if(code == "SW") {
+            require(value.add(PRICE_WEIGHTAGE) == 100);
+            STAKE_WEIGHTAGE = value;
+        } else if(code == "PW") {
+            require(value.add(STAKE_WEIGHTAGE) == 100);
+            PRICE_WEIGHTAGE = value;
+        } else if(code == "SWMA") {
+            STAKE_WEIGHTAGE_MIN_AMOUNT = value;
+        } else if(code == "MTED") {
+            minTimeElapsedDivisor = value;
+        } else if(code == "MINBET") {
+            minBet = value;
+        } else if(code == "PDEC") {
+            positionDecimals = value;
+        } else if(code == "PPPERC") {
+            require(value < 100);
+            lotPurchasePerc = value;
+        } else if(code == "PSTEP") {
+            priceStep = value;
+        } else if(code == "RATE") {
+            rate = value;
+        } else if(code == "MULT") {
+            multiplier = value;
+        } else if(code == "MINSTM") {
+            minStakeForMultiplier = value;
+        } else if(code == "LPERC") {
+            lossPercentage = value;
+        } else if(code == "UNIDL") {
+            uniswapDeadline = value;
+        } else if(code == "TSDISP") {
+            tokenStakeForDispute = value;
+        } else if(code == "CDTIME") {
+            marketCoolDownTime = value;
+        }
+    }
+
+    function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorized {
+        if(code == "CLORCLE") {
+            chainLinkPriceOracle = value;
+        } else if(code == "UNIRTR") {
+            uniswapRouter = IUniswapV2Router02(value);
+        }
+    }
+
+    function getBasicMarketDetails() public view returns(uint, uint, uint, uint) {
+        return (minBet, lossPercentage, priceStep, positionDecimals);
+    }
+
+    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint, uint) {
         uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress, _isMarketCurrencyERCToken);
-        return (OPTION_START_INDEX, STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
+        return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
     }
 
     function getAssetPriceUSD(address _currencyAddress, bool _isCurrencyERCToken) public view returns(uint latestAnswer) {
@@ -125,11 +161,12 @@ contract MarketConfig {
     }
 
     function getDisputeResolutionParams() public view returns(uint) {
-        return stakeForDispute;
+        return tokenStakeForDispute;
     }
 
     function setCommissionPercentage(address _asset, uint _commissionPerc) external {
-        require(predictionAssetFlag[_asset] && _commissionPerc < 100);
+        require(commissionPerc[_asset] > 0,"Invalid Asset");
+        require(_commissionPerc > 0 && _commissionPerc < 100);
         commissionPerc[_asset] = _commissionPerc;
     }
 
@@ -146,41 +183,11 @@ contract MarketConfig {
         return (address(uniswapRouter), uniswapEthToTokenPath);
     }
 
-    function addNewPredictionAsset(address _asset, uint _commisionPerc, uint _ratio) external {
-        require(!predictionAssetFlag[_asset] && _commisionPerc < 100);
-        predictionAssetFlag[_asset] = true;
-        predictionAssets.push(_asset);
-        commissionPerc[_asset] = _commisionPerc;
-        stakeRatioForMultiplier[_asset] = _ratio;
-    }
-
     function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint) {
         return (incentiveTokens, marketCoolDownTime, rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotusToken]);
     }
 
-    function isValidPredictionAsset(address _asset) public view returns(bool) {
-        return predictionAssetFlag[_asset];
-    }
-
- //To be Removed
-    function getAssetCommisionAndValue(address _asset, uint _amount) public view returns(uint _commisionPerc, uint _value) {
-        _value = _amount;
-        if(_asset != ETH_ADDRESS) {
-            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
-            _value = output[1];
-        }
-        return (commissionPerc[_asset], _value);
-    }
-
     function getPurchasePercAndDeadline() public view returns(uint, uint) {
         return (lotPurchasePerc, uniswapDeadline);
-    }
-
-    /**
-     * @dev to change the uniswap deadline time 
-     * @param newDeadline is the value
-     */
-    function _changeUniswapDeadlineTime(uint newDeadline) internal {
-        uniswapDeadline = newDeadline;
     }
 }

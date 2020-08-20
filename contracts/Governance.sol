@@ -346,14 +346,6 @@ contract Governance is IGovernance, Iupgradable {
             );
             _closeVote(_proposalId, category);
         }
-
-        // if(_memberRole == uint(MemberRoles.Role.DisputeResolution) && allProposalData[_proposalId].propStatus  > ProposalStatus.Accepted) {
-        //     //Burn dispute resolution members tokens
-        //     address[] memory _drMembers;
-        //     (, _drMembers) = memberRole.members(uint(MemberRoles.Role.DisputeResolution));
-        //     tokenController.burnLockedTokens()
-        //     // minTokenLockedForDR = tokenInstance.tokensLockedAtTime(msg.sender, "DR", lockTimeForDR.add(now));
-        // }
     }
 
     /**
@@ -485,8 +477,6 @@ contract Governance is IGovernance, Iupgradable {
                     .add(tokenHoldingTime) < now
             );
         }
-
-        // require(ms.isMember(_add));
 
         require(isOpenForDelegation[_add]);
 
@@ -1045,20 +1035,12 @@ contract Governance is IGovernance, Iupgradable {
         uint256 numberOfMembers = memberRole.numberOfMembers(mrSequence);
         _setVoteTally(_proposalId, _solution, mrSequence);
 
-        // if (mrSequence == uint(MemberRoles.Role.AdvisoryBoard)) {
-        //     if (proposalVoteTally[_proposalId].abVoteValue[1].mul(100).div(numberOfMembers)
-        //     >= majority
-        //     || (proposalVoteTally[_proposalId].abVoteValue[1].add(proposalVoteTally[_proposalId].abVoteValue[0])) == numberOfMembers) {
-        //         emit VoteCast(_proposalId);
-        //     }
-        // } else {
         if (
             numberOfMembers == proposalVoteTally[_proposalId].voters &&
             mrSequence != uint256(MemberRoles.Role.TokenHolder)
         ) {
             emit VoteCast(_proposalId);
         }
-        // }
     }
 
     function _setVoteTally(
@@ -1066,12 +1048,6 @@ contract Governance is IGovernance, Iupgradable {
         uint256 _solution,
         uint256 mrSequence
     ) internal {
-        // uint categoryABReq;
-        // uint isSpecialResolution;
-        // (, categoryABReq, isSpecialResolution) = proposalCategory.categoryExtendedData(allProposalData[_proposalId].category);
-        // if (mrSequence == uint(MemberRoles.Role.AdvisoryBoard)) {
-        //     proposalVoteTally[_proposalId].abVoteValue[_solution]++;
-        // }
         uint256 voters = 1;
         uint256 voteWeight;
         uint256 tokenBalance = tokenController.totalBalanceOf(msg.sender);
@@ -1107,7 +1083,6 @@ contract Governance is IGovernance, Iupgradable {
                         voters++;
                         voteWeight = voteWeight.add(tokenBalance);
                         uint256 totalVotes = allVotes.length;
-                        // voteWeight = voteWeight.add((_minOf(tokenBalance, maxVoteWeigthPer.mul(totalSupply).div(100))).add(10**18));
                     }
                 }
             }
@@ -1285,19 +1260,6 @@ contract Governance is IGovernance, Iupgradable {
             category
         );
         if (_checkForThreshold(_proposalId, category)) {
-            // uint256 majSolution = 0;
-            // for (
-            //     uint256 i = 1;
-            //     i < allProposalSolutions[_proposalId].length;
-            //     i++
-            // ) {
-            //     if (
-            //         proposalVoteTally[_proposalId].voteValue[i] >
-            //         proposalVoteTally[_proposalId].voteValue[majSolution]
-            //     ) {
-            //         majSolution = i;
-            //     }
-            // }
             if (
                 (
                     (
@@ -1343,10 +1305,8 @@ contract Governance is IGovernance, Iupgradable {
     function _initiateGovernance() internal {
         allVotes.push(ProposalVote(address(0), 0, 0, 0, 0));
         totalProposals = 1;
-        // allProposal.push(ProposalStruct(address(0), now));
         allDelegation.push(DelegateVote(address(0), address(0), now));
         tokenHoldingTime = 1 * 7 days;
-        // maxVoteWeigthPer = 5;
         maxFollowers = 40;
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(MemberRoles.Role.AdvisoryBoard);
@@ -1356,21 +1316,4 @@ contract Governance is IGovernance, Iupgradable {
         votePercRejectAction = 60;
     }
 
-    // /**
-    //  * @dev Internal call to close advisory board voting
-    //  * @param _proposalId of proposal in concern
-    //  * @param category of proposal in concern
-    //  */
-    // function _closeAdvisoryBoardVote(uint _proposalId, uint category) internal {
-    //     uint _majorityVote;
-    //     MemberRoles.Role _roleId = MemberRoles.Role.AdvisoryBoard;
-    //     (, , _majorityVote, , , , ) = proposalCategory.category(category);
-    //     if (proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
-    //     .div(memberRole.numberOfMembers(uint(_roleId))) >= _majorityVote) {
-    //         _callIfMajReached(_proposalId, uint(ProposalStatus.Accepted), category, 1, _roleId);
-    //     } else {
-    //         _updateProposalStatus(_proposalId, uint(ProposalStatus.Denied));
-    //     }
-
-    // }
 }

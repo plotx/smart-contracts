@@ -22,14 +22,6 @@ contract Iupgradable {
     }
 
     /**
-     * @dev Checks if msg.sender is member.
-     */
-    modifier isMember {
-        // require(ms.isMember(msg.sender), "Not member");
-        _;
-    }
-
-    /**
      * @dev Iupgradable Interface to update dependent contract address
      */
     function changeDependentContractAddress() public;

@@ -33,7 +33,6 @@ contract Master is Ownable {
     * @param _marketConfig The addresses of market configs.
     */
     function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _bLot, address _marketConfig) external {
-    // constructor(address _plotusImplementation, address _marketImplementation, address[] memory marketConfigs, address _plotusToken) public {
         // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!masterInitialised);
@@ -52,7 +51,7 @@ contract Master is Ownable {
         _changeAllAddress();
 
         // _generateProxy(_plotusImplementation);
-        IPlotus(contractAddress["PL"]).initiatePlotus(msg.sender, _marketImplementation, _marketConfig, _token);
+        IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token);
     }
 
     /**

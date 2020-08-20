@@ -87,21 +87,21 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             1
         ); //4
         _addInitialCategories(
-            "Transfer Ether",
-            "QmRUmxw4xmqTN6L2bSZEJfmRcU1yvVWoiMqehKtqCMAaTa",
-            "GV",
-            "transferEther(uint256,address)",
-            50,
-            1,
+            "Update Market Implementation",
+            "",
+            "PL",
+            "updateMarketImplementation(address)",
+            60,
+            2,
             2
         ); // 5
         _addInitialCategories(
-            "Transfer Token",
-            "QmbvmcW3zcAnng3FWgP5bHL4ba9kMMwV9G8Y8SASqrvHHB",
-            "GV",
-            "transferToken(address,address,uint256)",
-            50,
-            1,
+            "Update Existing Market's Implementation",
+            "",
+            "PL",
+            "upgradeContractImplementation(address,address)",
+            60,
+            2,
             2
         ); // 6
         _addInitialCategories(
@@ -177,24 +177,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); // 14
         _addInitialCategories(
-            "Update Market Implementation",
-            "",
-            "PL",
-            "updateMarketImplementation(address)",
-            60,
-            2,
-            2
-        ); // 15
-        _addInitialCategories(
-            "Update Existing Market's Implementation",
-            "",
-            "PL",
-            "upgradeContractImplementation(address,address)",
-            60,
-            2,
-            2
-        ); // 16
-        _addInitialCategories(
             "Toggle Market Creation",
             "",
             "PL",
@@ -202,7 +184,34 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
+        ); // 15
+        _addInitialCategories(
+            "Transfer Plotus Assets",
+            "",
+            "PL",
+            "transferAssets(address,address,uint256)",
+            60,
+            2,
+            2
+        ); // 16
+        _addInitialCategories(
+            "Update Config Uint parameters",
+            "",
+            "PL",
+            "updateConfigUintParameters(bytes8,uint256)",
+            60,
+            2,
+            2
         ); // 17
+        _addInitialCategories(
+            "Update Address Uint parameters",
+            "",
+            "PL",
+            "updateConfigAddressParameters(bytes8,uint256)",
+            60,
+            2,
+            2
+        ); // 18
     }
 
     /**

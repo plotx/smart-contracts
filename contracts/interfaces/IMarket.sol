@@ -44,12 +44,12 @@ contract IMarket {
         	uint _expireTime, uint _predictionStatus
         );
 
-    /**
-    * @dev Gets the pending return.
-    * @param _user The address to specify the return of.
-    * @return uint representing the pending return amount.
-    */
-    function getPendingReturn(address _user) external view returns(uint, uint);
+    // /**
+    // * @dev Gets the pending return.
+    // * @param _user The address to specify the return of.
+    // * @return uint representing the pending return amount.
+    // */
+    // function getPendingReturn(address _user) external view returns(uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens);
 
     /**
     * @dev Claim the return amount of the specified address.

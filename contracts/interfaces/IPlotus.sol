@@ -19,12 +19,11 @@ contract IPlotus {
 
     /**
     * @dev Initialize the Plotus.
-    * @param _owner The address of owner.
     * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.
     * @param _plotusToken The address of plotus token.
     */
-    function initiatePlotus(address _owner, address _marketImplementation, address _marketConfig, address _plotusToken) public;
+    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public;
 
     /**
     * @dev Create proposal if user wants to raise the dispute.

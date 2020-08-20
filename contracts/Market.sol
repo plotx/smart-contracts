@@ -40,7 +40,6 @@ contract Market is usingProvable {
 
     bool commissionExchanged;
 
-    // address[] predictionAssets;
     mapping(address => uint) internal commissionPerc;
     address[] incentiveTokens;
     
@@ -48,7 +47,7 @@ contract Market is usingProvable {
     mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
     mapping(address => mapping(uint => uint)) public userPredictionPoints;
     mapping(address => uint256) public commissionAmount;
-    mapping(address => uint256) internal stakedTokenApplied;
+    // mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
     IPlotus internal pl;
@@ -89,7 +88,6 @@ contract Market is usingProvable {
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
       isMarketCurrencyERCToken = _isERCToken;
-      // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;
       (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketConfig.getMarketInitialParams();
@@ -102,10 +100,6 @@ contract Market is usingProvable {
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
       marketResultId = provable_query(settleTime, _oraclizeType, _oraclizeSource);
-      // chainLinkOracle = IChainLinkOracle(marketConfig.getChainLinkPriceOracle());
-      // incentiveTokens = _incentiveTokens;
-      // uniswapFactoryAddress = _uniswapFactoryAdd;
-      // factory = Factory(_uniswapFactoryAdd);
     }
 
     /**
@@ -121,16 +115,6 @@ contract Market is usingProvable {
       return predictionStatus;
     }
 
-    // *
-    // * @dev Gets the asset value in ether.
-    // * @param _exchange The exchange address of token.
-    // * @param _amount The amount of token.
-    // * @return uint256 representing the token value in ether.
-    
-    // function _getAssetValue(address _exchange, uint256 _amount) internal view returns(uint256) {
-    //   return Exchange(_exchange).getTokenToEthInputPrice(_amount);
-    // }
-  
     /**
     * @dev Calculates the price of available option ranges.
     * @param _option The number of option ranges.
@@ -141,7 +125,7 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      ( ,uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isMarketCurrencyERCToken);
+      (uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isMarketCurrencyERCToken);
       uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
         return 0;
@@ -226,7 +210,7 @@ contract Market is usingProvable {
     * @return uint256 representing the prediction value.
     */
     function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
-      ( , , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      ( , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
     }
 
@@ -321,7 +305,7 @@ contract Market is usingProvable {
 
       _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
 
-      (uint minPrediction, , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
@@ -360,9 +344,6 @@ contract Market is usingProvable {
     * @param predictionPoints The positions user gets during prediction.
     */
     function _storePredictionData(uint _prediction, uint _predictionStake, uint _stakeValue, address _asset, uint _leverage, uint predictionPoints) internal {
-      // if(userPredictionPoints[msg.sender][_prediction] == 0) {
-      //   optionsAvailable[_prediction].stakers.push(msg.sender);
-      // }
       if(_asset == ETH_ADDRESS) {
         totalStakedETH = totalStakedETH.add(_predictionStake);
       }
@@ -396,14 +377,14 @@ contract Market is usingProvable {
       if(_stakeValue < _minStakeForMultiplier) {
         return predictionPoints;
       }
-      // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender])
+      // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender]);
       uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
       if(_stakedTokenRatio > _minMultiplierRatio) {
         _stakedTokenRatio = _stakedTokenRatio.mul(10);
         predictionPoints = predictionPoints.mul(_stakedTokenRatio).div(100);
       }
-      // if(_multiplier > 0) {
-        // stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
+      // if(_stakedTokenRatio > 0) {
+      //   stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
       // }
       return predictionPoints;
     }
@@ -446,15 +427,6 @@ contract Market is usingProvable {
       //Owner can set the result, for testing. To be removed when deployed on mainnet
       require(msg.sender == pl.owner() || msg.sender == provable_cbAddress());
       _postResult(_value);
-      //Get donation, commission addresses and percentage
-      // (, , address payable commissionAccount, uint commission) = marketConfig.getFundDistributionParams();
-       // commission = commission.mul(totalReward).div(100);
-       // donation = donation.mul(totalReward).div(100);
-       // rewardToDistribute = totalReward.sub(commission);
-       // _transferAsset(predictionAssets[0], commissionAccount, commission);
-       // _transferAsset(predictionAsset, donationAccount, donation);
-      // if(optionsAvailable[WinningOption].assetStaked == 0){
-      // }
 
     }
 
@@ -465,8 +437,7 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
-      // uint distanceFromWinningOption = 0;
+      ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(_value < optionsAvailable[2].minValue) {
         WinningOption = 1;
@@ -556,12 +527,10 @@ contract Market is usingProvable {
       _predictionAssets[0] = token;
       _predictionAssets[1] = ETH_ADDRESS;
 
-      // uint[] memory _return;
       uint256 _totalUserPredictionPoints = 0;
       uint256 _totalPredictionPoints = 0;
       (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user);
       incentive = _calculateIncentives(_totalUserPredictionPoints, _totalPredictionPoints);
-      // returnAmount =  _return;
       if(userPredictionPoints[_user][WinningOption] > 0) {
         returnAmount = _addUserReward(_user, returnAmount);
       }
@@ -591,15 +560,13 @@ contract Market is usingProvable {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , ,uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        // if(i != WinningOption) {
-          _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, token);
-          _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
-        // }
+        _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, token);
+        _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
       }
     }
 
@@ -616,15 +583,15 @@ contract Market is usingProvable {
       }
     }
 
-    /**
-    * @dev Gets the pending return.
-    * @param _user The address to specify the return of.
-    * @return uint representing the pending return amount.
-    */
-    function getPendingReturn(address _user) external view returns(uint, uint){
-      if(userClaimedReward[_user]) return (0,0);
-      // return getReturn(_user);
-    }
+    // /**
+    // * @dev Gets the pending return.
+    // * @param _user The address to specify the return of.
+    // * @return uint representing the pending return amount.
+    // */
+    // function getPendingReturn(address _user) external view returns(uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
+    //   if(userClaimedReward[_user]) return (0,0);
+    //   return getReturn(_user);
+    // }
     
     /**
     * @dev Calls the total return amount internally.
@@ -646,7 +613,6 @@ contract Market is usingProvable {
       require(predictionStatus == PredictionStatus.Settled,"Result not declared");
       userClaimedReward[_user] = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
-      // _user.transfer(returnAmount)
       uint256 i;
       _transferAsset(token, _user, _returnAmount[0]);
       _transferAsset(ETH_ADDRESS, _user, _returnAmount[1]);
@@ -663,13 +629,8 @@ contract Market is usingProvable {
     */
     function __callback(bytes32 myid, string memory result) public {
       require(msg.sender == provable_cbAddress());
-      // if(myid == closeMarketId) {
-      //   _closeBet();
-      // } else if(myid == marketResultId) {
       require ((myid==marketResultId));
-      //Check oraclise address
       calculatePredictionResult(parseInt(result));
-      // }
     }
 
 }
