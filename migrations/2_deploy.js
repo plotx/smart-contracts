@@ -24,7 +24,7 @@ module.exports = function(deployer, network, accounts){
       let deployPlotusToken = await deployer.deploy(PlotusToken, "30000000000000000000000000");
       let mockchainLinkAggregaror = await deployer.deploy(MockchainLink);
       let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
-      let marketConfig = await deployer.deploy(MarketConfig, [15*3600, '1000000000000000000',50,20,'100000000000000','100000000000000000000'],[accounts[0], mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address]);
+      let marketConfig = await deployer.deploy(MarketConfig, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address]);
 
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
       let blotToken = await deployer.deploy(BLOT, plotusToken.address);
@@ -40,7 +40,7 @@ module.exports = function(deployer, network, accounts){
       let plotus = await Plotus.at(plotusAddress);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address);
+      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address,[9000,9000,9000], [10000,10000,10000], [9000,9000,9000], [10000,10000,10000]);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate(accounts[0]);
