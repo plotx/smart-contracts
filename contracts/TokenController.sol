@@ -64,7 +64,7 @@ contract TokenController is IERC1132, Iupgradable {
      * @param code whose details we want to update
      * @param val value to set
      */
-    function updateUintParameters(bytes8 code, uint val) public {
+    function updateUintParameters(bytes8 code, uint val) public onlyInternal {
         if(code == "SMLP") {
             smLockPeriod = val * 1 days;
         } else if(code == "BRLIM") {
@@ -208,6 +208,7 @@ contract TokenController is IERC1132, Iupgradable {
         returns (bool)
     {
         require(_reason == "VEST" || _reason == "SM" || _reason == "DR");
+        require(_amount != 0, AMOUNT_ZERO);
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
         token.operatorTransfer(msg.sender, _amount);
         // token.transfer(address(this), _amount);
@@ -231,6 +232,7 @@ contract TokenController is IERC1132, Iupgradable {
         returns (bool)
     {
         require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require(_time != 0, "Time cannot be zero");
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
 
         locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
