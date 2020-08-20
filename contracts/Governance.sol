@@ -1027,12 +1027,12 @@ contract Governance is IGovernance, Iupgradable {
         require(memberRole.checkRole(msg.sender, mrSequence), "Not Authorized");
         if (mrSequence == uint256(MemberRoles.Role.DisputeResolution)) {
             require(
-                minTokenLockedForDR ==
+                minTokenLockedForDR <=
                     tokenController.tokensLockedAtTime(
                         msg.sender,
                         "DR",
                         lockTimeForDR.add(now)
-                    )
+                    ), "Not locked"
             );
         }
         uint256 totalVotes = allVotes.length;
@@ -1285,23 +1285,23 @@ contract Governance is IGovernance, Iupgradable {
             category
         );
         if (_checkForThreshold(_proposalId, category)) {
-            uint256 majSolution = 0;
-            for (
-                uint256 i = 1;
-                i < allProposalSolutions[_proposalId].length;
-                i++
-            ) {
-                if (
-                    proposalVoteTally[_proposalId].voteValue[i] >
-                    proposalVoteTally[_proposalId].voteValue[majSolution]
-                ) {
-                    majSolution = i;
-                }
-            }
+            // uint256 majSolution = 0;
+            // for (
+            //     uint256 i = 1;
+            //     i < allProposalSolutions[_proposalId].length;
+            //     i++
+            // ) {
+            //     if (
+            //         proposalVoteTally[_proposalId].voteValue[i] >
+            //         proposalVoteTally[_proposalId].voteValue[majSolution]
+            //     ) {
+            //         majSolution = i;
+            //     }
+            // }
             if (
                 (
                     (
-                        proposalVoteTally[_proposalId].voteValue[majSolution]
+                        proposalVoteTally[_proposalId].voteValue[1]
                             .mul(100)
                     )
                         .div(allProposalData[_proposalId].totalVoteValue)
@@ -1351,7 +1351,7 @@ contract Governance is IGovernance, Iupgradable {
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(MemberRoles.Role.AdvisoryBoard);
         minTokenLockedForDR = 1000 ether;
-        lockTimeForDR = tokenHoldingTime;
+        lockTimeForDR = 15 days;
         actionRejectAuthRole = uint256(MemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
     }

@@ -125,7 +125,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         _addInitialCategories(
             "Raise Dispute",
             "",
-            "MS",
+            "PL",
             "resolveDispute(address,uint256)",
             60,
             3,

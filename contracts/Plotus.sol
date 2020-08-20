@@ -245,7 +245,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @return uint256 representing the maximum value of option range of market.
     */
     function _calculateOptionRange() internal view returns(uint256, uint256) {
-      uint256 _currentPrice;
+      uint256 _currentPrice = 9000;
       return (_currentPrice - 50, _currentPrice + 50);
     }
 

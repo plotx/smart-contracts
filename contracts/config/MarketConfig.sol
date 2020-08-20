@@ -31,7 +31,7 @@ contract MarketConfig {
     // uint internal donationPerc;//
     // uint internal commissionPerc;//
     
-    uint internal multiplier;
+    uint internal multiplier = 10;
     uint internal minStakeForMultiplier = 5e17;
     uint internal stakeForDispute;
     uint internal marketCoolDownTime;
