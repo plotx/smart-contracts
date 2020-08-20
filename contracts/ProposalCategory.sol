@@ -158,6 +158,51 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2,
             2
         ); // 12
+        _addInitialCategories(
+            "Update Token Controller parameters",
+            "",
+            "TC",
+            "updateUintParameters(bytes8,uint256)",
+            60,
+            2,
+            2
+        ); // 13
+        _addInitialCategories(
+            "Add new market type",
+            "",
+            "PL",
+            "addNewMarketType(uint256,uint256,uint256)",
+            60,
+            2,
+            2
+        ); // 14
+        _addInitialCategories(
+            "Update Market Implementation",
+            "",
+            "PL",
+            "updateMarketImplementation(address)",
+            60,
+            2,
+            2
+        ); // 15
+        _addInitialCategories(
+            "Update Existing Market's Implementation",
+            "",
+            "PL",
+            "upgradeContractImplementation(address,address)",
+            60,
+            2,
+            2
+        ); // 16
+        _addInitialCategories(
+            "Toggle Market Creation",
+            "",
+            "PL",
+            "toggleMarketCreation(address,address)",
+            60,
+            2,
+            2
+        ); // 17
     }
 
     /**

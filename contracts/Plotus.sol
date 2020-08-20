@@ -149,7 +149,8 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _settleTime The time at which result of market will declared.
     * @param _startTime The time at which market will create.
     */
-    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _startTime) external {
+    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _startTime) external onlyInternal {
+      require(_startTime > now);
       marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _startTime));
     }
 
@@ -174,7 +175,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @dev Update the implementations of the market.
      * @param _marketImplementation the address of market implementation.
      */
-    function updateMarketImplementation(address _marketImplementation) public onlyOwner {
+    function updateMarketImplementation(address _marketImplementation) public onlyInternal {
       marketImplementation = _marketImplementation;
     }
 
@@ -184,7 +185,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @param _contractsAddress the contract address to be upgraded.
      */
     function upgradeContractImplementation(address payable _proxyAddress, address _contractsAddress) 
-        external onlyOwner
+        external onlyInternal
     {
         OwnedUpgradeabilityProxy tempInstance 
             = OwnedUpgradeabilityProxy(_proxyAddress);
