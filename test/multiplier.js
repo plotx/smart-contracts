@@ -1,4 +1,5 @@
 const { assert } = require("chai");
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
@@ -9,7 +10,8 @@ const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
   it("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", async () => {
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
   let tokenController = await TokenController.at(tokenControllerAdd);

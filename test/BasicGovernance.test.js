@@ -1,3 +1,4 @@
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Governance = artifacts.require("Governance");
 const MemberRoles = artifacts.require("MemberRoles");
 const ProposalCategory = artifacts.require("ProposalCategory");
@@ -31,7 +32,8 @@ let td;
 
 contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, notMember, dr1, dr2, dr3]) => {
   before(async function () {
-    nxms = await NXMaster.deployed();
+    nxms = await OwnedUpgradeabilityProxy.deployed();
+    nxms = await NXMaster.at(nxms.address);
     nxmToken = await PlotusToken.deployed();
     let address = await nxms.getLatestAddress(toHex("GV"));
     gv = await Governance.at(address);

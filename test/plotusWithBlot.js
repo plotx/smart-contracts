@@ -1,5 +1,6 @@
 const { assert } = require("chai");
 
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
@@ -26,7 +27,8 @@ contract("Market", async function ([
   user10,
 ]) {
   it("Place the bets with ether", async () => {
-    masterInstance = await Master.deployed();
+    masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await Master.at(masterInstance.address);
     plotusToken = await PlotusToken.deployed();
     BLOTInstance = await BLOT.deployed();
     MockUniswapRouterInstance = await MockUniswapRouter.deployed();

@@ -1,3 +1,4 @@
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Master = artifacts.require("Master");
 const TokenController = artifacts.require("TokenController");
 const PlotusToken = artifacts.require("PlotusToken.sol");
@@ -17,7 +18,8 @@ contract("PlotusToken", ([owner, account2, account3]) => {
 	let defaultOperator;
 
 	before(async () => {
-		const masterInstance = await Master.deployed();
+		let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  		masterInstance = await Master.at(masterInstance.address);
 		const tc = await masterInstance.getLatestAddress("0x5443");
 		tokenControllerInstance = await TokenController.at(tc);
 		plotusToken = await tokenControllerInstance.token();

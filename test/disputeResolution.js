@@ -1,4 +1,5 @@
 const { assert } = require("chai");
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
@@ -14,7 +15,8 @@ const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const { assertRevert } = require('./utils/assertRevert');
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   it("1.if DR panel accepts", async () => {
-    let masterInstance = await Master.deployed();
+    let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await Master.at(masterInstance.address);
     let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
     let tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
@@ -23,16 +25,15 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
     await increaseTime(10001);
     assert.ok(marketInstance);
-    let nxms = await Master.deployed();
     let nxmToken = await PlotusToken.deployed();
-    let address = await nxms.getLatestAddress(web3.utils.toHex("GV"));
+    let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     let gv = await Governance.at(address);
-    address = await nxms.getLatestAddress(web3.utils.toHex("PC"));
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
     let pc = await ProposalCategory.at(address);
-    address = await nxms.getLatestAddress(web3.utils.toHex("MR"));
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
     let mr = await MemberRoles.at(address);
-    let tc = await TokenController.at(await nxms.getLatestAddress(web3.utils.toHex("MR")));
+    let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
     await plotusToken.approve(mr.address, "10000000000000000000000");
    
     await plotusToken.transfer(ab2, "50000000000000000000000");
@@ -95,7 +96,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 });
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   it("2.if DR panel rejects", async () => {
-    let masterInstance = await Master.deployed();
+    let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await Master.at(masterInstance.address);
     let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
     let tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
@@ -104,16 +106,15 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
     await increaseTime(10001);
     assert.ok(marketInstance);
-    let nxms = await Master.deployed();
     let nxmToken = await PlotusToken.deployed();
-    let address = await nxms.getLatestAddress(web3.utils.toHex("GV"));
+    let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     let gv = await Governance.at(address);
-    address = await nxms.getLatestAddress(web3.utils.toHex("PC"));
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
     let pc = await ProposalCategory.at(address);
-    address = await nxms.getLatestAddress(web3.utils.toHex("MR"));
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
     let mr = await MemberRoles.at(address);
-    let tc = await TokenController.at(await nxms.getLatestAddress(web3.utils.toHex("MR")));
+    let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
     
     await plotusToken.approve(mr.address, "100000000000000000000000");
      

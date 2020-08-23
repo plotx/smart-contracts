@@ -1,4 +1,5 @@
 const MemberRoles = artifacts.require('MemberRoles');
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Governance = artifacts.require('Governance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const Master = artifacts.require('Master');
@@ -25,7 +26,8 @@ contract('Proposal Category', function([owner, other]) {
 
     snapshotId = await takeSnapshot();
 
-    master = await Master.deployed();
+    master = await OwnedUpgradeabilityProxy.deployed();
+    master = await Master.at(master.address);
     let address = await master.getLatestAddress(toHex('PC'));
     pc = await ProposalCategory.at(address);
     address = await master.getLatestAddress(toHex('GV'));

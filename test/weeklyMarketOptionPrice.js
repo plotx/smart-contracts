@@ -1,6 +1,7 @@
 const { assert } = require("chai");
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
+const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("PlotusToken");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
@@ -12,7 +13,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 
   it("1.Scenario 1 - Stake in ETH < minstake (no stake in LOT) and time passed < min time passed", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
@@ -84,7 +86,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
   it("2.Scenario 2 - Stake in LOT< minstake (no stake in ETH) and time passed < min time passed", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
@@ -161,7 +164,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
  it("3.Scenario 3 - Stake in LOT+ETH> minstake and time passed < min time passed", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
@@ -262,7 +266,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
  it("4.Scenario 3 - Stake in LOT+ETH> minstake and time passed < min time passed", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
@@ -363,7 +368,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
  it("5.Scenario 4 - Stake in LOT+ETH> minstake and time passed > min time passed", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
@@ -464,7 +470,8 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
 contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,user8,user9,user10]) {
  it("6.Scenario 5 - Stake in LOT+ETH> minstake and time passed > min time passed, max distance = 2", async () => {
   let tokenPrice = 0.01;
-  let masterInstance = await Master.deployed();
+  let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+  masterInstance = await Master.at(masterInstance.address);
   let plotusToken = await PlotusToken.deployed();
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
