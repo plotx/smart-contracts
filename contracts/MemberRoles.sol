@@ -111,7 +111,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     function addInitialABandDRMembers(
         address[] calldata abArray,
         address[] calldata drArray
-    ) external onlyOwner {
+    ) external {
         require(
             numberOfMembers(uint256(Role.AdvisoryBoard)) == 1,
             "Already initialized!"

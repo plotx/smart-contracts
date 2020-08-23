@@ -1,12 +1,11 @@
 pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/openzeppelin-solidity/ownership/Ownable.sol";
 import "./interfaces/IPlotus.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
 
-contract Master is Ownable {
+contract Master is Governed {
 
     bytes2[] public allContractNames;
     address payable public plotusAddress;
@@ -33,8 +32,8 @@ contract Master is Ownable {
     * @param _marketConfig The addresses of market configs.
     */
     function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _bLot, address _marketConfig) external {
-        // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!masterInitialised);
         masterInitialised = true;
         _addContractNames();
@@ -116,6 +115,11 @@ contract Master is Ownable {
     */
     function _changeMasterAddress(address _masterAddress) internal {
         for (uint i = 0; i < allContractNames.length; i++) {
+            if(_masterAddress != address(this)) {
+                OwnedUpgradeabilityProxy tempInstance 
+                    = OwnedUpgradeabilityProxy(contractAddress[allContractNames[i]]);
+                tempInstance.transferProxyOwnership(_masterAddress);
+            }
             Iupgradable up = Iupgradable(contractAddress[allContractNames[i]]);
             up.changeMasterAddress(_masterAddress);
         }
@@ -140,37 +144,6 @@ contract Master is Ownable {
         OwnedUpgradeabilityProxy tempInstance 
                 = OwnedUpgradeabilityProxy(contractAddress[_contractsName]);
         tempInstance.upgradeTo(_contractAddress);
-    }
-
-    /**
-     * @dev Allows the current owner to transfer control of the contract to a newOwner.
-     * @param newOwner The address to transfer ownership to.
-     */
-    function transferOwnership(address newOwner) public onlyOwner {
-        _transferOwnership(newOwner);
-        // Plotus(plotusAddress).transferOwnership(newOwner);
-    }
-
-     /**
-     * @dev Upgrades the contract implementation.
-     * @param _contractsAddress The address to upgrade the implementation for.
-     */
-    function upgradeContractImplementation(address _contractsAddress) 
-        external onlyOwner
-    {
-        OwnedUpgradeabilityProxy tempInstance 
-            = OwnedUpgradeabilityProxy(plotusAddress);
-        tempInstance.upgradeTo(_contractsAddress);
-    }
-
-    /**
-     * @dev Allows the current owner to transfer control of the contract to a newOwner.
-     * @param _newOwner The address to transfer ownership to.
-     */
-    function transferProxyOwnership(address _newOwner) external onlyOwner {
-      OwnedUpgradeabilityProxy tempInstance 
-            = OwnedUpgradeabilityProxy(plotusAddress);
-        tempInstance.transferProxyOwnership(_newOwner);
     }
 
     /**

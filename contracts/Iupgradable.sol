@@ -14,14 +14,6 @@ contract Iupgradable {
     }
 
     /**
-     * @dev Checks if msg.sender is plotus owner.
-     */
-    modifier onlyOwner {
-        require(ms.owner() == msg.sender, "Not owner");
-        _;
-    }
-
-    /**
      * @dev Iupgradable Interface to update dependent contract address
      */
     function changeDependentContractAddress() public;
