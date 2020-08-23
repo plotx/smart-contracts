@@ -60,7 +60,6 @@ contract Market is usingProvable {
       uint minValue;
       uint maxValue;
       uint predictionPoints;
-      uint assetStakedValue;
       mapping(address => uint256) assetStaked;
       mapping(address => uint256) assetLeveraged;
       // address[] stakers;
@@ -253,13 +252,16 @@ contract Market is usingProvable {
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);
         _assetStaked = new uint[](totalOptions);
-        uint _totalStakedToken = marketConfig.getAssetValueETH(token, totalStakedToken);
-        uint _totalStaked = totalStakedETH.add(_totalStakedToken);
+        (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+        uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
         for (uint i = 0; i < totalOptions; i++) {
-        _assetStaked[i] = optionsAvailable[i+1].assetStakedValue;
+        _assetStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
+        _assetStaked[i] = _assetStaked[i].add(
+          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[token], _tokenPrice, _decimals)
+        );
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, optionsAvailable[i+1].assetStakedValue);
+        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked[i]);
        }
     }
 
@@ -271,8 +273,8 @@ contract Market is usingProvable {
     * @return address[] memory representing the users who place prediction on winnning option.
     * @return uint256 representing the assets staked on winning option.
     */
-    function getMarketResults() public view returns(uint256, uint256, uint256[] memory, uint256) {
-      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStakedValue);
+    function getMarketResults() public view returns(uint256, uint256, uint256[] memory, uint256, uint256) {
+      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[token]);
     }
 
     /**
@@ -310,7 +312,7 @@ contract Market is usingProvable {
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
-      _storePredictionData(_prediction, _predictionStake, _stakeValue, _asset, _leverage, predictionPoints);
+      _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
       pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
@@ -338,12 +340,11 @@ contract Market is usingProvable {
     * @dev Stores the prediction data.
     * @param _prediction The option range on which user place prediction.
     * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _stakeValue The stake value of asset.
     * @param _asset The assets uses by user during prediction.
     * @param _leverage The leverage opted by user during prediction.
     * @param predictionPoints The positions user gets during prediction.
     */
-    function _storePredictionData(uint _prediction, uint _predictionStake, uint _stakeValue, address _asset, uint _leverage, uint predictionPoints) internal {
+    function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
       if(_asset == ETH_ADDRESS) {
         totalStakedETH = totalStakedETH.add(_predictionStake);
       }
@@ -354,7 +355,6 @@ contract Market is usingProvable {
       assetStaked[msg.sender][_asset][_prediction] = assetStaked[msg.sender][_asset][_prediction].add(_predictionStake);
       LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
       optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
-      optionsAvailable[_prediction].assetStakedValue = optionsAvailable[_prediction].assetStakedValue.add(_stakeValue);
       optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_predictionStake);
       optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
@@ -447,7 +447,9 @@ contract Market is usingProvable {
         WinningOption = 2;
       }
       uint[] memory totalReward = new uint256[](2);
-      if(optionsAvailable[WinningOption].assetStakedValue > 0){
+      if(optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
+        optionsAvailable[WinningOption].assetStaked[token] > 0
+      ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
           totalReward[0] = totalReward[0].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[token])).div(100));
