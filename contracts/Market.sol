@@ -460,9 +460,9 @@ contract Market is usingProvable {
       } else {
         uint tokenAmountToPool;
         uint ethAmountToPool;
-        for(uint j=1;j <= totalOptions;j++){
-          tokenAmountToPool =  tokenAmountToPool.add(optionsAvailable[j].assetStaked[token]);
-          ethAmountToPool =  ethAmountToPool.add(optionsAvailable[j].assetStaked[ETH_ADDRESS]);
+        for(uint i=1;i <= totalOptions;i++){
+          tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[token])).div(100));
+          ethAmountToPool = ethAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
         }
         _transferAsset(token, address(pl), tokenAmountToPool);
         _transferAsset(ETH_ADDRESS, address(pl), ethAmountToPool);
@@ -507,10 +507,12 @@ contract Market is usingProvable {
     * @param _amount The amount which is transfer.
     */
     function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
-      if(_asset == ETH_ADDRESS) {
-        _recipient.transfer(_amount);
-      } else {
-        require(IToken(_asset).transfer(_recipient, _amount));
+      if(_amount > 0) { 
+        if(_asset == ETH_ADDRESS) {
+          _recipient.transfer(_amount);
+        } else {
+          require(IToken(_asset).transfer(_recipient, _amount));
+        }
       }
     }
 
