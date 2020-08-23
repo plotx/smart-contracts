@@ -81,7 +81,7 @@ contract Plotus is usingProvable, Iupgradable {
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAddm, uint256[] totalReward, uint256 winningOption);
+    event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
    
     /**
@@ -300,8 +300,9 @@ contract Plotus is usingProvable, Iupgradable {
     * @dev Emits the MarketResult event.
     * @param _totalReward The amount of reward to be distribute.
     * @param winningOption The winning option of the market.
+    * @param closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption) external OnlyMarket {
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue) external OnlyMarket {
       // if (marketOpenIndex < marketIndex[msg.sender]) {
       //   uint256 i;
       //   uint256 _status;
@@ -320,7 +321,7 @@ contract Plotus is usingProvable, Iupgradable {
       //   marketOpenIndex = marketIndex[msg.sender];
       // }
       marketWinningOption[msg.sender] = winningOption;
-      emit MarketResult(msg.sender, _totalReward, winningOption);
+      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue);
     }
     
     /**

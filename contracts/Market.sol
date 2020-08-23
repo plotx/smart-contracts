@@ -27,6 +27,7 @@ contract Market is usingProvable {
     bool internal isMarketCurrencyERCToken;
     uint public rate;
     uint public WinningOption;
+    uint public marketCloseValue;
     bool public lockedForDispute;
     bytes32 internal marketResultId;
     uint[] public rewardToDistribute;
@@ -273,8 +274,8 @@ contract Market is usingProvable {
     * @return address[] memory representing the users who place prediction on winnning option.
     * @return uint256 representing the assets staked on winning option.
     */
-    function getMarketResults() public view returns(uint256, uint256, uint256[] memory, uint256, uint256) {
-      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[token]);
+    function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
+      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[token]);
     }
 
     /**
@@ -467,7 +468,8 @@ contract Market is usingProvable {
         _transferAsset(token, address(pl), tokenAmountToPool);
         _transferAsset(ETH_ADDRESS, address(pl), ethAmountToPool);
       }
-      pl.callMarketResultEvent(rewardToDistribute, WinningOption);
+      marketCloseValue = _value;
+      pl.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
     }
 
     /**
