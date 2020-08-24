@@ -443,19 +443,22 @@ contract Plotus is usingProvable, Iupgradable {
     * @dev Claim the pending return of the market.
     */
     function claimPendingReturn() external {
-      uint256 claimFlag;
       uint256 i;
-      for(i = lastClaimedIndex[msg.sender]; i < marketsParticipated[msg.sender].length; i++) {
+      uint len = marketsParticipated[msg.sender].length;
+      uint lastClaimed = len;
+      for(i = lastClaimed; i < len; i++) {
         if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0 && !(disputeStakes[marketsParticipated[msg.sender][i]].inDispute)) {
           IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
         } else {
-          claimFlag = i;
+          if(lastClaimed == len) {
+            lastClaimed = i;
+          }
         }
       }
-      if(claimFlag == 0) {
-        claimFlag = i;
+      if(lastClaimed == len) {
+        lastClaimed = i;
       }
-      lastClaimedIndex[msg.sender] = claimFlag + 1;
+      lastClaimedIndex[msg.sender] = lastClaimed;
     }
 
     function () external payable {
