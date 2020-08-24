@@ -272,6 +272,7 @@ contract TokenController is IERC1132, Iupgradable {
             lockedTokens = tokensUnlockable(_of, lockReason[_of][i]);
             if (lockedTokens > 0) {
                 unlockableTokens = unlockableTokens.add(lockedTokens);
+                locked[_of][lockReason[_of][i]].amount = locked[_of][lockReason[_of][i]].amount.sub(lockedTokens);
                 locked[_of][lockReason[_of][i]].claimed = true;
                 emit Unlocked(_of, lockReason[_of][i], lockedTokens);
             }
