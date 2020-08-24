@@ -131,6 +131,7 @@ contract TokenController is IERC1132, Iupgradable {
         require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
         require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
+        require(!(token.isLockedForGV(msg.sender)), "Locked for governance");
 
         uint256 validUntil = now.add(_time); //solhint-disable-line
 
