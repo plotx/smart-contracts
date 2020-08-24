@@ -39,6 +39,7 @@ contract PlotusToken is ERC20 {
 
     constructor(uint256 initialSupply) public {
         _mint(msg.sender, initialSupply);
+        operator = msg.sender;
     }
 
     /**

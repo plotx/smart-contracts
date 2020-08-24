@@ -32,6 +32,7 @@ contract BLOT is ERC20, MinterRole {
 
     constructor (address _lotToken) public {
         plotusToken = _lotToken;
+        operator = msg.sender;
     }
 
     /**
