@@ -1,7 +1,7 @@
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Master = artifacts.require("Master");
 const TokenController = artifacts.require("TokenController");
-const PlotusToken = artifacts.require("PlotusToken.sol");
+const PlotusToken = artifacts.require("MockPLOT.sol");
 const Web3 = require("web3");
 const { assertRevert } = require("./utils/assertRevert.js");
 const { expectRevert, time } = require("@openzeppelin/test-helpers");

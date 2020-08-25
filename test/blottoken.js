@@ -1,5 +1,5 @@
 const BLOT = artifacts.require('BLOT');
-const PLOT = artifacts.require('PlotusToken');
+const PLOT = artifacts.require('MockPLOT');
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { assertRevert } = require('./utils/assertRevert');
 contract('bLOTToken', function([user1,user2]){
