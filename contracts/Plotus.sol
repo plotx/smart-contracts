@@ -64,6 +64,7 @@ contract Plotus is usingProvable, Iupgradable {
     MarketCurrency[] marketCurrencies;
 
     bool public marketCreationPaused;
+    bool public plotxInitialized;
 
     IToken public plotusToken;
     IConfig public marketConfig;
@@ -107,6 +108,8 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _plotusToken The instance of plotus token.
     */
     function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public {
+      require(!plotxInitialized);
+      plotxInitialized = true;
       masterAddress = msg.sender;
       marketImplementation = _marketImplementation;
       plotusToken = IToken(_plotusToken);
