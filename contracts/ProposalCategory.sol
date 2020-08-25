@@ -171,11 +171,20 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "Add new market type",
             "",
             "PL",
-            "addNewMarketType(uint256,uint256,uint256)",
+            "addNewMarketType(uint256,uint256,uint256,uint256[],uint256[])",
             60,
             2,
             2
         ); // 14
+        _addInitialCategories(
+            "Add new market currency",
+            "",
+            "PL",
+            "addNewMarketCurrency(address,bytes32,string,string,string,bool,uint256[],uint256[])",
+            60,
+            2,
+            2
+        ); // 15
         _addInitialCategories(
             "Pause Market Creation",
             "",
@@ -184,7 +193,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 15
+        );
         _addInitialCategories(
             "Resume Market Creation",
             "",
@@ -193,7 +202,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 16
+        );
         _addInitialCategories(
             "Transfer Plotus Assets",
             "",
@@ -202,7 +211,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 17
+        );
         _addInitialCategories(
             "Update Config Uint parameters",
             "",
@@ -211,7 +220,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 18
+        );
         _addInitialCategories(
             "Update Address Uint parameters",
             "",
@@ -220,7 +229,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 19
+        );
     }
 
     /**

@@ -155,6 +155,17 @@ contract Plotus is usingProvable, Iupgradable {
       }
     }
 
+    /**
+    * @dev Add new market currency.
+    */
+    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, string calldata _oraclizeSource, string calldata _oraclizeType, bool _isToken, uint256[] calldata _minValue, uint256[] calldata _maxValue) external onlyInternal {
+      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _oraclizeSource,_oraclizeType, _isToken));
+      uint256 _marketCurrencyIndex = marketCurrencies.length.sub(1);
+      for(uint256 j = 0;j < marketTypes.length; j++) {
+        _createMarket(j, _marketCurrencyIndex, _minValue[j], _maxValue[j]);
+      }
+    }
+
      /**
      * @dev Update the configs of the market.
      * @param _marketConfig the address of market configs.
