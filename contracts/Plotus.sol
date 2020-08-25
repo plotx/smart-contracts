@@ -452,14 +452,17 @@ contract Plotus is usingProvable, Iupgradable {
 
     /**
     * @dev Claim the pending return of the market.
+    * @param maxRecords Maximum number of records to claim reward for
     */
-    function claimPendingReturn() external {
+    function claimPendingReturn(uint256 maxRecords) external {
       uint256 i;
       uint len = marketsParticipated[msg.sender].length;
       uint lastClaimed = len;
-      for(i = lastClaimed; i < len; i++) {
+      uint count;
+      for(i = lastClaimed; i < len && count < maxRecords; i++) {
         if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0 && !(disputeStakes[marketsParticipated[msg.sender][i]].inDispute)) {
           IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
+          count++;
         } else {
           if(lastClaimed == len) {
             lastClaimed = i;
