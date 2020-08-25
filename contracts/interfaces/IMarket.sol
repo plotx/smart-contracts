@@ -2,6 +2,14 @@ pragma solidity 0.5.7;
 
 contract IMarket {
 
+    enum PredictionStatus {
+      Live,
+      InSettlement,
+      Cooling,
+      InDispute,
+      Settled
+    }
+
     /**
     * @dev Initialize the market.
     * @param _startTime The time at which market will create.
