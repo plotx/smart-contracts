@@ -40,7 +40,7 @@ contract MockUniswapRouter is IUniswapV2Router02 {
     	amounts = new uint[](2);
     	amounts[0] = amountIn;
     	if(path[0] == 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE) {
-    		amounts[1] = amountIn.mul(priceOfToken);
+    		amounts[1] = amountIn.mul(1e18).div(priceOfToken);
     	} else {
     		amounts[1] = amountIn.mul(priceOfToken).div(1e18);
     	}
