@@ -41,6 +41,8 @@ contract Plotus is usingProvable, Iupgradable {
       uint256 marketCurrencyIndex;
     }
 
+    uint public constant marketCreationFallbackTime = 15 minutes;
+
     mapping(address => bool) public isMarket;
     mapping(address => uint256) totalStaked;
     mapping(address => uint256) rewardClaimed;
@@ -222,6 +224,20 @@ contract Plotus is usingProvable, Iupgradable {
       marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
     }
 
+    function createMarketFallback(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _gasLimit) external payable{
+      address _previousMarket = currentMarketTypeCurrency[_marketType][_marketCurrencyIndex];
+      MarketTypeData storage _marketTypeData = marketTypes[_marketType];
+      (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
+      require(_status == uint(IMarket.PredictionStatus.Cooling));
+      require(now > _marketTypeData.startTime.add(marketCreationFallbackTime));
+      if(_marketTypeData.startTime > _marketTypeData.startTime.add(_marketTypeData.predictionTime)) {
+        uint diff = ((now).sub(_marketTypeData.startTime)).mul(_marketTypeData.predictionTime);
+       _marketTypeData.startTime = _marketTypeData.startTime.add(diff.mul(_marketTypeData.predictionTime));
+      }
+      bytes32 _oraclizeId = provable_query("computation", marketCurrencies[_marketCurrencyIndex].marketCreationHash, uint2str(_marketTypeData.predictionTime), _gasLimit);
+      marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex);
+    }
+
     /**
     * @dev callback for result declaration of market.
     * @param myid The orcalize market result id.
@@ -391,7 +407,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @return _expireTime uint representing the expire time of the market.
     * @return _predictionStatus uint representing the status of the market.
     */
-    function getMarketDetails(address payable _marketAdd)public view returns
+    function getMarketDetails(address _marketAdd)public view returns
     (bytes32 _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
       uint256[] memory optionprice,uint256[] memory _ethStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
       // Market _market = Market(_marketAdd);
