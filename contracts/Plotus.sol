@@ -203,7 +203,7 @@ contract Plotus is usingProvable, Iupgradable {
       IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
       _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
-      bytes32 _oraclizeId = provable_query(_marketTypeData.startTime, "URL", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price", 800000);
+      bytes32 _oraclizeId = provable_query(_marketTypeData.startTime, "computation", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", 800000);
       marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
     }
 
