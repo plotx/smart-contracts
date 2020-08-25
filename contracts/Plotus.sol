@@ -238,11 +238,19 @@ contract Plotus is usingProvable, Iupgradable {
     }
 
     /**
-    * @dev Interrupts for creation of market.
-    * @param value The boolean value if wants to stop the market creation.
+    * @dev Updates Flag to pause creation of market.
     */
-    function toggleMarketCreation(bool value) public onlyInternal {
-        marketCreationPaused = value;
+    function pauseMarketCreation() public onlyInternal {
+      require(!marketCreationPaused);
+        marketCreationPaused = true;
+    }
+
+    /**
+    * @dev Updates Flag to resume creation of market.
+    */
+    function resumeMarketCreation() public onlyInternal {
+      require(marketCreationPaused);
+        marketCreationPaused = true;
     }
 
     /**

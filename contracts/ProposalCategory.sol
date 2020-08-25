@@ -177,14 +177,23 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); // 14
         _addInitialCategories(
-            "Toggle Market Creation",
+            "Pause Market Creation",
             "",
             "PL",
-            "toggleMarketCreation(address,address)",
+            "pauseMarketCreation()",
             60,
             2,
             2
         ); // 15
+        _addInitialCategories(
+            "Resume Market Creation",
+            "",
+            "PL",
+            "resumeMarketCreation()",
+            60,
+            2,
+            2
+        ); // 16
         _addInitialCategories(
             "Transfer Plotus Assets",
             "",
@@ -193,7 +202,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 16
+        ); // 17
         _addInitialCategories(
             "Update Config Uint parameters",
             "",
@@ -202,7 +211,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 17
+        ); // 18
         _addInitialCategories(
             "Update Address Uint parameters",
             "",
@@ -211,7 +220,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 18
+        ); // 19
     }
 
     /**
