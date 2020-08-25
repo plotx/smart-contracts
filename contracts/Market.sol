@@ -1,6 +1,7 @@
 pragma solidity 0.5.7;
 
 import "./external/oraclize/ethereum-api/provableAPI.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./config/MarketConfig.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
@@ -80,6 +81,8 @@ contract Market is usingProvable {
     * @param _marketFeedAddress The address to gets the price calculation params.
     */
     function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
+      OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+      require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
       tokenController = ITokenController(pl.tokenController());
