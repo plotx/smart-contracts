@@ -307,9 +307,10 @@ contract Market is usingProvable {
           require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
         }
       }
-      uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
 
       _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
+      
+      uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
 
       (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
