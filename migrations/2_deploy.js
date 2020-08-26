@@ -46,7 +46,7 @@ module.exports = function(deployer, network, accounts){
       let plotus = await Plotus.at(plotusAddress);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address,[9000,9000,9000], [10000,10000,10000], [9000,9000,9000], [10000,10000,10000]);
+      await plotus.startInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address,[9000,9000,9000], [10000,10000,10000], [9000,9000,9000], [10000,10000,10000]);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate(accounts[0]);
