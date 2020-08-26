@@ -5,25 +5,29 @@ import "../Plotus.sol";
 contract MockPlotus is Plotus {
 
 	mapping(address => bytes32) marketId;
-	/**
-  * @dev Creates the new market.
-  * @param _marketType The type of the market.
-  * @param _marketCurrencyIndex the index of market currency.
-  */
-  function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue) internal {
-    require(!marketCreationPaused);
-    MarketTypeData storage _marketTypeData = marketTypes[_marketType];
-    MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
-    address payable _market = _generateProxy(marketImplementation);
-    isMarket[_market] = true;
-    markets.push(_market);
-    currentMarketTypeCurrency[_marketType][_marketCurrencyIndex] = _market;
-    IMarket(_market).initiate(_marketTypeData.startTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
-    emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketTypeData.startTime);
-    _marketTypeData.startTime =_marketTypeData.startTime.add(_marketTypeData.predictionTime);
-    bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
-    marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex);
-    marketId[_market] = _oraclizeId;
+	
+  function startInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed, uint256[] memory _initialMinOptionETH, uint256[] memory _initialMaxOptionETH, uint256[] memory _initialMinOptionPLOT, uint256[] memory _initialMaxOptionPLOT) public payable {
+    marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL", false));
+    marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL", true));
+
+    marketTypes.push(MarketTypeData(1 hours, 2 hours, 20));
+    marketTypes.push(MarketTypeData(24 hours, 2 days, 50));
+    marketTypes.push(MarketTypeData(7 days, 14 days, 100));
+    // for(uint256 j = 0;j < marketCurrencies.length; j++) {
+        for(uint256 i = 0;i < marketTypes.length; i++) {
+            // marketTypeCurrencyStartTime[i][0] = _startTime;
+            // marketTypeCurrencyStartTime[i][1] = _startTime;
+            _createMarket(i, 0, _initialMinOptionETH[i], _initialMaxOptionETH[i], _marketStartTime);
+            _createMarket(i, 1, _initialMinOptionPLOT[i], _initialMaxOptionPLOT[i], _marketStartTime);
+        }
+    // }
+  }
+
+  function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
+  bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
+  marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);
+  marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
+  marketId[_previousMarket] = _oraclizeId;
   }
 
   /**
@@ -32,16 +36,21 @@ contract MockPlotus is Plotus {
   * @param result The current price of market currency.
   */
   function __callback(bytes32 myid, string memory result) public {
-    //Check oraclise address
-    strings.slice memory s = result.toSlice();
-    strings.slice memory delim = "-".toSlice();
-    uint[] memory parts = new uint[](s.count(delim) + 1);
-    for (uint i = 0; i < parts.length; i++) {
-        parts[i] = parseInt(s.split(delim).toString());
+      require(msg.sender == provable_cbAddress());
+      //Check oraclise address
+      strings.slice memory s = result.toSlice();
+      strings.slice memory delim = "-".toSlice();
+      uint[] memory parts = new uint[](s.count(delim) + 1);
+      for (uint i = 0; i < parts.length; i++) {
+          parts[i] = parseInt(s.split(delim).toString());
+      }
+      if(marketOracleId[myid].marketAddress != address(0)) {
+        IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
+      }
+      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1], marketOracleId[myid].startTime);
+      // addNewMarkets(marketOracleId[myid], parseInt(result));
+      delete marketOracleId[myid];
     }
-    _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1]);
-    delete marketOracleId[myid];
-  }
 
   function getMarketOraclizeId(address _marketAddress) public view returns(bytes32){
   	return marketId[_marketAddress];
