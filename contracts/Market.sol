@@ -99,7 +99,7 @@ contract Market is usingProvable {
       predictionTime = _predictionTime; 
       expireTime = startTime.add(_predictionTime);
       settleTime = startTime.add(_settleTime);
-      marketCoolDownTime = settleTime.add(_coolDownTime);
+      marketCoolDownTime = _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
       marketResultId = provable_query(settleTime, _oraclizeType, _oraclizeSource);
@@ -424,15 +424,10 @@ contract Market is usingProvable {
       commissionExchanged = true;
     }
 
-    /**
-    * @dev Calculate the result of market.
-    * @param _value The current price of market currency.
-    */
-    function calculatePredictionResult(uint _value) public {
-      //Owner can set the result, for testing. To be removed when deployed on mainnet
-      require(msg.sender == pl.owner() || msg.sender == provable_cbAddress());
+// In dev
+    function settleMarketFallback() external {
+      uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isMarketCurrencyERCToken);
       _postResult(_value);
-
     }
 
     /**
@@ -442,8 +437,10 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
+      require(marketStatus() == PredictionStatus.InSettlement);
       ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
+      marketCoolDownTime = (now).add(marketCoolDownTime);
       if(_value < optionsAvailable[2].minValue) {
         WinningOption = 1;
       } else if(_value > optionsAvailable[2].maxValue) {
@@ -640,7 +637,8 @@ contract Market is usingProvable {
     function __callback(bytes32 myid, string memory result) public {
       require(msg.sender == provable_cbAddress());
       require ((myid==marketResultId));
-      calculatePredictionResult(parseInt(result));
+      _postResult(parseInt(result));
+      delete marketResultId;
     }
 
 }
