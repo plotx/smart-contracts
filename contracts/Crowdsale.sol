@@ -77,22 +77,26 @@ contract Crowdsale is ReentrancyGuard {
     event TokensPurchased(address indexed purchaser, address indexed beneficiary, uint256 value, uint256 amount);
 
     /**
+    * @param authorisedToWhitelist authorised address who can whitelist
      * @param wallet Address where collected funds will be forwarded to
      * @param token Address of the token being sold
      * @param tokenUSDC Address of the USDC token
      * @param tokenUSDT Address of the USDT token
      */
-    constructor (address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT) public {
+    constructor (address authorisedToWhitelist, address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT) public {
+        require(authorisedToWhitelist != address(0), "Crowdsale: Authorised address is the zero address");
         require(wallet != address(0), "Crowdsale: wallet is the zero address");
         require(address(token) != address(0), "Crowdsale: token is the zero address");
         require(address(tokenUSDC) != address(0), "USDC token is the zero address");
         require(address(tokenUSDT) != address(0), "USDT token is the zero address");
 
+        _authorisedToWhitelist = authorisedToWhitelist;
         _tokenUSDC = tokenUSDC; 
         _tokenUSDT = tokenUSDT;
         _wallet = wallet;
         _token = token;
         _spendingLimit = uint(10000).mul(10 ** 18);
+        _rate = 1; // will be replaced by formula 
     }
 
     /**
@@ -190,6 +194,11 @@ contract Crowdsale is ReentrancyGuard {
         _postValidatePurchase(beneficiary, _amount);
     }
 
+    /// @dev Will forward funds to wallet if funds are stuck.
+    function forwardFunds() external {
+        _forwardFunds();
+    }
+
     /**
      * @dev Validation of an incoming purchase. Use require statements to revert state when conditions are not met.
      * Use `super` in contracts that inherit from Crowdsale to extend their validations.
@@ -213,9 +222,9 @@ contract Crowdsale is ReentrancyGuard {
      * @dev Validation of an executed purchase. Observe state and use revert statements to undo rollback when valid
      * conditions are not met.
      * @param beneficiary Address performing the token purchase
-     * @param weiAmount Value in wei involved in the purchase
+     * @param amount Value in (USDC/USDT) involved in the purchase
      */
-    function _postValidatePurchase(address beneficiary, uint256 weiAmount) internal view {
+    function _postValidatePurchase(address beneficiary, uint256 amount) internal view {
         // solhint-disable-previous-line no-empty-blocks
     }
 
@@ -243,19 +252,19 @@ contract Crowdsale is ReentrancyGuard {
      * @dev Override for extensions that require an internal state to check for validity (current user contributions,
      * etc.)
      * @param beneficiary Address receiving the tokens
-     * @param weiAmount Value in wei involved in the purchase
+     * @param amount Value in (USDC/USDT) involved in the purchase
      */
-    function _updatePurchasingState(address beneficiary, uint256 weiAmount) internal {
+    function _updatePurchasingState(address beneficiary, uint256 amount) internal {
         // solhint-disable-previous-line no-empty-blocks
     }
 
     /**
      * @dev Override to extend the way in which ether is converted to tokens.
-     * @param weiAmount Value in wei to be converted into tokens
+     * @param amount Value in (USDC/USDT) involved in the purchase
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
-    function _getTokenAmount(uint256 weiAmount) internal view returns (uint256) {
-        return weiAmount.mul(_rate); // need to update aording to bonding curve.
+    function _getTokenAmount(uint256 amount) internal view returns (uint256) {
+        return amount.mul(_rate); // need to update aording to bonding curve.
     }
 
     /**
@@ -266,12 +275,12 @@ contract Crowdsale is ReentrancyGuard {
         uint balanceUSDT = _tokenUSDT.balanceOf(address(this));
         if(balanceUSDC > 0) {
 
-            require(_tokenUSDC.transfer(_wallet, balanceUSDC), "Transfer failed while forwarding funds");
+            require(_tokenUSDC.transfer(_wallet, balanceUSDC), "Transfer failed while forwarding USDC funds");
         }
 
         if(balanceUSDT > 0) {
 
-            require(_tokenUSDT.transfer(_wallet, balanceUSDT), "Transfer failed while forwarding funds");
+            require(_tokenUSDT.transfer(_wallet, balanceUSDT), "Transfer failed while forwarding USDT funds");
         }
     }
 }
