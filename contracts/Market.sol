@@ -25,7 +25,7 @@ contract Market is usingProvable {
     uint internal expireTime;
     bytes32 internal marketCurrency;
     address internal marketFeedAddress;
-    bool internal isMarketCurrencyERCToken;
+    bool internal isChainlinkFeed;
     uint public rate;
     uint public WinningOption;
     uint public marketCloseValue;
@@ -80,7 +80,7 @@ contract Market is usingProvable {
     * @param _marketCurrency The stock name of market.
     * @param _marketFeedAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isERCToken) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       pl = IPlotus(msg.sender);
@@ -90,7 +90,7 @@ contract Market is usingProvable {
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
-      isMarketCurrencyERCToken = _isERCToken;
+      isChainlinkFeed = _isChainlinkFeed;
       uint _coolDownTime;
       uint _rate;
       (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketConfig.getMarketInitialParams();
@@ -128,7 +128,7 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isMarketCurrencyERCToken);
+      (uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
       uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
         return 0;
@@ -426,7 +426,7 @@ contract Market is usingProvable {
 
 // In dev
     function settleMarketFallback() external {
-      uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isMarketCurrencyERCToken);
+      uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
       _postResult(_value);
     }
 
@@ -637,7 +637,7 @@ contract Market is usingProvable {
     function __callback(bytes32 myid, string memory result) public {
       require(msg.sender == provable_cbAddress());
       require ((myid==marketResultId));
-      uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isMarketCurrencyERCToken);
+      uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
       _postResult(_currentPrice);
       delete marketResultId;
     }

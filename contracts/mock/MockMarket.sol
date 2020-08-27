@@ -22,7 +22,7 @@ contract MockMarket is Market {
     }
 
 
-	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isERCToken) public payable {
+	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
       mockFlag = true;
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
@@ -31,7 +31,7 @@ contract MockMarket is Market {
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
-      isMarketCurrencyERCToken = _isERCToken;
+      isChainlinkFeed = _isChainlinkFeed;
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;

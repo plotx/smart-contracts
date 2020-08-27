@@ -119,11 +119,11 @@ contract MarketConfig {
         return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
     }
 
-    function getAssetPriceUSD(address _currencyAddress, bool _isCurrencyERCToken) public view returns(uint latestAnswer) {
+    function getAssetPriceUSD(address _currencyAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {
         // if(_currencyAddress != ETH_ADDRESS) {
         //     return latestAnswer = uint(chainLinkOracle.latestAnswer());
         // }
-        if(_isCurrencyERCToken) {
+        if(!(_isChainlinkFeed)) {
             latestAnswer = uint(chainLinkOracle.latestAnswer()).div(1e8);
             // address _exchange = uniswapFactory.getExchange(_currencyAddress);
             address[] memory path = new address[](2);

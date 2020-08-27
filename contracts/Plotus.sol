@@ -30,7 +30,7 @@ contract Plotus is usingProvable, Iupgradable {
       address currencyFeedAddress;
       bytes32 currencyName;
       string marketCreationHash;
-      bool isERCToken;
+      bool isChainlinkFeed;
     }
 
     struct MarketOraclize {
@@ -227,7 +227,7 @@ contract Plotus is usingProvable, Iupgradable {
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isERCToken);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
@@ -253,7 +253,7 @@ contract Plotus is usingProvable, Iupgradable {
         uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
        _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(_marketTypeData.predictionTime));
       }
-      uint currentPrice = marketConfig.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isERCToken);
+      uint currentPrice = marketConfig.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
       uint _minValue = currentPrice.sub(currentPrice.mul(_marketTypeData.optionRangePerc.div(2)).div(1000));
       uint _maxValue = currentPrice.add(currentPrice.mul(_marketTypeData.optionRangePerc.div(2)).div(1000));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
