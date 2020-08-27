@@ -80,7 +80,7 @@ contract Market is usingProvable {
     * @param _marketCurrency The stock name of market.
     * @param _marketFeedAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isERCToken) public payable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       pl = IPlotus(msg.sender);
@@ -102,7 +102,7 @@ contract Market is usingProvable {
       marketCoolDownTime = _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
-      marketResultId = provable_query(settleTime, _oraclizeType, _oraclizeSource);
+      marketResultId = provable_query(settleTime, "", "");
     }
 
     /**
@@ -637,7 +637,8 @@ contract Market is usingProvable {
     function __callback(bytes32 myid, string memory result) public {
       require(msg.sender == provable_cbAddress());
       require ((myid==marketResultId));
-      _postResult(parseInt(result));
+      uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isMarketCurrencyERCToken);
+      _postResult(_currentPrice);
       delete marketResultId;
     }
 

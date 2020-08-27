@@ -22,7 +22,7 @@ contract MockMarket is Market {
     }
 
 
-	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, string memory _oraclizeType, string memory _oraclizeSource, bool _isERCToken) public payable {
+	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isERCToken) public payable {
       mockFlag = true;
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
@@ -41,7 +41,7 @@ contract MockMarket is Market {
       predictionTime = _predictionTime; 
       expireTime = startTime.add(_predictionTime);
       settleTime = startTime.add(_settleTime);
-      marketCoolDownTime = settleTime.add(_coolDownTime);
+      marketCoolDownTime = _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
     }

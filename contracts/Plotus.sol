@@ -30,8 +30,6 @@ contract Plotus is usingProvable, Iupgradable {
       address currencyFeedAddress;
       bytes32 currencyName;
       string marketCreationHash;
-      string oraclizeSource;
-      string oraclizeType;
       bool isERCToken;
     }
 
@@ -133,8 +131,8 @@ contract Plotus is usingProvable, Iupgradable {
     */
     function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
 
-      marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL", false));
-      marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL", true));
+      marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", false));
+      marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
 
       marketTypes.push(MarketTypeData(1 hours, 2 hours, 20));
       marketTypes.push(MarketTypeData(24 hours, 2 days, 50));
@@ -168,8 +166,8 @@ contract Plotus is usingProvable, Iupgradable {
     /**
     * @dev Add new market currency.
     */
-    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, string calldata _oraclizeSource, string calldata _oraclizeType, bool _isToken, uint256 _marketStartTime) external onlyInternal {
-      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _oraclizeSource,_oraclizeType, _isToken));
+    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isToken, uint256 _marketStartTime) external onlyInternal {
+      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _isToken));
       uint256 _marketCurrencyIndex = marketCurrencies.length.sub(1);
       for(uint256 j = 0;j < marketTypes.length; j++) {
         // marketTypeCurrencyStartTime[j][_marketCurrencyIndex] = _startTime;
@@ -229,7 +227,7 @@ contract Plotus is usingProvable, Iupgradable {
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.oraclizeType, _marketCurrencyData.oraclizeSource, _marketCurrencyData.isERCToken);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isERCToken);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
