@@ -6,6 +6,18 @@ contract MockPlotus is Plotus {
 
 	mapping(address => bytes32) marketId;
 	
+  function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public {
+    require(!plotxInitialized);
+    plotxInitialized = true;
+    masterAddress = msg.sender;
+    marketImplementation = _marketImplementation;
+    plotusToken = IToken(_plotusToken);
+    tokenController = ms.getLatestAddress("TC");
+    markets.push(address(0));
+    marketConfig = IConfig(_marketConfig);
+    marketConfig.setAuthorizedAddres();    
+  }
+
   function startInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed, uint256[] memory _initialMinOptionETH, uint256[] memory _initialMaxOptionETH, uint256[] memory _initialMinOptionPLOT, uint256[] memory _initialMaxOptionPLOT) public payable {
     marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT).price","URL", false));
     marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", "json(https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT).price","URL", true));
