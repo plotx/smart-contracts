@@ -123,7 +123,7 @@ contract Plotus is usingProvable, Iupgradable {
       markets.push(address(0));
       marketConfig = IConfig(_marketConfig);
       marketConfig.setAuthorizedAddres();
-      provable_setProof(proofType_Android | proofType_Ledger);
+      // provable_setProof(proofType_Android | proofType_Ledger);
       // marketOpenIndex = 1;
       
     }
@@ -273,9 +273,9 @@ contract Plotus is usingProvable, Iupgradable {
     * @param myid The orcalize market result id.
     * @param result The current price of market currency.
     */
-    function __callback(bytes32 myid, string memory result, bytes memory proof) public {
+    function __callback(bytes32 myid, string memory result) public {
       require(msg.sender == provable_cbAddress());
-      require(provable_randomDS_proofVerify__returnCode(myid, result, proof) == 0, "Proof verification failed");
+      // require(provable_randomDS_proofVerify__returnCode(myid, result, proof) == 0, "Proof verification failed");
       //Check oraclise address
       strings.slice memory s = result.toSlice();
       strings.slice memory delim = "-".toSlice();
