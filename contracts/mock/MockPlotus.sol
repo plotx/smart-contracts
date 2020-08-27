@@ -48,7 +48,7 @@ contract MockPlotus is Plotus {
   * @param result The current price of market currency.
   */
   function __callback(bytes32 myid, string memory result) public {
-      require(msg.sender == provable_cbAddress());
+      // require(msg.sender == provable_cbAddress());
       //Check oraclise address
       strings.slice memory s = result.toSlice();
       strings.slice memory delim = "-".toSlice();
