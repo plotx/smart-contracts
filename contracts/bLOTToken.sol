@@ -58,23 +58,6 @@ contract BLOT is ERC20, MinterRole {
     }
 
     /**
-     * @dev See `IERC20.transferFrom`.
-     *
-     * Emits an `Approval` event indicating the updated allowance. This is not
-     * required by the EIP. See the note at the beginning of `ERC20`;
-     *
-     * Requirements:
-     * - `sender` and `recipient` cannot be the zero address.
-     * - `sender` must have a balance of at least `value`.
-     * - the caller must have allowance for `sender`'s tokens of at least
-     * `amount`.
-     */
-    function transferFrom(address sender, address recipient, uint256 amount) public onlyOperator returns (bool) {
-        _transferFrom(sender, recipient, amount);
-        return true;
-    }
-
-    /**
      * @dev Moves tokens `amount` from `sender` to `recipient`.
      *
      * This is internal function is equivalent to `transfer`, and can be used to
