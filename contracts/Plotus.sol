@@ -556,4 +556,12 @@ contract Plotus is usingProvable, Iupgradable {
       marketConfig.updateAddressParameters(code, value);
     }
 
+    function addIncentiveToken(address _tokenAddress) external onlyInternal {
+      marketConfig.addIncentiveToken(_tokenAddress);
+    }
+
+    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyInternal {
+      marketConfig.setCommissionPercentage(_asset, _commissionPerc);
+    }
+
 }
