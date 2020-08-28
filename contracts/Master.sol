@@ -84,9 +84,12 @@ contract Master is Governed {
     * @dev adds a new contract type to master
     */
     function addNewContract(bytes2 _contractName, address _contractAddress) external onlyAuthorizedToGovern {
+        require(_contractAddress != address(0), "Zero address");
+        require(contractAddress[_contractName] == address(0),"Contract code is already available.");
         allContractNames.push(_contractName);
         _generateProxy(_contractName, _contractAddress);
-        _changeMasterAddress(address(this));
+        Iupgradable up = Iupgradable(_contractAddress);
+        up.changeMasterAddress(address(this));
         _changeAllAddress();
     }
 
@@ -103,11 +106,7 @@ contract Master is Governed {
         require(_contractNames.length == _contractAddresses.length,"Array length should be equal.");
         for (uint i=0; i < _contractNames.length; i++) {
             require(_contractAddresses[i] != address(0),"null address is not allowed.");
-            if (_contractNames[i] == "MS") {
-                _changeMasterAddress(_contractAddresses[i]);
-            } else {
-                _replaceImplementation(_contractNames[i], _contractAddresses[i]);
-            }
+            _replaceImplementation(_contractNames[i], _contractAddresses[i]);
         }
     }
 
@@ -123,11 +122,6 @@ contract Master is Governed {
     */
     function _changeMasterAddress(address _masterAddress) internal {
         for (uint i = 0; i < allContractNames.length; i++) {
-            if(_masterAddress != address(this)) {
-                OwnedUpgradeabilityProxy tempInstance 
-                    = OwnedUpgradeabilityProxy(contractAddress[allContractNames[i]]);
-                tempInstance.transferProxyOwnership(_masterAddress);
-            }
             Iupgradable up = Iupgradable(contractAddress[allContractNames[i]]);
             up.changeMasterAddress(_masterAddress);
         }
