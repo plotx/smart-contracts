@@ -4,6 +4,7 @@ const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
+const MarketConfig = artifacts.require('MockConfig');
 const BLOT = artifacts.require("BLOT");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const BigNumber = require("bignumber.js");
@@ -35,6 +36,8 @@ contract("Market", async function ([
         web3.utils.toHex("PL")
       );
       plotusNewInstance = await Plotus.at(plotusNewAddress);
+      marketConfig = await plotusNewInstance.marketConfig();
+      marketConfig = await MarketConfig.at(marketConfig);
       // console.log(await plotusNewInstance.getOpenMarkets());
       openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -53,6 +56,7 @@ contract("Market", async function ([
       // user 1
       // set price lot
       await MockUniswapRouterInstance.setPrice("1000000000000000");
+      await marketConfig.setPrice("1000000000000000");
       await plotusToken.approve(
         openMarkets["_openMarkets"][0],
         "100000000000000000000",
@@ -70,6 +74,7 @@ contract("Market", async function ([
 
       // user 2
       await MockUniswapRouterInstance.setPrice("2000000000000000");
+      await marketConfig.setPrice("2000000000000000");
       await plotusToken.transfer(user2, "500000000000000000000");
 
       await plotusToken.approve(
@@ -111,6 +116,7 @@ contract("Market", async function ([
 
       // user 3
       await MockUniswapRouterInstance.setPrice("1000000000000000");
+      await marketConfig.setPrice("1000000000000000");
       await plotusToken.transfer(user3, "500000000000000000000");
       await plotusToken.approve(
         openMarkets["_openMarkets"][0],
@@ -144,6 +150,7 @@ contract("Market", async function ([
       // );
 
       await MockUniswapRouterInstance.setPrice("15000000000000000");
+      await marketConfig.setPrice("15000000000000000");
 
       await plotusToken.transfer(user4, "200000000000000000000");
 
@@ -164,6 +171,7 @@ contract("Market", async function ([
 
       // user 5
       await MockUniswapRouterInstance.setPrice("12000000000000000");
+      await marketConfig.setPrice("12000000000000000");
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         "1000000000000000000",
@@ -174,6 +182,7 @@ contract("Market", async function ([
 
       // user 6
       await MockUniswapRouterInstance.setPrice("14000000000000000");
+      await marketConfig.setPrice("14000000000000000");
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         "2000000000000000000",
@@ -183,6 +192,7 @@ contract("Market", async function ([
       );
       // user 7
       await MockUniswapRouterInstance.setPrice("10000000000000000");
+      await marketConfig.setPrice("10000000000000000");
 
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -193,6 +203,7 @@ contract("Market", async function ([
       );
       // user 8
       await MockUniswapRouterInstance.setPrice("45000000000000000");
+      await marketConfig.setPrice("45000000000000000");
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         "3000000000000000000",
@@ -202,6 +213,7 @@ contract("Market", async function ([
       );
       // user 9
       await MockUniswapRouterInstance.setPrice("51000000000000000");
+      await marketConfig.setPrice("51000000000000000");
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         "1000000000000000000",
@@ -211,6 +223,7 @@ contract("Market", async function ([
       );
       // user 10
       await MockUniswapRouterInstance.setPrice("12000000000000000");
+      await marketConfig.setPrice("12000000000000000");
       await marketInstance.placePrediction(
         "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
         "2000000000000000000",
@@ -295,6 +308,7 @@ contract("Market", async function ([
       console.log(`Lot Balance of market before commision : ${lotBalanceBefore}`);
       // lot supply , lot balance of market
       await MockUniswapRouterInstance.setPrice("1000000000000000");
+      await marketConfig.setPrice("1000000000000000");
 
       await marketInstance.exchangeCommission();
 
