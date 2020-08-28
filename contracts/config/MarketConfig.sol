@@ -1,6 +1,8 @@
 pragma solidity 0.5.7;
 
 import "../external/uniswap/solidity-interface.sol";
+import "../external/uniswap/FixedPoint.sol";
+import "../external/uniswap/oracleLibrary.sol";
 import "../external/openzeppelin-solidity/math/SafeMath.sol";
 import "../interfaces/IChainLinkOracle.sol";
 import "../interfaces/IToken.sol";
@@ -8,7 +10,8 @@ import "../interfaces/IToken.sol";
 contract MarketConfig {
 
     using SafeMath for uint;
-    
+    using FixedPoint for *;
+
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint internal STAKE_WEIGHTAGE = 40;//
@@ -27,12 +30,23 @@ contract MarketConfig {
     uint internal tokenStakeForDispute = 100 ether;
     uint internal marketCoolDownTime = 15 minutes;
     address internal plotusToken;
+    address internal plotETHpair;
+    address internal weth;
     address public authorizedAddress;
     
     address payable chainLinkPriceOracle;
-    IUniswapV2Router02 uniswapRouter;
+
+    struct UniswapPriceData {
+        FixedPoint.uq112x112 price0Average;
+        uint price0CumulativeLast;
+        FixedPoint.uq112x112 price1Average;
+        uint price1CumulativeLast;
+        uint32 blockTimestampLast;
+    }
+    mapping(address => UniswapPriceData) internal uniswapPairData;
+    address payable uniswapRouter;
+    IUniswapV2Factory uniswapFactory;
     address[] uniswapEthToTokenPath;
-    address[] uniswapTokenToEthPath;
 
     address[] internal incentiveTokens;
     mapping(address => uint) internal commissionPerc;
@@ -46,13 +60,13 @@ contract MarketConfig {
 
     constructor(address payable[] memory _addressParams) public {
         chainLinkPriceOracle = _addressParams[0];
-        uniswapRouter = IUniswapV2Router02(_addressParams[1]);
+        uniswapRouter = _addressParams[1];
         plotusToken = _addressParams[2];
-        address weth = uniswapRouter.WETH();
+        weth = IUniswapV2Router02(_addressParams[1]).WETH();
+        uniswapFactory = IUniswapV2Factory(_addressParams[3]);
+        plotETHpair = uniswapFactory.getPair(plotusToken, weth);
         uniswapEthToTokenPath.push(weth);
         uniswapEthToTokenPath.push(plotusToken);
-        uniswapTokenToEthPath.push(plotusToken);
-        uniswapTokenToEthPath.push(weth);
         incentiveTokens.push(plotusToken);
         commissionPerc[ETH_ADDRESS] = 10;
         commissionPerc[plotusToken] = 5;
@@ -106,7 +120,7 @@ contract MarketConfig {
         if(code == "CLORCLE") {
             chainLinkPriceOracle = value;
         } else if(code == "UNIRTR") {
-            uniswapRouter = IUniswapV2Router02(value);
+            uniswapRouter = value;
         }
     }
 
@@ -119,44 +133,49 @@ contract MarketConfig {
         return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
     }
 
-    function getAssetPriceUSD(address _currencyAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {
-        // if(_currencyAddress != ETH_ADDRESS) {
+    function getAssetPriceUSD(address _currencyFeedAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {
+        // if(_currencyFeedAddress != ETH_ADDRESS) {
         //     return latestAnswer = uint(chainLinkOracle.latestAnswer());
         // }
         if(!(_isChainlinkFeed)) {
             latestAnswer = uint(chainLinkOracle.latestAnswer()).div(1e8);
-            // address _exchange = uniswapFactory.getExchange(_currencyAddress);
-            address[] memory path = new address[](2);
-            path[0] = _currencyAddress;
-            path[1] = ETH_ADDRESS;
-            uint[] memory output = uniswapRouter.getAmountsOut(10**uint(IToken(_currencyAddress).decimals()), path);
-            uint tokenEthPrice = output[1];
-            return latestAnswer.mul(tokenEthPrice);
+            // address _exchange = uniswapFactory.getExchange(_currencyFeedAddress);
+            // address[] memory path = new address[](2);
+            // path[0] = _currencyFeedAddress;
+            // path[1] = ETH_ADDRESS;
+            // uint[] memory output = uniswapRouter.getAmountsOut(10**uint(IToken(_currencyFeedAddress).decimals()), path);
+            // uint tokenEthPrice = output[1];
+            // return latestAnswer.mul(tokenEthPrice);
+            uint decimals = IToken(IUniswapV2Pair(_currencyFeedAddress).token0()).decimals();
+            uint price = getPrice(_currencyFeedAddress, 10**decimals);
+            return price;
         } else {
-            return uint(IChainLinkOracle(_currencyAddress).latestAnswer()).div(1e8);
+            return uint(IChainLinkOracle(_currencyFeedAddress).latestAnswer()).div(1e8);
         }
     }
 
     function getAssetValueETH(address _currencyAddress, uint _amount) public view returns(uint tokenEthValue) {
         tokenEthValue = _amount;
         if(_currencyAddress != ETH_ADDRESS) {
-            address[] memory path = new address[](2);
-            path[0] = _currencyAddress;
-            path[1] = ETH_ADDRESS;
-            uint[] memory output = uniswapRouter.getAmountsOut(_amount, path);
-            tokenEthValue = output[1];
+            tokenEthValue = getPrice(plotETHpair, _amount);
+            // address[] memory path = new address[](2);
+            // path[0] = _currencyAddress;
+            // path[1] = ETH_ADDRESS;
+            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, path);
+            // tokenEthValue = output[1];
         }
     }
 
     function getAssetPriceInETH(address _currencyAddress) public view returns(uint tokenEthValue, uint decimals) {
         tokenEthValue = 1;
         if(_currencyAddress != ETH_ADDRESS) {
-            address[] memory path = new address[](2);
-            path[0] = _currencyAddress;
-            path[1] = ETH_ADDRESS;
             decimals = IToken(_currencyAddress).decimals();
-            uint[] memory output = uniswapRouter.getAmountsOut(10**decimals, path);
-            tokenEthValue = output[1];
+            tokenEthValue = getPrice(plotETHpair, 10**decimals);
+            // address[] memory path = new address[](2);
+            // path[0] = _currencyAddress;
+            // path[1] = ETH_ADDRESS;
+            // uint[] memory output = uniswapRouter.getAmountsOut(10**decimals, path);
+            // tokenEthValue = output[1];
         }
     }
 
@@ -173,14 +192,16 @@ contract MarketConfig {
     function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
-            uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
-            _value = output[1];
+            address pair = uniswapFactory.getPair(plotusToken, weth);
+            _value = (uniswapPairData[pair].price1Average).mul(_amount).decode144();
+            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
+            // _value = output[1];
         }
         return (multiplier, minStakeForMultiplier, _value);
     }
 
     function getETHtoTokenRouterAndPath() public view returns(address, address[] memory) {
-        return (address(uniswapRouter), uniswapEthToTokenPath);
+        return (uniswapRouter, uniswapEthToTokenPath);
     }
 
     function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint) {
@@ -189,5 +210,34 @@ contract MarketConfig {
 
     function getPurchasePercAndDeadline() public view returns(uint, uint) {
         return (lotPurchasePerc, uniswapDeadline);
+    }
+
+    function update(address pair) external {
+        _update(pair);
+        _update(plotETHpair);
+    }
+
+    function _update(address pair) internal {
+        UniswapPriceData storage _priceData = uniswapPairData[pair];
+        (uint price0Cumulative, uint price1Cumulative, uint32 blockTimestamp) =
+            UniswapV2OracleLibrary.currentCumulativePrices(pair);
+        uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
+
+        // ensure that at least one full period has passed since the last update
+        // require(timeElapsed >= PERIOD, 'ExampleOracleSimple: PERIOD_NOT_ELAPSED');
+
+        // overflow is desired, casting never truncates
+        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+        _priceData.price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - _priceData.price0CumulativeLast) / timeElapsed));
+        _priceData.price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - _priceData.price1CumulativeLast) / timeElapsed));
+
+        _priceData.price0CumulativeLast = price0Cumulative;
+        _priceData.price1CumulativeLast = price1Cumulative;
+        _priceData.blockTimestampLast = blockTimestamp;
+    }
+
+
+    function getPrice(address pair, uint amountIn) public view returns (uint amountOut) {
+        amountOut = (uniswapPairData[pair].price0Average).mul(amountIn).decode144();
     }
 }

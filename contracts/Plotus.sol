@@ -224,6 +224,9 @@ contract Plotus is usingProvable, Iupgradable {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
       MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
+      if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
+        marketConfig.update(_marketCurrencyData.currencyFeedAddress);
+      }
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);

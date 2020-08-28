@@ -35,6 +35,22 @@ contract MockPlotus is Plotus {
     // }
   }
 
+  function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue, uint256 _marketStartTime) internal {
+      require(!marketCreationPaused);
+      MarketTypeData memory _marketTypeData = marketTypes[_marketType];
+      MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
+      address payable _market = _generateProxy(marketImplementation);
+      isMarket[_market] = true;
+      markets.push(_market);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
+      emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
+      _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
+      _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
+      // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 800000);
+      // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
+      // marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
+    }
+
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
   bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
   marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);

@@ -17,4 +17,5 @@ contract IConfig {
     function updateAddressParameters(bytes8 code, address payable value) external;
  
     function getAssetPriceUSD(address _currencyAddress, bool _isCurrencyERCToken) external view returns(uint latestAnswer);
+    function update(address pair) external;
 }

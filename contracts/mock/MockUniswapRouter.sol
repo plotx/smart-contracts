@@ -4,7 +4,7 @@ import "../external/uniswap/solidity-interface.sol";
 import "../external/openzeppelin-solidity/math/SafeMath.sol";
 import "../interfaces/IToken.sol";
 
-contract MockUniswapRouter is IUniswapV2Router02 {
+contract MockUniswapRouter {
 
 	using SafeMath for uint;
 
