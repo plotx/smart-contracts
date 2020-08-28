@@ -85,7 +85,7 @@ contract Master is Governed {
         require(contractAddress[_contractName] == address(0),"Contract code is already available.");
         allContractNames.push(_contractName);
         _generateProxy(_contractName, _contractAddress);
-        Iupgradable up = Iupgradable(_contractAddress);
+        Iupgradable up = Iupgradable(contractAddress[_contractName]);
         up.changeMasterAddress(address(this));
         _changeAllAddress();
     }
