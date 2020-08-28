@@ -3,6 +3,8 @@ pragma solidity  0.5.7;
 import "../TokenController.sol";
 
 contract MockTokenController is TokenController {
+
+	uint public bit;
     
     /**
      * @dev to change the operator address
@@ -10,6 +12,10 @@ contract MockTokenController is TokenController {
      */
     function changeOperator(address _newOperator) public {
         token.changeOperator(_newOperator);
+    }
+
+    function dummyOnlyInternalFunction(uint _val) public onlyInternal {
+    	bit = _val;
     }
 
 }

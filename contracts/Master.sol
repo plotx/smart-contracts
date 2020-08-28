@@ -33,8 +33,8 @@ contract Master is Governed {
     */
     function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _bLot, address _marketConfig) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!masterInitialised);
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         masterInitialised = true;
         
         //Initial contract names
@@ -98,7 +98,7 @@ contract Master is Governed {
         address[] calldata _contractAddresses
         ) 
         external 
-        // onlyAuthorizedToGovern 
+        onlyAuthorizedToGovern 
     {
         require(_contractNames.length == _contractAddresses.length,"Array length should be equal.");
         for (uint i=0; i < _contractNames.length; i++) {
