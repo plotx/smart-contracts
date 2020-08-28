@@ -45,17 +45,18 @@ contract MockPlotus is Plotus {
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
+      // _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
+      bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
+      marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
+      marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
+      marketId[_market] = _oraclizeId;
       // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 800000);
       // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
       // marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
     }
 
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
-  bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
-  marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);
-  marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
-  marketId[_previousMarket] = _oraclizeId;
+    _createMarket(_marketType, _marketCurrencyIndex, 500, 600, now);
   }
 
   /**
