@@ -123,6 +123,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); // 8
         _addInitialCategories(
+            "Add new contract",
+            "",
+            "MS",
+            "addNewContract(bytes2,address)",
+            50,
+            2,
+            2
+        );
+        _addInitialCategories(
             "Raise Dispute",
             "",
             "PL",
@@ -130,7 +139,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             3,
             2
-        ); // 9
+        ); 
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",
             "",
@@ -139,7 +148,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 10
+        ); //11
         _addInitialCategories(
             "Swap AB member",
             "",
@@ -148,7 +157,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 11
+        ); 
         _addInitialCategories(
             "Update governance parameters",
             "",
@@ -157,7 +166,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 12
+        ); 
         _addInitialCategories(
             "Update Token Controller parameters",
             "",
@@ -166,7 +175,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 13
+        ); 
         _addInitialCategories(
             "Add new market type",
             "",
@@ -175,7 +184,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 14
+        ); //15
         _addInitialCategories(
             "Add new market currency",
             "",
@@ -184,7 +193,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); // 15
+        ); 
         _addInitialCategories(
             "Pause Market Creation",
             "",
@@ -220,7 +229,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        );
+        ); //20
         _addInitialCategories(
             "Update Address Uint parameters",
             "",
