@@ -105,10 +105,10 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); // 6
         _addInitialCategories(
-            "Upgrade a contract Implementation",
+            "Upgrade multiple contract Implementations",
             "Qme4hGas6RuDYk9LKE2XkK9E46LNeCBUzY12DdT5uQstvh",
             "MS",
-            "upgradeContractImplementation(bytes2,address)",
+            "upgradeMultipleImplementations(bytes2[],address[])",
             50,
             1,
             1

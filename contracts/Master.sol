@@ -91,15 +91,23 @@ contract Master is Governed {
     }
 
     /**
-    * @dev upgrades a single contract
+    * @dev upgrades a multiple contract implementations
     */
-    function upgradeContractImplementation(bytes2 _contractsName, address _contractAddress) 
-        external onlyAuthorizedToGovern
+     function upgradeMultipleImplementations(
+        bytes2[] calldata _contractNames,
+        address[] calldata _contractAddresses
+        ) 
+        external 
+        // onlyAuthorizedToGovern 
     {
-        if (_contractsName == "MS") {
-            _changeMasterAddress(_contractAddress);
-        } else {
-            _replaceImplementation(_contractsName, _contractAddress);
+        require(_contractNames.length == _contractAddresses.length,"Array length should be equal.");
+        for (uint i=0; i < _contractNames.length; i++) {
+            require(_contractAddresses[i] != address(0),"null address is not allowed.");
+            if (_contractNames[i] == "MS") {
+                _changeMasterAddress(_contractAddresses[i]);
+            } else {
+                _replaceImplementation(_contractNames[i], _contractAddresses[i]);
+            }
         }
     }
 
