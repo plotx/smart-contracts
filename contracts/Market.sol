@@ -52,6 +52,9 @@ contract Market is usingProvable {
     // mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
+    //Flag to prevent user from predicting multiple times in a market
+    mapping(address => bool) internal predictedWithBlot;
+
     IPlotus internal pl;
     ITokenController internal tokenController;
     MarketConfig internal marketConfig;
@@ -324,6 +327,8 @@ contract Market is usingProvable {
       if(_asset == tokenController.bLOTToken()) {
         require(_leverage == MAX_LEVERAGE);
         require(msg.value == 0);
+        require(!predictedWithBlot[msg.sender]);
+        predictedWithBlot[msg.sender] = true;
         tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
         _asset = token;
       } else {
