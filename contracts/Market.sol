@@ -178,7 +178,8 @@ contract Market is usingProvable {
     * @return uint256 representing the prediction value.
     */
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
-      uint value;
+      // uint value;
+      uint optionPrice;
       uint flag = 0;
       (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
       uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
@@ -186,18 +187,45 @@ contract Market is usingProvable {
                                   .add(
                                     (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[token], _tokenPrice, _decimals)));
       _predictionValue = 0;
+      // (amount*sqrt(amount*100)*leverage*100/(price*10*125000/1000));
+
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
-          value = (uint(_stake)).mul(_positionDecimals).div(rate);
-          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
+          // value = (uint(_stake)).mul(_positionDecimals);
+          optionPrice = _calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption.add(flag.mul(_priceStep)));
+          // value = value.mul(_leverage).div(optionPrice);
+          // value = value.mul(2500).div(1e18);
+          // value = value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
+          _predictionValue = _predictionValue.add(_calculatePredictionPoints(_stake.mul(_positionDecimals), optionPrice, _leverage));
           break;
         } else {
           _stake = _stake.sub(_priceStep);
-          value = (uint(_priceStep)).mul(_positionDecimals).div(rate);
-          _predictionValue = _predictionValue.add(value.mul(_leverage).div(_calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption + flag.mul(_priceStep))));
+          // value = (uint(_priceStep)).mul(_positionDecimals);
+          optionPrice = _calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption.add(flag.mul(_priceStep)));
+          // value = value.mul(_leverage).div(optionPrice);
+          // _calculatePredictionPoints(value, optionPrice, _leverage);
+          // value = value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
+          _predictionValue = _predictionValue.add(_calculatePredictionPoints(_priceStep.mul(_positionDecimals), optionPrice, _leverage));
           _totalStaked = _totalStaked.add(_priceStep);
           flag++;
         }
+      }
+    }
+
+    function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
+      value = value.mul(2500).div(1e18);
+      return value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
+    }
+
+    /**
+    * @dev function to calculate square root of a number
+    **/
+    function sqrt(uint x) public pure returns (uint y) {
+      uint z = (x + 1) / 2;
+      y = x;
+      while (z < y) {
+          y = z;
+          z = (x / z + z) / 2;
       }
     }
 
