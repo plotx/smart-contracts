@@ -326,16 +326,6 @@ contract TokenController is IERC1132, Iupgradable, Governed {
     * account.
     * @param amount The amount that will be burnt.
     */
-    function burn(uint256 amount) public onlyAuthorizedToGovern returns (bool) {
-        token.burn(amount);
-        return true;
-    }
-
-    /**
-    * @dev burns an amount of the tokens of the message sender
-    * account.
-    * @param amount The amount that will be burnt.
-    */
     function burnCommissionTokens(uint256 amount) public onlyAuthorized returns (bool) {
         if((token.totalSupply()).sub(amount) <= burnUptoLimit) {
             return false;
