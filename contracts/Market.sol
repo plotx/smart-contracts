@@ -52,7 +52,7 @@ contract Market is usingProvable {
     // mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
-    //Flag to prevent user from predicting multiple times in a market
+    //Flag to prevent user from predicting multiple times in a market with bLOTtoken
     mapping(address => bool) internal predictedWithBlot;
 
     IPlotus internal pl;
@@ -216,8 +216,9 @@ contract Market is usingProvable {
     }
 
     function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
+      uint leverageMultiplier = _leverage + (_leverage - 1)*5;
       value = value.mul(2500).div(1e18);
-      return value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
+      return value.mul(sqrt(value.mul(100))).mul(_leverage*100000*leverageMultiplier).div(optionPrice.mul(125000000));
     }
 
     /**
