@@ -399,29 +399,37 @@ contract Market is usingProvable {
     */
     function exchangeCommission() external {
       require (msg.sender == address(pl));
-      uint256 _uniswapDeadline;
-      uint256 _lotPurchasePerc;
-      (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
-      if(commissionAmount[token] > 0){
-        bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
-        if(!burned) {
-          _transferAsset(token, address(pl), commissionAmount[token]);
-        }
-      } 
-      if(commissionAmount[ETH_ADDRESS] > 0) {
-        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
-        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
-        _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
-        uint256 _tokenOutput;
-        address[] memory path;
-        address _router;
-        (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
-        IUniswapV2Router02 router = IUniswapV2Router02(_router);
-        uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
-        _tokenOutput = output[1];
-        incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
+      if(!commissionExchanged) {
+        _exchangeCommission();
       }
-      commissionExchanged = true;
+    }
+
+    function _exchangeCommission() internal {
+      if(predictionStatus >= PredictionStatus.InSettlement) {
+        uint256 _uniswapDeadline;
+        uint256 _lotPurchasePerc;
+        (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
+        if(commissionAmount[token] > 0){
+          bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
+          if(!burned) {
+            _transferAsset(token, address(pl), commissionAmount[token]);
+          }
+        } 
+        if(commissionAmount[ETH_ADDRESS] > 0) {
+          uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
+          uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
+          _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
+          uint256 _tokenOutput;
+          address[] memory path;
+          address _router;
+          (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
+          IUniswapV2Router02 router = IUniswapV2Router02(_router);
+          uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
+          _tokenOutput = output[1];
+          incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
+        }
+        commissionExchanged = true;
+      }
     }
 
 // In dev
@@ -615,9 +623,12 @@ contract Market is usingProvable {
     * @param _user The address to query the claim return amount of.
     */
     function claimReturn(address payable _user) public {
-      require(commissionExchanged && now > marketCoolDownTime && !lockedForDispute);
+      require(now > marketCoolDownTime && !lockedForDispute);
       require(!userClaimedReward[_user],"Already claimed");
       require(predictionStatus == PredictionStatus.Settled,"Result not declared");
+      if(!commissionExchanged) {
+        _exchangeCommission();
+      }
       userClaimedReward[_user] = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
       uint256 i;
