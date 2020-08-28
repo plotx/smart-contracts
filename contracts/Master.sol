@@ -36,7 +36,14 @@ contract Master is Governed {
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!masterInitialised);
         masterInitialised = true;
-        _addContractNames();
+        
+        //Initial contract names
+        allContractNames.push("MR");
+        allContractNames.push("PC");
+        allContractNames.push("GV");
+        allContractNames.push("PL");
+        allContractNames.push("TC");
+
         require(allContractNames.length == _implementations.length);
         contractsActive[address(this)] = true;
         dAppToken = _token;
@@ -59,17 +66,6 @@ contract Master is Governed {
     */
     function isInternal(address _address) public view returns(bool) {
       return contractsActive[_address];
-    }
-
-    /**
-    * @dev Save the initials of all the contracts
-    */
-    function _addContractNames() internal {
-        allContractNames.push("MR");
-        allContractNames.push("PC");
-        allContractNames.push("GV");
-        allContractNames.push("PL");
-        allContractNames.push("TC");
     }
 
     /**
