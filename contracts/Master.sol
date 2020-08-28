@@ -84,6 +84,7 @@ contract Master is Governed {
     * @dev adds a new contract type to master
     */
     function addNewContract(bytes2 _contractName, address _contractAddress) external onlyAuthorizedToGovern {
+        require(_contractName != "MS", "Name cannot be master");
         require(_contractAddress != address(0), "Zero address");
         require(contractAddress[_contractName] == address(0),"Contract code is already available.");
         allContractNames.push(_contractName);
