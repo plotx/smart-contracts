@@ -7,9 +7,10 @@ import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IConfig.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
+import "./external/govblocks-protocol/Governed.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";
 
-contract Plotus is usingProvable, Iupgradable {
+contract Plotus is usingProvable, Iupgradable, Governed {
 
     using SafeMath for uint256; 
     using strings for *; 
@@ -151,7 +152,7 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _settleTime The time at which result of market will declared.
     * @param _marketStartTime The time at which market will create.
     */
-    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyInternal {
+    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
       uint256 _marketType = marketTypes.length;
       _addMarket(_predictionTime, _settleTime, _gasLimit, _optionRangePerc);
@@ -169,7 +170,7 @@ contract Plotus is usingProvable, Iupgradable {
     /**
     * @dev Add new market currency.
     */
-    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isChainlinkFeed, uint256 _marketStartTime) external onlyInternal {
+    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isChainlinkFeed, uint256 _marketStartTime) external onlyAuthorizedToGovern {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
       _addNewMarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
       for(uint256 j = 0;j < marketTypes.length; j++) {
@@ -187,7 +188,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @dev Update the configs of the market.
      * @param _marketConfig the address of market configs.
      */
-    function updateMarketConfig(address _marketConfig) public onlyInternal {
+    function updateMarketConfig(address _marketConfig) public onlyAuthorizedToGovern {
       marketConfig = IConfig(_marketConfig);
     }
 
@@ -195,7 +196,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @dev Update the implementations of the market.
      * @param _marketImplementation the address of market implementation.
      */
-    function updateMarketImplementation(address _marketImplementation) public onlyInternal {
+    function updateMarketImplementation(address _marketImplementation) public onlyAuthorizedToGovern {
       marketImplementation = _marketImplementation;
     }
 
@@ -205,7 +206,7 @@ contract Plotus is usingProvable, Iupgradable {
      * @param _contractsAddress the contract address to be upgraded.
      */
     function upgradeContractImplementation(address payable _proxyAddress, address _contractsAddress) 
-        external onlyInternal
+        external onlyAuthorizedToGovern
     {
         OwnedUpgradeabilityProxy tempInstance 
             = OwnedUpgradeabilityProxy(_proxyAddress);
@@ -217,6 +218,16 @@ contract Plotus is usingProvable, Iupgradable {
      */
     function changeDependentContractAddress() public {
       governance = IGovernance(ms.getLatestAddress("GV"));
+    }
+
+    /**
+     * @dev Changes the master address and update it's instance
+     * @param _masterAddress is the new master address
+     */
+    function changeMasterAddress(address _masterAddress) public {
+        if (masterAddress != address(0)) require(masterAddress == msg.sender);
+        masterAddress = _masterAddress;
+        ms = Master(_masterAddress);
     }
 
     /**
@@ -309,7 +320,7 @@ contract Plotus is usingProvable, Iupgradable {
     /**
     * @dev Updates Flag to pause creation of market.
     */
-    function pauseMarketCreation() public onlyInternal {
+    function pauseMarketCreation() public onlyAuthorizedToGovern {
       require(!marketCreationPaused);
         marketCreationPaused = true;
     }
@@ -317,7 +328,7 @@ contract Plotus is usingProvable, Iupgradable {
     /**
     * @dev Updates Flag to resume creation of market.
     */
-    function resumeMarketCreation() public onlyInternal {
+    function resumeMarketCreation() public onlyAuthorizedToGovern {
       require(marketCreationPaused);
         marketCreationPaused = true;
     }
@@ -347,14 +358,14 @@ contract Plotus is usingProvable, Iupgradable {
     * @param _marketAddress The address specify the market.
     * @param _result The final result of the market.
     */
-    function resolveDispute(address _marketAddress, uint256 _result) external onlyInternal {
+    function resolveDispute(address _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
       IMarket(_marketAddress).resolveDispute(true, _result);
       plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
       // lockedForDispute[msg.sender] = false;
     }
 
-    function burnDisputedProposalTokens(uint _proposaId) external onlyInternal {
+    function burnDisputedProposalTokens(uint _proposaId) external onlyAuthorizedToGovern {
       IMarket(disputeProposalId[_proposaId]).resolveDispute(false, 0);
       uint _stakedAmount = disputeStakes[disputeProposalId[_proposaId]].stakeAmount;
       plotusToken.burn(_stakedAmount);
@@ -544,7 +555,7 @@ contract Plotus is usingProvable, Iupgradable {
     function () external payable {
     }
 
-    function transferAssets(address _asset, address payable _to, uint _amount) external onlyInternal {
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
       if(_asset == ETH_ADDRESS) {
         _to.transfer(_amount);
       } else {
@@ -552,19 +563,19 @@ contract Plotus is usingProvable, Iupgradable {
       }
     }
 
-    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyInternal {
+    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
       marketConfig.updateUintParameters(code, value);
     }
 
-    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyInternal {
+    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
       marketConfig.updateAddressParameters(code, value);
     }
 
-    function addIncentiveToken(address _tokenAddress) external onlyInternal {
+    function addIncentiveToken(address _tokenAddress) external onlyAuthorizedToGovern {
       marketConfig.addIncentiveToken(_tokenAddress);
     }
 
-    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyInternal {
+    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyAuthorizedToGovern {
       marketConfig.setCommissionPercentage(_asset, _commissionPerc);
     }
 

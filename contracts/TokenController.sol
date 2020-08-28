@@ -6,8 +6,9 @@ import "./bLOTToken.sol";
 import "./Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IPlotus.sol";
+import "./external/govblocks-protocol/Governed.sol";
 
-contract TokenController is IERC1132, Iupgradable {
+contract TokenController is IERC1132, Iupgradable, Governed {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -49,10 +50,20 @@ contract TokenController is IERC1132, Iupgradable {
     }
 
     /**
+     * @dev Changes the master address and update it's instance
+     * @param _masterAddress is the new master address
+     */
+    function changeMasterAddress(address _masterAddress) public {
+        if (masterAddress != address(0)) require(masterAddress == msg.sender);
+        masterAddress = _masterAddress;
+        ms = Master(_masterAddress);
+    }
+
+    /**
      * @dev to change the operator address
      * @param _newOperator is the new address of operator
      */
-    function changeOperator(address _newOperator) public onlyInternal {
+    function changeOperator(address _newOperator) public onlyAuthorizedToGovern {
         token.changeOperator(_newOperator);
     }
 
@@ -65,7 +76,7 @@ contract TokenController is IERC1132, Iupgradable {
      * @param code whose details we want to update
      * @param val value to set
      */
-    function updateUintParameters(bytes8 code, uint val) public onlyInternal {
+    function updateUintParameters(bytes8 code, uint val) public onlyAuthorizedToGovern {
         if(code == "SMLP") {
             smLockPeriod = val * 1 days;
         } else if(code == "BRLIM") {
@@ -306,7 +317,7 @@ contract TokenController is IERC1132, Iupgradable {
     * @param _member address to reward the minted tokens
     * @param _amount number of tokens to mint
     */
-    function mint(address _member, uint _amount) public onlyInternal {
+    function mint(address _member, uint _amount) public onlyAuthorizedToGovern {
         token.mint(_member, _amount);
     }
 
@@ -315,7 +326,7 @@ contract TokenController is IERC1132, Iupgradable {
     * account.
     * @param amount The amount that will be burnt.
     */
-    function burn(uint256 amount) public onlyInternal returns (bool) {
+    function burn(uint256 amount) public onlyAuthorizedToGovern returns (bool) {
         token.burn(amount);
         return true;
     }
@@ -325,7 +336,7 @@ contract TokenController is IERC1132, Iupgradable {
     * account.
     * @param amount The amount that will be burnt.
     */
-    function burnCommissionTokens(uint256 amount) public returns (bool) {
+    function burnCommissionTokens(uint256 amount) public onlyAuthorized returns (bool) {
         if((token.totalSupply()).sub(amount) <= burnUptoLimit) {
             return false;
         }
@@ -338,12 +349,12 @@ contract TokenController is IERC1132, Iupgradable {
      * @dev Lock the user's tokens
      * @param _of user's address.
      */
-    function lockForGovernanceVote(address _of, uint _days) public onlyInternal {
+    function lockForGovernanceVote(address _of, uint _days) public onlyAuthorizedToGovern {
         token.lockForGovernanceVote(_of, _days);
     }
 
 
-    function burnLockedTokens(address _of, bytes32 _reason, uint256 _amount) public onlyInternal
+    function burnLockedTokens(address _of, bytes32 _reason, uint256 _amount) public onlyAuthorizedToGovern
         returns (bool)
     {
         require(_reason == "DR");
