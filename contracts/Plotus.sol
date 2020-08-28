@@ -88,7 +88,9 @@ contract Plotus is usingProvable, Iupgradable {
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
-   
+    event MarketTypes(uint256 indexed index, uint256 predictionTime, uint256 settleTime, uint256 optionRangePerc);
+    event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, string marketCreationHash, bool isChainlinkFeed);
+
     /**
     * @dev Checks if msg.sender is master address.
     */
@@ -131,12 +133,12 @@ contract Plotus is usingProvable, Iupgradable {
     */
     function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
 
-      marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
-      marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", false));
+      _addNewMarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true);
+      _addNewMarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", false);
+      _addMarket(1 hours, 2 hours, 800000, 20);
+      _addMarket(24 hours, 2 days, 800000, 50);
+      _addMarket(7 days, 14 days, 800000, 100);
 
-      marketTypes.push(MarketTypeData(1 hours, 2 hours, 20));
-      marketTypes.push(MarketTypeData(24 hours, 2 days, 50));
-      marketTypes.push(MarketTypeData(7 days, 14 days, 100));
       for(uint256 i = 0;i < marketTypes.length; i++) {
           _initiateProvableQuery(i, 0, marketCurrencies[0].marketCreationHash, 800000, address(0), _marketStartTime, marketTypes[i].predictionTime);
           _initiateProvableQuery(i, 1, marketCurrencies[1].marketCreationHash, 800000, address(0), _marketStartTime, marketTypes[i].predictionTime);
@@ -151,32 +153,34 @@ contract Plotus is usingProvable, Iupgradable {
     */
     function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyInternal {
       require(_marketStartTime > now);
-      marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _optionRangePerc));
-      uint256 _marketType = marketTypes.length.sub(1);
+      uint256 _marketType = marketTypes.length;
+      _addMarket(_predictionTime, _settleTime, _gasLimit, _optionRangePerc);
       for(uint256 j = 0;j < marketCurrencies.length; j++) {
-        // marketTypeCurrencyStartTime[_marketType][j] = _startTime;
         _initiateProvableQuery(_marketType, j, marketCurrencies[j].marketCreationHash, _gasLimit, address(0), _marketStartTime, _predictionTime);
-        // bytes32 _oraclizeId = provable_query("computation", marketCurrencies[j].marketCreationHash, uint2str(_predictionTime), _gasLimit);
-        // marketOracleId[_oraclizeId] = MarketOraclize(address(0), _marketType, j, _startTime);
-        // marketTypeCurrencyOraclize[_marketType][j] = _oraclizeId;
-        // _createMarket(_marketType, j, _minValue[j], _maxValue[j]);
       }
+    }
+
+    function _addMarket(uint256 _predictionTime, uint256 _settleTime, uint256 _gasLimit, uint256 _optionRangePerc) internal {
+      uint256 _marketType = marketTypes.length;
+      marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _optionRangePerc));
+      emit MarketTypes(_marketType, _predictionTime, _settleTime, _optionRangePerc);
     }
 
     /**
     * @dev Add new market currency.
     */
-    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isToken, uint256 _marketStartTime) external onlyInternal {
-      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _isToken));
-      uint256 _marketCurrencyIndex = marketCurrencies.length.sub(1);
+    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isChainlinkFeed, uint256 _marketStartTime) external onlyInternal {
+      uint256 _marketCurrencyIndex = marketCurrencies.length;
+      _addNewMarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
       for(uint256 j = 0;j < marketTypes.length; j++) {
-        // marketTypeCurrencyStartTime[j][_marketCurrencyIndex] = _startTime;
         _initiateProvableQuery(j, _marketCurrencyIndex, _computationHash, 800000, address(0), _marketStartTime, marketTypes[j].predictionTime);
-        // bytes32 _oraclizeId = provable_query("computation", _computationHash, uint2str(marketTypes[j].predictionTime), _gasLimit);
-        // marketOracleId[_oraclizeId] = MarketOraclize(address(0), _marketType, j, _startTime);
-        // marketTypeCurrencyOraclize[j][_marketCurrencyIndex] = _oraclizeId;
-        // _createMarket(j, _marketCurrencyIndex, _minValue[j], _maxValue[j]);
       }
+    }
+
+    function _addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string memory _computationHash, bool _isChainlinkFeed) internal {
+      uint256 _marketCurrencyIndex = marketCurrencies.length;
+      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed));
+      emit MarketCurrencies(_marketCurrencyIndex, _priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
     }
 
      /**

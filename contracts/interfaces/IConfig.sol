@@ -18,4 +18,6 @@ contract IConfig {
  
     function getAssetPriceUSD(address _currencyAddress, bool _isCurrencyERCToken) external view returns(uint latestAnswer);
     function update(address pair) external;
+    function setCommissionPercentage(address _asset, uint _commissionPerc) external;
+    function addIncentiveToken(address _tokenAddress) external;
 }

@@ -124,6 +124,10 @@ contract MarketConfig {
         }
     }
 
+    function addIncentiveToken(address _tokenAddress) external onlyAuthorized {
+        incentiveTokens.push(_tokenAddress);
+    }
+
     function getBasicMarketDetails() public view returns(uint, uint, uint, uint) {
         return (minBet, lossPercentage, priceStep, positionDecimals);
     }
@@ -183,7 +187,7 @@ contract MarketConfig {
         return tokenStakeForDispute;
     }
 
-    function setCommissionPercentage(address _asset, uint _commissionPerc) external {
+    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyAuthorized {
         require(commissionPerc[_asset] > 0,"Invalid Asset");
         require(_commissionPerc > 0 && _commissionPerc < 100);
         commissionPerc[_asset] = _commissionPerc;
