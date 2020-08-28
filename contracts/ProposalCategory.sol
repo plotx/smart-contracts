@@ -110,8 +110,8 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeMultipleImplementations(bytes2[],address[])",
             50,
-            1,
-            1
+            2,
+            2
         ); // 7
         _addInitialCategories(
             "Update master Implementation",
@@ -119,8 +119,8 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeTo(address)",
             50,
-            1,
-            1
+            2,
+            2
         ); // 8
         _addInitialCategories(
             "Raise Dispute",
