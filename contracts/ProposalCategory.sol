@@ -180,7 +180,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "Add new market currency",
             "",
             "PL",
-            "addNewMarketCurrency(address,bytes32,string,string,string,bool,uint256)",
+            "addNewMarketCurrency(address,bytes32,string,bool,uint256)",
             60,
             2,
             2
