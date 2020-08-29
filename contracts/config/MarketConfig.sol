@@ -219,6 +219,10 @@ contract MarketConfig {
         return (lotPurchasePerc, uniswapDeadline);
     }
 
+    function getFeedAddresses() public view returns(address, address) {
+        return (address(chainLinkOracle), address(uniswapFactory));
+    }
+
     function update(address pair) external {
         _update(pair);
         _update(plotETHpair);
