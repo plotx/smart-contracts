@@ -220,7 +220,7 @@ contract Governance is IGovernance, Iupgradable {
         string calldata _proposalTitle,
         string calldata _proposalSD,
         string calldata _proposalDescHash
-    ) external {
+    ) external onlyProposalOwner(_proposalId) {
         require(allProposalSolutions[_proposalId].length < 2, "Not allowed");
         allProposalData[_proposalId].propStatus = uint256(ProposalStatus.Draft);
         allProposalData[_proposalId].category = 0;
