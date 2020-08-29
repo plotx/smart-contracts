@@ -121,6 +121,9 @@ contract MarketConfig {
             chainLinkPriceOracle = value;
         } else if(code == "UNIRTR") {
             uniswapRouter = value;
+        } else if(code == "UNIFAC") {
+            uniswapFactory = IUniswapV2Factory(value);
+            plotETHpair = uniswapFactory.getPair(plotusToken, weth);
         }
     }
 
