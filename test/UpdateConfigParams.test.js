@@ -116,7 +116,7 @@ contract('Configure Global Parameters', accounts => {
 
 
 
-    describe('Update Market uint Config Params', function() {
+    describe('Update Market Config Params', function() {
 
       // it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
       //   await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
