@@ -30,8 +30,7 @@ contract PlotusToken is ERC20 {
     address public operator;
 
     modifier onlyOperator() {
-        if (operator != address(0))
-            require(msg.sender == operator);
+        require(msg.sender == operator);
         _;
     }
 
@@ -45,6 +44,7 @@ contract PlotusToken is ERC20 {
     * @param _newOperator address of new operator
     */
     function changeOperator(address _newOperator) public onlyOperator returns (bool) {
+        require(_newOperator != address(0));
         operator = _newOperator;
         return true;
     }
