@@ -133,16 +133,15 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     * @dev Start the initial market.
     */
     function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
-
-      _addNewMarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true);
-      _addNewMarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", false);
-      _addMarket(1 hours, 2 hours, 800000, 20);
-      _addMarket(24 hours, 2 days, 800000, 50);
-      _addMarket(7 days, 14 days, 800000, 100);
+      _addNewMarketCurrency(_ethPriceFeed, "ETH", "QmdyBHNFuHLv7FasY4n12hbVThYeGXnt7hpb2Y66dDdgtK", true);
+      _addNewMarketCurrency(_ethPriceFeed, "BTC", "QmPh7dDUGx99Roc9q2MRExLqCXTmLJTr1fuNMhjJQwUJrA", true);
+      _addMarket(1 hours, 2 hours, 20);
+      _addMarket(24 hours, 2 days, 50);
+      _addMarket(7 days, 14 days, 100);
 
       for(uint256 i = 0;i < marketTypes.length; i++) {
-          _initiateProvableQuery(i, 0, marketCurrencies[0].marketCreationHash, 800000, address(0), _marketStartTime, marketTypes[i].predictionTime);
-          _initiateProvableQuery(i, 1, marketCurrencies[1].marketCreationHash, 800000, address(0), _marketStartTime, marketTypes[i].predictionTime);
+          _initiateProvableQuery(i, 0, marketCurrencies[0].marketCreationHash, 1600000, address(0), _marketStartTime, marketTypes[i].predictionTime);
+          _initiateProvableQuery(i, 1, marketCurrencies[1].marketCreationHash, 1600000, address(0), _marketStartTime, marketTypes[i].predictionTime);
       }
     }
 
@@ -155,13 +154,13 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
       uint256 _marketType = marketTypes.length;
-      _addMarket(_predictionTime, _settleTime, _gasLimit, _optionRangePerc);
+      _addMarket(_predictionTime, _settleTime, _optionRangePerc);
       for(uint256 j = 0;j < marketCurrencies.length; j++) {
         _initiateProvableQuery(_marketType, j, marketCurrencies[j].marketCreationHash, _gasLimit, address(0), _marketStartTime, _predictionTime);
       }
     }
 
-    function _addMarket(uint256 _predictionTime, uint256 _settleTime, uint256 _gasLimit, uint256 _optionRangePerc) internal {
+    function _addMarket(uint256 _predictionTime, uint256 _settleTime, uint256 _optionRangePerc) internal {
       uint256 _marketType = marketTypes.length;
       marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _optionRangePerc));
       emit MarketTypes(_marketType, _predictionTime, _settleTime, _optionRangePerc);
@@ -245,7 +244,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
+      IMarket(_market).initiate.value(0.004 ether)(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
