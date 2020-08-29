@@ -81,11 +81,9 @@ contract MarketConfig {
 
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorized {
         if(code == "SW") {
-            require(value.add(PRICE_WEIGHTAGE) == 100);
+            require(value <= 100);
             STAKE_WEIGHTAGE = value;
-        } else if(code == "PW") {
-            require(value.add(STAKE_WEIGHTAGE) == 100);
-            PRICE_WEIGHTAGE = value;
+            PRICE_WEIGHTAGE = 100 - STAKE_WEIGHTAGE;
         } else if(code == "SWMA") {
             STAKE_WEIGHTAGE_MIN_AMOUNT = value;
         } else if(code == "MTED") {
