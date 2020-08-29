@@ -472,8 +472,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         string memory _functionHash
     ) public onlyAuthorizedToGovern {
         require(
-            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) ==
-                1,
+            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal),
             "Invalid Role"
         );
 
@@ -535,8 +534,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         uint256[] memory _incentives
     ) internal {
         require(
-            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal) ==
-                1,
+            _verifyMemberRoles(_memberRoleToVote, _allowedToCreateProposal),
             "Invalid Role"
         );
         allCategory.push(
@@ -564,17 +562,17 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     function _verifyMemberRoles(
         uint256 _memberRoleToVote,
         uint256[] memory _allowedToCreateProposal
-    ) internal view returns (uint256) {
+    ) internal view returns (bool) {
         uint256 totalRoles = mr.totalRoles();
         if (_memberRoleToVote >= totalRoles) {
-            return 0;
+            return false;
         }
         for (uint256 i = 0; i < _allowedToCreateProposal.length; i++) {
             if (_allowedToCreateProposal[i] >= totalRoles) {
-                return 0;
+                return false;
             }
         }
-        return 1;
+        return true;
     }
 
     /**
