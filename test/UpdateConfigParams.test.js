@@ -6,6 +6,7 @@ const TokenController = artifacts.require('TokenController');
 const Plotus = artifacts.require("Plotus");
 const MarketConfig = artifacts.require('MarketConfig');
 const PlotusToken = artifacts.require("MockPLOT");
+const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
 const encode = require('./utils/encoder.js').encode;
@@ -62,7 +63,7 @@ contract('Configure Global Parameters', accounts => {
         action = 'updateUintParameters(bytes8,uint)';
         getterFunction = 'getUintParameters';
       } else if (type == 'configAddress') {
-        action = 'updateMarketConfig(address)';
+        action = 'updateConfigAddressParameters(bytes8,address)';
         getterFunction = '';
       } else if (type == 'configUint') {
         action = 'updateConfigUintParameters(bytes8,uint256)';
@@ -99,12 +100,6 @@ contract('Configure Global Parameters', accounts => {
       if (type == 'uint') {
         action = 'updateUintParameters(bytes8,uint)';
         getterFunction = 'getUintParameters';
-      } else if (type == 'address') {
-        action = 'updateAddressParameters(bytes8,address)';
-        getterFunction = 'getAddressParameters';
-      } else if (type == 'owner') {
-        action = 'updateOwnerParameters(bytes8,address)';
-        getterFunction = 'getOwnerParameters';
       }
       let actionHash = encode(action, code, proposedValue);
       await gvProposal(cId, actionHash, mr, gv, mrSequence, 0);
@@ -121,34 +116,120 @@ contract('Configure Global Parameters', accounts => {
 
 
 
-    // describe('Update Market uint Config Params', function() {
-    //   it('Should update Stake Period', async function() {
-    //     await updateParameter(20, 2, 'MINBET', pl, 'configUint', toWei(120));
-    //     console.log("===");
-    //     let configData = await marketConfig.getBasicMarketDetails();
-    //     console.log("===");
-    //     assert.equal(configData[0], toWei(120), 'Not updated');
-        
-    //   });
-    //   // it('Should update Commission%', async function() {
-    //   //   await updateParameter(21, 2, 'RACOMM', td, 'uint', '90');
-    //   // });
-    //   // it('Should update Max Commission%', async function() {
-    //   //   await updateParameter(21, 2, 'RAMAXC', td, 'uint', '40');
-    //   // });
-    //   // it('Should update Extra CA Lock Period', async function() {
-    //   //   await updateParameter(21, 2, 'CALOCKT', td, 'uint', '86400');
-    //   // });
-    //   // it('Should update Extra Member Lock Period', async function() {
-    //   //   await updateParameter(21, 2, 'MVLOCKT', td, 'uint', '86400');
-    //   // });
-    //   // it('Should update Claim  Assessor Velocity', async function() {
-    //   //   await updateParameter(21, 2, 'CABOOKT', td, 'uint', '7000');
-    //   // });
-    //   // it('Should update Membership joining fee', async function() {
-    //   //   await updateParameter(21, 2, 'JOINFEE', td, 'uint', '6000000000000000');
-    //   // });
-    // });
+    describe('Update Market uint Config Params', function() {
+
+      // it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
+      //   await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
+      //   let configData = await marketConfig.getPriceCalculationParams(plotTok.address, false);
+      //   assert.equal(configData[1], toWei(100), 'Not updated');
+      // });
+
+      // it('Should update Min Time Elapsed Divisor', async function() {
+      //   await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
+      //   let configData = await marketConfig.getPriceCalculationParams(plotTok.address, false);
+      //   assert.equal(configData[4], toWei(10), 'Not updated');
+      // });
+
+      it('Should update Min Bet', async function() {
+        await updateParameter(20, 2, 'MINBET', pl, 'configUint', toWei(120));
+        let configData = await marketConfig.getBasicMarketDetails();
+        assert.equal(configData[0], toWei(120), 'Not updated');
+      });
+
+      it('Should update Position Decimals', async function() {
+        await updateParameter(20, 2, 'PDEC', pl, 'configUint', 19);
+        let configData = await marketConfig.getBasicMarketDetails();
+        assert.equal(configData[3], 19, 'Not updated');
+      });
+
+      it('Should update Lot Purchase Perc', async function() {
+        await updateParameter(20, 2, 'PPPERC', pl, 'configUint', 90);
+        let configData = await marketConfig.getPurchasePercAndDeadline();
+        assert.equal(configData[0], 90, 'Not updated');
+      });
+
+      it('Should not update Lot Purchase Perc if value is more than 99', async function() {
+        await updateParameter(20, 2, 'PPPERC', pl, 'configUint', 101);
+        let configData = await marketConfig.getPurchasePercAndDeadline();
+        assert.notEqual(configData[0], 101, 'Not updated');
+      });
+
+      it('Should update Price Step', async function() {
+        await updateParameter(20, 2, 'PSTEP', pl, 'configUint', 20);
+        let configData = await marketConfig.getBasicMarketDetails();
+        assert.equal(configData[2], 20, 'Not updated');
+      });
+
+      it('Should update Rate', async function() {
+        await updateParameter(20, 2, 'RATE', pl, 'configUint', 21);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.equal(configData[2], 21, 'Not updated');
+      });
+
+      it('Should update Multiplier', async function() {
+        await updateParameter(20, 2, 'MULT', pl, 'configUint', 22);
+        let configData = await marketConfig.getValueAndMultiplierParameters(pl.address, 10);
+        assert.equal(configData[0], 22, 'Not updated');
+      });
+
+      it('Should update Min Stake For Multiplier', async function() {
+        await updateParameter(20, 2, 'MINSTM', pl, 'configUint', 23);
+        let configData = await marketConfig.getValueAndMultiplierParameters(pl.address, 10);
+        assert.equal(configData[1], 23, 'Not updated');
+      });
+
+      it('Should update Loss Percentage', async function() {
+        await updateParameter(20, 2, 'LPERC', pl, 'configUint', 24);
+        let configData = await marketConfig.getBasicMarketDetails();
+        assert.equal(configData[1], 24, 'Not updated');
+      });
+
+      it('Should update Uniswap Deadline', async function() {
+        await updateParameter(20, 2, 'UNIDL', pl, 'configUint', 25);
+        let configData = await marketConfig.getPurchasePercAndDeadline();
+        assert.equal(configData[1], 25, 'Not updated');
+      });
+
+      it('Should update Token Stake For Dispute', async function() {
+        await updateParameter(20, 2, 'TSDISP', pl, 'configUint', 26);
+        let configData = await marketConfig.getDisputeResolutionParams();
+        assert.equal(configData, 26, 'Not updated');
+      });
+
+      it('Should update Market Cool Down Time', async function() {
+        await updateParameter(20, 2, 'CDTIME', pl, 'configUint', 27);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.equal(configData[1], 27, 'Not updated');
+      });
+
+      it('Should not update if invalid code is passed', async function() {
+        await updateParameter(20, 2, 'CDTIM1', pl, 'configUint', 28);
+      });
+
+      it('Should update Chain Link Price Oracle', async function() {
+        await updateParameter(22, 2, 'CLORCLE', pl, 'configAddress', pl.address);
+        let configData = await marketConfig.getFeedAddresses();
+        assert.equal(configData[0], pl.address, 'Not updated');
+      });
+
+      it('Should update Uniswap Router', async function() {
+        await updateParameter(22, 2, 'UNIRTR', pl, 'configAddress', pl.address);
+        let configData = await marketConfig.getETHtoTokenRouterAndPath();
+        assert.equal(configData[0], pl.address, 'Not updated');
+      });
+
+      it('Should update Uniswap Factory', async function() {
+        let uniswapFactory = await MockUniswapFactory.new();
+        await updateParameter(22, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
+        let configData = await marketConfig.getFeedAddresses();
+        assert.equal(configData[1], uniswapFactory.address, 'Not updated');
+      });
+
+      it('Should not update if invalid code is passed', async function() {
+        await updateParameter(22, 2, 'CDTIM1', pl, 'configAddress', pl.address);
+      });
+
+    });
     describe('Update Token Controller Parameters', function() {
       it('Should update Lock period for Stake multiplier', async function() {
         await updateParameter(14, 2, 'SMLP', tc, 'uint', '2');
