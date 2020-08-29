@@ -9,7 +9,6 @@ import "./Iupgradable.sol";
 contract Master is Governed {
 
     bytes2[] public allContractNames;
-    address payable public plotusAddress;
     address public dAppToken;
     address public dAppLocker;
     // address public bLOT;
