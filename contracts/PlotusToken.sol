@@ -127,9 +127,9 @@ contract PlotusToken is ERC20 {
      * @dev Lock the user's tokens 
      * @param _of user's address.
      */
-    function lockForGovernanceVote(address _of, uint _days) public onlyOperator {
-        if (_days.add(now) > lockedForGV[_of])
-            lockedForGV[_of] = _days.add(now);
+    function lockForGovernanceVote(address _of, uint _period) public onlyOperator {
+        if (_period.add(now) > lockedForGV[_of])
+            lockedForGV[_of] = _period.add(now);
     }
 
     function isLockedForGV(address _of) public view returns(bool) {
