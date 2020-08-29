@@ -238,12 +238,12 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); //20
+        ); //21
         _addInitialCategories(
-            "Update Address Uint parameters",
+            "Update Market Address parameters",
             "",
             "PL",
-            "updateConfigAddressParameters(bytes8,uint256)",
+            "updateConfigAddressParameters(bytes8,address)",
             60,
             2,
             2
