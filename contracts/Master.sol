@@ -2,6 +2,7 @@ pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IPlotus.sol";
+import "./interfaces/IbLOTToken.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
 
@@ -11,7 +12,7 @@ contract Master is Governed {
     address payable public plotusAddress;
     address public dAppToken;
     address public dAppLocker;
-    address public bLOT;
+    // address public bLOT;
     bool public masterInitialised;
 
     mapping(address => bool) public contractsActive;
@@ -31,7 +32,7 @@ contract Master is Governed {
     * @param _token The address of token.
     * @param _marketConfig The addresses of market configs.
     */
-    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _bLot, address _marketConfig) external {
+    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _defaultbLOTMinter, address _marketConfig) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(!masterInitialised);
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -43,6 +44,7 @@ contract Master is Governed {
         allContractNames.push("GV");
         allContractNames.push("PL");
         allContractNames.push("TC");
+        allContractNames.push("BL");
 
         require(allContractNames.length == _implementations.length);
         contractsActive[address(this)] = true;
@@ -58,6 +60,7 @@ contract Master is Governed {
 
         // _generateProxy(_plotusImplementation);
         IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token);
+        IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
     }
 
     /**

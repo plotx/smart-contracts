@@ -29,12 +29,12 @@ module.exports = function(deployer, network, accounts){
       let uniswapFactory = await deployer.deploy(MockUniswapFactory);
       let marketConfig = await deployer.deploy(MarketConfig, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address]);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
-      let blotToken = await deployer.deploy(BLOT, plotusToken.address);
+      let blotToken = await deployer.deploy(BLOT);
       let masterProxy = await deployer.deploy(Master);
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
-      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, blotToken.address, marketConfig.address);
+      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
+      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address);
 
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       await tc.changeDependentContractAddress();
@@ -43,7 +43,7 @@ module.exports = function(deployer, network, accounts){
       await master.transferProxyOwnership(gvAddress);
       master = await Master.at(master.address);
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
-      await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
+      // await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
       let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
       let plotus = await Plotus.at(plotusAddress);
       var date = Date.now();

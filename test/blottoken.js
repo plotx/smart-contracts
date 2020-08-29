@@ -1,13 +1,18 @@
 const BLOT = artifacts.require('BLOT');
 const PLOT = artifacts.require('MockPLOT');
+const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
+const Master = artifacts.require("Master");
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { assertRevert } = require('./utils/assertRevert');
+var BLOTInstance;
 contract('bLOTToken', function([user1,user2]){
 
 
     it('1.Minter can mint bLOTTokens',async function(){
+        let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+        masterInstance = await Master.at(masterInstance.address);
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.fromAscii("BL")));
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         let canMint = await BLOTInstance.mint(user1,"1000000000000000000000");
         assert.ok(canMint)
@@ -16,7 +21,7 @@ contract('bLOTToken', function([user1,user2]){
 
     it('2. Should reduce PLOT tokens to give equal number of bLOT tokens',async function(){
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         let PLOTbeforeUser1 =  await PLOTInstance.balanceOf(user1);
         let BLOTbeforeUser2 =  await BLOTInstance.balanceOf(user2);
@@ -29,7 +34,7 @@ contract('bLOTToken', function([user1,user2]){
 
     it('3. Totalsupply of PLOT tokens to remain same ,Total supply of bLOT should increase',async function(){
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         let totalSupplyPLOT1 =  await PLOTInstance.totalSupply();
         let totalSupplyBLOT1 =  await BLOTInstance.totalSupply();
@@ -43,7 +48,7 @@ contract('bLOTToken', function([user1,user2]){
 
     it('4. Minter can transfer bLOT  tokens ,non minter cannot transfer bLOT token',async function(){
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         await BLOTInstance.mint(user1,"1000000000000000000000");
         let canTransfer = await BLOTInstance.transfer(user2,"100000000000000000",{from : user1});
@@ -54,7 +59,7 @@ contract('bLOTToken', function([user1,user2]){
 
     it('5. Minter can transfer from bLOT  tokens ,non minter cannot transfer from bLOT token',async function(){
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         await BLOTInstance.mint(user1,"1000000000000000000000");
         await BLOTInstance.approve(user1,"1000000000000000000")
@@ -66,7 +71,7 @@ contract('bLOTToken', function([user1,user2]){
 
     it('6. bLOT tokens cannot be converted to PLOT directly',async function(){
         PLOTInstance = await PLOT.deployed();
-        BLOTInstance = await BLOT.deployed();
+        // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         await BLOTInstance.mint(user1,"1000000000000000000000");
         await assertRevert(BLOTInstance.convertToPLOT(BLOTInstance.address, BLOTInstance.address, "10000000000000000000000"))

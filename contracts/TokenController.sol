@@ -44,7 +44,7 @@ contract TokenController is IERC1132, Iupgradable, Governed {
             constructorCheck = true;
         }
         token = PlotusToken(ms.dAppToken());
-        bLOTToken = BLOT(ms.bLOT());
+        bLOTToken = BLOT(ms.getLatestAddress("BL"));
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
 
     }
