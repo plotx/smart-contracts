@@ -143,8 +143,8 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",
             "",
-            "MS",
-            "resolveDispute(address,uint256)",
+            "TC",
+            "burnLockedTokens(address,bytes32,uint256)",
             60,
             2,
             2
@@ -231,6 +231,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); //20
         _addInitialCategories(
+            "Update Market Config Address",
+            "",
+            "PL",
+            "updateMarketConfig(address)",
+            60,
+            2,
+            2
+        ); //20
+        _addInitialCategories(
             "Update Address Uint parameters",
             "",
             "PL",
@@ -253,6 +262,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "",
             "PL",
             "setCommissionPercentage(address,uint256)",
+            60,
+            2,
+            2
+        );
+        _addInitialCategories(
+            "Change token operator",
+            "",
+            "TC",
+            "changeOperator(address)",
             60,
             2,
             2

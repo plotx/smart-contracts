@@ -50,7 +50,7 @@ contract Master is Governed {
         contractsActive[address(this)] = true;
         dAppToken = _token;
         dAppLocker = _token;
-        bLOT = _bLot;
+        // bLOT = _bLot;
         for (uint i = 0; i < allContractNames.length; i++) {
             _generateProxy(allContractNames[i], _implementations[i]);
         }
