@@ -113,6 +113,8 @@ contract MarketConfig {
             tokenStakeForDispute = value;
         } else if(code == "CDTIME") {
             marketCoolDownTime = value;
+        } else {
+            revert("Invalid code");
         }
     }
 
@@ -124,6 +126,8 @@ contract MarketConfig {
         } else if(code == "UNIFAC") {
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotusToken, weth);
+        } else {
+            revert("Invalid code");
         }
     }
 
