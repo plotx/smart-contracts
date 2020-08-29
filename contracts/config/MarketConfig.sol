@@ -121,6 +121,7 @@ contract MarketConfig {
     function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorized {
         if(code == "CLORCLE") {
             chainLinkPriceOracle = value;
+            chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
         } else if(code == "UNIRTR") {
             uniswapRouter = value;
         } else if(code == "UNIFAC") {
