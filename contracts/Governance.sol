@@ -1103,17 +1103,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Gets minimum of two numbers
-     * @param a one of the two numbers
-     * @param b one of the two numbers
-     * @return minimum number out of the two
-     */
-    function _minOf(uint256 a, uint256 b) internal pure returns (uint256 res) {
-        res = a;
-        if (res > b) res = b;
-    }
-
-    /**
      * @dev Check the time since last update has exceeded token holding time or not
      * @param _lastUpd is last update time
      * @return the bool which tells if the time since last update has exceeded token holding time or not

@@ -305,15 +305,6 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       delete marketOracleId[myid];
     }
 
-    /**
-    * @dev Caluculate the option ranges of market.
-    * @return uint256 representing the minimum value of option range of market.
-    * @return uint256 representing the maximum value of option range of market.
-    */
-    function _calculateOptionRange() internal view returns(uint256, uint256) {
-      uint256 _currentPrice = 9000;
-      return (_currentPrice - 50, _currentPrice + 50);
-    }
 
     /**
     * @dev Updates Flag to pause creation of market.

@@ -22,8 +22,6 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 contract PlotusToken is ERC20 {
     using SafeMath for uint256;
 
-    mapping (address => mapping (address => uint256)) private _allowed;
-
     mapping(address => uint) public lockedForGV;
 
     string public name = "PLOT";
@@ -40,15 +38,6 @@ contract PlotusToken is ERC20 {
     constructor(uint256 initialSupply) public {
         _mint(msg.sender, initialSupply);
         operator = msg.sender;
-    }
-
-    /**
-    * @dev Gets the balance of the specified address.
-    * @param owner The address to query the balance of.
-    * @return An uint256 representing the amount owned by the passed address.
-    */
-    function balanceOf(address owner) public view returns (uint256) {
-        return _balances[owner];
     }
 
     /**
