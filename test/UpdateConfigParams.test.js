@@ -7,6 +7,7 @@ const Plotus = artifacts.require("Plotus");
 const MarketConfig = artifacts.require('MarketConfig');
 const PlotusToken = artifacts.require("MockPLOT");
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
+const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
 const encode = require('./utils/encoder.js').encode;
@@ -22,6 +23,7 @@ let ms;
 let pl;
 let marketConfig;
 let plotTok;
+let feedInstance;
 let snapshotId;
 
 const maxAllowance = '115792089237316195423570985008687907853269984665640564039457584007913129639935';
@@ -46,6 +48,7 @@ contract('Configure Global Parameters', accounts => {
       pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
       marketConfig = await MarketConfig.at(await pl.marketConfig());
       plotTok = await PlotusToken.deployed();
+      feedInstance = await MockchainLink.deployed()
 
     });
 
@@ -118,17 +121,17 @@ contract('Configure Global Parameters', accounts => {
 
     describe('Update Market Config Params', function() {
 
-      // it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
-      //   await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
-      //   let configData = await marketConfig.getPriceCalculationParams(plotTok.address, false);
-      //   assert.equal(configData[1], toWei(100), 'Not updated');
-      // });
+      it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
+        await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        assert.equal(configData[1], toWei(100), 'Not updated');
+      });
 
-      // it('Should update Min Time Elapsed Divisor', async function() {
-      //   await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
-      //   let configData = await marketConfig.getPriceCalculationParams(plotTok.address, false);
-      //   assert.equal(configData[4], toWei(10), 'Not updated');
-      // });
+      it('Should update Min Time Elapsed Divisor', async function() {
+        await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        assert.equal(configData[4], toWei(10), 'Not updated');
+      });
 
       it('Should update Min Bet', async function() {
         await updateParameter(20, 2, 'MINBET', pl, 'configUint', toWei(120));
