@@ -525,7 +525,7 @@ contract Market is usingProvable {
     * @param solutionHash The ipfs solution hash.
     */
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
-      require(predictionStatus == PredictionStatus.Settled);
+      require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
       require(IToken(token).transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
@@ -570,7 +570,7 @@ contract Market is usingProvable {
     * @return _incentiveTokens address[] memory representing the incentive token.
     */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
-      if(predictionStatus != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
+      if(marketStatus() != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
       _predictionAssets = new address[](2);
@@ -660,7 +660,7 @@ contract Market is usingProvable {
     function claimReturn(address payable _user) public {
       require(now > marketCoolDownTime && !lockedForDispute);
       require(!userClaimedReward[_user],"Already claimed");
-      require(predictionStatus == PredictionStatus.Settled,"Result not declared");
+      require(marketStatus() == PredictionStatus.Settled,"Result not declared");
       if(!commissionExchanged) {
         _exchangeCommission();
       }
