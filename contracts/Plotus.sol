@@ -56,7 +56,6 @@ contract Plotus is usingProvable, Iupgradable, Governed {
 
     // uint256 public marketOpenIndex;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address public masterAddress;
     address public tokenController;
     address marketImplementation;
     address[] markets;
