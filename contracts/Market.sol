@@ -408,20 +408,21 @@ contract Market is usingProvable {
     */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
       uint _minMultiplierRatio;
-      uint _minStakeForMultiplier;
+      uint _minPredictionForMultiplier;
       uint _predictionTime = expireTime.sub(startTime);
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
       uint _predictionValueInToken;
-      (_minMultiplierRatio, _minStakeForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
-      if(_stakeValue < _minStakeForMultiplier) {
+      (_minMultiplierRatio, _minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
+      if(_stakeValue < _minPredictionForMultiplier) {
         return predictionPoints;
       }
       // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender]);
-      uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
-      if(_stakedTokenRatio > _minMultiplierRatio) {
-        _stakedTokenRatio = _stakedTokenRatio.mul(10);
-        predictionPoints = predictionPoints.mul(_stakedTokenRatio).div(100);
-      }
+      // uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
+      // if(_stakedTokenRatio > _minMultiplierRatio) {
+      uint _muliplier = 100 + _stakedBalance.mul(100).div(_predictionValueInToken*mul(10));
+        // _stakedTokenRatio = _stakedTokenRatio.mul(10);
+      predictionPoints = predictionPoints.mul(_muliplier).div(100);
+      // }
       // if(_stakedTokenRatio > 0) {
       //   stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
       // }
