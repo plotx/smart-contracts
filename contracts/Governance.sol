@@ -75,6 +75,7 @@ contract Governance is IGovernance, Iupgradable {
     mapping(address => uint256) public followerDelegation;
     mapping(address => uint256) internal followerCount;
     mapping(address => uint256[]) internal leaderDelegation;
+    mapping(address => uint256) public followerIndex;
     mapping(uint256 => VoteTally) public proposalVoteTally;
     mapping(address => bool) public isOpenForDelegation;
     mapping(address => uint256) public lastRewardClaimed;
@@ -482,6 +483,7 @@ contract Governance is IGovernance, Iupgradable {
 
         allDelegation.push(DelegateVote(msg.sender, _add, now));
         followerDelegation[msg.sender] = allDelegation.length - 1;
+        followerIndex[msg.sender] = leaderDelegation[_add].length;
         leaderDelegation[_add].push(allDelegation.length - 1);
         followerCount[_add]++;
         lastRewardClaimed[msg.sender] = allVotesByMember[_add].length;
@@ -1225,7 +1227,15 @@ contract Governance is IGovernance, Iupgradable {
      */
     function _unDelegate(address _follower) internal {
         uint256 followerId = followerDelegation[_follower];
+        address leader = allDelegation[followerId].leader;
         if (followerId > 0) {
+            //Remove followerId from leaderDelegation array
+                uint256 idOfLastFollower = leaderDelegation[leader][leaderDelegation[leader].length.sub(1)];
+                leaderDelegation[leader][followerIndex[_follower]] = idOfLastFollower;
+                followerIndex[allDelegation[idOfLastFollower].follower] = followerIndex[_follower];
+                leaderDelegation[leader].length--;
+                delete followerIndex[_follower];
+
             followerCount[allDelegation[followerId]
                 .leader] = followerCount[allDelegation[followerId].leader].sub(
                 1
