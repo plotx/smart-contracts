@@ -364,7 +364,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     }
 
     function marketDisputeStatus(address _marketAddress) public view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(disputeStakes[msg.sender].proposalId);
+      (, , _status, , ) = governance.proposal(disputeStakes[_marketAddress].proposalId);
     }
 
     /**
