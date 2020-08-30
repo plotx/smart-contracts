@@ -421,7 +421,10 @@ contract Market is usingProvable {
       // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender]);
       // uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
       // if(_stakedTokenRatio > _minMultiplierRatio) {
-      uint _muliplier = 100 + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+      uint _muliplier = 100;
+      if(_stakedBalance.div(_predictionValueInToken) > 0) {
+        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+      }
         // _stakedTokenRatio = _stakedTokenRatio.mul(10);
       predictionPoints = predictionPoints.mul(_muliplier).div(100);
       // }
