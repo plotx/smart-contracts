@@ -180,7 +180,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "Add new market type",
             "",
             "PL",
-            "addNewMarketType(uint256,uint256,uint256,uint256)",
+            "addNewMarketType(uint256,uint256,uint256,uint256,uint256)",
             60,
             2,
             2
