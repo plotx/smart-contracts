@@ -339,7 +339,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       disputeStakes[msg.sender].proposalId = governance.getProposalLength();
       disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
       disputeStakes[msg.sender].inDispute = true;
-      governance.createProposalwithSolution(proposalTitle, description, description, 9, solutionHash, actionHash);
+      governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, actionHash);
     }
 
     /**

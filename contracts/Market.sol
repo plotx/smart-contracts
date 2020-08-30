@@ -486,7 +486,7 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      require(marketStatus() == PredictionStatus.InSettlement);
+      require(marketStatus() == PredictionStatus.InSettlement || marketStatus() == PredictionStatus.InDispute);
       ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       marketCoolDownTime = (now).add(marketCoolDownTime);
