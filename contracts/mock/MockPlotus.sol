@@ -84,4 +84,8 @@ contract MockPlotus is Plotus {
   function getMarketOraclizeId(address _marketAddress) public view returns(bytes32){
   	return marketId[_marketAddress];
   }
+
+  function exchangeCommission(address _marketAddress) external {
+    IMarket(_marketAddress).exchangeCommission();
+  }
 }
