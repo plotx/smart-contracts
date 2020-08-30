@@ -216,9 +216,10 @@ contract Market is usingProvable {
     }
 
     function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
-      uint leverageMultiplier = _leverage + (_leverage - 1)*5;
+      //leverageMultiplier = levergage + (leverage -1)*0.05; Raised by 3 decimals i.e 1000
+      uint leverageMultiplier = 1000 + (_leverage-1)*50;
       value = value.mul(2500).div(1e18);
-      return value.mul(sqrt(value.mul(100))).mul(_leverage*100000*leverageMultiplier).div(optionPrice.mul(125000000));
+      return value.mul(sqrt(value.mul(10000))).mul(_leverage*100*leverageMultiplier).div(optionPrice.mul(1250000000));
     }
 
     /**
