@@ -243,7 +243,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
-      IMarket(_market).initiate.value(0.004 ether)(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);

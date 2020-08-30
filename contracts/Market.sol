@@ -105,7 +105,7 @@ contract Market is usingProvable {
       marketCoolDownTime = _coolDownTime;
       require(expireTime > now);
       setOptionRanges(_minValue,_maxValue);
-      marketResultId = provable_query(settleTime, "", "");
+      // marketResultId = provable_query(settleTime, "", "");
     }
 
     /**
@@ -469,8 +469,7 @@ contract Market is usingProvable {
       }
     }
 
-// In dev
-    function settleMarketFallback() external {
+    function settleMarket() external {
       uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
       _postResult(_value);
     }
@@ -677,17 +676,17 @@ contract Market is usingProvable {
       pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
     }
 
-    /**
-    * @dev callback for result declaration of market.
-    * @param myid The orcalize market result id.
-    * @param result The current price of market currency.
-    */
-    function __callback(bytes32 myid, string memory result) public {
-      require(msg.sender == provable_cbAddress());
-      require ((myid==marketResultId));
-      uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
-      _postResult(_currentPrice);
-      delete marketResultId;
-    }
+    // /**
+    // * @dev callback for result declaration of market.
+    // * @param myid The orcalize market result id.
+    // * @param result The current price of market currency.
+    // */
+    // function __callback(bytes32 myid, string memory result) public {
+    //   require(msg.sender == provable_cbAddress());
+    //   require ((myid==marketResultId));
+    //   uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
+    //   _postResult(_currentPrice);
+    //   delete marketResultId;
+    // }
 
 }
