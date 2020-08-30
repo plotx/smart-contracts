@@ -27,14 +27,14 @@ module.exports = function(deployer, network, accounts){
       let mockchainLinkAggregaror = await deployer.deploy(MockchainLink);
       let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
       let uniswapFactory = await deployer.deploy(MockUniswapFactory);
-      let marketConfig = await deployer.deploy(MarketConfig, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address]);
+      let marketConfig = await deployer.deploy(MarketConfig);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
       let blotToken = await deployer.deploy(BLOT);
       let masterProxy = await deployer.deploy(Master);
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address);
+      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address]);
 
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       await tc.changeDependentContractAddress();

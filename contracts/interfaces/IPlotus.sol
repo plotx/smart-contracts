@@ -23,7 +23,7 @@ contract IPlotus {
     * @param _marketConfig The address of market config.
     * @param _plotusToken The address of plotus token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public;
+    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public;
 
     /**
     * @dev Create proposal if user wants to raise the dispute.

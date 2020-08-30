@@ -231,10 +231,10 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); //20
         _addInitialCategories(
-            "Update Market Config Address",
+            "Update Market Config Implementation",
             "",
             "PL",
-            "updateMarketConfig(address)",
+            "updateMarketConfigImplementation(address)",
             60,
             2,
             2

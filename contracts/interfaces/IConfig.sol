@@ -1,6 +1,8 @@
 pragma solidity 0.5.7;
 contract IConfig {
 
+    function initialize(address payable[] calldata _addressParams) external;
+
 	/**
      * @dev to Set authorized address to update parameters 
      */

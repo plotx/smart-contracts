@@ -113,7 +113,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     * @param _marketConfig The address of market config.
     * @param _plotusToken The instance of plotus token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public {
+    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public {
       require(!plotxInitialized);
       plotxInitialized = true;
       masterAddress = msg.sender;
@@ -121,8 +121,9 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
-      marketConfig = IConfig(_marketConfig);
-      marketConfig.setAuthorizedAddres();
+      marketConfig = IConfig(_generateProxy(_marketConfig));
+      marketConfig.initialize(_configParams);
+      // marketConfig.setAuthorizedAddres();
       // provable_setProof(proofType_Android | proofType_Ledger);
       // marketOpenIndex = 1;
       
@@ -186,8 +187,10 @@ contract Plotus is usingProvable, Iupgradable, Governed {
      * @dev Update the configs of the market.
      * @param _marketConfig the address of market configs.
      */
-    function updateMarketConfig(address _marketConfig) public onlyAuthorizedToGovern {
-      marketConfig = IConfig(_marketConfig);
+    function updateMarketConfigImplementation(address _marketConfig) public onlyAuthorizedToGovern {
+      OwnedUpgradeabilityProxy tempInstance 
+            = OwnedUpgradeabilityProxy(address(uint160(address(marketConfig))));
+        tempInstance.upgradeTo(_marketConfig);
     }
 
      /**
@@ -463,11 +466,15 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     */
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
     (address[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
-      if(fromIndex < marketsParticipated[user].length && toIndex <= marketsParticipated[user].length) {
-        _market = new address[](toIndex.sub(fromIndex).add(1));
-        _winnigOption = new uint256[](toIndex.sub(fromIndex).add(1));
-        _reward = new uint256[](toIndex.sub(fromIndex).add(1));
-        for(uint256 i = fromIndex; i < toIndex; i++) {
+      if(marketsParticipated[user].length > 0 && fromIndex < marketsParticipated[user].length) {
+        uint256 _toIndex = toIndex;
+        if(_toIndex >= marketsParticipated[user].length) {
+          _toIndex = marketsParticipated[user].length - 1;
+        }
+        _market = new address[](_toIndex.sub(fromIndex).add(1));
+        _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
+        _reward = new uint256[](_toIndex.sub(fromIndex).add(1));
+        for(uint256 i = fromIndex; i <= _toIndex; i++) {
           // Market _marketInstance = Market(marketsParticipated[user][i]);
           _market[i] = marketsParticipated[user][i];
           _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];

@@ -4,6 +4,7 @@ import "../external/uniswap/solidity-interface.sol";
 import "../external/uniswap/FixedPoint.sol";
 import "../external/uniswap/oracleLibrary.sol";
 import "../external/openzeppelin-solidity/math/SafeMath.sol";
+import "../external/proxy/OwnedUpgradeabilityProxy.sol";
 import "../interfaces/IChainLinkOracle.sol";
 import "../interfaces/IToken.sol";
 
@@ -14,20 +15,20 @@ contract MarketConfig {
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
-    uint internal STAKE_WEIGHTAGE = 40;//
-    uint internal STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
-    uint internal minTimeElapsedDivisor = 6;
-    uint internal minBet = 1e15;
-    uint internal positionDecimals = 1e2;
-    uint internal lotPurchasePerc = 50;
-    uint internal priceStep = 10 ether;
-    uint internal rate = 1e14;
-    uint internal multiplier = 10;
-    uint internal minStakeForMultiplier = 5e17;
-    uint internal lossPercentage = 20;
-    uint internal uniswapDeadline = 20 minutes;
-    uint internal tokenStakeForDispute = 100 ether;
-    uint internal marketCoolDownTime = 15 minutes;
+    uint internal STAKE_WEIGHTAGE;
+    uint internal STAKE_WEIGHTAGE_MIN_AMOUNT;
+    uint internal minTimeElapsedDivisor;
+    uint internal minBet;
+    uint internal positionDecimals;
+    uint internal lotPurchasePerc;
+    uint internal priceStep;
+    uint internal rate;
+    uint internal multiplier;
+    uint internal minStakeForMultiplier;
+    uint internal lossPercentage;
+    uint internal uniswapDeadline;
+    uint internal tokenStakeForDispute;
+    uint internal marketCoolDownTime;
     address internal plotusToken;
     address internal plotETHpair;
     address internal weth;
@@ -57,7 +58,11 @@ contract MarketConfig {
         _;
     }
 
-    constructor(address payable[] memory _addressParams) public {
+    function initialize(address payable[] memory _addressParams) public {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        _setInitialParameters();
+        authorizedAddress = msg.sender;
         chainLinkPriceOracle = _addressParams[0];
         uniswapRouter = _addressParams[1];
         plotusToken = _addressParams[2];
@@ -73,10 +78,23 @@ contract MarketConfig {
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
-    function setAuthorizedAddres() public {
-        require(authorizedAddress == address(0));
-        authorizedAddress = msg.sender;
+    function _setInitialParameters() internal {
+        STAKE_WEIGHTAGE = 40;//
+        STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
+        minTimeElapsedDivisor = 6;
+        minBet = 1e15;
+        positionDecimals = 1e2;
+        lotPurchasePerc = 50;
+        priceStep = 10 ether;
+        rate = 1e14;
+        multiplier = 10;
+        minStakeForMultiplier = 5e17;
+        lossPercentage = 20;
+        uniswapDeadline = 20 minutes;
+        tokenStakeForDispute = 100 ether;
+        marketCoolDownTime = 15 minutes;
     }
+
 
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorized {
         if(code == "SW") {
