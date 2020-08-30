@@ -21,31 +21,6 @@ contract MockMarket is Market {
       optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
-
-	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
-      mockFlag = true;
-      pl = IPlotus(msg.sender);
-      marketConfig = MarketConfig(pl.marketConfig());
-      tokenController = ITokenController(pl.tokenController());
-      token = tokenController.token();
-      startTime = _startTime;
-      marketCurrency = _marketCurrency;
-      marketFeedAddress = _marketFeedAddress;
-      isChainlinkFeed = _isChainlinkFeed;
-      // optionsAvailable[0] = option(0,0,0,0,0,address(0));
-      uint _coolDownTime;
-      uint _rate;
-      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketConfig.getMarketInitialParams();
-
-      rate = _rate;
-      predictionTime = _predictionTime; 
-      expireTime = startTime.add(_predictionTime);
-      settleTime = startTime.add(_settleTime);
-      marketCoolDownTime = _coolDownTime;
-      require(expireTime > now);
-      setOptionRanges(_minValue,_maxValue);
-    }
-
     /**
     * @dev Calculate the result of market.
     * @param _value The current price of market currency.
@@ -69,35 +44,6 @@ contract MockMarket is Market {
       	return optionPrices[_option];
       }
       return super._calculateOptionPrice(_option, _totalStaked, _assetStakedOnOption);
-    }
-
-    /**
-    * @dev Exchanges the commission after closing the market.
-    */
-    function exchangeCommission() external {
-      uint256 _uniswapDeadline;
-      uint256 _lotPurchasePerc;
-      (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
-      if(commissionAmount[token] > 0){
-        bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
-        if(!burned) {
-          _transferAsset(token, address(pl), commissionAmount[token]);
-        }
-      } 
-      if(commissionAmount[ETH_ADDRESS] > 0) {
-        uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
-        uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
-        _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
-        uint256 _tokenOutput;
-        address[] memory path;
-        address _router;
-        (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
-        IUniswapV2Router02 router = IUniswapV2Router02(_router);
-        uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
-        _tokenOutput = output[1];
-        incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
-      }
-      commissionExchanged = true;
     }
 
 }

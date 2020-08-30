@@ -440,14 +440,13 @@ contract Market is usingProvable {
     * @dev Exchanges the commission after closing the market.
     */
     function exchangeCommission() external {
-      require (msg.sender == address(pl));
       if(!commissionExchanged) {
         _exchangeCommission();
       }
     }
 
     function _exchangeCommission() internal {
-      if(predictionStatus >= PredictionStatus.InSettlement) {
+      if(marketStatus() >= PredictionStatus.InSettlement) {
         uint256 _uniswapDeadline;
         uint256 _lotPurchasePerc;
         (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();

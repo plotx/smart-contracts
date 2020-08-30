@@ -4,9 +4,11 @@ import "../config/MarketConfig.sol";
 
 contract MockConfig is MarketConfig {
 
-	uint public priceOfToken = 1e16;
+	uint public priceOfToken;
 
-	constructor(address payable[] memory _addressParams) public MarketConfig(_addressParams) {
+	function initialize(address payable[] memory _addressParams) public {
+		priceOfToken = 1e16;
+		super.initialize(_addressParams);
 	}
 
 	function setPrice(uint _newPrice) external {

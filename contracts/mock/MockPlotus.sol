@@ -5,18 +5,6 @@ import "../Plotus.sol";
 contract MockPlotus is Plotus {
 
 	mapping(address => bytes32) marketId;
-	
-  function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken) public {
-    require(!plotxInitialized);
-    plotxInitialized = true;
-    masterAddress = msg.sender;
-    marketImplementation = _marketImplementation;
-    plotusToken = IToken(_plotusToken);
-    tokenController = ms.getLatestAddress("TC");
-    markets.push(address(0));
-    marketConfig = IConfig(_marketConfig);
-    marketConfig.setAuthorizedAddres();    
-  }
 
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
     bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));

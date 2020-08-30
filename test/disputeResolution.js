@@ -88,6 +88,10 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.closeProposal(proposalId);
     await increaseTime(86401);
     await gv.triggerAction(proposalId);
+    let status = await plotusNewInstance.marketDisputeStatus(marketInstance.address)
+    assert.equal(status/1, 3,"dispute proposal not accepted");
+    // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);
+    // assert.equal(marketDetails[7]/1, 3, "status not updated");
     let proposalActionStatus = await gv.proposalActionStatus(proposalId);
     assert.equal(proposalActionStatus/1, 3);
     let userBalAfter = await plotusToken.balanceOf(ab1);

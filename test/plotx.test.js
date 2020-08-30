@@ -61,6 +61,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
     await gv.openProposalForVoting(0);
     await gv.pauseProposal(0);
     await gv.resumeProposal(0);
+    await assertRevert(pl.changeMasterAddress(ab1));
+    await assertRevert(pl.callMarketResultEvent([1,2],1,1));
     
     await plotusToken.transfer(mem1, toWei(100));
     await plotusToken.transfer(mem2, toWei(100));
@@ -197,7 +199,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
     });
 
     it("Claim Rewards", async function() {
+      await pl.getMarketDetailsUser(ab1, 0, 5);
+      await pl.getMarketDetailsUser(ab1, 5, 5);
+      let userDetails = await pl.getMarketDetailsUser(ab1, 0, 2);
+      assert.equal(userDetails[0].length,2);
       balanceBefore = (await plotusToken.balanceOf(ab1))/1;
+      await pl.claimPendingReturn(10);
       await pl.claimPendingReturn(10);
       balanceAfter = (await plotusToken.balanceOf(ab1))/1;
       assert.isAbove(balanceAfter, balanceBefore);
