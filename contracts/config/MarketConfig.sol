@@ -33,6 +33,7 @@ contract MarketConfig {
     address internal plotETHpair;
     address internal weth;
     address public authorizedAddress;
+    bool public initialized
     
     address payable chainLinkPriceOracle;
 
@@ -61,6 +62,8 @@ contract MarketConfig {
     function initialize(address payable[] memory _addressParams) public {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(!initialized, "Already initialized");
+        initialized = true;
         _setInitialParameters();
         authorizedAddress = msg.sender;
         chainLinkPriceOracle = _addressParams[0];

@@ -87,6 +87,7 @@ contract Market is usingProvable {
     function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+      require(startTime == 0, "Already initialized");
       pl = IPlotus(msg.sender);
       marketConfig = MarketConfig(pl.marketConfig());
       tokenController = ITokenController(pl.tokenController());
