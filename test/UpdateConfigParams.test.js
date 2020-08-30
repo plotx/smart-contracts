@@ -121,6 +121,18 @@ contract('Configure Global Parameters', accounts => {
 
     describe('Update Market Config Params', function() {
 
+      it('Should update STAKE WEIGHTAGE', async function() {
+        await updateParameter(20, 2, 'SW', pl, 'configUint', 60);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        assert.equal(configData[0], 60, 'Not updated');
+      });
+
+      it('Should not update STAKE WEIGHTAGE if passed value > 100', async function() {
+        await updateParameter(20, 2, 'SW', pl, 'configUint', 200);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        assert.notEqual(configData[0], 200, 'updated');
+      });
+
       it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
         await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
         let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
@@ -130,7 +142,7 @@ contract('Configure Global Parameters', accounts => {
       it('Should update Min Time Elapsed Divisor', async function() {
         await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
         let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
-        assert.equal(configData[4], toWei(10), 'Not updated');
+        assert.equal(configData[3], toWei(10), 'Not updated');
       });
 
       it('Should update Min Bet', async function() {
@@ -154,7 +166,7 @@ contract('Configure Global Parameters', accounts => {
       it('Should not update Lot Purchase Perc if value is more than 99', async function() {
         await updateParameter(20, 2, 'PPPERC', pl, 'configUint', 101);
         let configData = await marketConfig.getPurchasePercAndDeadline();
-        assert.notEqual(configData[0], 101, 'Not updated');
+        assert.notEqual(configData[0], 101, 'updated');
       });
 
       it('Should update Price Step', async function() {
