@@ -42,8 +42,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 1, {
 			value: "1000000000000000000",
@@ -78,6 +78,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.013);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.027);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.013);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 1.083);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 2.25);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 1.083);
 	});
 });
 
@@ -112,8 +119,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
@@ -146,6 +153,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.013);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.027);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.013);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 1.083);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 2.25);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 1.083);
 	});
 });
 
@@ -180,8 +194,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -229,6 +243,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.12);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.119);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.064);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 10.0);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 9.917);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 5.333);
 	});
 });
 
@@ -263,8 +284,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -312,6 +333,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.12);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.119);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.064);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 10);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 9.917);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 5.333);
 	});
 });
 
@@ -346,8 +374,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -395,6 +423,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.136);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.15);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.08);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 11.333);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 12.5);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 6.667);
 	});
 });
 
@@ -429,8 +464,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -460,7 +495,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			from: user2,
 		});
 
-		await increaseTime(1260);
+		await increaseTime(1211);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
 		console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
@@ -478,6 +513,13 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.126);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.13);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.108);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 10.5);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 10.833);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 9);
 	});
 });
 contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
@@ -511,8 +553,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let priceOption3 = await marketInstance.getOptionPrice(3);
 		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await MockUniswapRouterInstance.setPrice("1200000000000000");
-		await marketConfig.setPrice("1200000000000000");
+		await MockUniswapRouterInstance.setPrice("12000000000000000");
+		await marketConfig.setPrice("12000000000000000");
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -542,7 +584,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			from: user2,
 		});
 
-		await increaseTime(1260);
+		await increaseTime(1211);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
 		console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
@@ -560,5 +602,12 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
 		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
 		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+
+		assert.equal(parseFloat((optionPriceETH1 / 1000).toFixed(3)), 0.132);
+		assert.equal(parseFloat((optionPriceETH2 / 1000).toFixed(3)), 0.155);
+		assert.equal(parseFloat((optionPriceETH3 / 1000).toFixed(3)), 0.078);
+		assert.equal(parseFloat((optionPriceLOT1 / 1000).toFixed(3)), 11);
+		assert.equal(parseFloat((optionPriceLOT2 / 1000).toFixed(3)), 12.917);
+		assert.equal(parseFloat((optionPriceLOT3 / 1000).toFixed(3)), 6.5);
 	});
 });
