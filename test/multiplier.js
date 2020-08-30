@@ -4,12 +4,14 @@ const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("Plotus");
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
-const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
+const MarketConfig = artifacts.require("MockConfig");
+const MockUniswapRouter = artifacts.require("MockUniswapRouter");
+// const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const TokenController = artifacts.require("MockTokenController");
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 
-describe("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", () => {
+describe.only("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", () => {
 	let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
 	contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 		it("1.1 Position without locking PLOT tokens", async () => {
@@ -54,11 +56,11 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			predictionPointsBeforeUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
 			predictionPointsBeforeUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1)) / 1000;
 			predictionPointsBeforeUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 3)) / 1000;
-			console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4);
-			assert.equal(predictionPointsBeforeUser1.toFixed(2), (55.5138941).toFixed(2));
-			assert.equal(predictionPointsBeforeUser2.toFixed(2), (932.6334208).toFixed(2));
-			assert.equal(predictionPointsBeforeUser3.toFixed(2), (366.391701).toFixed(2));
-			assert.equal(predictionPointsBeforeUser4.toFixed(2), (170.2426086).toFixed(2));
+			// console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4);
+			assert.equal(predictionPointsBeforeUser1.toFixed(1), (55.5138941).toFixed(1));
+			assert.equal(predictionPointsBeforeUser2.toFixed(1), (932.6334208).toFixed(1));
+			assert.equal(predictionPointsBeforeUser3.toFixed(1), (366.391701).toFixed(1));
+			assert.equal(predictionPointsBeforeUser4.toFixed(1), (170.2426086).toFixed(1));
 		});
 	});
 	contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
@@ -108,19 +110,26 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			let predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
 			let predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1)) / 1000;
 			let predictionPointsUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 3)) / 1000;
-			console.log(predictionPointsUser1, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4);
-			assert.equal(predictionPointsUser1.toFixed(2), (116.5791776).toFixed(2));
-			assert.equal(predictionPointsUser2.toFixed(2), (1305.686789).toFixed(2));
-			assert.equal(predictionPointsUser3.toFixed(2), (769.4225722).toFixed(2));
-			assert.equal(predictionPointsUser4.toFixed(2), (357.509478).toFixed(2));
+			// console.log(predictionPointsUser1, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4);
+			assert.equal(predictionPointsUser1.toFixed(1), (116.5791776).toFixed(1));
+			assert.equal(predictionPointsUser2.toFixed(1), (1305.686789).toFixed(1));
+			assert.equal(predictionPointsUser3.toFixed(1), (769.4225722).toFixed(1));
+			assert.equal(predictionPointsUser4.toFixed(1), (357.509478).toFixed(1));
 		});
 	});
 });
 
-describe("2. Place prediction with ETH and check multiplier ", () => {
+describe.only("2. Place prediction with ETH and check multiplier ", () => {
 	let predictionPointsUser1, predictionPointsUser1_2, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4;
 	contract("Market", async function ([user1, user2, user3, user4]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+		let masterInstance,
+			plotusToken,
+			marketConfig,
+			MockUniswapRouterInstance,
+			tokenControllerAdd,
+			tokenController,
+			plotusNewAddress,
+			plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -128,11 +137,18 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			tokenControllerAdd = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketConfig();
+			marketConfig = await MarketConfig.at(marketConfig);
+
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
 			await increaseTime(10001);
+
+			await MockUniswapRouterInstance.setPrice("1000000000000000");
+			await marketConfig.setPrice("1000000000000000");
 
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
@@ -178,7 +194,14 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 		});
 	});
 	contract("Market", async function ([user1, user2, user3, user4]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+		let masterInstance,
+			plotusToken,
+			marketConfig,
+			MockUniswapRouterInstance,
+			tokenControllerAdd,
+			tokenController,
+			plotusNewAddress,
+			plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -186,11 +209,18 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			tokenControllerAdd = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketConfig();
+			marketConfig = await MarketConfig.at(marketConfig);
+
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
 			await increaseTime(10001);
+
+			await MockUniswapRouterInstance.setPrice("1000000000000000");
+			await marketConfig.setPrice("1000000000000000");
 
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
