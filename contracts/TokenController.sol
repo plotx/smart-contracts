@@ -278,7 +278,7 @@ contract TokenController is IERC1132, Iupgradable, Governed {
         public
         returns (uint256 unlockableTokens)
     {
-        require(!(token.isLockedForGV(_of)));
+        // require(!(token.isLockedForGV(_of)));
         uint256 lockedTokens;
 
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
