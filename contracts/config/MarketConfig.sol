@@ -15,7 +15,6 @@ contract MarketConfig {
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
     uint internal STAKE_WEIGHTAGE = 40;//
-    uint internal PRICE_WEIGHTAGE = 60;//
     uint internal STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
     uint internal minTimeElapsedDivisor = 6;
     uint internal minBet = 1e15;
@@ -83,7 +82,6 @@ contract MarketConfig {
         if(code == "SW") {
             require(value <= 100);
             STAKE_WEIGHTAGE = value;
-            PRICE_WEIGHTAGE = 100 - STAKE_WEIGHTAGE;
         } else if(code == "SWMA") {
             STAKE_WEIGHTAGE_MIN_AMOUNT = value;
         } else if(code == "MTED") {
@@ -138,9 +136,9 @@ contract MarketConfig {
         return (minBet, lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint, uint) {
+    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint) {
         uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress, _isMarketCurrencyERCToken);
-        return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, PRICE_WEIGHTAGE, _currencyPrice, minTimeElapsedDivisor);
+        return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, _currencyPrice, minTimeElapsedDivisor);
     }
 
     function getAssetPriceUSD(address _currencyFeedAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {

@@ -131,7 +131,8 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint stakeWeightage,uint stakeWeightageMinAmount,uint predictionWeightage, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
+      (uint stakeWeightage,uint stakeWeightageMinAmount, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
+      uint predictionWeightage = 100 - stakeWeightage;
       uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
         return 0;
