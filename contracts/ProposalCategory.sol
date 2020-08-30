@@ -152,7 +152,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         _addInitialCategories(
             "Swap AB member",
             "",
-            "MS",
+            "MR",
             "swapABMember(address,address)",
             60,
             2,
