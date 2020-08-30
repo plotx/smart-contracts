@@ -54,6 +54,7 @@ contract Market is usingProvable {
 
     //Flag to prevent user from predicting multiple times in a market with bLOTtoken
     mapping(address => bool) internal predictedWithBlot;
+    mapping(address => bool) internal multiplierApplied;
 
     IPlotus internal pl;
     ITokenController internal tokenController;
@@ -415,7 +416,7 @@ contract Market is usingProvable {
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
       uint _predictionValueInToken;
       (_minMultiplierRatio, _minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
-      if(_stakeValue < _minPredictionForMultiplier) {
+      if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
         return predictionPoints;
       }
       // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender]);
@@ -424,6 +425,7 @@ contract Market is usingProvable {
       uint _muliplier = 100;
       if(_stakedBalance.div(_predictionValueInToken) > 0) {
         _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+        multiplierApplied[msg.sender] = true;
       }
         // _stakedTokenRatio = _stakedTokenRatio.mul(10);
       predictionPoints = predictionPoints.mul(_muliplier).div(100);
