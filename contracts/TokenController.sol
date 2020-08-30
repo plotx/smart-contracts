@@ -78,7 +78,7 @@ contract TokenController is IERC1132, Iupgradable, Governed {
      */
     function updateUintParameters(bytes8 code, uint val) public onlyAuthorizedToGovern {
         if(code == "SMLP") {
-            smLockPeriod = val * 1 days;
+            smLockPeriod = val.mul(1 days);
         } else if(code == "BRLIM") {
             burnUptoLimit = val.mul(1 ether);
         }
@@ -87,7 +87,7 @@ contract TokenController is IERC1132, Iupgradable, Governed {
     function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint val) {
         codeVal = code;
         if(code == "SMLP") {
-            val= smLockPeriod / 1 days;
+            val= smLockPeriod.div(1 days);
         } else if(code == "BRLIM") {
             val = burnUptoLimit.div(1 ether);
         }
