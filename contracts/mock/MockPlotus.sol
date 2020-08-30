@@ -18,23 +18,6 @@ contract MockPlotus is Plotus {
     marketConfig.setAuthorizedAddres();    
   }
 
-  function startInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed, uint256[] memory _initialMinOptionETH, uint256[] memory _initialMaxOptionETH, uint256[] memory _initialMinOptionPLOT, uint256[] memory _initialMaxOptionPLOT) public payable {
-    marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
-    marketCurrencies.push(MarketCurrency(_ethPriceFeed, "BTC", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
-
-    marketTypes.push(MarketTypeData(1 hours, 2 hours, 20));
-    marketTypes.push(MarketTypeData(24 hours, 2 days, 50));
-    marketTypes.push(MarketTypeData(7 days, 14 days, 100));
-    // for(uint256 j = 0;j < marketCurrencies.length; j++) {
-        for(uint256 i = 0;i < marketTypes.length; i++) {
-            // marketTypeCurrencyStartTime[i][0] = _startTime;
-            // marketTypeCurrencyStartTime[i][1] = _startTime;
-            _createMarket(i, 0, _initialMinOptionETH[i], _initialMaxOptionETH[i], _marketStartTime);
-            _createMarket(i, 1, _initialMinOptionPLOT[i], _initialMaxOptionPLOT[i], _marketStartTime);
-        }
-    // }
-  }
-
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
     bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
     // bool flag;

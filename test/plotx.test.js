@@ -9,6 +9,7 @@ const MarketConfig = artifacts.require("MockConfig");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const PlotusToken = artifacts.require("MockPLOT");
 const Plotus = artifacts.require("MockPlotus");
+const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const latestTime = require("./utils/latestTime.js").latestTime;
@@ -35,6 +36,7 @@ let plotusToken;
 let tc;
 let td;
 let pl;
+let mockchainLinkInstance;
 
 contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3]) => {
   before(async function () {
@@ -49,6 +51,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
     mr = await MemberRoles.at(address);
     address = await nxms.getLatestAddress(toHex("PL"));
     pl = await Plotus.at(address);
+    mockchainLinkInstance = await MockchainLink.deployed();
     marketConfig = await pl.marketConfig();
     marketConfig = await MarketConfig.at(marketConfig);
     MockUniswapRouterInstance = await MockUniswapRouter.deployed();
@@ -73,12 +76,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
       pId = (await gv.getProposalLength()).toNumber();
       await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
       await gv.categorizeProposal(pId, 16, 0);
-      let startTime = Math.round((Date.now())/1000) + 2*604800;
+      let startTime = (await latestTime())/1 + 2*604800;
       let actionHash = encode(
-                              "addNewMarketCurrency(address,bytes32,string,string,string,bool,uint256)",
-                              ab1, "0x12", "A", "A", "A", false, startTime
+                              "addNewMarketCurrency(address,bytes32,string,bool,uint256)",
+                              mockchainLinkInstance.address, "0x12", "A", true, startTime
                               );
-      await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+      await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
       await gv.submitVote(pId, 1, { from: ab1 });
       await gv.submitVote(pId, 1, { from: mem1 });
       await gv.submitVote(pId, 1, { from: mem2 });
@@ -133,7 +136,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
       await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
       await gv.categorizeProposal(pId, 15, 0);
       let startTime = Math.round((Date.now()));
-      startTime = (await latestTime()) + 3*604800;
+      startTime = (await latestTime())/1 + 3*604800;
+      // startTime = Math.round((Date.now())/1000) + 2*604800;
       let actionHash = encode(
                               "addNewMarketType(uint256,uint256,uint256,uint256,uint256)",
                               60*60*2, 60*60*4, startTime, 160000, 10
@@ -158,7 +162,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 
     it("Prredict on newly created market", async function() {
       let openMarkets = await pl.getOpenMarkets();
-      // await increaseTime(604810);
+      await increaseTime(604810);
       marketInstance = await Market.at(openMarkets[0][9]);
       // await increaseTime(10001);
 
