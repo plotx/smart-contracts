@@ -244,7 +244,9 @@ contract TokenController is IERC1132, Iupgradable, Governed {
         public
         returns (bool)
     {
-        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        if(_reason == "SM") {
+            require(_time == smLockPeriod);
+        }
         require(_time != 0, "Time cannot be zero");
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
 
