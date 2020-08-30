@@ -20,7 +20,7 @@ contract MockPlotus is Plotus {
 
   function startInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed, uint256[] memory _initialMinOptionETH, uint256[] memory _initialMaxOptionETH, uint256[] memory _initialMinOptionPLOT, uint256[] memory _initialMaxOptionPLOT) public payable {
     marketCurrencies.push(MarketCurrency(_ethPriceFeed, "ETH", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
-    marketCurrencies.push(MarketCurrency(_plotPriceFeed, "PLOT", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", false));
+    marketCurrencies.push(MarketCurrency(_ethPriceFeed, "BTC", "QmPKgmEReh6XTv23N2sbeCYkFw7egVadKanmBawi4AbD1f", true));
 
     marketTypes.push(MarketTypeData(1 hours, 2 hours, 20));
     marketTypes.push(MarketTypeData(24 hours, 2 days, 50));
@@ -35,28 +35,18 @@ contract MockPlotus is Plotus {
     // }
   }
 
-  function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue, uint256 _marketStartTime) internal {
-      require(!marketCreationPaused);
-      MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
-      address payable _market = _generateProxy(marketImplementation);
-      isMarket[_market] = true;
-      markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
-      emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
-      _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
-      // _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
-      bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
-      marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
-      marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
-      marketId[_market] = _oraclizeId;
-      // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 800000);
-      // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
-      // marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
-    }
-
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
-    _createMarket(_marketType, _marketCurrencyIndex, 500, 600, now);
+    bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
+    // bool flag;
+    marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);
+    marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
+    marketId[_previousMarket] = _oraclizeId;
+    // if(marketOracleId[_oraclizeId].marketAddress == address(0)) {
+    //   flag = true;
+    // }
+    if(_previousMarket  == address(0)) {
+      _createMarket(_marketType, _marketCurrencyIndex, 9000, 10000, now);
+    }
   }
 
   /**

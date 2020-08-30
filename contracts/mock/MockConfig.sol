@@ -27,4 +27,8 @@ contract MockConfig is MarketConfig {
         }
         return (multiplier, minStakeForMultiplier, _value);
     }
+
+    function update(address pair) external {
+    
+    }
 }

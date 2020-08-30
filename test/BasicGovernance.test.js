@@ -520,7 +520,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await increaseTime(604810);
       pId = (await gv.getProposalLength()).toNumber();
       await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
-      await gv.categorizeProposal(pId, 12, 0);
+      await gv.categorizeProposal(pId, 13, 0);
       let actionHash = encode("updateUintParameters(bytes8,uint)", "MAXFOL", 2);
       await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
       await gv.submitVote(pId, 1, { from: ab1 });
@@ -531,6 +531,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await gv.submitVote(pId, 1, { from: mem6 });
       await increaseTime(604810);
       await gv.closeProposal(pId);
+      await increaseTime(604810);
       await gv.triggerAction(pId);
       await assertRevert(gv.delegateVote(ab1, { from: mem6 }));
     });
