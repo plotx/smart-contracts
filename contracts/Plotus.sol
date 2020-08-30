@@ -319,7 +319,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     */
     function resumeMarketCreation() public onlyAuthorizedToGovern {
       require(marketCreationPaused);
-        marketCreationPaused = true;
+        marketCreationPaused = false;
     }
 
     /**
