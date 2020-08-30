@@ -833,8 +833,11 @@ contract Governance is IGovernance, Iupgradable {
                     return 1;
                 }
             } else {
-                if (
-                    numberOfMembers == proposalVoteTally[_proposalId].voters ||
+                if(_roleId == uint256(MemberRoles.Role.TokenHolder)) {
+                    if(dateUpdate.add(_closingTime) <= now)
+                        return 1;
+                } else if (
+                    numberOfMembers <= proposalVoteTally[_proposalId].voters ||
                     dateUpdate.add(_closingTime) <= now
                 ) return 1;
             }
