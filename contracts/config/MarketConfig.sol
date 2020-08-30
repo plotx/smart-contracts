@@ -14,6 +14,7 @@ contract MarketConfig {
     using FixedPoint for *;
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    uint constant updatePeriod = 1 hours;
 
     uint internal STAKE_WEIGHTAGE;
     uint internal STAKE_WEIGHTAGE_MIN_AMOUNT;
@@ -33,7 +34,7 @@ contract MarketConfig {
     address internal plotETHpair;
     address internal weth;
     address public authorizedAddress;
-    bool public initialized
+    bool public initialized;
     
     address payable chainLinkPriceOracle;
 
@@ -245,8 +246,10 @@ contract MarketConfig {
         return (address(chainLinkOracle), address(uniswapFactory));
     }
 
-    function update(address pair) external {
-        _update(pair);
+    function update(address pairAddress) external onlyAuthorized {
+        if(pairAddress != plotusToken) {
+            _update(pairAddress);
+        }
         _update(plotETHpair);
     }
 
@@ -258,15 +261,16 @@ contract MarketConfig {
 
         // ensure that at least one full period has passed since the last update
         // require(timeElapsed >= PERIOD, 'ExampleOracleSimple: PERIOD_NOT_ELAPSED');
+        if(timeElapsed >= updatePeriod) {
+            // overflow is desired, casting never truncates
+            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+            _priceData.price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - _priceData.price0CumulativeLast) / timeElapsed));
+            _priceData.price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - _priceData.price1CumulativeLast) / timeElapsed));
 
-        // overflow is desired, casting never truncates
-        // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-        _priceData.price0Average = FixedPoint.uq112x112(uint224((price0Cumulative - _priceData.price0CumulativeLast) / timeElapsed));
-        _priceData.price1Average = FixedPoint.uq112x112(uint224((price1Cumulative - _priceData.price1CumulativeLast) / timeElapsed));
-
-        _priceData.price0CumulativeLast = price0Cumulative;
-        _priceData.price1CumulativeLast = price1Cumulative;
-        _priceData.blockTimestampLast = blockTimestamp;
+            _priceData.price0CumulativeLast = price0Cumulative;
+            _priceData.price1CumulativeLast = price1Cumulative;
+            _priceData.blockTimestampLast = blockTimestamp;
+        }
     }
 
 

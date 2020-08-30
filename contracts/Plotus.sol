@@ -242,6 +242,8 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
       if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
         marketConfig.update(_marketCurrencyData.currencyFeedAddress);
+      } else {
+        marketConfig.update(address(plotusToken));
       }
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
