@@ -65,6 +65,7 @@ contract TokenController is IERC1132, Iupgradable, Governed {
      */
     function changeOperator(address _newOperator) public onlyAuthorizedToGovern {
         token.changeOperator(_newOperator);
+        bLOTToken.changeOperator(_newOperator);
     }
 
     function swapBLOT(address _of, address _to, uint256 amount) public onlyAuthorized {
