@@ -41,6 +41,9 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await marketInstance.setOptionPrice(2, 18);
 		await marketInstance.setOptionPrice(3, 27);
 
+		await marketInstance.exchangeCommission(); //should have no affect
+		await assertRevert(marketInstance.calculatePredictionResult(1)); //should revert as market is in live status
+
 		// set price
 		// user 1
 		// set price lot
@@ -91,18 +94,37 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await plotusToken.approve(openMarkets["_openMarkets"][0], "210000000000000000000", {
 			from: user3,
 		});
+
+		await assertRevert(marketInstance.placePrediction(user10, "210000000000000000000", 2, 2, { from: user3 })); //should revert as assert not valid
+		await assertRevert(marketInstance.placePrediction(plotusToken.address, "210000000000000000000", 2, 2, { from: user3, value: "100" })); // should revert as passing value
+		await assertRevert(marketInstance.placePrediction(plotusToken.address, "1", 2, 2, { from: user3 })); // should revert as prediction amount is less than min required prediction
+		// try {
+		// 	await marketInstance.placePrediction(plotusToken.address, "600000000000000000000", 2, 2, { from: user3 }); // should revert as user do not have enough asset
+		// 	assert.fail();
+		// } catch (e) {
+		// 	console.log(e);
+		// }
+
 		await marketInstance.placePrediction(plotusToken.address, "210000000000000000000", 2, 2, { from: user3 });
 		// user 4
 		await MockUniswapRouterInstance.setPrice("15000000000000000");
 		await marketConfig.setPrice("15000000000000000");
 
-		await plotusToken.approve(BLOTInstance.address, "123000000000000000000");
-		await BLOTInstance.mint(user4, "123000000000000000000");
+		await plotusToken.approve(BLOTInstance.address, "124000000000000000000");
+		await BLOTInstance.mint(user4, "124000000000000000000");
 
-		await BLOTInstance.approve(openMarkets["_openMarkets"][0], "123000000000000000000", {
+		await BLOTInstance.approve(openMarkets["_openMarkets"][0], "124000000000000000000", {
 			from: user4,
 		});
+
+		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 4, { from: user4 })); //should revert as leverage is not 5
+		await assertRevert(
+			marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 5, { from: user4, value: "1000000000000000000" })
+		); // should revert as passing value
+
 		await marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 5, { from: user4 });
+
+		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "1000000000000000000", 3, 5, { from: user4 })); //should revert as once usr can only place bet with BLOT once in a market
 
 		// await plotusToken.transfer(user4, "200000000000000000000");
 
@@ -124,6 +146,12 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		// user 5
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
+		await assertRevert(
+			marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 4, {
+				value: "100000000000000000",
+				from: user5,
+			})
+		);
 		await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 4, {
 			value: "1000000000000000000",
 			from: user5,
@@ -215,6 +243,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await marketConfig.setPrice("1000000000000000");
 
 		await marketInstance.exchangeCommission();
+		await marketInstance.exchangeCommission();
 
 		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
 		assert.equal(parseFloat(plotusBalanceAfter), 5000000000000000);
@@ -244,7 +273,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
 		// calulate  rewards for every user in eth
 
-		console.log("Rewards in Eth");
+		// console.log("Rewards in Eth");
 		for (let index = 0; index < 10; index++) {
 			// check eth returns
 			let returns = await getReturnsInEth(accounts[index]);
