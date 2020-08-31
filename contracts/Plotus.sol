@@ -94,14 +94,6 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, string marketCreationHash, bool isChainlinkFeed);
 
     /**
-    * @dev Checks if msg.sender is master address.
-    */
-    modifier OnlyMaster() {
-      require(msg.sender == masterAddress);
-      _;
-    }
-
-    /**
     * @dev Checks if msg.sender is market address.
     */
     modifier OnlyMarket() {
