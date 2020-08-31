@@ -9,6 +9,7 @@ const PlotusToken = artifacts.require("MockPLOT");
 const BLOT = artifacts.require("BLOT");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const BigNumber = require("bignumber.js");
+const { increaseTimeTo } = require("./utils/increaseTime.js");
 
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
@@ -393,6 +394,16 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		it("4. Market should have 0 balance after all claims", async () => {
 			console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
 			assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
+		});
+		it("5. Option price must be 0 after expire time", async () => {
+			await marketInstance.setMockPriceFlag(false);
+			let marketData = await marketInstance.getData();
+			let optionPrice1 = parseFloat(marketData._optionPrice[0]);
+			let optionPrice2 = parseFloat(marketData._optionPrice[1]);
+			let optionPrice3 = parseFloat(marketData._optionPrice[2]);
+			assert.equal(optionPrice1, 0);
+			assert.equal(optionPrice2, 0);
+			assert.equal(optionPrice3, 0);
 		});
 	});
 });
