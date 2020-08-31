@@ -210,4 +210,9 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
       assert.isAbove(balanceAfter, balanceBefore);
     });
 
+    it("Create market using fallback function", async function(){
+    // function createMarketFallback(_marketType, uint256 _marketCurrencyIndex) external payable{
+      await pl.createMarketFallback(0,0);
+    });
+
 });

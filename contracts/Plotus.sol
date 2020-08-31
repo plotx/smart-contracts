@@ -270,7 +270,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       uint256 _marketStartTime = marketOracleId[_oraclizeId].startTime;
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
-      require(_status == uint(IMarket.PredictionStatus.Cooling));
+      require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       require(now > _marketStartTime.add(marketCreationFallbackTime));
       if(now > _marketStartTime.add(_marketTypeData.predictionTime)) {
         uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
