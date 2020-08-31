@@ -35,6 +35,8 @@ contract Market is usingProvable {
     PredictionStatus internal predictionStatus;
     uint internal settleTime;
     uint internal marketCoolDownTime;
+    uint internal ethAmountToPool;
+    uint internal tokenAmountToPool;
     // uint totalStaked;
     uint totalStakedETH;
     uint totalStakedToken;
@@ -509,8 +511,6 @@ contract Market is usingProvable {
         }
         rewardToDistribute = totalReward;
       } else {
-        uint tokenAmountToPool;
-        uint ethAmountToPool;
         for(uint i=1;i <= totalOptions;i++){
           tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[token])).div(100));
           ethAmountToPool = ethAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
@@ -535,7 +535,7 @@ contract Market is usingProvable {
       uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
       require(IToken(token).transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
-      pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender);
+      pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
       predictionStatus = PredictionStatus.InDispute;
     }
 

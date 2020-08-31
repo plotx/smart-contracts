@@ -78,6 +78,8 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       address staker;
       uint256 stakeAmount;
       uint256 proposalId;
+      uint256 ethDeposited;
+      uint256 tokenDeposited;
       bool inDispute;
     }
 
@@ -336,11 +338,13 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     * @param _stakeForDispute The token staked to raise the diospute.
     * @param _user The address who raises the dispute.
     */
-    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user) public OnlyMarket {
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public OnlyMarket {
       // lockedForDispute[msg.sender] = true;
       require(disputeStakes[msg.sender].staker == address(0));
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
+      disputeStakes[msg.sender].ethDeposited = _ethSentToPool;
+      disputeStakes[msg.sender].tokenDeposited = _tokenSentToPool;
       disputeStakes[msg.sender].proposalId = governance.getProposalLength();
       disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
       disputeStakes[msg.sender].inDispute = true;
@@ -352,11 +356,12 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     * @param _marketAddress The address specify the market.
     * @param _result The final result of the market.
     */
-    function resolveDispute(address _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
+    function resolveDispute(address payable _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
+      _transferAsset(ETH_ADDRESS, _marketAddress, disputeStakes[_marketAddress].ethDeposited);
+      _transferAsset(address(plotusToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
       IMarket(_marketAddress).resolveDispute(true, _result);
       plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
-      // lockedForDispute[msg.sender] = false;
     }
 
     function burnDisputedProposalTokens(uint _proposaId) external onlyAuthorizedToGovern {
@@ -554,10 +559,22 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     }
 
     function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
-      if(_asset == ETH_ADDRESS) {
-        _to.transfer(_amount);
-      } else {
-        IToken(_asset).transfer(_to, _amount);
+      _transferAsset(_asset, _to, _amount);
+    }
+
+    /**
+    * @dev Transfer the assets to specified address.
+    * @param _asset The asset transfer to the specific address.
+    * @param _recipient The address to transfer the asset of
+    * @param _amount The amount which is transfer.
+    */
+    function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
+      if(_amount > 0) { 
+        if(_asset == ETH_ADDRESS) {
+          _recipient.transfer(_amount);
+        } else {
+          require(IToken(_asset).transfer(_recipient, _amount));
+        }
       }
     }
 
