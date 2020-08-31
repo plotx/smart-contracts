@@ -69,6 +69,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
     await assertRevert(marketInstance.raiseDispute(14000,"raise dispute","this is short desc.","this is description","this is solution hash"));
     
+    await assertRevert(marketInstance.resolveDispute(true, 100));
     let winningOption_af = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_af[0]/1)
     let proposalId = await gv.getProposalLength()-1;

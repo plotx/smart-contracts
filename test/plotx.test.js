@@ -119,15 +119,47 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
         openMarkets["_openMarkets"][2],
         "100000000000000000000"
       );
+      await assertRevert(marketInstance.claimReturn(ab1));
+      await assertRevert(marketInstance.placePrediction(
+        plotusToken.address,
+        "10000000000000000000",
+        9,
+        1
+      ));
+      await assertRevert(marketInstance.placePrediction(
+        ab1,
+        "10000000000000000000",
+        9,
+        1
+      ));
       await marketInstance.placePrediction(
         plotusToken.address,
         "10000000000000000000",
         1,
         1
       );
+      await assertRevert(marketInstance.placePrediction(
+        "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
+        "10000000000000000000",
+        1,
+        1, {value:1000}
+      ));
+      await assertRevert(marketInstance.calculatePredictionResult(1));
+      await assertRevert(marketInstance.calculatePredictionResult(0));
       await increaseTime(604810);
+      await assertRevert(marketInstance.claimReturn(ab1));
+      await pl.exchangeCommission(marketInstance.address);
       await marketInstance.calculatePredictionResult(1);
+      await assertRevert(marketInstance.placePrediction(
+        plotusToken.address,
+        "10000000000000000000",
+        1,
+        1
+      ));
+      await assertRevert(marketInstance.calculatePredictionResult(0));
+      await assertRevert(marketInstance.claimReturn(ab1));
       await increaseTime(604800);
+      await pl.exchangeCommission(marketInstance.address);
       await pl.exchangeCommission(marketInstance.address);
 
     });
@@ -182,16 +214,19 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
         openMarkets["_openMarkets"][9],
         "100000000000000000000"
       );
+      await marketInstance.estimatePredictionValue(1, "10000000000000000000",1);
       await marketInstance.placePrediction(
         plotusToken.address,
         "10000000000000000000",
         1,
         1
       );
+      let reward = await marketInstance.getReturn(ab1);
+      assert.equal(reward[0].length,0);
       await increaseTime(604810);
-      await marketInstance.calculatePredictionResult(1);
+      await marketInstance.settleMarket();
       await increaseTime(604800);
-      await pl.exchangeCommission(marketInstance.address);
+      // await pl.exchangeCommission(marketInstance.address);
       await marketInstance.getData();
       // balanceBefore = (await plotusToken.balanceOf(ab1))/1;
       // await marketInstance.claimReturn(ab1);
@@ -209,6 +244,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
       await pl.claimPendingReturn(10);
       balanceAfter = (await plotusToken.balanceOf(ab1))/1;
       assert.isAbove(balanceAfter, balanceBefore);
+      await assertRevert(marketInstance.claimReturn(ab1));
     });
 
     it("Create market using fallback function", async function(){
