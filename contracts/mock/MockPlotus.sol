@@ -17,7 +17,7 @@ contract MockPlotus is Plotus {
     //   flag = true;
     // }
     if(_previousMarket  == address(0)) {
-      _createMarket(_marketType, _marketCurrencyIndex, 9000, 10000, _marketStartTime);
+      _createMarket(_marketType, _marketCurrencyIndex, 900000000000, 1000000000000, _marketStartTime);
     }
   }
 

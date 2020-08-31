@@ -13,6 +13,8 @@ contract MockMarket is Market {
 	}
 
   function setOptionRangesPublic(uint _midRangeMin, uint _midRangeMax) public{
+      _midRangeMin = _midRangeMin*1e8;
+      _midRangeMax = _midRangeMax*1e8;
       optionsAvailable[1].minValue = 0;
       optionsAvailable[1].maxValue = _midRangeMin.sub(1);
       optionsAvailable[2].minValue = _midRangeMin;

@@ -180,7 +180,7 @@ contract MarketConfig {
             uint price = getPrice(_currencyFeedAddress, 10**decimals);
             return price;
         } else {
-            return uint(IChainLinkOracle(_currencyFeedAddress).latestAnswer()).div(1e8);
+            return uint(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
         }
     }
 
