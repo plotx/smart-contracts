@@ -13,11 +13,11 @@
 pragma solidity 0.5.7;
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./Governance.sol";
 import "./TokenController.sol";
-import "./Iupgradable.sol";
 
-contract MemberRoles is IMemberRoles, Governed, Iupgradable {
+contract MemberRoles is IMemberRoles, Governed {
     TokenController internal tokenController;
     struct MemberRoleDetails {
         uint256 memberCounter;
@@ -52,20 +52,15 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     }
 
     /**
-     * @dev Iupgradable Interface to update dependent contract address
-     */
-    function changeDependentContractAddress() public {
-        tokenController = TokenController(ms.getLatestAddress("TC"));
-    }
-
-    /**
      * @dev to change the master address
-     * @param _masterAddress is the new master address
      */
-    function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0)) require(masterAddress == msg.sender);
-        masterAddress = _masterAddress;
-        ms = Master(_masterAddress);
+    function setMasterAddress() public {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+
+        require(masterAddress == address(0));
+        masterAddress = msg.sender;
+        tokenController = TokenController(Master(masterAddress).getLatestAddress("TC"));
     }
 
     /**
@@ -116,7 +111,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             numberOfMembers(uint256(Role.AdvisoryBoard)) == 1,
             "Already initialized!"
         );
-        require(ms.masterInitialised(), "Master not initialized");
 
         // require(maxABCount >=
         //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), abArray.length)

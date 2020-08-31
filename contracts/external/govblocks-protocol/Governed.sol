@@ -14,6 +14,7 @@ pragma solidity 0.5.7;
 
 
 contract IMaster {
+    function isInternal(address _address) public view returns(bool);
     function getLatestAddress(bytes2 _module) public view returns(address);
 }
 

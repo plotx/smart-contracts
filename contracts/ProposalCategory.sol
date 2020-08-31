@@ -13,10 +13,10 @@ pragma solidity 0.5.7;
 
 import "./external/govblocks-protocol/interfaces/IProposalCategory.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/Governed.sol";
-import "./Iupgradable.sol";
 
-contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
+contract ProposalCategory is Governed, IProposalCategory {
     bool public constructorCheck;
     IMemberRoles internal mr;
 
@@ -367,10 +367,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-     * @dev Updates dependant contract addresses
+     * @dev Changes the master address and update it's instance
      */
-    function changeDependentContractAddress() public {
-        mr = IMemberRoles(ms.getLatestAddress("MR"));
+    function setMasterAddress() public {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+
+        require(masterAddress == address(0));
+        masterAddress = msg.sender;
+        mr = IMemberRoles(IMaster(masterAddress).getLatestAddress("MR"));
     }
 
     /**
@@ -430,16 +435,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             categoryActionHashes[allCategory.length - 1] = abi
                 .encodeWithSignature(_functionHash);
         }
-    }
-
-    /**
-     * @dev Changes the master address and update it's instance
-     * @param _masterAddress is the new master address
-     */
-    function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0)) require(masterAddress == msg.sender);
-        masterAddress = _masterAddress;
-        ms = Master(_masterAddress);
     }
 
     /**

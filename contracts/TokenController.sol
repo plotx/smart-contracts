@@ -7,8 +7,9 @@ import "./Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IPlotus.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 
-contract TokenController is IERC1132, Iupgradable, Governed {
+contract TokenController is IERC1132, Governed {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -37,26 +38,18 @@ contract TokenController is IERC1132, Iupgradable, Governed {
     /**
     * @dev Just for interface
     */
-    function changeDependentContractAddress() public {
-        if(!constructorCheck) {
-            smLockPeriod = 30 days;
-            burnUptoLimit = 20000000 * 1 ether;
-            constructorCheck = true;
-        }
+    function setMasterAddress() public {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(!constructorCheck);
+        smLockPeriod = 30 days;
+        burnUptoLimit = 20000000 * 1 ether;
+        constructorCheck = true;
+        masterAddress = msg.sender;
+        Master ms = Master(msg.sender);
         token = PlotusToken(ms.dAppToken());
         bLOTToken = BLOT(ms.getLatestAddress("BL"));
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
-
-    }
-
-    /**
-     * @dev Changes the master address and update it's instance
-     * @param _masterAddress is the new master address
-     */
-    function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0)) require(masterAddress == msg.sender);
-        masterAddress = _masterAddress;
-        ms = Master(_masterAddress);
     }
 
     /**

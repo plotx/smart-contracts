@@ -73,6 +73,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     IToken public plotusToken;
     IConfig public marketConfig;
     IGovernance internal governance;
+    IMaster ms;
 
     struct DisputeStake {
       address staker;
@@ -108,9 +109,8 @@ contract Plotus is usingProvable, Iupgradable, Governed {
     * @param _plotusToken The instance of plotus token.
     */
     function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public {
-      require(!plotxInitialized);
+      require(address(ms) == msg.sender && !plotxInitialized);
       plotxInitialized = true;
-      masterAddress = msg.sender;
       marketImplementation = _marketImplementation;
       plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
@@ -208,21 +208,14 @@ contract Plotus is usingProvable, Iupgradable, Governed {
         tempInstance.upgradeTo(_contractsAddress);
     }
 
-     /**
-     * @dev Change the address here if there is any external dependent contract.
-     */
-    function changeDependentContractAddress() public {
-      governance = IGovernance(ms.getLatestAddress("GV"));
-    }
-
     /**
      * @dev Changes the master address and update it's instance
-     * @param _masterAddress is the new master address
      */
-    function changeMasterAddress(address _masterAddress) public {
-        if (masterAddress != address(0)) require(masterAddress == msg.sender);
-        masterAddress = _masterAddress;
-        ms = Master(_masterAddress);
+    function setMasterAddress() public {
+      OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+      require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+      ms = IMaster(msg.sender);
+      governance = IGovernance(ms.getLatestAddress("GV"));
     }
 
     /**

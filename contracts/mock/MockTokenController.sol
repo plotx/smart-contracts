@@ -14,7 +14,8 @@ contract MockTokenController is TokenController {
         token.changeOperator(_newOperator);
     }
 
-    function dummyOnlyInternalFunction(uint _val) public onlyInternal {
+    function dummyOnlyInternalFunction(uint _val) public {
+        require(IMaster(masterAddress).isInternal(msg.sender));
     	bit = _val;
     }
 

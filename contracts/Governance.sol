@@ -20,9 +20,10 @@ import "./MemberRoles.sol";
 import "./PlotusToken.sol";
 import "./interfaces/IPlotus.sol";
 import "./TokenController.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 
-contract Governance is IGovernance, Iupgradable {
+contract Governance is IGovernance {
     using SafeMath for uint256;
 
     enum ProposalStatus {
@@ -92,6 +93,7 @@ contract Governance is IGovernance, Iupgradable {
     uint256 internal votePercRejectAction;
     uint256 internal actionRejectAuthRole;
 
+    Master internal ms;
     MemberRoles internal memberRole;
     IPlotus internal plotus;
     ProposalCategory internal proposalCategory;
@@ -174,14 +176,6 @@ contract Governance is IGovernance, Iupgradable {
         address indexed categorizedBy,
         uint256 categoryId
     );
-
-    /**
-     * @dev Removes delegation of an address.
-     * @param _add address to undelegate.
-     */
-    function removeDelegation(address _add) external onlyInternal {
-        _unDelegate(_add);
-    }
 
     /**
      * @dev Creates a new proposal
@@ -736,10 +730,13 @@ contract Governance is IGovernance, Iupgradable {
     /**
      * @dev Updates all dependency addresses to latest ones from Master
      */
-    function changeDependentContractAddress() public {
-        if (!constructorCheck) {
-            _initiateGovernance();
-        }
+    function setMasterAddress() public {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+
+        require(!constructorCheck);
+        _initiateGovernance();
+        ms = Master(msg.sender);
         tokenInstance = PlotusToken(ms.dAppLocker());
         memberRole = MemberRoles(ms.getLatestAddress("MR"));
         proposalCategory = ProposalCategory(ms.getLatestAddress("PC"));

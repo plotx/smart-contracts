@@ -54,8 +54,7 @@ contract Master is Governed {
             _generateProxy(allContractNames[i], _implementations[i]);
         }
 
-        _changeMasterAddress(address(this));
-        _changeAllAddress();
+        _setMasterAddress();
 
         // _generateProxy(_plotusImplementation);
         IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token, _configParams);
@@ -88,8 +87,7 @@ contract Master is Governed {
         allContractNames.push(_contractName);
         _generateProxy(_contractName, _contractAddress);
         Iupgradable up = Iupgradable(contractAddress[_contractName]);
-        up.changeMasterAddress(address(this));
-        _changeAllAddress();
+        up.setMasterAddress();
     }
 
     /**
@@ -119,20 +117,10 @@ contract Master is Governed {
     /**
     * @dev Changes Master contract address
     */
-    function _changeMasterAddress(address _masterAddress) internal {
+    function _setMasterAddress() internal {
         for (uint i = 0; i < allContractNames.length; i++) {
             Iupgradable up = Iupgradable(contractAddress[allContractNames[i]]);
-            up.changeMasterAddress(_masterAddress);
-        }
-    }
-
-    /**
-     * @dev Changes the address of token controller.
-     */
-    function _changeAllAddress() internal {
-        for (uint i = 0; i < allContractNames.length; i++) {
-            Iupgradable up = Iupgradable(contractAddress[allContractNames[i]]);
-            up.changeDependentContractAddress();
+            up.setMasterAddress();
         }
     }
 

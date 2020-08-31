@@ -37,7 +37,6 @@ module.exports = function(deployer, network, accounts){
       await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address]);
 
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
-      await tc.changeDependentContractAddress();
       let gvAddress = await master.getLatestAddress(web3.utils.toHex("GV"));
       master = await OwnedUpgradeabilityProxy.at(master.address);
       await master.transferProxyOwnership(gvAddress);
