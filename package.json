@@ -17,11 +17,11 @@
   "license": "ISC",
   "dependencies": {
     "@openzeppelin/contracts": "^2.5.0",
+    "@openzeppelin/test-helpers": "^0.5.6",
     "bignumber.js": "^9.0.0",
     "ethereumjs-abi": "^0.6.8",
     "ganache-cli": "^6.9.0",
     "pify": "^5.0.0",
-    "remixd": "^0.1.8-alpha.14",
     "solidity-coverage": "^0.7.1",
     "truffle": "^5.1.18",
     "web3": "^0.20.4"
