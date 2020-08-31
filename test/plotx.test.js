@@ -192,6 +192,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
       await marketInstance.calculatePredictionResult(1);
       await increaseTime(604800);
       await pl.exchangeCommission(marketInstance.address);
+      await marketInstance.getData();
       // balanceBefore = (await plotusToken.balanceOf(ab1))/1;
       // await marketInstance.claimReturn(ab1);
       // balanceAfter = (await plotusToken.balanceOf(ab1))/1;

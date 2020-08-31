@@ -62,6 +62,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     //can raise dispute in cooling period and stake
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
     await marketInstance.raiseDispute(14000,"raise dispute","this is short desc.","this is description","this is solution hash");
+    // cannot raise dispute multiple times
+    await assertRevert(marketInstance.raiseDispute(14000,"raise dispute","this is short desc.","this is description","this is solution hash"));
     await increaseTime(901);
      // cannot raise dispute if market cool time is over
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");

@@ -5,6 +5,7 @@ import "../Plotus.sol";
 contract MockPlotus is Plotus {
 
 	mapping(address => bytes32) marketId;
+  uint256 blockId;
 
   function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
     bytes32 _oraclizeId = keccak256(abi.encodePacked(_marketType, _marketCurrencyIndex));
@@ -19,28 +20,6 @@ contract MockPlotus is Plotus {
       _createMarket(_marketType, _marketCurrencyIndex, 9000, 10000, _marketStartTime);
     }
   }
-
-  /**
-  * @dev callback for result declaration of market.
-  * @param myid The orcalize market result id.
-  * @param result The current price of market currency.
-  */
-  function __callback(bytes32 myid, string memory result) public {
-      // require(msg.sender == provable_cbAddress());
-      //Check oraclise address
-      strings.slice memory s = result.toSlice();
-      strings.slice memory delim = "-".toSlice();
-      uint[] memory parts = new uint[](s.count(delim) + 1);
-      for (uint i = 0; i < parts.length; i++) {
-          parts[i] = parseInt(s.split(delim).toString());
-      }
-      if(marketOracleId[myid].marketAddress != address(0)) {
-        IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
-      }
-      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1], marketOracleId[myid].startTime);
-      // addNewMarkets(marketOracleId[myid], parseInt(result));
-      delete marketOracleId[myid];
-    }
 
   function getMarketOraclizeId(address _marketAddress) public view returns(bytes32){
   	return marketId[_marketAddress];
