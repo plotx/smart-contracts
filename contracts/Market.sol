@@ -368,6 +368,10 @@ contract Market is usingProvable {
       pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
+    /**
+    * @dev Check if the given `_asset` is supported to stake
+    * @param _asset The asset used by user during prediction whether it is token address or in ether.
+    */
     function _isAllowedToStake(address _asset) internal view returns(bool) {
       return (_asset == ETH_ADDRESS ||
                _asset == token ||
@@ -390,11 +394,11 @@ contract Market is usingProvable {
 
     /**
     * @dev Stores the prediction data.
-    * @param _prediction The option range on which user place prediction.
+    * @param _prediction The option on which user place prediction.
     * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _asset The assets uses by user during prediction.
+    * @param _asset The asset used by user during prediction.
     * @param _leverage The leverage opted by user during prediction.
-    * @param predictionPoints The positions user gets during prediction.
+    * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
       if(_asset == ETH_ADDRESS) {
@@ -412,12 +416,12 @@ contract Market is usingProvable {
     }
 
     /**
-    * @dev Check multiplier if user maitained the configurable amount of tokens.
+    * @dev Check if user gets any multiplier on his positions
     * @param _asset The assets uses by user during prediction.
     * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param predictionPoints The positions user gets during prediction.
+    * @param predictionPoints The actual positions user got during prediction.
     * @param _stakeValue The stake value of asset.
-    * @return uint256 representing the interest return of the stake.
+    * @return uint256 representing multiplied positions
     */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
       uint _minPredictionForMultiplier;
@@ -454,6 +458,9 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Exchanges the commission after closing the market.
+    */
     function _exchangeCommission() internal {
       if(marketStatus() >= PredictionStatus.InSettlement) {
         uint256 _uniswapDeadline;
@@ -482,13 +489,16 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Settle the market, setting the winning option
+    */
     function settleMarket() external {
       uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
       _postResult(_value);
     }
 
     /**
-    * @dev Calculate the result of market here.
+    * @dev Calculate the result of market.
     * @param _value The current price of market currency.
     */
     function _postResult(uint256 _value) internal {
@@ -529,7 +539,7 @@ contract Market is usingProvable {
     }
 
     /**
-    * @dev Raises the dispute by user if wrong value passed at the time of market result declaration.
+    * @dev Raise the dispute if wrong value passed at the time of market result declaration.
     * @param proposedValue The proposed value of market currency.
     * @param proposalTitle The title of proposal created by user.
     * @param shortDesc The short description of dispute.
@@ -546,7 +556,8 @@ contract Market is usingProvable {
     }
 
     /**
-    * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
+    * @dev Resolve the dispute
+    * @param accepted Flag mentioning if deispute is acceted or not
     * @param finalResult The final correct value of market currency.
     */
     function resolveDispute(bool accepted, uint256 finalResult) external {
@@ -578,8 +589,8 @@ contract Market is usingProvable {
     * @dev Gets the return amount of the specified address.
     * @param _user The address to specify the return of
     * @return returnAmount uint[] memory representing the return amount.
-    * @return incentive uint[] memory representing the incentive.
-    * @return _incentiveTokens address[] memory representing the incentive token.
+    * @return incentive uint[] memory representing the amount incentive.
+    * @return _incentiveTokens address[] memory representing the incentive tokens.
     */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint[] memory incentive, address[] memory _incentiveTokens){
       if(marketStatus() != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
