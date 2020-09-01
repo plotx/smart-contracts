@@ -214,8 +214,14 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 
 	it("Create market using fallback function", async function () {
 		// function createMarketFallback(_marketType, uint256 _marketCurrencyIndex) external payable{
-		let actionHash = encode("pauseMarketCreation()");
-		await gvProposal(17, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
+		await pl.createMarketFallback(0,0);
+		await assertRevert(pl.createMarket(0, 0));
+		await pl.createMarket(0,1);
+		// let actionHash = encode("pauseMarketCreation()");
+		pId = (await gv.getProposalLength()).toNumber();
+		await gvProposal(17, "0x", await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 3);
 		await assertRevert(pl.createMarketFallback(0, 0));
 	});
 });

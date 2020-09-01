@@ -166,7 +166,7 @@ contract Plotus is usingProvable, Governed {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
       _addNewMarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
       for(uint256 j = 0;j < marketTypes.length; j++) {
-        _initiateProvableQuery(j, _marketCurrencyIndex, _computationHash, 800000, address(0), _marketStartTime, marketTypes[j].predictionTime);
+        _initiateProvableQuery(j, _marketCurrencyIndex, _computationHash, 1600000, address(0), _marketStartTime, marketTypes[j].predictionTime);
       }
     }
 
@@ -218,6 +218,20 @@ contract Plotus is usingProvable, Governed {
       governance = IGovernance(ms.getLatestAddress("GV"));
     }
 
+    function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
+      bytes32 _oraclizeId = marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex];
+      address _previousMarket = marketOracleId[_oraclizeId].marketAddress;
+      uint256 _marketStartTime = marketOracleId[_oraclizeId].startTime;
+      MarketTypeData storage _marketTypeData = marketTypes[_marketType];
+      (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
+      require(_status >= uint(IMarket.PredictionStatus.InSettlement));
+      if(now > _marketStartTime.add(_marketTypeData.predictionTime)) {
+        uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
+       _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(_marketTypeData.predictionTime));
+      }
+      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, _marketStartTime, _marketTypeData.predictionTime);
+    }
+
     /**
     * @dev Creates the new market.
     * @param _marketType The type of the market.
@@ -238,8 +252,8 @@ contract Plotus is usingProvable, Governed {
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 800000, _market, _marketStartTime, _marketTypeData.predictionTime);
-      // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 800000);
+      _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 1600000, _market, _marketStartTime, _marketTypeData.predictionTime);
+      // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 1600000);
       // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
       // marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
     }
