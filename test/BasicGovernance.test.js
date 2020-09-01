@@ -414,6 +414,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await gv.delegateVote(ab1, { from: mem1 });
       let alreadyDelegated = await gv.alreadyDelegated(ab1);
       assert.equal(alreadyDelegated, true);
+      assert.equal(await gv.alreadyDelegated(ab2), false);
     });
     it("15.34 Member can delegate vote to Member who is not follower", async function () {
       await gv.setDelegationStatus(true, { from: mem3 });
