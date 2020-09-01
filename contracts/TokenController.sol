@@ -3,6 +3,7 @@ pragma solidity  0.5.7;
 import "./external/lockable-token/IERC1132.sol";
 import "./PlotusToken.sol";
 import "./bLOTToken.sol";
+import "./Vesting.sol";
 import "./Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IPlotus.sol";
@@ -29,6 +30,7 @@ contract TokenController is IERC1132, Governed {
     PlotusToken public token;
     IPlotus public plotus;
     BLOT public bLOTToken;
+    Vesting public vesting;
 
     modifier onlyAuthorized {
         require(plotus.isMarket(msg.sender));
@@ -99,7 +101,7 @@ contract TokenController is IERC1132, Governed {
         returns (bool)
     {
 
-        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
         // If tokens are already locked, then functions extendLock or
         // increaseLockAmount should be used to make any changes
         require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
@@ -133,7 +135,7 @@ contract TokenController is IERC1132, Governed {
         returns (bool)
     {
 
-        require(_reason == "VEST" || (_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
         require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
         require(!(token.isLockedForGV(msg.sender)), "Locked for governance");
@@ -197,7 +199,8 @@ contract TokenController is IERC1132, Governed {
 
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
             amount = amount.add(tokensLocked(_of, lockReason[_of][i]));
-        }   
+        }  
+        amount = amount.add(vesting.unclaimedAllocation(_of)); 
     }   
 
     function totalSupply() public view returns (uint256)
@@ -214,7 +217,7 @@ contract TokenController is IERC1132, Governed {
         public
         returns (bool)
     {
-        require(_reason == "VEST" || _reason == "SM" || _reason == "DR");
+        require(_reason == "SM" || _reason == "DR");
         require(_amount != 0, AMOUNT_ZERO);
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
         token.operatorTransfer(msg.sender, _amount);
