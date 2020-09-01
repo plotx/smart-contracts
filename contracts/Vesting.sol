@@ -18,7 +18,6 @@
 pragma solidity 0.5.7;
 
 import "./PlotusToken.sol";
-import "./TokenController.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
@@ -27,7 +26,6 @@ contract Vesting {
 
   using SafeMath for uint256;
   PlotusToken public token;
-  TokenController public tokenController;
   address public owner;
 
   uint constant internal SECONDS_PER_DAY = 1 days;
@@ -68,7 +66,6 @@ contract Vesting {
   {
     token = PlotusToken(_token);
     owner = _owner;
-    tokenController = TokenController(token.operator());
   }
 
   /// @notice Add a new token grant for user `_recipient`. Only one grant per user is allowed
