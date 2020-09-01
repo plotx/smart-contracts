@@ -139,10 +139,10 @@ contract MarketConfig {
         } else if(code == "CDTIME") {
             marketCoolDownTime = value;
         } else if(code == "ETHCOM") {
-            require(_commissionPerc > 0 && _commissionPerc < 100);
+            require(value > 0 && value < 100);
             commissionPerc[ETH_ADDRESS] = value;
         } else if(code == "PLOTCOM") {
-            require(_commissionPerc > 0 && _commissionPerc < 100);
+            require(value > 0 && value < 100);
             commissionPerc[plotusToken] = value;
         } else {
             revert("Invalid code");
