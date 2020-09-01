@@ -126,11 +126,11 @@ contract Market is usingProvable {
     }
 
     /**
-    * @dev Calculates the price of available option ranges.
-    * @param _option The number of option ranges.
-    * @param _totalStaked The total staked amount on options.
-    * @param _assetStakedOnOption The asset staked on options.
-    * @return _optionPrice uint representing the price of option range.
+    * @dev Calculates the price of `_option`.
+    * @param _option Option chosen
+    * @param _totalStaked The total asset staked on market.
+    * @param _assetStakedOnOption Asset staked on options.
+    * @return _optionPrice Price of the given option.
     */
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
@@ -164,9 +164,9 @@ contract Market is usingProvable {
     }
 
    /**
-    * @dev Calculate the option price of market.
-    * @param _midRangeMin The minimum value of middle option range.
-    * @param _midRangeMax The maximum value of middle option range.
+    * @dev Set the option ranges of the market
+    * @param _midRangeMin The minimum value of middle option.
+    * @param _midRangeMax The maximum value of middle option.
     */
     function setOptionRanges(uint _midRangeMin, uint _midRangeMax) internal{
       optionsAvailable[1].minValue = 0;
@@ -178,12 +178,12 @@ contract Market is usingProvable {
     }
 
    /**
-    * @dev Calculates the prediction value.
-    * @param _prediction The option range on which user place prediction.
-    * @param _stake The amount staked by user.
-    * @param _priceStep The option price will update according to priceStep.
+    * @dev Calculates the prediction value, i.e options allocated for staked prediction amount.
+    * @param _prediction The option on which user placed prediction.
+    * @param _stake The value of user stake in eth.
+    * @param _priceStep Price step at which new price of option is calculated.
     * @param _leverage The leverage opted by user at the time of prediction.
-    * @return uint256 representing the prediction value.
+    * @return The prediction points.
     */
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       // uint value;
@@ -195,7 +195,6 @@ contract Market is usingProvable {
                                   .add(
                                     (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[token], _tokenPrice, _decimals)));
       _predictionValue = 0;
-      // (amount*sqrt(amount*100)*leverage*100/(price*10*125000/1000));
 
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
@@ -220,16 +219,20 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev internal function to calculate the prediction points 
+    */
     function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
       //leverageMultiplier = levergage + (leverage -1)*0.05; Raised by 3 decimals i.e 1000
       uint leverageMultiplier = 1000 + (_leverage-1)*50;
       value = value.mul(2500).div(1e18);
+      // (amount*sqrt(amount*100)*leverage*100/(price*10*125000/1000));
       return value.mul(sqrt(value.mul(10000))).mul(_leverage*100*leverageMultiplier).div(optionPrice.mul(1250000000));
     }
 
     /**
     * @dev function to calculate square root of a number
-    **/
+    */
     function sqrt(uint x) public pure returns (uint y) {
       uint z = (x + 1) / 2;
       y = x;
@@ -239,16 +242,19 @@ contract Market is usingProvable {
       }
     }
 
+    /**
+    * @dev Calculate the given asset value in eth 
+    */
     function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal view returns(uint) {
       return _amount.mul(_price).div(10**_decimals);
     }
 
    /**
-    * @dev Estimates the prediction value.
-    * @param _prediction The option range on which user place prediction.
+    * @dev Get estimated amount of prediction points for given inputs.
+    * @param _prediction The option on which user place prediction.
     * @param _stakeValueInEth The amount staked by user.
     * @param _leverage The leverage opted by user at the time of prediction.
-    * @return uint256 representing the prediction value.
+    * @return uint256 representing the prediction points.
     */
     function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
       ( , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
@@ -258,7 +264,7 @@ contract Market is usingProvable {
     /**
     * @dev Gets the price of specific option.
     * @param _prediction The option number to query the balance of.
-    * @return uint representing the price owned by the passed prediction.
+    * @return Price of the option.
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
       // (, , , , , , ) = marketConfig.getBasicMarketDetails();
@@ -281,7 +287,7 @@ contract Market is usingProvable {
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
     * @return _assetStaked uint[] memory representing the assets staked on each option ranges of the market.
     * @return _predictionType uint representing the type of market.
-    * @return _expireTime uint representing the expire time of the market.
+    * @return _expireTime uint representing the time at which market closes for preidction
     * @return _predictionStatus uint representing the status of the market.
     */
     function getData() public view returns
@@ -310,20 +316,21 @@ contract Market is usingProvable {
    /**
     * @dev Gets the result of the market.
     * @return uint256 representing the winning option of the market.
-    * @return uint256 representing the positions of the winning option range.
-    * @return uint[] memory representing the reward to be distribute of the market.
-    * @return address[] memory representing the users who place prediction on winnning option.
-    * @return uint256 representing the assets staked on winning option.
+    * @return uint256 Value of market currenct at the time closing market.
+    * @return uint256 representing the positions of the winning option.
+    * @return uint[] memory representing the reward to be distributed.
+    * @return uint256 representing the Eth staked on winning option.
+    * @return uint256 representing the PLOT staked on winning option.
     */
     function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
       return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[token]);
     }
 
     /**
-    * @dev Place prediction on the available option ranges of the market.
-    * @param _asset The assets uses by user during prediction whether it is token address or in ether.
+    * @dev Place prediction on the available options of the market.
+    * @param _asset The asset used by user during prediction whether it is token address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _prediction The option range on which user place prediction.
+    * @param _prediction The option on which user placed prediction.
     * @param _leverage The leverage opted by user at the time of prediction.
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {

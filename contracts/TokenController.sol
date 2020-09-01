@@ -116,8 +116,7 @@ contract TokenController is IERC1132, Governed {
         
         uint256 validUntil = _time.add(now); //solhint-disable-line
 
-        if (locked[msg.sender][_reason].amount == 0)
-            lockReason[msg.sender].push(_reason);
+        lockReason[msg.sender].push(_reason);
 
         token.operatorTransfer(msg.sender, _amount);
         // transfer(address(this), _amount);
@@ -149,8 +148,7 @@ contract TokenController is IERC1132, Governed {
 
         uint256 validUntil = now.add(_time); //solhint-disable-line
 
-        if (locked[_to][_reason].amount == 0)
-            lockReason[_to].push(_reason);
+        lockReason[_to].push(_reason);
 
         token.operatorTransfer(msg.sender, _amount);
 
@@ -357,12 +355,9 @@ contract TokenController is IERC1132, Governed {
         uint256 amount = tokensLocked(_of, _reason);
         require(amount >= _amount);
 
-        if (amount == _amount) {
-            locked[_of][_reason].claimed = true;
-        }
-
         locked[_of][_reason].amount = locked[_of][_reason].amount.sub(_amount);
         if (locked[_of][_reason].amount == 0) {
+            locked[_of][_reason].claimed = true;
             _removeReason(_of, _reason);
         }
         token.burn(_amount);

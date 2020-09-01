@@ -29,4 +29,6 @@ contract ITokenController {
     * @param amount The amount that will be burnt.
     */
     function burnCommissionTokens(uint256 amount) external returns(bool);
+ 
+    function initiateVesting(address _vesting) external;
 }

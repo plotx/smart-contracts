@@ -5,7 +5,7 @@ import "./interfaces/IPlotus.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
-import "./TokenController.sol";
+import "./ITokenController.sol";
 
 contract Master is Governed {
 
@@ -60,7 +60,7 @@ contract Master is Governed {
         // _generateProxy(_plotusImplementation);
         IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token, _configParams);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
-        TokenController(contractAddress["TC"]).initiateVesting(_vesting);
+        ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
     }
 
     /**

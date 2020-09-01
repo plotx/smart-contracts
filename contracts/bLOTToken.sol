@@ -35,6 +35,9 @@ contract BLOT is ERC20, Iupgradable {
         _;
     }
 
+    /**
+     * @dev Initiates the BLOT with default minter address
+     */
     function initiatebLOT(address _defaultMinter) public {
         _addMinter(_defaultMinter);
     }
@@ -119,23 +122,38 @@ contract BLOT is ERC20, Iupgradable {
         require(IERC20(plotusToken).transfer(_to, amount));
     }
 
+    /**
+     * @dev Check if `account` has miniting rights
+     */
     function isMinter(address account) public view returns (bool) {
         return _minters.has(account);
     }
 
+    /**
+     * @dev Add `account` as minter
+     */
     function addMinter(address account) public onlyMinter {
         _addMinter(account);
     }
 
+    /**
+     * @dev Renounce self as minter
+     */
     function renounceMinter() public {
         _removeMinter(msg.sender);
     }
 
+    /**
+     * @dev Add `account` as minter
+     */
     function _addMinter(address account) internal {
         _minters.add(account);
         emit MinterAdded(account);
     }
 
+    /**
+     * @dev Remove `account` from minter role
+     */
     function _removeMinter(address account) internal {
         _minters.remove(account);
         emit MinterRemoved(account);

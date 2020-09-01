@@ -339,7 +339,7 @@ contract Plotus is usingProvable, Governed {
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public OnlyMarket {
       // lockedForDispute[msg.sender] = true;
-      require(disputeStakes[msg.sender].staker == address(0));
+      // require(disputeStakes[msg.sender].staker == address(0));
       disputeStakes[msg.sender].staker = _user;
       disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
       disputeStakes[msg.sender].ethDeposited = _ethSentToPool;
