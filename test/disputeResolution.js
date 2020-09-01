@@ -11,14 +11,18 @@ const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const BLOT = artifacts.require("BLOT");
 const web3 = Market.web3;
+const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
+const encode = require("./utils/encoder.js").encode;
+const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { assertRevert } = require('./utils/assertRevert');
+let gv,masterInstance, tokenController, mr;
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   it("1.if DR panel accepts", async () => {
-    let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await OwnedUpgradeabilityProxy.deployed();
     masterInstance = await Master.at(masterInstance.address);
     let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
-    let tokenController = await TokenController.at(tokenControllerAdd);
+    tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
     const openMarkets = await plotusNewInstance.getOpenMarkets();
@@ -28,11 +32,11 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let nxmToken = await PlotusToken.deployed();
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
-    let gv = await Governance.at(address);
+    gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
     let pc = await ProposalCategory.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
-    let mr = await MemberRoles.at(address);
+    mr = await MemberRoles.at(address);
     let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
     await plotusToken.approve(mr.address, "10000000000000000000000");
    
@@ -106,10 +110,10 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 });
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   it("2.if DR panel rejects", async () => {
-    let masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await OwnedUpgradeabilityProxy.deployed();
     masterInstance = await Master.at(masterInstance.address);
     let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
-    let tokenController = await TokenController.at(tokenControllerAdd);
+    tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
     const openMarkets = await plotusNewInstance.getOpenMarkets();
@@ -119,11 +123,11 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let nxmToken = await PlotusToken.deployed();
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
-    let gv = await Governance.at(address);
+    gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
     let pc = await ProposalCategory.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
-    let mr = await MemberRoles.at(address);
+    mr = await MemberRoles.at(address);
     let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
     
     await plotusToken.approve(mr.address, "100000000000000000000000");
@@ -156,7 +160,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000");
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
+    await tokenController.lock("0x4452","20000000000000000000000",(86400*100),{from : dr3});
     await gv.submitVote(proposalId, 0, {from:dr1});
     await gv.submitVote(proposalId, 0, {from:dr2});
     await gv.submitVote(proposalId, 0, {from:dr3});
@@ -172,5 +176,36 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let winningOption_afterVote = await marketInstance.getMarketResults();
     assert.equal(winningOption_before[0]/1, winningOption_afterVote[0]/1);
     console.log("winningOption After reject proposal",winningOption_afterVote[0]/1);
+  });
+
+  it("Brun DR member's tokens", async function() {
+
+    let tokensLockedOfDR1Before = await tokenController.tokensLocked(dr3, web3.utils.toHex("DR"));
+    action = "burnLockedTokens(address,bytes32,uint256)"
+    let actionHash = encode(action, dr3, toHex("DR"), "10000000000000000000000");
+    let p = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(p, 11, 0);
+    await gv.submitProposalWithSolution(p, "proposal", actionHash);
+    let members = await mr.members(2);
+    let iteration = 0;
+    await gv.submitVote(p, 1);
+    await gv.submitVote(p, 1, {from:ab2});
+    await gv.submitVote(p, 1, {from:ab3});
+    await gv.submitVote(p, 1, {from:ab4});
+    await gv.submitVote(p, 1, {from:dr1});
+    await gv.submitVote(p, 1, {from:dr2});
+    await gv.submitVote(p, 1, {from:dr3});
+
+    await increaseTime(604800);
+    await gv.closeProposal(p);
+    let proposal = await gv.proposal(p);
+    assert.equal(proposal[2].toNumber(), 3);
+    await increaseTime(3601);
+    await gv.triggerAction(p);
+    let proposalActionStatus = await gv.proposalActionStatus(p);
+    assert.equal(proposalActionStatus/1, 3, "Not executed");
+    let tokensLockedOfDR1after = await tokenController.tokensLocked(dr3, web3.utils.toHex("DR"));
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1 - 10000000000000000000000, "Not burned");
   });
 });
