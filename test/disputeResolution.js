@@ -86,7 +86,9 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000");
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
-    
+
+    await assertRevert(gv.submitVote(proposalId, 1, {from:dr3})) //reverts as tokens not locked
+  
     await plotusToken.approve(tokenController.address, "100000000000000000000000");
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
     await gv.submitVote(proposalId, 1, {from:dr1});
