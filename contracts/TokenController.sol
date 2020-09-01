@@ -54,6 +54,13 @@ contract TokenController is IERC1132, Governed {
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
     }
 
+    function initiateVesting(address _vesting) external {
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        vesting = Vesting(_vesting);
+
+    }
+
     /**
      * @dev to change the operator address
      * @param _newOperator is the new address of operator
