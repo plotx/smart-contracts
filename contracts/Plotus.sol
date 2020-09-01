@@ -126,8 +126,9 @@ contract Plotus is usingProvable, Governed {
     * @dev Start the initial market.
     */
     function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
-      _addNewMarketCurrency(_ethPriceFeed, "ETH", "QmdyBHNFuHLv7FasY4n12hbVThYeGXnt7hpb2Y66dDdgtK", true);
-      _addNewMarketCurrency(_ethPriceFeed, "BTC", "QmPh7dDUGx99Roc9q2MRExLqCXTmLJTr1fuNMhjJQwUJrA", true);
+      require(marketTypes.length == 0);
+      _addNewMarketCurrency(_ethPriceFeed, "ETH", "Qme2JKFxGqSNed98Ec613fY3nfTmSrLLj5tR4R6pwrbaaU", true);
+      _addNewMarketCurrency(_plotPriceFeed, "BTC", "QmQZta2dVxz5m6XqTng8MymQQe7YgBKcmpy2prCA1Fjvot", true);
       _addMarket(1 hours, 2 hours, 20);
       _addMarket(24 hours, 2 days, 50);
       _addMarket(7 days, 14 days, 100);
