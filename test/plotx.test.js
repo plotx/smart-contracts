@@ -170,12 +170,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(gv.triggerAction(pId)); //cannot trigger
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		try {
-			let solutionAction = await gv.getSolutionAction(pID, 1);
-			console.log(solutionAction);
-		} catch (e) {
-			console.log(e);
-		}
+		let solutionAction = await gv.getSolutionAction(pId, 1);
+		assert.equal(parseFloat(solutionAction[0]), 1);
 		let voteData = await gv.voteTallyData(pId,1)
 		assert.equal(parseFloat(voteData[0]),2.999989e+25);
 		assert.equal(parseFloat(voteData[1]),6);
@@ -242,5 +238,92 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
 		await assertRevert(pl.createMarketFallback(0, 0));
+	});
+});
+contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3]) => {
+	before(async function () {
+		nxms = await OwnedUpgradeabilityProxy.deployed();
+		nxms = await NXMaster.at(nxms.address);
+		plotusToken = await PlotusToken.deployed();
+		let address = await nxms.getLatestAddress(toHex("GV"));
+		gv = await Governance.at(address);
+		address = await nxms.getLatestAddress(toHex("PC"));
+		pc = await ProposalCategory.at(address);
+		address = await nxms.getLatestAddress(toHex("MR"));
+		mr = await MemberRoles.at(address);
+		address = await nxms.getLatestAddress(toHex("PL"));
+		pl = await Plotus.at(address);
+		mockchainLinkInstance = await MockchainLink.deployed();
+		marketConfig = await pl.marketConfig();
+		marketConfig = await MarketConfig.at(marketConfig);
+		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
+		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
+		//To cover functions in govblocks interface, which are not implemented by NexusMutual
+		await gv.addSolution(0, "", "0x");
+		await gv.openProposalForVoting(0);
+		await gv.pauseProposal(0);
+		await gv.resumeProposal(0);
+		await assertRevert(pl.setMasterAddress());
+		// try {
+		// 	await (gv.setMasterAddress());
+		// } catch (e) {
+		// 	console.log(e);
+		// }
+		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
+
+		await plotusToken.transfer(mem1, toWei(100));
+		await plotusToken.transfer(mem2, toWei(100));
+		await plotusToken.transfer(mem3, toWei(100));
+		await plotusToken.transfer(mem4, toWei(100));
+		await plotusToken.transfer(mem5, toWei(100));
+
+		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
+	});
+
+	it("Should create a proposal to add new market curreny", async function () {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 16, 100);
+		let startTime = (await latestTime()) / 1 + 2 * 604800;
+		let actionHash = encode("addNewMarketCurrency(address,bytes32,string,bool,uint256)", mockchainLinkInstance.address, "0x12", "A", true, startTime);
+		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
+
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await gv.submitVote(pId, 1, { from: mem1 });
+		await gv.submitVote(pId, 1, { from: mem2 });
+		await gv.submitVote(pId, 1, { from: mem3 });
+		await gv.submitVote(pId, 1, { from: mem4 });
+		await gv.submitVote(pId, 1, { from: mem5 });
+
+		await increaseTime(604810);
+		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
+		await gv.closeProposal(pId);
+
+		let openMarketsBefore = await pl.getOpenMarkets();
+		await increaseTime(604810);
+		await gv.triggerAction(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 3);
+		let openMarkets = await pl.getOpenMarkets();
+		assert.isAbove(openMarkets[2].length, openMarketsBefore[2].length, "Currency not added");
+	});
+
+	it("2. Should create a proposal to add new market currency", async function () {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 16, 0);
+		let startTime = (await latestTime()) / 1 + 2 * 604800;
+		let actionHash = encode("addNewMarketCurrency(address,bytes32,string,bool,uint256)", mockchainLinkInstance.address, "0x12", "A", true, startTime);
+		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
+		oldGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		newGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
+		assert.equal(oldGVBalance, newGVBalance);
+		await increaseTime(604810);
+		actionStatus = await gv.proposal(pId);
+		assert.equal(parseFloat(actionStatus[2]), 6);
 	});
 });
