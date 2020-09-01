@@ -339,9 +339,6 @@ contract Governance is IGovernance, Iupgradable {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
         } else {
             require(canCloseProposal(_proposalId) == 1);
-            (, _memberRole, , , , , ) = proposalCategory.category(
-                allProposalData[_proposalId].category
-            );
             _closeVote(_proposalId, category);
         }
     }
@@ -1087,7 +1084,6 @@ contract Governance is IGovernance, Iupgradable {
                         );
                         voters++;
                         voteWeight = voteWeight.add(tokenBalance);
-                        uint256 totalVotes = allVotes.length;
                     }
                 }
             }
