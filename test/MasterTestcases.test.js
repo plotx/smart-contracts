@@ -3,7 +3,7 @@ const MemberRoles = artifacts.require('MemberRoles');
 const Governance = artifacts.require('Governance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const TokenController = artifacts.require("MockTokenController");
-const Plotus = artifacts.require("Plotus");
+const Plotus = artifacts.require("MockPlotus");
 const PlotusToken = artifacts.require("MockPLOT");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const NewProxyInternalContract = artifacts.require('NewProxyInternalContract');
@@ -54,17 +54,17 @@ contract('Master', function(accounts) {
     it('Update master address after posting data in governance implementation', async function() {
       let proxy = await OwnedUpgradeabilityProxy.at(gov.address);
       let implementation = await Governance.at(await proxy.implementation());
-      await implementation.changeMasterAddress(owner);
+      await implementation.setMasterAddress();
       proxy = await OwnedUpgradeabilityProxy.at(
         await ms.getLatestAddress(toHex('PC'))
       );
       implementation = await ProposalCategory.at(await proxy.implementation());
-      await implementation.changeMasterAddress(owner);
+      await implementation.changeMasterAddress();
       proxy = await OwnedUpgradeabilityProxy.at(
         await ms.getLatestAddress(toHex('MR'))
       );
       implementation = await MemberRoles.at(await proxy.implementation());
-      await implementation.changeMasterAddress(owner);
+      await implementation.changeMasterAddress();
       assert.equal(await implementation.ms(), owner);
       let newMaster = await Master.new();
       let actionHash = encode1(['address'], [newMaster.address]);
@@ -132,11 +132,12 @@ contract('Master', function(accounts) {
       let members = await oldMR.members(2);
       let openMarkets = await oldPL.getOpenMarkets();
       let catId = 7;
+      let newPlotus = await Plotus.new();
+      await increaseTime(100);
       let newGV = await Governance.new();
       let newPC = await ProposalCategory.new();
       let newMR = await MemberRoles.new();
       let newTC = await TokenController.new();
-      let newPlotus = await Plotus.new();
       actionHash = encode1(
         ['bytes2[]', 'address[]'],
         [
@@ -181,10 +182,10 @@ contract('Master', function(accounts) {
 
       // Checking Master address in upgraded Contracts
       assert.equal(ms.address, await oldGv.ms());
-      assert.equal(ms.address, await oldMR.ms());
-      assert.equal(ms.address, await oldTC.ms());
-      assert.equal(ms.address, await oldPC.ms());
-      assert.equal(ms.address, await oldPL.ms());
+      assert.equal(ms.address, await oldMR.masterAddress());
+      assert.equal(ms.address, await oldTC.masterAddress());
+      assert.equal(ms.address, await oldPC.masterAddress());
+      assert.equal(ms.address, await oldPL.masterAddress());
 
       // Checking Funds transfer in upgraded Contracts
       assert.equal(
@@ -252,11 +253,11 @@ contract('Master', function(accounts) {
       let catProxy = await ProposalCategory.at(
         await ms.getLatestAddress(toHex('PC'))
       );
-      assert.equal(ms.address, await tcProxy.ms());
+      assert.equal(ms.address, await tcProxy.masterAddress());
       assert.equal(ms.address, await gov.ms());
-      assert.equal(ms.address, await mrProxy.ms());
-      assert.equal(ms.address, await catProxy.ms());
-      assert.equal(ms.address, await pl.ms());
+      assert.equal(ms.address, await mrProxy.masterAddress());
+      assert.equal(ms.address, await catProxy.masterAddress());
+      assert.equal(ms.address, await pl.masterAddress());
     });
   });
   describe('Negative Test Cases', function() {

@@ -48,7 +48,7 @@ contract("Proposal Category", function ([owner, other]) {
 	});
 
 	it("14.2 should not allow unauthorized to change master address", async function () {
-		await assertRevert(pc.changeMasterAddress(master.address, { from: other }));
+		await assertRevert(pc.setMasterAddress({ from: other }));
 	});
 
 	it("14.3 Should not add a proposal category if member roles are invalid", async function () {

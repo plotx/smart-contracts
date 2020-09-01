@@ -49,7 +49,7 @@ contract('MemberRoles', function([
   });
 
   it('Should not allow unauthorized to change master address', async function() {
-    await assertRevert(mr.changeMasterAddress(nxms.address, { from: other }));
+    await assertRevert(mr.setMasterAddress({ from: other }));
   });
 
   it('Should have added initial member roles', async function() {
@@ -132,10 +132,6 @@ contract('MemberRoles', function([
     assert.equal(g6[1].toNumber(), 1);
     assert.equal(g6[3].toNumber(), 1);
     assert.equal(g6[4].toNumber(), 1);
-  });
-
-  it('Should follow the upgradable interface', async function() {
-    await mr.changeDependentContractAddress(); // just for interface, they do nothing
   });
 
   it('Should not list invalid member as valid', async function() {

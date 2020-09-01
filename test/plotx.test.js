@@ -61,7 +61,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.openProposalForVoting(0);
 		await gv.pauseProposal(0);
 		await gv.resumeProposal(0);
-		await assertRevert(pl.changeMasterAddress(ab1));
+		await assertRevert(pl.setMasterAddress());
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
 
 		await plotusToken.transfer(mem1, toWei(100));

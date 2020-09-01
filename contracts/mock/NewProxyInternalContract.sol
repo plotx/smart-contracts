@@ -6,7 +6,7 @@ import "./MockTokenController.sol";
 
 contract NewProxyInternalContract is Iupgradable {
 	MockTokenController tc;
-	Master ms;
+	Master public ms;
 
     function setMasterAddress() public {
     	ms = Master(msg.sender);

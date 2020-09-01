@@ -1,6 +1,5 @@
 pragma solidity 0.5.7;
 import "./interfaces/IMarket.sol";
-import "./Iupgradable.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/string-utils/strings.sol";
@@ -10,7 +9,7 @@ import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";
 
-contract Plotus is usingProvable, Iupgradable, Governed {
+contract Plotus is usingProvable, Governed {
 
     using SafeMath for uint256; 
     using strings for *; 
@@ -215,6 +214,7 @@ contract Plotus is usingProvable, Iupgradable, Governed {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       ms = IMaster(msg.sender);
+      masterAddress = msg.sender;
       governance = IGovernance(ms.getLatestAddress("GV"));
     }
 

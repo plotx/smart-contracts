@@ -93,7 +93,7 @@ contract Governance is IGovernance {
     uint256 internal votePercRejectAction;
     uint256 internal actionRejectAuthRole;
 
-    Master internal ms;
+    Master public ms;
     MemberRoles internal memberRole;
     IPlotus internal plotus;
     ProposalCategory internal proposalCategory;

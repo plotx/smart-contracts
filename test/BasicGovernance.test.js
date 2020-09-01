@@ -62,8 +62,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
   });
 
   it("15.3 Should not allow unauthorized to change master address", async function () {
-    await assertRevert(gv.changeMasterAddress(nxms.address, { from: notMember }));
-    await gv.changeDependentContractAddress();
+    await assertRevert(gv.setMasterAddress({ from: notMember }));
+    // await gv.changeDependentContractAddress();
   });
 
   it("15.4 Should not allow unauthorized to create proposal", async function () {
