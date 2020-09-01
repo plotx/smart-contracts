@@ -223,7 +223,7 @@ contract Plotus is usingProvable, Governed {
 
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
       (address _previousMarket, uint _marketStartTime, uint256 predictionTime, ) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, _marketStartTime, predictionTime);
+      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, 0, predictionTime);
     }
 
     /**
@@ -282,7 +282,7 @@ contract Plotus is usingProvable, Governed {
     }
 
     function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
-      bytes32 _oraclizeId = provable_query("computation", _marketCreationHash, uint2str(_predictionTime), _gasLimit);
+      bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCreationHash, uint2str(_predictionTime), _gasLimit);
       marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);
       marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
     }
