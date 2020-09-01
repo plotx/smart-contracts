@@ -12,6 +12,7 @@ const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
+const Vesting = artifacts.require('Vesting');
 const BN = web3.utils.BN;
 
 module.exports = function(deployer, network, accounts){
@@ -30,11 +31,12 @@ module.exports = function(deployer, network, accounts){
       let marketConfig = await deployer.deploy(MarketConfig);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
       let blotToken = await deployer.deploy(BLOT);
+      let vestingContract = await deployer.deploy(Vesting, plotusToken.address, accounts[0]);
       let masterProxy = await deployer.deploy(Master);
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address]);
+      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
 
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       let gvAddress = await master.getLatestAddress(web3.utils.toHex("GV"));
