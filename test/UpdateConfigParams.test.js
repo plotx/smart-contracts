@@ -211,6 +211,30 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(configData[1], 27, 'Not updated');
       });
 
+      it('Should update Eth commission percent', async function() {
+        await updateParameter(20, 2, 'ETHCOM', pl, 'configUint', 20);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.equal(configData[3]/1, 20, 'Not updated');
+      });
+
+      it('Should not update Eth commission percent, if invalid percent is passed', async function() {
+        await updateParameter(20, 2, 'ETHCOM', pl, 'configUint', 140);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.notEqual(configData[3]/1, 140, 'Not updated');
+      });
+
+      it('Should update PLOT commission percen', async function() {
+        await updateParameter(20, 2, 'PLOTCOM', pl, 'configUint', 30);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.equal(configData[4]/1, 30, 'Not updated');
+      });
+
+      it('Should not update PLOT commission percent, if invalid percent is passed', async function() {
+        await updateParameter(20, 2, 'PLOTCOM', pl, 'configUint', 150);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.notEqual(configData[4]/1, 150, 'Not updated');
+      });
+
       it('Should not update if invalid code is passed', async function() {
         await updateParameter(20, 2, 'CDTIM1', pl, 'configUint', 28);
       });
@@ -232,6 +256,13 @@ contract('Configure Global Parameters', accounts => {
         await updateParameter(22, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
         let configData = await marketConfig.getFeedAddresses();
         assert.equal(configData[1], uniswapFactory.address, 'Not updated');
+      });
+
+      it('Should Add new incentive token', async function() {
+        let newToken = await PlotusToken.new(30000000000);
+        await updateParameter(22, 2, 'INCTOK', pl, 'configAddress', newToken.address);
+        let configData = await marketConfig.getMarketInitialParams();
+        assert.equal(configData[0][configData[0].length-1], newToken.address, 'Not updated');
       });
 
       it('Should not update if invalid code is passed', async function() {

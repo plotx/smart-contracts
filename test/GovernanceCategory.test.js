@@ -226,77 +226,6 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(userbalPlotAfter/1e18 - userbalPlot/1e18, 10);
       });
 
-      it('Should Add Incentive Token', async function() {
-        let newToken = await PlotusToken.new(toWei(100));
-        let actionHash = encode(
-          'addIncentiveToken(address)',
-          newToken.address
-        );
-        await gvProposal(
-          23,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        let configData = await marketConfig.getMarketInitialParams();
-        assert.equal(configData[0][1], newToken.address);
-      });
-
-      it('Should Set Commission Percentage', async function() {
-        assert.notEqual((await marketConfig.getMarketInitialParams())[4], 25);
-        let actionHash = encode(
-          'setCommissionPercentage(address,uint256)',
-          plotTok.address,
-          25
-        );
-        await gvProposal(
-          24,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        
-        assert.equal((await marketConfig.getMarketInitialParams())[4], 25);
-      });
-
-      it('Should not Set Commission Percentage if asset is invalid', async function() {
-        let actionHash = encode(
-          'setCommissionPercentage(address,uint256)',
-          pl.address,
-          25
-        );
-        await gvProposal(
-          24,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-      });
-
-      it('Should not Set Commission Percentage if not in range', async function() {
-        let actionHash = encode(
-          'setCommissionPercentage(address,uint256)',
-          plotTok.address,
-          101
-        );
-        await gvProposal(
-          24,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        
-        assert.notEqual((await marketConfig.getMarketInitialParams())[4], 101);
-      });
-
       it('Should not Change token operator if null address', async function() {
 
         let actionHash = encode(
@@ -304,7 +233,7 @@ contract('Configure Global Parameters', accounts => {
           ZERO_ADDRESS
         );
         await gvProposal(
-          25,
+          23,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
@@ -321,7 +250,7 @@ contract('Configure Global Parameters', accounts => {
           newAB
         );
         await gvProposal(
-          25,
+          23,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
