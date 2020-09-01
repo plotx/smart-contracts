@@ -249,24 +249,6 @@ contract ProposalCategory is Governed, IProposalCategory {
             2
         );
         _addInitialCategories(
-            "Add incentive token",
-            "",
-            "PL",
-            "addIncentiveToken(address)",
-            60,
-            2,
-            2
-        );
-        _addInitialCategories(
-            "Set commission percent of token",
-            "",
-            "PL",
-            "setCommissionPercentage(address,uint256)",
-            60,
-            2,
-            2
-        );
-        _addInitialCategories(
             "Change token operator",
             "",
             "TC",

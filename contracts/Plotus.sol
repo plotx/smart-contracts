@@ -180,17 +180,15 @@ contract Plotus is usingProvable, Governed {
      * @dev Update the configs of the market.
      * @param _marketConfig the address of market configs.
      */
-    function updateMarketConfigImplementation(address _marketConfig) public onlyAuthorizedToGovern {
-      OwnedUpgradeabilityProxy tempInstance 
-            = OwnedUpgradeabilityProxy(address(uint160(address(marketConfig))));
-        tempInstance.upgradeTo(_marketConfig);
+    function updateMarketConfigImplementation(address _marketConfig) external onlyAuthorizedToGovern {
+      _upgradeTo(address(uint160(address(marketConfig))), _marketConfig);
     }
 
      /**
      * @dev Update the implementations of the market.
      * @param _marketImplementation the address of market implementation.
      */
-    function updateMarketImplementation(address _marketImplementation) public onlyAuthorizedToGovern {
+    function updateMarketImplementation(address _marketImplementation) external onlyAuthorizedToGovern {
       marketImplementation = _marketImplementation;
     }
 
@@ -202,6 +200,10 @@ contract Plotus is usingProvable, Governed {
     function upgradeContractImplementation(address payable _proxyAddress, address _contractsAddress) 
         external onlyAuthorizedToGovern
     {
+      _upgradeTo(_proxyAddress, _contractsAddress);
+    }
+
+    function _upgradeTo(address payable _proxyAddress, address _contractsAddress) internal {
         OwnedUpgradeabilityProxy tempInstance 
             = OwnedUpgradeabilityProxy(_proxyAddress);
         tempInstance.upgradeTo(_contractsAddress);
@@ -219,17 +221,8 @@ contract Plotus is usingProvable, Governed {
     }
 
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
-      bytes32 _oraclizeId = marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex];
-      address _previousMarket = marketOracleId[_oraclizeId].marketAddress;
-      uint256 _marketStartTime = marketOracleId[_oraclizeId].startTime;
-      MarketTypeData storage _marketTypeData = marketTypes[_marketType];
-      (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
-      require(_status >= uint(IMarket.PredictionStatus.InSettlement));
-      if(now > _marketStartTime.add(_marketTypeData.predictionTime)) {
-        uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
-       _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(_marketTypeData.predictionTime));
-      }
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, _marketStartTime, _marketTypeData.predictionTime);
+      (address _previousMarket, uint _marketStartTime, uint256 predictionTime, ) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
+      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, _marketStartTime, predictionTime);
     }
 
     /**
@@ -241,11 +234,13 @@ contract Plotus is usingProvable, Governed {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
       MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
+      address _feedAddress;
       if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
-        marketConfig.update(_marketCurrencyData.currencyFeedAddress);
+        _feedAddress = _marketCurrencyData.currencyFeedAddress;
       } else {
-        marketConfig.update(address(plotusToken));
+        _feedAddress = address(plotusToken);
       }
+      marketConfig.update(_feedAddress);
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
@@ -253,9 +248,6 @@ contract Plotus is usingProvable, Governed {
       emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 1600000, _market, _marketStartTime, _marketTypeData.predictionTime);
-      // bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCurrencyData.marketCreationHash, uint2str(_marketTypeData.predictionTime), 1600000);
-      // marketOracleId[_oraclizeId] = MarketOraclize(_market, _marketType, _marketCurrencyIndex, _marketStartTime);
-      // marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
     }
 
     /**
@@ -264,10 +256,21 @@ contract Plotus is usingProvable, Governed {
     * @param _marketCurrencyIndex the index of market currency.
     */
     function createMarketFallback(uint256 _marketType, uint256 _marketCurrencyIndex) external payable{
+      (, uint _marketStartTime, , uint256 _optionRangePerc) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
+      uint currentPrice = marketConfig.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
+      uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
+      uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
+      _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
+      // _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, _gasLimit, _previousMarket, _marketStartTime, _marketTypeData.predictionTime);
+    }
+
+    function _calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) internal returns(address _previousMarket, uint256 _marketStartTime, uint256 predictionTime, uint256 _optionRangePerc) {
       bytes32 _oraclizeId = marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex];
-      address _previousMarket = marketOracleId[_oraclizeId].marketAddress;
-      uint256 _marketStartTime = marketOracleId[_oraclizeId].startTime;
+      _previousMarket = marketOracleId[_oraclizeId].marketAddress;
+      _marketStartTime = marketOracleId[_oraclizeId].startTime;
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
+      predictionTime = _marketTypeData.predictionTime;
+      _optionRangePerc = _marketTypeData.optionRangePerc;
       (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
       require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       require(now > _marketStartTime.add(marketCreationFallbackTime));
@@ -275,11 +278,6 @@ contract Plotus is usingProvable, Governed {
         uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
        _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(_marketTypeData.predictionTime));
       }
-      uint currentPrice = marketConfig.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
-      uint _minValue = currentPrice.sub(currentPrice.mul(_marketTypeData.optionRangePerc.div(2)).div(1000));
-      uint _maxValue = currentPrice.add(currentPrice.mul(_marketTypeData.optionRangePerc.div(2)).div(1000));
-      _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
-      // _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, _gasLimit, _previousMarket, _marketStartTime, _marketTypeData.predictionTime);
     }
 
     function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
@@ -315,7 +313,7 @@ contract Plotus is usingProvable, Governed {
     /**
     * @dev Updates Flag to pause creation of market.
     */
-    function pauseMarketCreation() public onlyAuthorizedToGovern {
+    function pauseMarketCreation() external onlyAuthorizedToGovern {
       require(!marketCreationPaused);
         marketCreationPaused = true;
     }
@@ -323,7 +321,7 @@ contract Plotus is usingProvable, Governed {
     /**
     * @dev Updates Flag to resume creation of market.
     */
-    function resumeMarketCreation() public onlyAuthorizedToGovern {
+    function resumeMarketCreation() external onlyAuthorizedToGovern {
       require(marketCreationPaused);
         marketCreationPaused = false;
     }
@@ -369,7 +367,7 @@ contract Plotus is usingProvable, Governed {
       plotusToken.burn(_stakedAmount);
     }
 
-    function marketDisputeStatus(address _marketAddress) public view returns(uint _status) {
+    function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
       (, , _status, , ) = governance.proposal(disputeStakes[_marketAddress].proposalId);
     }
 
@@ -583,14 +581,6 @@ contract Plotus is usingProvable, Governed {
 
     function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
       marketConfig.updateAddressParameters(code, value);
-    }
-
-    function addIncentiveToken(address _tokenAddress) external onlyAuthorizedToGovern {
-      marketConfig.addIncentiveToken(_tokenAddress);
-    }
-
-    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyAuthorizedToGovern {
-      marketConfig.setCommissionPercentage(_asset, _commissionPerc);
     }
 
 }

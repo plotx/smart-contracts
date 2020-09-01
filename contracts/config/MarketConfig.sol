@@ -138,6 +138,12 @@ contract MarketConfig {
             tokenStakeForDispute = value;
         } else if(code == "CDTIME") {
             marketCoolDownTime = value;
+        } else if(code == "ETHCOM") {
+            require(_commissionPerc > 0 && _commissionPerc < 100);
+            commissionPerc[ETH_ADDRESS] = value;
+        } else if(code == "PLOTCOM") {
+            require(_commissionPerc > 0 && _commissionPerc < 100);
+            commissionPerc[plotusToken] = value;
         } else {
             revert("Invalid code");
         }
@@ -147,6 +153,7 @@ contract MarketConfig {
     * @dev Updates address parameters of config
     **/
     function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorized {
+        require(value != address(0))
         if(code == "CLORCLE") {
             chainLinkPriceOracle = value;
             chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
@@ -155,16 +162,11 @@ contract MarketConfig {
         } else if(code == "UNIFAC") {
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotusToken, weth);
+        } else if(code == "INCTOK") {
+            incentiveTokens.push(address(value));
         } else {
             revert("Invalid code");
         }
-    }
-
-    /**
-    * @dev Add a new incentive token, which will be distributed to market participants regardless of result
-    **/
-    function addIncentiveToken(address _tokenAddress) external onlyAuthorized {
-        incentiveTokens.push(_tokenAddress);
     }
 
     /**
@@ -242,18 +244,6 @@ contract MarketConfig {
     function getDisputeResolutionParams() public view returns(uint) {
         return tokenStakeForDispute;
     }
-
-    /**
-    * @dev Set commission percentage of an prediction asset
-    * @param _asset Prediction asset
-    * @param _commissionPerc Commission percentage
-    **/
-    function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyAuthorized {
-        require(commissionPerc[_asset] > 0,"Invalid Asset");
-        require(_commissionPerc > 0 && _commissionPerc < 100);
-        commissionPerc[_asset] = _commissionPerc;
-    }
-
 
     /**
     * @dev Get value of _asset in PLOT token and multiplier parameters
