@@ -485,6 +485,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await assertRevert(gv.submitVote(pId, 1, { from: mem5 }));
       await increaseTime(432000); //7 days will be completed since revoking proxy
       await gv.delegateVote(ab1, { from: mem7 });
+      await nxmToken.transfer(mem2, toWei("1"),{from: mem7}); 
     });
     it("15.48 Undelegated Follower can vote after 7 days", async function () {
       let lockedTime = await nxmToken.lockedForGV(mem2);
@@ -532,8 +533,10 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await gv.submitVote(pId, 1, { from: ab3 });
       await gv.submitVote(pId, 1, { from: mem2 });
       await gv.submitVote(pId, 1, { from: mem3 });
-      await gv.submitVote(pId, 1, { from: mem6 });
-      await increaseTime(604810);
+      await gv.submitVote(pId, 1, { from: mem6 }); //vote not counted as mem6 transfer tokens after delegation
+			let voteData = await gv.voteTallyData(pId, 1);
+			assert.equal(parseFloat(voteData[1]), 9);
+			await increaseTime(604810);
       await gv.closeProposal(pId);
       await increaseTime(604810);
       await gv.triggerAction(pId);
