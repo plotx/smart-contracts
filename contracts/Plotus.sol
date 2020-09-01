@@ -1,15 +1,16 @@
 pragma solidity 0.5.7;
-import "./interfaces/IMarket.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
-import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/string-utils/strings.sol";
-import "./interfaces/IToken.sol";
-import "./interfaces/IConfig.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/oraclize/ethereum-api/provableAPI.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/string-utils/strings.sol";
+import "./interfaces/IToken.sol";
+import "./interfaces/IMarket.sol";
+import "./interfaces/Iupgradable.sol";
+import "./interfaces/IConfig.sol";
 
-contract Plotus is usingProvable, Governed {
+contract Plotus is usingProvable, Governed, Iupgradable {
 
     using SafeMath for uint256; 
     using strings for *; 

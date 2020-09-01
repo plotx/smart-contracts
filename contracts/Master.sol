@@ -1,11 +1,11 @@
 pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/IPlotus.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./interfaces/ITokenController.sol";
-import "./external/govblocks-protocol/Governed.sol";
-import "./Iupgradable.sol";
+import "./interfaces/Iupgradable.sol";
 
 contract Master is Governed {
 

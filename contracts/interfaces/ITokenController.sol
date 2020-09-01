@@ -11,6 +11,11 @@ contract ITokenController {
     */
     function swapBLOT(address _of, address _to, uint256 amount) public;
 
+    function totalBalanceOf(address _of)
+        public
+        view
+        returns (uint256 amount);
+
     /**
      * @dev Returns tokens locked for a specified address for a
      *      specified reason at a specific time
@@ -31,4 +36,11 @@ contract ITokenController {
     function burnCommissionTokens(uint256 amount) external returns(bool);
  
     function initiateVesting(address _vesting) external;
+
+    function lockForGovernanceVote(address _of, uint _days) public;
+
+    function totalSupply() public view returns (uint256);
+
+    function mint(address _member, uint _amount) public;
+
 }

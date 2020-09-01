@@ -1,7 +1,7 @@
 pragma solidity 0.5.7;
 
 import "../Master.sol";
-import "../Iupgradable.sol";
+import "../interfaces/Iupgradable.sol";
 import "./MockTokenController.sol";
 
 contract NewProxyInternalContract is Iupgradable {

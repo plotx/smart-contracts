@@ -11,22 +11,22 @@
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
 pragma solidity 0.5.7;
+
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./Governance.sol";
-import "./TokenController.sol";
+import "./interfaces/Iupgradable.sol";
+import "./interfaces/ITokenController.sol";
 
-contract MemberRoles is IMemberRoles, Governed {
-    TokenController internal tokenController;
+contract MemberRoles is IMemberRoles, Governed, Iupgradable {
+    ITokenController internal tokenController;
     struct MemberRoleDetails {
         uint256 memberCounter;
         mapping(address => uint256) memberIndex;
         address[] memberAddress;
         address authorized;
     }
-
-    enum Role {UnAssigned, AdvisoryBoard, TokenHolder, DisputeResolution}
 
     MemberRoleDetails[] internal memberRoleData;
     bool internal constructorCheck;
@@ -60,7 +60,7 @@ contract MemberRoles is IMemberRoles, Governed {
 
         require(masterAddress == address(0));
         masterAddress = msg.sender;
-        tokenController = TokenController(Master(masterAddress).getLatestAddress("TC"));
+        tokenController = ITokenController(IMaster(masterAddress).getLatestAddress("TC"));
     }
 
     /**

@@ -15,15 +15,18 @@
 
 pragma solidity 0.5.7;
 
-import "./ProposalCategory.sol";
-import "./MemberRoles.sol";
-import "./PlotusToken.sol";
-import "./interfaces/IPlotus.sol";
-import "./TokenController.sol";
-import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
+import "./external/govblocks-protocol/interfaces/IProposalCategory.sol";
+import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./interfaces/Iupgradable.sol";
+import "./interfaces/IPlotus.sol";
+import "./interfaces/ITokenController.sol";
+import "./interfaces/IToken.sol";
+import "./interfaces/IMaster.sol";
 
-contract Governance is IGovernance {
+contract Governance is IGovernance, Iupgradable {
     using SafeMath for uint256;
 
     enum ProposalStatus {
@@ -93,12 +96,12 @@ contract Governance is IGovernance {
     uint256 internal votePercRejectAction;
     uint256 internal actionRejectAuthRole;
 
-    Master public ms;
-    MemberRoles internal memberRole;
+    IMaster public ms;
+    IMemberRoles internal memberRole;
     IPlotus internal plotus;
-    ProposalCategory internal proposalCategory;
-    PlotusToken internal tokenInstance;
-    TokenController internal tokenController;
+    IProposalCategory internal proposalCategory;
+    IToken internal tokenInstance;
+    ITokenController internal tokenController;
 
     mapping(uint256 => uint256) public proposalActionStatus;
     mapping(uint256 => uint256) internal proposalExecutionTime;
@@ -191,7 +194,7 @@ contract Governance is IGovernance {
         require(
             memberRole.checkRole(
                 msg.sender,
-                uint256(MemberRoles.Role.TokenHolder)
+                uint256(IMemberRoles.Role.TokenHolder)
             ),
             "Not Member"
         );
@@ -442,19 +445,19 @@ contract Governance is IGovernance {
         require(
             !memberRole.checkRole(
                 msg.sender,
-                uint256(MemberRoles.Role.AdvisoryBoard)
+                uint256(IMemberRoles.Role.AdvisoryBoard)
             )
         );
         require(
             !memberRole.checkRole(
                 msg.sender,
-                uint256(MemberRoles.Role.DisputeResolution)
+                uint256(IMemberRoles.Role.DisputeResolution)
             )
         );
         require(
             memberRole.checkRole(
                 msg.sender,
-                uint256(MemberRoles.Role.TokenHolder)
+                uint256(IMemberRoles.Role.TokenHolder)
             ),
             "Not a token holder"
         );
@@ -736,11 +739,11 @@ contract Governance is IGovernance {
 
         require(!constructorCheck);
         _initiateGovernance();
-        ms = Master(msg.sender);
-        tokenInstance = PlotusToken(ms.dAppLocker());
-        memberRole = MemberRoles(ms.getLatestAddress("MR"));
-        proposalCategory = ProposalCategory(ms.getLatestAddress("PC"));
-        tokenController = TokenController(ms.getLatestAddress("TC"));
+        ms = IMaster(msg.sender);
+        tokenInstance = IToken(ms.dAppToken());
+        memberRole = IMemberRoles(ms.getLatestAddress("MR"));
+        proposalCategory = IProposalCategory(ms.getLatestAddress("PC"));
+        tokenController = ITokenController(ms.getLatestAddress("TC"));
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
     }
 
@@ -815,8 +818,8 @@ contract Governance is IGovernance {
         if (pStatus == uint256(ProposalStatus.VotingStarted)) {
             uint256 numberOfMembers = memberRole.numberOfMembers(_roleId);
             if (
-                _roleId == uint256(MemberRoles.Role.AdvisoryBoard) ||
-                _roleId == uint256(MemberRoles.Role.DisputeResolution)
+                _roleId == uint256(IMemberRoles.Role.AdvisoryBoard) ||
+                _roleId == uint256(IMemberRoles.Role.DisputeResolution)
             ) {
                 if (
                     proposalVoteTally[_proposalId].voteValue[1].mul(100).div(
@@ -832,7 +835,7 @@ contract Governance is IGovernance {
                     return 1;
                 }
             } else {
-                if(_roleId == uint256(MemberRoles.Role.TokenHolder)) {
+                if(_roleId == uint256(IMemberRoles.Role.TokenHolder)) {
                     if(dateUpdate.add(_closingTime) <= now)
                         return 1;
                 } else if (
@@ -893,9 +896,9 @@ contract Governance is IGovernance {
         require(
             _categoryId == 0 ||
                 roleAuthorizedToVote ==
-                uint256(MemberRoles.Role.AdvisoryBoard) ||
+                uint256(IMemberRoles.Role.AdvisoryBoard) ||
                 roleAuthorizedToVote ==
-                uint256(MemberRoles.Role.DisputeResolution)
+                uint256(IMemberRoles.Role.DisputeResolution)
         );
         uint256 _proposalId = totalProposals;
         allProposalData[_proposalId].owner = msg.sender;
@@ -1017,7 +1020,7 @@ contract Governance is IGovernance {
         );
 
         require(memberRole.checkRole(msg.sender, mrSequence), "Not Authorized");
-        if (mrSequence == uint256(MemberRoles.Role.DisputeResolution)) {
+        if (mrSequence == uint256(IMemberRoles.Role.DisputeResolution)) {
             require(
                 minTokenLockedForDR <=
                     tokenController.tokensLockedAtTime(
@@ -1039,7 +1042,7 @@ contract Governance is IGovernance {
 
         if (
             numberOfMembers == proposalVoteTally[_proposalId].voters &&
-            mrSequence != uint256(MemberRoles.Role.TokenHolder)
+            mrSequence != uint256(IMemberRoles.Role.TokenHolder)
         ) {
             emit VoteCast(_proposalId);
         }
@@ -1057,8 +1060,8 @@ contract Governance is IGovernance {
             ProposalVote(msg.sender, _proposalId, _solution, tokenBalance, now)
         );
         if (
-            mrSequence != uint256(MemberRoles.Role.AdvisoryBoard) &&
-            mrSequence != uint256(MemberRoles.Role.DisputeResolution)
+            mrSequence != uint256(IMemberRoles.Role.AdvisoryBoard) &&
+            mrSequence != uint256(IMemberRoles.Role.DisputeResolution)
         ) {
             uint256 totalSupply = tokenController.totalSupply();
             voteWeight = tokenBalance;
@@ -1125,7 +1128,7 @@ contract Governance is IGovernance {
         uint256 roleAuthorized;
         (, roleAuthorized, , categoryQuorumPerc, , , ) = proposalCategory
             .category(_category);
-        if (roleAuthorized == uint256(MemberRoles.Role.TokenHolder)) {
+        if (roleAuthorized == uint256(IMemberRoles.Role.TokenHolder)) {
             check =
                 (allProposalData[_proposalId].totalVoteValue).mul(100).div(
                     tokenController.totalSupply()
@@ -1308,11 +1311,11 @@ contract Governance is IGovernance {
         tokenHoldingTime = 1 * 7 days;
         maxFollowers = 40;
         constructorCheck = true;
-        roleIdAllowedToCatgorize = uint256(MemberRoles.Role.AdvisoryBoard);
+        roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         minTokenLockedForDR = 1000 ether;
         lockTimeForDR = 15 days;
         actionWaitingTime = 1 hours;
-        actionRejectAuthRole = uint256(MemberRoles.Role.AdvisoryBoard);
+        actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
     }
 

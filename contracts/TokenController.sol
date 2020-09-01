@@ -2,15 +2,15 @@ pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
 import "./PlotusToken.sol";
-import "./bLOTToken.sol";
+import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
-import "./Iupgradable.sol";
+import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IPlotus.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 
-contract TokenController is IERC1132, Governed {
+contract TokenController is IERC1132, Governed, Iupgradable {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -29,7 +29,7 @@ contract TokenController is IERC1132, Governed {
 
     PlotusToken public token;
     IPlotus public plotus;
-    BLOT public bLOTToken;
+    IbLOTToken public bLOTToken;
     Vesting public vesting;
 
     modifier onlyAuthorized {
@@ -48,9 +48,9 @@ contract TokenController is IERC1132, Governed {
         burnUptoLimit = 20000000 * 1 ether;
         constructorCheck = true;
         masterAddress = msg.sender;
-        Master ms = Master(msg.sender);
+        IMaster ms = IMaster(msg.sender);
         token = PlotusToken(ms.dAppToken());
-        bLOTToken = BLOT(ms.getLatestAddress("BL"));
+        bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
     }
 

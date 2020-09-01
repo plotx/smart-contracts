@@ -3,7 +3,8 @@ pragma solidity  0.5.7;
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 import "./external/openzeppelin-solidity/access/Roles.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./Iupgradable.sol";
+import "./interfaces/IMaster.sol";
+import "./interfaces/Iupgradable.sol";
 
 contract BLOT is ERC20, Iupgradable {
 
@@ -49,7 +50,7 @@ contract BLOT is ERC20, Iupgradable {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(plotusToken == address(0));
-        Master ms = Master(msg.sender);
+        IMaster ms = IMaster(msg.sender);
         plotusToken = ms.dAppToken();
         operator = ms.getLatestAddress("TC");
     }

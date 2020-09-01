@@ -1,7 +1,5 @@
 pragma solidity 0.5.7;
 
-import "./Master.sol";
-
 contract Iupgradable {
 
     /**

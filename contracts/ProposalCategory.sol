@@ -15,8 +15,9 @@ import "./external/govblocks-protocol/interfaces/IProposalCategory.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./interfaces/Iupgradable.sol";
 
-contract ProposalCategory is Governed, IProposalCategory {
+contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     bool public constructorCheck;
     IMemberRoles internal mr;
 
