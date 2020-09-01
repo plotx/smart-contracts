@@ -378,36 +378,39 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       assert.equal(await mr.checkRole(ab2, 1), true);
       assert.equal(await mr.checkRole(ab3, 1), true);
       assert.equal(await mr.checkRole(ab4, 1), true);
+      assert.equal(await mr.checkRole(dr1, 3), true);
       assert.equal(await mr.checkRole(dr2, 3), true);
       assert.equal(await mr.checkRole(dr3, 3), true);
-      assert.equal(await mr.checkRole(dr1, 3), true);
     });
-    it("15.25 Follower cannot delegate vote if Leader is not open for delegation", async function () {
+    it("15.25 DR member cannot delegate vote", async () => {
+			await assertRevert(gv.delegateVote(ab1, { from: dr1 }));
+		});
+    it("15.26 Follower cannot delegate vote if Leader is not open for delegation", async function () {
       await assertRevert(gv.delegateVote(ab1, { from: mem1 }));
     });
-    it("15.26 AB member cannot delegate vote to AB", async function () {
+    it("15.27 AB member cannot delegate vote to AB", async function () {
       await gv.setDelegationStatus(true, { from: ab1 });
       await assertRevert(gv.delegateVote(ab1, { from: ab2 }));
     });
-    it("15.27 Owner cannot delegate vote", async function () {
+    it("15.28 Owner cannot delegate vote", async function () {
       await gv.setDelegationStatus(true, { from: ab3 });
       await assertRevert(gv.delegateVote(ab3, { from: ab1 }));
     });
-    it("15.28 AB member cannot delegate vote to Member", async function () {
+    it("15.29 AB member cannot delegate vote to Member", async function () {
       await gv.setDelegationStatus(true, { from: mem1 });
       await assertRevert(gv.delegateVote(mem1, { from: ab4 }));
     });
-    it("15.29 AB member cannot delegate vote to Non-Member", async function () {
+    it("15.30 AB member cannot delegate vote to Non-Member", async function () {
       await assertRevert(gv.delegateVote(notMember, { from: ab4 }));
     });
-    it("15.30 non token holder cannot delegate vote", async function () {
+    it("15.31 non token holder cannot delegate vote", async function () {
       await assertRevert(gv.delegateVote(ab1, { from: notMember }));
     });
-    it("15.31 AB member cannot delegate vote to AB who is follower", async function () {
+    it("15.32 AB member cannot delegate vote to AB who is follower", async function () {
       await gv.setDelegationStatus(true, { from: ab2 });
       await assertRevert(gv.delegateVote(ab2, { from: ab4 }));
     });
-    it("15.32 Member can delegate vote to AB who is not a follower", async function () {
+    it("15.33 Member can delegate vote to AB who is not a follower", async function () {
       await gv.delegateVote(ab1, { from: mem1 });
       let alreadyDelegated = await gv.alreadyDelegated(ab1);
       assert.equal(alreadyDelegated, true);
