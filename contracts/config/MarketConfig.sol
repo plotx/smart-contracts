@@ -153,7 +153,7 @@ contract MarketConfig {
     * @dev Updates address parameters of config
     **/
     function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorized {
-        require(value != address(0))
+        require(value != address(0));
         if(code == "CLORCLE") {
             chainLinkPriceOracle = value;
             chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
