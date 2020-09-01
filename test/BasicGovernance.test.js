@@ -99,7 +99,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
   });
 
   it("15.8 Should categorize proposal", async function () {
-    console.log(await mr.checkRole(ab1, 1));
+    assert.equal(await mr.checkRole(ab1, 1), 1);
     await gv.categorizeProposal(proposalId, 1, 0);
     let proposalData = await gv.proposal(proposalId);
     assert.equal(proposalData[1].toNumber(), 1, "Proposal not categorized");
@@ -321,6 +321,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     let p1Rewards = await gv.proposal(p1.toNumber());
     let p = await gv.getProposalLength();
     await gv.createProposal("proposal", "proposal", "proposal", 0); //34
+    assert.equal(parseFloat(await gv.canCloseProposal(p)), 0);
     await gv.categorizeProposal(p, 12, 10);
     await gv.submitProposalWithSolution(p, "proposal", actionHash);
     await gv.submitVote(p, 1, { from: ab1 });
@@ -415,6 +416,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       let alreadyDelegated = await gv.alreadyDelegated(ab1);
       assert.equal(alreadyDelegated, true);
       assert.equal(await gv.alreadyDelegated(ab2), false);
+      assert.equal(await gv.alreadyDelegated(ab3), false);
     });
     it("15.34 Member can delegate vote to Member who is not follower", async function () {
       await gv.setDelegationStatus(true, { from: mem3 });
