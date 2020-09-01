@@ -62,6 +62,11 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.pauseProposal(0);
 		await gv.resumeProposal(0);
 		await assertRevert(pl.setMasterAddress());
+		// try {
+		// 	await (gv.setMasterAddress());
+		// } catch (e) {
+		// 	console.log(e);
+		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
 
 		await plotusToken.transfer(mem1, toWei(100));
@@ -164,6 +169,16 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(gv.triggerAction(pId)); //cannot trigger
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
+		try {
+			let solutionAction = await gv.getSolutionAction(pID, 1);
+			console.log(solutionAction);
+		} catch (e) {
+			console.log(e);
+		}
+		let voteData = await gv.voteTallyData(pId,1)
+		assert.equal(parseFloat(voteData[0]),2.999989e+25);
+		assert.equal(parseFloat(voteData[1]),6);
+
 		let openMarkets = await pl.getOpenMarkets();
 		assert.isAbove(openMarkets[1].length, openMarketsBefore[1].length, "Currency not added");
 	});
