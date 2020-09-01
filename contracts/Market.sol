@@ -413,12 +413,11 @@ contract Market is usingProvable {
     * @return uint256 representing the interest return of the stake.
     */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
-      uint _minMultiplierRatio;
       uint _minPredictionForMultiplier;
       uint _predictionTime = expireTime.sub(startTime);
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
       uint _predictionValueInToken;
-      (_minMultiplierRatio, _minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
+      (_minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
       if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
         return predictionPoints;
       }

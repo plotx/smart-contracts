@@ -60,6 +60,9 @@ contract MarketConfig {
         _;
     }
 
+    /**
+    * @dev Initiates the config contact with initial values
+    **/
     function initialize(address payable[] memory _addressParams) public {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -82,6 +85,9 @@ contract MarketConfig {
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
 
+    /**
+    * @dev Internal function to set initial value
+    **/
     function _setInitialParameters() internal {
         STAKE_WEIGHTAGE = 40;//
         STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
@@ -100,6 +106,9 @@ contract MarketConfig {
     }
 
 
+    /**
+    * @dev Updates integer parameters of config
+    **/
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorized {
         if(code == "SW") {
             require(value <= 100);
@@ -119,8 +128,6 @@ contract MarketConfig {
             priceStep = value;
         } else if(code == "RATE") {
             rate = value;
-        } else if(code == "MULT") {
-            multiplier = value;
         } else if(code == "MINSTM") {
             minStakeForMultiplier = value;
         } else if(code == "LPERC") {
@@ -136,6 +143,9 @@ contract MarketConfig {
         }
     }
 
+    /**
+    * @dev Updates address parameters of config
+    **/
     function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorized {
         if(code == "CLORCLE") {
             chainLinkPriceOracle = value;
@@ -150,32 +160,47 @@ contract MarketConfig {
         }
     }
 
+    /**
+    * @dev Add a new incentive token, which will be distributed to market participants regardless of result
+    **/
     function addIncentiveToken(address _tokenAddress) external onlyAuthorized {
         incentiveTokens.push(_tokenAddress);
     }
 
+    /**
+    * @dev Get basic market details
+    * @return Minimum amount required to predict in market
+    * @return Percentage of users prediction amount to deduct when placed in wrong prediction
+    * @return Range for step pricing calculation 
+    * @return Decimal points for prediction positions 
+    **/
     function getBasicMarketDetails() public view returns(uint, uint, uint, uint) {
         return (minBet, lossPercentage, priceStep, positionDecimals);
     }
 
-    function getPriceCalculationParams(address _marketCurrencyAddress, bool _isMarketCurrencyERCToken) public view  returns(uint, uint, uint, uint) {
-        uint _currencyPrice = getAssetPriceUSD(_marketCurrencyAddress, _isMarketCurrencyERCToken);
+    /**
+    * @dev Get Parameter required for option price calculation
+    * @param _marketFeedAddress  Feed Address of currency on which market options are based on
+    * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
+    * @return Stake weightage percentage for calculation option price 
+    * @return minimum amount of stake required to consider stake weightage
+    * @return Current price of the market currency
+    * @return Divisor to calculate minimum time elapsed for a market type 
+    **/
+    function getPriceCalculationParams(address _marketFeedAddress, bool _isChainlinkFeed) public view  returns(uint, uint, uint, uint) {
+        uint _currencyPrice = getAssetPriceUSD(_marketFeedAddress, _isChainlinkFeed);
         return (STAKE_WEIGHTAGE, STAKE_WEIGHTAGE_MIN_AMOUNT, _currencyPrice, minTimeElapsedDivisor);
     }
 
+    /**
+    * @dev Get price of provided feed address
+    * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
+    * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
+    * @return Current price of the market currency
+    **/
     function getAssetPriceUSD(address _currencyFeedAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {
-        // if(_currencyFeedAddress != ETH_ADDRESS) {
-        //     return latestAnswer = uint(chainLinkOracle.latestAnswer());
-        // }
         if(!(_isChainlinkFeed)) {
             latestAnswer = uint(chainLinkOracle.latestAnswer()).div(1e8);
-            // address _exchange = uniswapFactory.getExchange(_currencyFeedAddress);
-            // address[] memory path = new address[](2);
-            // path[0] = _currencyFeedAddress;
-            // path[1] = ETH_ADDRESS;
-            // uint[] memory output = uniswapRouter.getAmountsOut(10**uint(IToken(_currencyFeedAddress).decimals()), path);
-            // uint tokenEthPrice = output[1];
-            // return latestAnswer.mul(tokenEthPrice);
             uint decimals = IToken(IUniswapV2Pair(_currencyFeedAddress).token0()).decimals();
             uint price = getPrice(_currencyFeedAddress, 10**decimals);
             return price;
@@ -184,68 +209,111 @@ contract MarketConfig {
         }
     }
 
+    /**
+    * @dev Get value of provided currency address in ETH
+    * @param _currencyAddress Address of currency
+    * @param _amount Amount of provided currency
+    * @return Value of provided amount in ETH
+    **/
     function getAssetValueETH(address _currencyAddress, uint _amount) public view returns(uint tokenEthValue) {
         tokenEthValue = _amount;
         if(_currencyAddress != ETH_ADDRESS) {
             tokenEthValue = getPrice(plotETHpair, _amount);
-            // address[] memory path = new address[](2);
-            // path[0] = _currencyAddress;
-            // path[1] = ETH_ADDRESS;
-            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, path);
-            // tokenEthValue = output[1];
         }
     }
 
+    /**
+    * @dev Get price of provided currency address in ETH
+    * @param _currencyAddress Address of currency
+    * @return Price of provided currency in ETH
+    * @return Decimals of the currency
+    **/
     function getAssetPriceInETH(address _currencyAddress) public view returns(uint tokenEthValue, uint decimals) {
         tokenEthValue = 1;
         if(_currencyAddress != ETH_ADDRESS) {
             decimals = IToken(_currencyAddress).decimals();
             tokenEthValue = getPrice(plotETHpair, 10**decimals);
-            // address[] memory path = new address[](2);
-            // path[0] = _currencyAddress;
-            // path[1] = ETH_ADDRESS;
-            // uint[] memory output = uniswapRouter.getAmountsOut(10**decimals, path);
-            // tokenEthValue = output[1];
         }
     }
 
+    /**
+    * @dev Get amount of stake required to raise a dispute
+    **/
     function getDisputeResolutionParams() public view returns(uint) {
         return tokenStakeForDispute;
     }
 
+    /**
+    * @dev Set commission percentage of an prediction asset
+    * @param _asset Prediction asset
+    * @param _commissionPerc Commission percentage
+    **/
     function setCommissionPercentage(address _asset, uint _commissionPerc) external onlyAuthorized {
         require(commissionPerc[_asset] > 0,"Invalid Asset");
         require(_commissionPerc > 0 && _commissionPerc < 100);
         commissionPerc[_asset] = _commissionPerc;
     }
 
-    function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint) {
+
+    /**
+    * @dev Get value of _asset in PLOT token and multiplier parameters
+    * @param _asset Address of asset for which value is requested
+    * @param _amount Amount of _asset
+    * @return min prediction amount required for multiplier
+    * @return value of given assetin PLOT tokens
+    **/
+    function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
             address pair = uniswapFactory.getPair(plotusToken, weth);
             _value = (uniswapPairData[pair].price1Average).mul(_amount).decode144();
-            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
-            // _value = output[1];
         }
-        return (multiplier, minStakeForMultiplier, _value);
+        return (minStakeForMultiplier, _value);
     }
 
+    /**
+    * @dev Get Ether to Plot token conversion path for uniswap
+    * @return Uniswap router address
+    * @return Path
+    **/
     function getETHtoTokenRouterAndPath() public view returns(address, address[] memory) {
         return (uniswapRouter, uniswapEthToTokenPath);
     }
 
+    /**
+    * @dev Get Parameters required to initiate market
+    * @return Addresses of tokens to be distributed as incentives
+    * @return Cool down time for market
+    * @return Rate
+    * @return Commission percent for predictions with ETH
+    * @return Commission percent for predictions with PLOT
+    **/
     function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint) {
         return (incentiveTokens, marketCoolDownTime, rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotusToken]);
     }
 
+    /**
+    * @dev Get Parameters required to exchanging commission
+    * @return Percentage of amount to buy PLOT in uniswap
+    * @return Deadline for uniswap exchanges
+    **/
     function getPurchasePercAndDeadline() public view returns(uint, uint) {
         return (lotPurchasePerc, uniswapDeadline);
     }
 
+    /**
+    * @dev Get Market feed address
+    * @return Eth Chainlink feed address 
+    * @return Uniswap factory address
+    **/
     function getFeedAddresses() public view returns(address, address) {
         return (address(chainLinkOracle), address(uniswapFactory));
     }
 
+    /**
+    * @dev Update cummulative price of token in uniswap
+    * @param pairAddress Token pair address
+    **/
     function update(address pairAddress) external onlyAuthorized {
         if(pairAddress != plotusToken) {
             _update(pairAddress);
@@ -259,8 +327,6 @@ contract MarketConfig {
             UniswapV2OracleLibrary.currentCumulativePrices(pair);
         uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
 
-        // ensure that at least one full period has passed since the last update
-        // require(timeElapsed >= PERIOD, 'ExampleOracleSimple: PERIOD_NOT_ELAPSED');
         if(timeElapsed >= updatePeriod) {
             // overflow is desired, casting never truncates
             // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
@@ -273,7 +339,9 @@ contract MarketConfig {
         }
     }
 
-
+    /**
+    * @dev Get value of token in pair
+    **/
     function getPrice(address pair, uint amountIn) public view returns (uint amountOut) {
         amountOut = (uniswapPairData[pair].price0Average).mul(amountIn).decode144();
     }

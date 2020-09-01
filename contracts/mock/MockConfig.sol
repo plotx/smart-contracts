@@ -19,7 +19,7 @@ contract MockConfig is MarketConfig {
 		return amountIn.mul(priceOfToken).div(1e18);
 	}
 
-	function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint, uint) {
+	function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
             // address pair = uniswapFactory.getPair(plotusToken, weth);
@@ -27,7 +27,7 @@ contract MockConfig is MarketConfig {
             // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
             // _value = output[1];
         }
-        return (multiplier, minStakeForMultiplier, _value);
+        return (minStakeForMultiplier, _value);
     }
 
     function update(address pair) external {

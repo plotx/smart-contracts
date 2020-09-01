@@ -181,16 +181,10 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(configData[2], 21, 'Not updated');
       });
 
-      it('Should update Multiplier', async function() {
-        await updateParameter(20, 2, 'MULT', pl, 'configUint', 22);
-        let configData = await marketConfig.getValueAndMultiplierParameters(pl.address, 10);
-        assert.equal(configData[0], 22, 'Not updated');
-      });
-
       it('Should update Min Stake For Multiplier', async function() {
         await updateParameter(20, 2, 'MINSTM', pl, 'configUint', 23);
         let configData = await marketConfig.getValueAndMultiplierParameters(pl.address, 10);
-        assert.equal(configData[1], 23, 'Not updated');
+        assert.equal(configData[0], 23, 'Not updated');
       });
 
       it('Should update Loss Percentage', async function() {
