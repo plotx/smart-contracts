@@ -40,6 +40,7 @@ contract Vesting {
     uint256 amount;
     uint256 vestingDuration;
     uint256 vestingCliff;
+    uint256 upFront;
     uint256 periodInDays;
     uint256 periodClaimed;
     uint256 totalClaimed;
@@ -79,11 +80,14 @@ contract Vesting {
   /// @param _amount Total number of tokens in grant
   /// @param _vestingDuration Number of months of the grant's duration
   /// @param _vestingCliff Number of months of the grant's vesting cliff
-  function addTokenGrant(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff) public 
+  function addTokenGrant(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff, uint256 _upFront) public 
   onlyOwner
   noGrantExistsForUser(_recipient)
   {
-    require(_vestingCliff > 0, "token-zero-vesting-cliff");
+    if(_vestingCliff > 0){
+      require(_upFront == 0, "Upfront is non zero for non zero cliff");
+    }
+    // require(_vestingCliff > 0, "token-zero-vesting-cliff");
     require(_vestingDuration > _vestingCliff, "token-cliff-longer-than-duration");
     uint256 amountVestedPerPeriod = _amount.div(_vestingDuration); // need to change 
     require(amountVestedPerPeriod > 0, "token-zero-amount-vested-per-period");
@@ -92,14 +96,18 @@ contract Vesting {
     token.transferFrom(owner, address(this), _amount);
 
     Allocation memory _allocation = Allocation({
-      startTime: _startTime == 0 ? now : _startTime, // should we add check that startTime should be > now. Or we can remove the variable and use now as start time?
+      startTime: _startTime, 
       amount: _amount,
       vestingDuration: _vestingDuration,
       periodInDays: _vestingPeriodInDays,
       vestingCliff: _vestingCliff,
+      upFront: _upFront,
       periodClaimed: 0,
       totalClaimed: 0
     });
+    if(_upFront > 0 && !token.isLockedForGV(_recipient)) {
+      token.transfer(_recipient, _upFront);
+    }
 
     tokenAllocations[_recipient] = _allocation;
     emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff);
@@ -108,6 +116,8 @@ contract Vesting {
   /// @notice Allows a grant recipient to claim their vested tokens. Errors if no tokens have vested
   /// It is advised recipients check they are entitled to claim via `calculateGrantClaim` before calling this
   function claimVestedTokens() public {
+
+    require(!token.isLockedForGV(msg.sender));
     uint256 periodVested;  //
     uint256 amountVested;
     (periodVested, amountVested) = calculateGrantClaim(msg.sender);
@@ -139,17 +149,21 @@ contract Vesting {
     if (elapsedDays < _tokenAllocations.vestingCliff) {
       return (0, 0);
     }
-
+    uint256 elapsedDaysAfterCliffPeriod = elapsedDays.sub(_tokenAllocations.vestingCliff);
     // If over vesting duration, all tokens vested
-    if (elapsedDays >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
+    if (elapsedDaysAfterCliffPeriod >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
       uint256 remainingTokens = _tokenAllocations.amount.sub(_tokenAllocations.totalClaimed);
       return (_tokenAllocations.vestingDuration, remainingTokens);
     } else {
-      uint256 elapsedPeriod = elapsedDays.div(_tokenAllocations.periodInDays);
+      uint256 elapsedPeriod = elapsedDaysAfterCliffPeriod.div(_tokenAllocations.periodInDays);
       uint256 periodVested = elapsedPeriod.sub(_tokenAllocations.periodClaimed); //need to review
       uint256 amountVestedPerPeriod = _tokenAllocations.amount.div(_tokenAllocations.vestingDuration);
       uint256 amountVested = periodVested.mul(amountVestedPerPeriod);
       return (periodVested, amountVested);
     }
+  }
+
+  function unclaimedAllocation(address _user) external view returns(uint) {
+    return tokenAllocations[_user].amount.sub(tokenAllocations[_user].totalClaimed);
   }
 }

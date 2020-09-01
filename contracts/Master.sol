@@ -5,6 +5,7 @@ import "./interfaces/IPlotus.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./Iupgradable.sol";
+import "./TokenController.sol";
 
 contract Master is Governed {
 
