@@ -202,7 +202,6 @@ contract MarketConfig {
     **/
     function getAssetPriceUSD(address _currencyFeedAddress, bool _isChainlinkFeed) public view returns(uint latestAnswer) {
         if(!(_isChainlinkFeed)) {
-            latestAnswer = uint(chainLinkOracle.latestAnswer()).div(1e8);
             uint decimals = IToken(IUniswapV2Pair(_currencyFeedAddress).token0()).decimals();
             uint price = getPrice(_currencyFeedAddress, 10**decimals);
             return price;
