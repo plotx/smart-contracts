@@ -69,7 +69,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
         await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now()/1000), mem1, plotusToken.address));
-		await assertRevert(pl.initiatePlotus(mem1, mem1, mem1, [mem1,mem1, mem1, mem1]));
+		await assertRevert(pl.initiate(mem1, mem1, mem1, [mem1,mem1, mem1, mem1]));
 		await plotusToken.transfer(mem1, toWei(100));
 		await plotusToken.transfer(mem2, toWei(100));
 		await plotusToken.transfer(mem3, toWei(100));

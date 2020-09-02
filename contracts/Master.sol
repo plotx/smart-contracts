@@ -67,7 +67,7 @@ contract Master is Governed {
 
         _setMasterAddress();
 
-        IMarketRegistry(contractAddress["PL"]).initiatePlotus(
+        IMarketRegistry(contractAddress["PL"]).initiate(
             _marketImplementation,
             _marketUtiliy,
             _token,

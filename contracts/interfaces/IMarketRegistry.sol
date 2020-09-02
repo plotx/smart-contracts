@@ -20,12 +20,12 @@ contract IMarketRegistry {
     function burnDisputedProposalTokens(uint _proposaId) external;
 
     /**
-    * @dev Initialize the Plotus.
+    * @dev Initialize the PlotX.
     * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.
     * @param _plotusToken The address of plotus token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public;
+    function initiate(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public;
 
     /**
     * @dev Create proposal if user wants to raise the dispute.

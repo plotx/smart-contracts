@@ -102,12 +102,12 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     }
 
     /**
-    * @dev Initialize the Plotus.
+    * @dev Initialize the PlotX MarketRegistry.
     * @param _marketImplementation The address of market implementation.
     * @param _marketUtility The address of market config.
     * @param _plotToken The instance of PlotX token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
+    function initiate(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketImplementation = _marketImplementation;
       plotToken = IToken(_plotToken);
