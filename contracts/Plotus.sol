@@ -68,7 +68,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     MarketCurrency[] marketCurrencies;
 
     bool public marketCreationPaused;
-    bool public plotxInitialized;
 
     IToken public plotusToken;
     IConfig public marketConfig;
@@ -109,14 +108,14 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param _plotusToken The instance of plotus token.
     */
     function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public {
-      require(address(ms) == msg.sender && !plotxInitialized);
-      plotxInitialized = true;
+      require(address(ms) == msg.sender);
       marketImplementation = _marketImplementation;
       plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
       marketConfig = IConfig(_generateProxy(_marketConfig));
       marketConfig.initialize(_configParams);
+      plotusToken.approve(address(governance), ~uint256(0));
       // marketConfig.setAuthorizedAddres();
       // provable_setProof(proofType_Android | proofType_Ledger);
       // marketOpenIndex = 1;

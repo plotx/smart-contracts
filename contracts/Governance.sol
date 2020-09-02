@@ -1299,7 +1299,8 @@ contract Governance is IGovernance, Iupgradable {
         }
 
         if (proposalVoteTally[_proposalId].voters > 0) {
-            tokenController.mint(
+            tokenInstance.transferFrom(
+                address(plotus),
                 address(this),
                 allProposalData[_proposalId].commonIncentive
             );
