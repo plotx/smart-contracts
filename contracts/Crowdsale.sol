@@ -1,4 +1,4 @@
-pragma solidity ^0.5.0;
+pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
@@ -34,13 +34,19 @@ contract Crowdsale is ReentrancyGuard {
     // The rate is the conversion between wei and the smallest and indivisible token unit.
     // So, if you are using a rate of 1 with a ERC20Detailed token with 3 decimals called TOK
     // 1 wei will give you 1 unit, or 0.001 TOK.
-    uint256 private _rate; // will replaced by formula.
+    uint256 private _startRate; 
 
-    // Amount of USDC + USDT raised
-    uint256 private _fundRaised;
+    uint256 private _slope;
+
+    // Amount of Tokens sold
+    uint256 private _tokenSold;
+
+    uint256 private _startTime;
+
+    uint256 private _endTime;
 
     // Authorised address to whitelist
-    address _authorisedToWhitelist;
+    address private _authorisedToWhitelist;
 
     // USDC Token
     IERC20 private _tokenUSDC;
@@ -65,7 +71,7 @@ contract Crowdsale is ReentrancyGuard {
      * @param _user address of user.
      * @param _time time when user is whitelisted.
      */
-    event UserBlaklisted(address indexed _user, uint _time);
+    event UserBlacklisted(address indexed _user, uint _time);
 
     /**
      * Event for token purchase logging
@@ -83,7 +89,7 @@ contract Crowdsale is ReentrancyGuard {
      * @param tokenUSDC Address of the USDC token
      * @param tokenUSDT Address of the USDT token
      */
-    constructor (address authorisedToWhitelist, address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT) public {
+    constructor (address authorisedToWhitelist, address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT, uint256 startTime, uint256 endTime) public {
         require(authorisedToWhitelist != address(0), "Crowdsale: Authorised address is the zero address");
         require(wallet != address(0), "Crowdsale: wallet is the zero address");
         require(address(token) != address(0), "Crowdsale: token is the zero address");
@@ -96,7 +102,10 @@ contract Crowdsale is ReentrancyGuard {
         _wallet = wallet;
         _token = token;
         _spendingLimit = uint(10000).mul(10 ** 18);
-        _rate = 1; // will be replaced by formula 
+        _startRate = uint(7).mul(10 ** 16); 
+        _slope = 4000000000;
+        _startTime = startTime;
+        _endTime = endTime;
     }
 
     /**
@@ -130,8 +139,22 @@ contract Crowdsale is ReentrancyGuard {
     /**
      * @return the amount of USDC + USDT raised.
      */
-    function fundRaised() public view returns (uint256) {
-        return _fundRaised;
+    function tokenSold() public view returns (uint256) {
+        return _tokenSold;
+    }
+
+    /**
+     * @return the amount of USDC + USDT raised.
+     */
+    function slope() public view returns (uint256) {
+        return _slope;
+    }
+
+    /**
+     * @return the amount of USDC + USDT raised.
+     */
+    function startRate() public view returns (uint256) {
+        return _startRate;
     }
 
     /**
@@ -139,6 +162,10 @@ contract Crowdsale is ReentrancyGuard {
      */
     function spendingLimit() public view returns (uint256) {
         return _spendingLimit;
+    }
+    
+    function authorisedToWhitelist() public view returns (address) {
+        return _authorisedToWhitelist;
     }
 
     /**
@@ -158,7 +185,7 @@ contract Crowdsale is ReentrancyGuard {
     function removeUserFromWhiteList(address _user) external {
         require(msg.sender == _authorisedToWhitelist, "Not authorised to whitelist");
         whitelisted[_user] = false;
-        emit UserBlaklisted(_user, now);
+        emit UserBlacklisted(_user, now);
     }
 
     /**
@@ -176,20 +203,16 @@ contract Crowdsale is ReentrancyGuard {
 
         require(spendingAsset.transferFrom(msg.sender, address(this), _amount), "Tranfer failed");
 
-        userSpentSoFar[beneficiary] = userSpentSoFar[beneficiary].add(spendingAmount);
-
-        // update state
-        _fundRaised = _fundRaised.add(_amount);
-
+        
 
         // calculate token amount to be created
         uint256 tokens = _getTokenAmount(_amount);
 
+
         _processPurchase(beneficiary, tokens);
         emit TokensPurchased(msg.sender, beneficiary, _amount, tokens);
 
-        _updatePurchasingState(beneficiary, _amount);
-
+        _updatePurchasingState(beneficiary, _amount, tokens);
         _forwardFunds();
         _postValidatePurchase(beneficiary, _amount);
     }
@@ -197,6 +220,11 @@ contract Crowdsale is ReentrancyGuard {
     /// @dev Will forward funds to wallet if funds are stuck.
     function forwardFunds() external {
         _forwardFunds();
+    }
+
+    function transferLeftOverTokens() external {
+        require(_endTime !=0 && now > _endTime, "Sale has not ended yet");
+        _token.safeTransfer(_wallet, _token.balanceOf(address(this)));
     }
 
     /**
@@ -210,7 +238,8 @@ contract Crowdsale is ReentrancyGuard {
      * @param spendingAsset Asset user want to spend
      */
     function _preValidatePurchase(address beneficiary, uint256 amount, IERC20 spendingAsset) internal view {
-        require(beneficiary != address(0), "Crowdsale: beneficiary is the zero address");
+        require(now >= _startTime && now <= _endTime, "Sale is not active");
+        require(beneficiary != address(0), "beneficiary is the zero address");
         require(amount != 0, "Crowdsale: amount is 0");
         require(spendingAsset == _tokenUSDC || spendingAsset == _tokenUSDT, "Only USDC & USDT are allowed");
         require(whitelisted[beneficiary], "Not whitelisted");
@@ -229,23 +258,13 @@ contract Crowdsale is ReentrancyGuard {
     }
 
     /**
-     * @dev Source of tokens. Override this method to modify the way in which the crowdsale ultimately gets and sends
-     * its tokens.
-     * @param beneficiary Address performing the token purchase
-     * @param tokenAmount Number of tokens to be emitted
-     */
-    function _deliverTokens(address beneficiary, uint256 tokenAmount) internal {
-        _token.safeTransfer(beneficiary, tokenAmount);
-    }
-
-    /**
      * @dev Executed when a purchase has been validated and is ready to be executed. Doesn't necessarily emit/send
      * tokens.
      * @param beneficiary Address receiving the tokens
      * @param tokenAmount Number of tokens to be purchased
      */
     function _processPurchase(address beneficiary, uint256 tokenAmount) internal {
-        _deliverTokens(beneficiary, tokenAmount);
+        _token.safeTransfer(beneficiary, tokenAmount);
     }
 
     /**
@@ -254,8 +273,9 @@ contract Crowdsale is ReentrancyGuard {
      * @param beneficiary Address receiving the tokens
      * @param amount Value in (USDC/USDT) involved in the purchase
      */
-    function _updatePurchasingState(address beneficiary, uint256 amount) internal {
-        // solhint-disable-previous-line no-empty-blocks
+    function _updatePurchasingState(address beneficiary, uint256 amount, uint256 tokensPurchased) internal {
+        userSpentSoFar[beneficiary] = userSpentSoFar[beneficiary].add(amount);
+        _tokenSold = _tokenSold.add(tokensPurchased);
     }
 
     /**
@@ -264,7 +284,8 @@ contract Crowdsale is ReentrancyGuard {
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
     function _getTokenAmount(uint256 amount) internal view returns (uint256) {
-        return amount.mul(_rate); // need to update aording to bonding curve.
+        uint tokenRate = (_slope.mul(_tokenSold)).add(_startRate);
+        return amount.mul(10 ** 18).div(tokenRate); // need to update aording to bonding curve.
     }
 
     /**
@@ -275,12 +296,12 @@ contract Crowdsale is ReentrancyGuard {
         uint balanceUSDT = _tokenUSDT.balanceOf(address(this));
         if(balanceUSDC > 0) {
 
-            require(_tokenUSDC.transfer(_wallet, balanceUSDC), "Transfer failed while forwarding USDC funds");
+            require(_tokenUSDC.transfer(_wallet, balanceUSDC), "Transfer failed for USDC funds");
         }
 
         if(balanceUSDT > 0) {
 
-            require(_tokenUSDT.transfer(_wallet, balanceUSDT), "Transfer failed while forwarding USDT funds");
+            require(_tokenUSDT.transfer(_wallet, balanceUSDT), "Transfer failed for USDT funds");
         }
     }
 }
