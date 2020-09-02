@@ -119,11 +119,13 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][2], "100000000000000000000");
+		await plotusToken.approve(openMarkets["_openMarkets"][2], "18000000000000000000000000");
 		await (marketInstance.claimReturn(ab1));
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
-		await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+		await marketConfig.setPLOTCommissionPerc(900);
+		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000000", 1, 1);
+		await marketInstance.placePrediction(plotusToken.address, "8000000000000000000000000", 1, 1);
 		await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "10000000000000000000", 1, 1, { value: 1000 }));
 		await assertRevert(marketInstance.calculatePredictionResult(1));
 		await assertRevert(marketInstance.calculatePredictionResult(0));
@@ -208,7 +210,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let solutionAction = await gv.getSolutionAction(pId, 1);
 		assert.equal(parseFloat(solutionAction[0]), 1);
 		let voteData = await gv.voteTallyData(pId,1)
-		assert.equal(parseFloat(voteData[0]),2.998989e+25);
+		assert.equal(parseFloat(voteData[0]),1.19899e+25);
 		assert.equal(parseFloat(voteData[1]),6);
 
 		let openMarkets = await pl.getOpenMarkets();

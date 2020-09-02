@@ -33,4 +33,8 @@ contract MockConfig is MarketUtility {
     function update(address pair) external {
     
     }
+
+    function setPLOTCommissionPerc(uint _value) external {
+    	commissionPerc[plotToken] = _value;
+    }
 }

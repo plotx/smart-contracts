@@ -78,7 +78,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			assert.equal(parseFloat(marketData._ethStaked[0]), 0);
 			assert.equal(parseFloat(marketData._ethStaked[1]), 0);
 			assert.equal(parseFloat(marketData._ethStaked[2]), 0);
-			assert.equal(parseFloat(marketData._predictionType), 0);
+			assert.equal(parseFloat(marketData._predictionTime), 3600);
 		});
 
 		it("0.2", async () => {
