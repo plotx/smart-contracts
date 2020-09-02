@@ -430,8 +430,7 @@ contract Market is usingProvable {
     */
     function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
       uint _minPredictionForMultiplier;
-      uint _predictionTime = expireTime.sub(startTime);
-      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", (_predictionTime.mul(2)).add(now));
+      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", now);
       uint _predictionValueInToken;
       (_minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
       if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
