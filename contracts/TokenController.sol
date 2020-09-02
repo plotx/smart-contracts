@@ -18,9 +18,9 @@ contract TokenController is IERC1132, Governed, Iupgradable {
    /**
     * @dev Error messages for require statements
     */
-    string internal constant ALREADY_LOCKED = 'Tokens already locked';
-    string internal constant NOT_LOCKED = 'No tokens locked';
-    string internal constant AMOUNT_ZERO = 'Amount can not be 0';
+    string internal constant ALREADY_LOCKED = "Tokens already locked";
+    string internal constant NOT_LOCKED = "No tokens locked";
+    string internal constant AMOUNT_ZERO = "Amount can not be 0";
 
     uint internal smLockPeriod;
     uint internal burnUptoLimit;
@@ -33,7 +33,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(marketRegistry.isMarket(msg.sender));
+        require(marketRegistry.isMarket(msg.sender), "Not authorized");
         _;
     }
 
@@ -43,7 +43,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     function setMasterAddress() public {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
-        require(!constructorCheck);
+        require(!constructorCheck, "Already ");
         smLockPeriod = 30 days;
         burnUptoLimit = 20000000 * 1 ether;
         constructorCheck = true;
@@ -107,7 +107,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         returns (bool)
     {
 
-        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR", "Unspecified reason or time");
         require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
         
@@ -127,9 +127,9 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     /**
      * @dev Transfers and Locks a specified amount of tokens,
      *      for a specified reason and time
-     * @param _to adress to which tokens are to be transfered
+     * @param _to address to which tokens are to be transferred
      * @param _reason The reason to lock tokens
-     * @param _amount Number of tokens to be transfered and locked
+     * @param _amount Number of tokens to be transferred and locked
      * @param _time Lock time in seconds
      */
     function transferWithLock(address _to, bytes32 _reason, uint256 _amount, uint256 _time)
@@ -137,7 +137,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         returns (bool)
     {
 
-        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR");
+        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR","Unspecified reason or time");
         require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
         require(!(token.isLockedForGV(msg.sender)), "Locked for governance");
@@ -218,7 +218,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         public
         returns (bool)
     {
-        require(_reason == "SM" || _reason == "DR");
+        require(_reason == "SM" || _reason == "DR","Unspecified reason");
         require(_amount != 0, AMOUNT_ZERO);
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
         token.operatorTransfer(msg.sender, _amount);
@@ -242,7 +242,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         returns (bool)
     {
         if(_reason == "SM") {
-            require(_time == smLockPeriod);
+            require(_time == smLockPeriod, "Must be smLockPeriod");
         }
         require(_time != 0, "Time cannot be zero");
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
@@ -346,9 +346,9 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     function burnLockedTokens(address _of, bytes32 _reason, uint256 _amount) public onlyAuthorizedToGovern
         returns (bool)
     {
-        require(_reason == "DR");
+        require(_reason == "DR","Reason must be DR");
         uint256 amount = tokensLocked(_of, _reason);
-        require(amount >= _amount);
+        require(amount >= _amount, "Tokens locked must be greater than amount");
 
         locked[_of][_reason].amount = locked[_of][_reason].amount.sub(_amount);
         if (locked[_of][_reason].amount == 0) {
