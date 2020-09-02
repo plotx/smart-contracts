@@ -1,6 +1,7 @@
 const increaseTime = require("./increaseTime.js").increaseTime;
 const encode1 = require("./encoder.js").encode1;
 const Web3 = require("web3");
+const { assert } = require("chai");
 const web3 = new Web3();
 async function gvProposal(...args) {
   let catId = args[0];
@@ -63,6 +64,8 @@ async function gvProposalWithIncentiveViaTokenHolder(...args) {
   let incentive = args[5];
   let p = await gv.getProposalLength();
   await gv.createProposal("proposal", "proposal", "proposal", 0);
+  let canClose = await gv.canCloseProposal(p);
+  assert.equal(parseFloat(canClose),0);
   await gv.categorizeProposal(p, catId, incentive);
   await gv.submitProposalWithSolution(p, "proposal", actionHash);
   let members = await mr.members(seq);

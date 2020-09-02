@@ -216,6 +216,7 @@ contract("Proposal Category", function ([owner, other]) {
 		let category = await pc.category(2);
 		assert.equal((await gv.proposalActionStatus(pId)).toNumber(), 1);
 		assert.notEqual(category[2].toNumber(), 65, "Category updated");
+		await gv.triggerAction(pId);
 	});
 
 	it("14.9 Add category with valid action data and invalid votepercent, category should not be added", async function () {
