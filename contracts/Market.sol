@@ -236,7 +236,7 @@ contract Market is usingProvable {
     /**
     * @dev Calculate the given asset value in eth 
     */
-    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal view returns(uint) {
+    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal pure returns(uint) {
       return _amount.mul(_price).div(10**_decimals);
     }
 
@@ -277,14 +277,15 @@ contract Market is usingProvable {
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
     * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
     * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
-    * @return _predictionType uint representing the type of market.
+    * @return _predictionTime uint representing the type of market.
     * @return _expireTime uint representing the time at which market closes for prediction
     * @return _predictionStatus uint representing the status of the market.
     */
     function getData() public view returns
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
+        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, uint _predictionStatus){
         _marketCurrency = marketCurrency;
+        _predictionTime = expireTime.sub(startTime);
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
@@ -528,11 +529,10 @@ contract Market is usingProvable {
     * @dev Raise the dispute if wrong value passed at the time of market result declaration.
     * @param proposedValue The proposed value of market currency.
     * @param proposalTitle The title of proposal created by user.
-    * @param shortDesc The short description of dispute.
     * @param description The description of dispute.
     * @param solutionHash The ipfs solution hash.
     */
-    function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
+    function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       require(IToken(plotToken).transferFrom(msg.sender, address(pl), _stakeForDispute));

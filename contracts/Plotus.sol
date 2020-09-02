@@ -340,9 +340,9 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       disputeStakes[msg.sender].inDispute = false;
     }
 
-    function burnDisputedProposalTokens(uint _proposaId) external onlyAuthorizedToGovern {
-      IMarket(disputeProposalId[_proposaId]).resolveDispute(false, 0);
-      uint _stakedAmount = disputeStakes[disputeProposalId[_proposaId]].stakeAmount;
+    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
+      IMarket(disputeProposalId[_proposalId]).resolveDispute(false, 0);
+      uint _stakedAmount = disputeStakes[disputeProposalId[_proposalId]].stakeAmount;
       plotToken.burn(_stakedAmount);
     }
 
@@ -450,9 +450,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     */
     function getOpenMarkets() external view returns(address[] memory _openMarkets, uint256[] memory _marketTypes, bytes32[] memory _marketCurrencies) {
       uint256  count = 0;
-      uint256 _status;
-      uint256 _marketType;
-      uint totalOpenMarkets = 0;
       _openMarkets = new address[]((marketTypes.length).mul(marketCurrencies.length));
       _marketTypes = new uint256[]((marketTypes.length).mul(marketCurrencies.length));
       _marketCurrencies = new bytes32[]((marketTypes.length).mul(marketCurrencies.length));

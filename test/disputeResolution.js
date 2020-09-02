@@ -51,27 +51,27 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     
     // cannot raise dispute if market is open
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash"));
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
     
     await increaseTime(3601);
     // cannot raise dispute if market is closed but result is not out
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash"));
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
    
     await increaseTime(3600);
     await marketInstance.calculatePredictionResult(100000000000);
      // cannot raise dispute with less than minimum stake
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash",{from : notMember}));
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
     //can raise dispute in cooling period and stake
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash");
+    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash"));
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
     await increaseTime(901);
      // cannot raise dispute if market cool time is over
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash"));
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
     
     await assertRevert(marketInstance.resolveDispute(true, 100));
     let winningOption_af = await marketInstance.getMarketResults()
@@ -147,7 +147,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await marketInstance.calculatePredictionResult(100000000000);
     //can raise dispute in cooling period and stake
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is short desc.","this is description","this is solution hash");
+    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
     let plotusContractBalanceBefore = await plotusToken.balanceOf(plotusNewInstance.address);
     let winningOption_before = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_before[0]/1)

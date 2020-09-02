@@ -27,7 +27,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
 
     bool internal constructorCheck;
 
-    PlotusToken public token;
+    PlotXToken public token;
     IPlotus public plotus;
     IbLOTToken public bLOTToken;
     Vesting public vesting;
@@ -49,7 +49,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         constructorCheck = true;
         masterAddress = msg.sender;
         IMaster ms = IMaster(msg.sender);
-        token = PlotusToken(ms.dAppToken());
+        token = PlotXToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
         plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
     }

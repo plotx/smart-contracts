@@ -25,7 +25,7 @@ import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 contract Vesting {
 
   using SafeMath for uint256;
-  PlotusToken public token;
+  PlotXToken public token;
   address public owner;
 
   uint constant internal SECONDS_PER_DAY = 1 days;
@@ -64,7 +64,7 @@ contract Vesting {
   nonZeroAddress(_token)
   nonZeroAddress(_owner)
   {
-    token = PlotusToken(_token);
+    token = PlotXToken(_token);
     owner = _owner;
   }
 
