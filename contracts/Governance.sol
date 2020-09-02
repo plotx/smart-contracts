@@ -427,7 +427,7 @@ contract Governance is IGovernance, Iupgradable {
      * @param _add is the address to delegate vote to.
      */
     function delegateVote(address _add) external checkPendingRewards {
-        require(allDelegation[followerDelegation[_add]].leader == address(0));
+        require(delegatedTo(_add) == address(0));
 
         if (followerDelegation[msg.sender] > 0) {
             require(
@@ -759,6 +759,12 @@ contract Governance is IGovernance, Iupgradable {
                 mrAllowed[i] == 0 ||
                 memberRole.checkRole(msg.sender, mrAllowed[i])
             ) return true;
+        }
+    }
+
+    function delegatedTo(address _follower) public returns(address) {
+        if(followerDelegation[_follower] > 0) {
+            return allDelegation[followerDelegation[_follower]].leader;
         }
     }
 

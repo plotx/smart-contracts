@@ -566,6 +566,9 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         allowedToCreateProposal[0] = _allowedToCreate;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
+        if(_memberRoleToVote == 3) {
+            stakeIncentive[1] = 100 ether;
+        }
         if (bytes(_actionHash).length > 0) {
             categoryActionHashes[allCategory.length] = abi.encodeWithSignature(
                 _actionHash
