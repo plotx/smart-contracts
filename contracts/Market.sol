@@ -329,7 +329,7 @@ contract Market is usingProvable {
     * @param _leverage The leverage opted by user at the time of prediction.
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-      require(_prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
+      require(!pl.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
       require(now >= startTime && now <= expireTime);
 
 
@@ -668,7 +668,8 @@ contract Market is usingProvable {
     * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
     */
     function claimReturn(address payable _user) public returns(uint256) {
-      if(lockedForDispute || marketStatus() != PredictionStatus.Settled) {
+
+      if(lockedForDispute || marketStatus() != PredictionStatus.Settled || pl.marketCreationPaused()) {
         return 0;
       }
       if(userClaimedReward[_user]) {
