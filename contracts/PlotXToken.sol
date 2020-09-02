@@ -19,7 +19,7 @@ import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 
 
-contract PlotXToken is ERC20 {
+contract PlotusToken is ERC20 {
     using SafeMath for uint256;
 
     mapping(address => uint) public lockedForGV;

@@ -92,7 +92,7 @@ contract Market is usingProvable {
       pl = IPlotus(msg.sender);
       marketUtility = MarketUtility(pl.marketUtility());
       tokenController = ITokenController(pl.tokenController());
-      plotToken = tokenController.plotToken();
+      plotToken = tokenController.token();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
