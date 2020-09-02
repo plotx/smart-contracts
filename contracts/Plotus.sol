@@ -396,7 +396,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     }
     
     /**
-    * @dev Emits the PlacePrediction event.
+    * @dev Emits the PlacePrediction event and sets the user data.
     * @param _user The address who placed prediction.
     * @param _value The amount of ether user staked.
     * @param _predictionPoints The positions user will get.
@@ -404,7 +404,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param _prediction The option range on which user placed prediction.
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
-    function callPlacePredictionEvent(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
+    function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external OnlyMarket {
       totalStaked[_user] = totalStaked[_user].add(_value);
       if(!marketsParticipatedFlag[_user][msg.sender]) {
         marketsParticipated[_user].push(msg.sender);

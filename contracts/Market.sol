@@ -370,7 +370,7 @@ contract Market is usingProvable {
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
-      pl.callPlacePredictionEvent(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      pl.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
     /**
