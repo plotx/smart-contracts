@@ -40,15 +40,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     mapping(uint256 => CategoryAction) internal categoryActionData;
     mapping(uint256 => bytes) public categoryActionHashes;
 
-    bool public initated;
+    bool public initiated;
 
     /**
      * @dev Initiates Default settings for Proposal Category contract (Adding default categories)
      */
     function proposalCategoryInitiate() external {
         //solhint-disable-line
-        require(!initated, "Category action hashes already updated");
-        initated = true;
+        require(!initiated, "Category action hashes already updated");
+        initiated = true;
 
         _addInitialCategories("Uncategorized", "", "EX", "", 0, 0, 0);
         _addInitialCategories(
@@ -214,7 +214,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         );
         _addInitialCategories(
-            "Transfer Plotus Assets",
+            "Transfer Market Registry Assets",
             "",
             "PL",
             "transferAssets(address,address,uint256)",
