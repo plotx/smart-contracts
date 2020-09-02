@@ -35,7 +35,10 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     modifier checkRoleAuthority(uint256 _memberRoleId) {
         if (memberRoleData[_memberRoleId].authorized != address(0))
-            require(msg.sender == memberRoleData[_memberRoleId].authorized);
+            require(
+                msg.sender == memberRoleData[_memberRoleId].authorized,
+                "Not authorized"
+            );
         else require(isAuthorizedToGovern(msg.sender), "Not Authorized");
         _;
     }
@@ -57,13 +60,17 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @dev to change the master address
      */
     function setMasterAddress() public {
-        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
+            address(uint160(address(this)))
+        );
+        require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
 
-        require(masterAddress == address(0));
+        require(masterAddress == address(0), "Master address already set");
         masterAddress = msg.sender;
         IMaster masterInstance = IMaster(masterAddress);
-        tokenController = ITokenController(masterInstance.getLatestAddress("TC"));
+        tokenController = ITokenController(
+            masterInstance.getLatestAddress("TC")
+        );
         governance = IGovernance(masterInstance.getLatestAddress("GV"));
     }
 
@@ -72,7 +79,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
      * @param _firstAB is the address of the first AB member
      */
     function memberRolesInitiate(address _firstAB) public {
-        require(!constructorCheck);
+        require(!constructorCheck, "Already constructed");
         _addInitialMemberRoles(_firstAB);
         constructorCheck = true;
     }
@@ -104,7 +111,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     }
 
     /**
-     * @dev is used to add initital advisory board members
+     * @dev is used to add initial advisory board members
      * @param abArray is the list of initial advisory board members
      */
     function addInitialABandDRMembers(
@@ -261,8 +268,14 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
                 "already active"
             );
 
-            if(_roleId == uint256(Role.AdvisoryBoard) || _roleId == uint256(Role.DisputeResolution)) {
-                require(governance.delegatedTo(_memberAddress) == address(0));
+            if (
+                _roleId == uint256(Role.AdvisoryBoard) ||
+                _roleId == uint256(Role.DisputeResolution)
+            ) {
+                require(
+                    governance.delegatedTo(_memberAddress) == address(0),
+                    "Member delegated"
+                );
             }
 
             memberRoleData[_roleId].memberCounter = SafeMath.add(

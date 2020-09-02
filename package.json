@@ -22,6 +22,7 @@
     "ethereumjs-abi": "^0.6.8",
     "ganache-cli": "^6.9.0",
     "pify": "^5.0.0",
+    "solhint": "^3.2.0",
     "solidity-coverage": "^0.7.1",
     "truffle": "^5.1.18",
     "web3": "^0.20.4"
