@@ -88,7 +88,6 @@ contract PlotusToken is ERC20 {
     function transfer(address to, uint256 value) public returns (bool) {
 
         require(lockedForGV[msg.sender] < now); // if not voted under governance
-        // require(value <= _balances[msg.sender]);
         _transfer(msg.sender, to, value); 
         return true;
     }
@@ -99,7 +98,6 @@ contract PlotusToken is ERC20 {
     * @param value The amount to be transferred.
     */
     function operatorTransfer(address from, uint256 value) public onlyOperator returns (bool) {
-        // require(value <= _balances[from]);
         _transfer(from, operator, value);
         return true;
     }

@@ -116,10 +116,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       marketConfig = IConfig(_generateProxy(_marketConfig));
       marketConfig.initialize(_configParams);
       plotusToken.approve(address(governance), ~uint256(0));
-      // marketConfig.setAuthorizedAddres();
       // provable_setProof(proofType_Android | proofType_Ledger);
-      // marketOpenIndex = 1;
-      
     }
 
     /**
@@ -251,7 +248,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
-      // _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, _gasLimit, _previousMarket, _marketStartTime, _marketTypeData.predictionTime);
     }
 
     function _calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) internal returns(address _previousMarket, uint256 _marketStartTime, uint256 predictionTime, uint256 _optionRangePerc) {
@@ -295,7 +291,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
         IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
       }
       _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1], marketOracleId[myid].startTime);
-      // addNewMarkets(marketOracleId[myid], parseInt(result));
       delete marketOracleId[myid];
     }
 
@@ -326,8 +321,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param _user The address who raises the dispute.
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public OnlyMarket {
-      // lockedForDispute[msg.sender] = true;
-      // require(disputeStakes[msg.sender].staker == address(0));
       disputeStakes[msg.sender] = DisputeStake(_user, _stakeForDispute, governance.getProposalLength(), _ethSentToPool, _tokenSentToPool, true);
       disputeStakes[msg.sender].proposalId = governance.getProposalLength();
       disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
@@ -344,7 +337,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       _transferAsset(address(plotusToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
       IMarket(_marketAddress).resolveDispute(true, _result);
       _transferAsset(address(plotusToken), address(uint160(disputeStakes[_marketAddress].staker)), disputeStakes[_marketAddress].stakeAmount);
-      // plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
     }
 
@@ -374,23 +366,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param closeValue The closing value of the market currency.
     */
     function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue) external OnlyMarket {
-      // if (marketOpenIndex < marketIndex[msg.sender]) {
-      //   uint256 i;
-      //   uint256 _status;
-      //   for(i = marketOpenIndex;i < markets.length;i++){
-      //     //Convert to payable address
-      //     ( , , , , , , , _status) = getMarketDetails(markets[i]);
-      //     if(_status == uint256(Market.PredictionStatus.Started)) {
-      //       marketOpenIndex = i;
-      //       break;
-      //     }
-      //   }
-      //   if(i == markets.length) {
-      //     marketOpenIndex = i-1;
-      //   }
-      // } else {
-      //   marketOpenIndex = marketIndex[msg.sender];
-      // }
       marketWinningOption[msg.sender] = winningOption;
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue);
     }
@@ -422,8 +397,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param incentiveTokens The incentive tokens of user.
     */
     function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint[] calldata incentives, address[] calldata incentiveTokens) external OnlyMarket {
-      // rewardClaimed[_user] = rewardClaimed[_user].add(_reward).add(_stake);
-      // emit Claimed(msg.sender, _user, _reward, _stake, _ploIncentive);
       emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveTokens);
     }
 
@@ -443,7 +416,6 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     function getMarketDetails(address _marketAdd)public view returns
     (bytes32 _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
       uint256[] memory optionprice,uint256[] memory _ethStaked, uint256[] memory _plotStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
-      // Market _market = Market(_marketAdd);
       return IMarket(_marketAdd).getData();
     }
 
@@ -454,10 +426,9 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @param toIndex The index to query the details to
     * @return _market address[] memory representing the address of the market.
     * @return _winnigOption uint256[] memory representing the winning option range of the market.
-    * @return _reward uint256[] memory representing the reward of the market.
     */
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
-    (address[] memory _market, uint256[] memory _winnigOption, uint256[] memory _reward){
+    (address[] memory _market, uint256[] memory _winnigOption){
       if(marketsParticipated[user].length > 0 && fromIndex < marketsParticipated[user].length) {
         uint256 _toIndex = toIndex;
         if(_toIndex >= marketsParticipated[user].length) {
@@ -465,12 +436,9 @@ contract Plotus is usingProvable, Governed, Iupgradable {
         }
         _market = new address[](_toIndex.sub(fromIndex).add(1));
         _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
-        _reward = new uint256[](_toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i <= _toIndex; i++) {
-          // Market _marketInstance = Market(marketsParticipated[user][i]);
           _market[i] = marketsParticipated[user][i];
           _winnigOption[i] = marketWinningOption[marketsParticipated[user][i]];
-          // (_reward[i], ) = _marketInstance.getReturn(user);
         }
       }
     }

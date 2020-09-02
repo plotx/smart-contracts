@@ -116,11 +116,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             "Already initialized!"
         );
 
-        // require(maxABCount >=
-        //     SafeMath.add(numberOfMembers(uint(Role.AdvisoryBoard)), abArray.length)
-        // );
-        // //AB count can't exceed maxABCount
-
         for (uint256 i = 0; i < abArray.length; i++) {
             require(
                 checkRole(abArray[i], uint256(Role.TokenHolder)),
@@ -165,19 +160,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         view
         returns (uint256, address[] memory memberArray)
     {
-        //solhint-disable-line
-        // uint length = memberRoleData[_memberRoleId].memberAddress.length;
-        // uint i;
-        // uint j = 0;
-        // memberArray = new address[](memberRoleData[_memberRoleId].memberCounter);
-        // for (i = 0; i < length; i++) {
-        //     address member = memberRoleData[_memberRoleId].memberAddress[i];
-        //     if (memberRoleData[_memberRoleId].memberIndex[member] > 0) { //solhint-disable-line
-        //         memberArray[j] = member;
-        //         j++;
-        //     }
-        // }
-
         return (_memberRoleId, memberRoleData[_memberRoleId].memberAddress);
     }
 
@@ -351,7 +333,5 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         );
         _updateRole(_firstAB, uint256(Role.AdvisoryBoard), true);
         _updateRole(_firstAB, uint256(Role.DisputeResolution), true);
-        // _updateRole(_firstAB, uint(Role.Owner), true);
-        // _updateRole(_firstAB, uint(Role.Member), true);
     }
 }

@@ -1257,9 +1257,6 @@ contract Governance is IGovernance, Iupgradable {
      * @param category of proposal in concern
      */
     function _closeVote(uint256 _proposalId, uint256 category) internal {
-        // uint isSpecialResolution;
-        // uint abMaj;
-        // (, abMaj, isSpecialResolution) = proposalCategory.categoryExtendedData(category);
         uint256 majorityVote;
         uint256 mrSequence;
         (, mrSequence, majorityVote, , , , ) = proposalCategory.category(

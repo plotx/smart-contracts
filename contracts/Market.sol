@@ -70,7 +70,6 @@ contract Market is usingProvable {
       uint predictionPoints;
       mapping(address => uint256) assetStaked;
       mapping(address => uint256) assetLeveraged;
-      // address[] stakers;
     }
 
     mapping(address => uint256) incentiveToDistribute;
@@ -186,7 +185,6 @@ contract Market is usingProvable {
     * @return The prediction points.
     */
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
-      // uint value;
       uint optionPrice;
       uint flag = 0;
       (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
@@ -196,22 +194,15 @@ contract Market is usingProvable {
                                     (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[token], _tokenPrice, _decimals)));
       _predictionValue = 0;
 
+      // Step price with step limit as `_priceStep`
       while(_stake > 0) {
         if(_stake <= (_priceStep)) {
-          // value = (uint(_stake)).mul(_positionDecimals);
           optionPrice = _calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption.add(flag.mul(_priceStep)));
-          // value = value.mul(_leverage).div(optionPrice);
-          // value = value.mul(2500).div(1e18);
-          // value = value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
           _predictionValue = _predictionValue.add(_calculatePredictionPoints(_stake.mul(_positionDecimals), optionPrice, _leverage));
           break;
         } else {
           _stake = _stake.sub(_priceStep);
-          // value = (uint(_priceStep)).mul(_positionDecimals);
           optionPrice = _calculateOptionPrice(_prediction, _totalStaked, _assetStakedOnOption.add(flag.mul(_priceStep)));
-          // value = value.mul(_leverage).div(optionPrice);
-          // _calculatePredictionPoints(value, optionPrice, _leverage);
-          // value = value.mul(sqrt(value.mul(100))).mul(_leverage*100000).div(optionPrice.mul(1250000));
           _predictionValue = _predictionValue.add(_calculatePredictionPoints(_priceStep.mul(_positionDecimals), optionPrice, _leverage));
           _totalStaked = _totalStaked.add(_priceStep);
           flag++;
@@ -267,7 +258,6 @@ contract Market is usingProvable {
     * @return Price of the option.
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
-      // (, , , , , , ) = marketConfig.getBasicMarketDetails();
       (uint _price, uint _decimals) = marketConfig.getAssetPriceInETH(token);
 
      return _calculateOptionPrice(
@@ -436,20 +426,12 @@ contract Market is usingProvable {
       if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
         return predictionPoints;
       }
-      // _stakedBalance = _stakedBalance.sub(stakedTokenApplied[msg.sender]);
-      // uint _stakedTokenRatio = _stakedBalance.div(_predictionValueInToken);
-      // if(_stakedTokenRatio > _minMultiplierRatio) {
       uint _muliplier = 100;
       if(_stakedBalance.div(_predictionValueInToken) > 0) {
         _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
         multiplierApplied[msg.sender] = true;
       }
-        // _stakedTokenRatio = _stakedTokenRatio.mul(10);
       predictionPoints = predictionPoints.mul(_muliplier).div(100);
-      // }
-      // if(_stakedTokenRatio > 0) {
-      //   stakedTokenApplied[msg.sender] = stakedTokenApplied[msg.sender].add(_predictionStake.mul(_stakeRatio));
-      // }
       return predictionPoints;
     }
 
@@ -692,9 +674,6 @@ contract Market is usingProvable {
       if(userClaimedReward[_user]) {
         return 1;
       }
-      // require(now > marketCoolDownTime && !lockedForDispute);
-      // require(!userClaimedReward[_user],"Already claimed");
-      // require(marketStatus() == PredictionStatus.Settled,"Result not declared");
       if(!commissionExchanged) {
         _exchangeCommission();
       }

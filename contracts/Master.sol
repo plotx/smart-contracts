@@ -12,7 +12,6 @@ contract Master is Governed {
     bytes2[] public allContractNames;
     address public dAppToken;
     address public dAppLocker;
-    // address public bLOT;
     bool public masterInitialised;
 
     mapping(address => bool) public contractsActive;
@@ -50,14 +49,12 @@ contract Master is Governed {
         contractsActive[address(this)] = true;
         dAppToken = _token;
         dAppLocker = _token;
-        // bLOT = _bLot;
         for (uint i = 0; i < allContractNames.length; i++) {
             _generateProxy(allContractNames[i], _implementations[i]);
         }
 
         _setMasterAddress();
 
-        // _generateProxy(_plotusImplementation);
         IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token, _configParams);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
