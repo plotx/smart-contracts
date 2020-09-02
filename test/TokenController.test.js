@@ -13,9 +13,8 @@ const { assert } = require("chai");
 contract("TokenController", ([owner, account2, account3]) => {
 	let plotusToken, tokenController, uniswapRouter;
 
-	const lockReason1 = web3.utils.fromAscii("VEST");
-	const lockReason2 = web3.utils.fromAscii("DR");
-	const lockReason3 = web3.utils.fromAscii("SM");
+	const lockReason1 = web3.utils.fromAscii("DR");
+	const lockReason2 = web3.utils.fromAscii("SM");
 	const lockedAmount = 200;
 	const lockPeriod = 1000;
 	const thirtyDayPeriod = 30 * 24 * 60 * 60;
@@ -26,8 +25,8 @@ contract("TokenController", ([owner, account2, account3]) => {
 
 	before(async () => {
 		// masterInstance = await Master.deployed();
-      	masterInstance = await OwnedUpgradeabilityProxy.deployed();
-      	masterInstance = await Master.at(masterInstance.address);
+		masterInstance = await OwnedUpgradeabilityProxy.deployed();
+		masterInstance = await Master.at(masterInstance.address);
 		const tc = await masterInstance.getLatestAddress("0x5443");
 		tokenController = await TokenController.at(tc);
 		plotusToken = await tokenController.token();
@@ -48,9 +47,9 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 	});
 
-	describe("Swap BLOT functionality", () => {
-		it("Should be able to swap BLOT");
-	});
+	// describe("Swap BLOT functionality", () => {
+	// 	it("Should be able to swap BLOT");
+	// });
 
 	// describe("Uint Parameter functionality", () => {
 	// 	// let uintParameters = await tokenController.getUintParameters(web3.utils.fromAscii("SMLP"));
@@ -80,9 +79,8 @@ contract("TokenController", ([owner, account2, account3]) => {
 			uniswapRouter = await MockUniswapRouter.deployed();
 			await plotusToken.burnTokens(uniswapRouter.address, await plotusToken.balanceOf(uniswapRouter.address), { from: owner });
 			await plotusToken.mint(owner, 2000, { from: owner });
-			console.log(web3.utils.fromWei(await tokenController.totalSupply()));
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), 2000);
-			assert.equal((await tokenController.totalSupply()).toNumber(), 2000);
+			assert.equal(parseInt(web3.utils.fromWei(await tokenController.totalSupply())), 1e4);
 			await plotusToken.changeOperator(tokenController.address);
 			assert.equal(await plotusToken.operator(), tokenController.address);
 		});
@@ -92,7 +90,7 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should revert locking tokens with unspecified reason or time", async () => {
-			await assertRevert(tokenController.lock(lockReason3, lockedAmount, lockPeriod));
+			await assertRevert(tokenController.lock(lockReason2, lockedAmount, lockPeriod));
 			const unspecifiedReason = web3.utils.fromAscii("TRY");
 			await assertRevert(tokenController.lock(unspecifiedReason, lockedAmount, lockPeriod));
 		});
@@ -179,10 +177,12 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should allow to lock token again", async () => {
-			await tokenController.lock(lockReason2, 1, 0);
+			const lockStruct = await tokenController.locked(owner, lockReason1);
+			await time.increaseTo(lockStruct.validity.toNumber() + 1);
 			await tokenController.unlock(owner);
-			await tokenController.lock(lockReason2, 1, 0);
+			await tokenController.lock(lockReason1, 1, 0);
 			await tokenController.unlock(owner);
+			await tokenController.lock(lockReason1, lockedAmount, lockPeriod);
 		});
 	});
 
@@ -248,54 +248,54 @@ contract("TokenController", ([owner, account2, account3]) => {
 			assert.equal(totalBalance, (await tokenController.totalBalanceOf(owner)).toNumber());
 		});
 
-		it("Should be able to lock for reason 1", async () => {
+		// it("Should be able to lock for reason 1", async () => {
+		// 	await tokenController.lock(lockReason2, lockedAmount, lockPeriod);
+		// 	assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount);
+		// 	assert.equal((await tokenController.tokensLocked(owner, lockReason2)).toNumber(), lockedAmount);
+		// });
+		it("Should be able to lock for reason 2", async () => {
 			await tokenController.lock(lockReason1, lockedAmount, lockPeriod);
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount);
 			assert.equal((await tokenController.tokensLocked(owner, lockReason1)).toNumber(), lockedAmount);
 		});
-		it("Should be able to lock for reason 2", async () => {
-			await tokenController.lock(lockReason2, lockedAmount, lockPeriod);
+		it("Should be able to lock for reason 3", async () => {
+			await assertRevert(tokenController.lock(lockReason2, lockedAmount, lockPeriod));
+			await tokenController.lock(lockReason2, lockedAmount, thirtyDayPeriod);
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 2);
 			assert.equal((await tokenController.tokensLocked(owner, lockReason2)).toNumber(), lockedAmount);
-		});
-		it("Should be able to lock for reason 3", async () => {
-			await assertRevert(tokenController.lock(lockReason3, lockedAmount, lockPeriod));
-			await tokenController.lock(lockReason3, lockedAmount, thirtyDayPeriod);
-			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 3);
-			assert.equal((await tokenController.tokensLocked(owner, lockReason3)).toNumber(), lockedAmount);
 		});
 		it("Should show correct result for all lock related functions", async () => {
 			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), 0);
 			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), 0);
+			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), 0);
 			assert.equal((await tokenController.tokensUnlockable(owner, lockReason2)).toNumber(), 0);
-			assert.equal((await tokenController.tokensUnlockable(owner, lockReason3)).toNumber(), 0);
-			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 3);
+			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 2);
 			assert.equal((await tokenController.totalBalanceOf(owner)).toNumber(), totalBalance);
 			await tokenController.unlock(owner);
-			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 3);
+			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 2);
 		});
 
 		it("Increasing time by loadPeriod should unlock Unlockable tokens", async () => {
 			await time.increase(lockPeriod);
-			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), lockedAmount * 2);
+			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), lockedAmount * 1);
 			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), lockedAmount);
-			assert.equal((await tokenController.tokensUnlockable(owner, lockReason2)).toNumber(), lockedAmount);
-			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 3);
+			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), lockedAmount);
+			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount * 2);
 			await tokenController.unlock(owner);
 			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), 0);
 			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), 0);
-			assert.equal((await tokenController.tokensUnlockable(owner, lockReason2)).toNumber(), 0);
+			assert.equal((await tokenController.tokensUnlockable(owner, lockReason1)).toNumber(), 0);
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount);
 		});
 
 		it("Increasing time by 30 days should unlock the lock with reason 3", async () => {
 			await time.increase(thirtyDayPeriod);
 			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), lockedAmount);
-			assert.equal((await tokenController.tokensUnlockable(owner, lockReason3)).toNumber(), lockedAmount);
+			assert.equal((await tokenController.tokensUnlockable(owner, lockReason2)).toNumber(), lockedAmount);
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance - lockedAmount);
 			await tokenController.unlock(owner);
 			assert.equal((await tokenController.getUnlockableTokens(owner)).toNumber(), 0);
-			assert.equal((await tokenController.tokensUnlockable(owner, lockReason3)).toNumber(), 0);
+			assert.equal((await tokenController.tokensUnlockable(owner, lockReason2)).toNumber(), 0);
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), totalBalance);
 		});
 	});
@@ -324,15 +324,15 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should NOT be able to extend lock for lockReason3 by any period other than 30 days", async () => {
-			await tokenController.lock(lockReason3, lockedAmount, thirtyDayPeriod);
-			await assertRevert(tokenController.extendLock(lockReason3, lockPeriod));
-			await tokenController.extendLock(lockReason3, thirtyDayPeriod);
+			await tokenController.lock(lockReason2, lockedAmount, thirtyDayPeriod);
+			await assertRevert(tokenController.extendLock(lockReason2, lockPeriod));
+			await tokenController.extendLock(lockReason2, thirtyDayPeriod);
 			await time.increase(thirtyDayPeriod * 2 + 1);
 			await tokenController.unlock(owner)
 		});
 
 		it("Should NOT be able to extend lock if NOT locked for the reason", async () => {
-			await expectRevert(tokenController.extendLock(lockReason2, lockPeriod), NOT_LOCKED);
+			await expectRevert(tokenController.extendLock(lockReason1, lockPeriod), NOT_LOCKED);
 		});
 
 		it("Should revert when try to extend lock with unspecified reason", async () => {
@@ -364,16 +364,13 @@ contract("TokenController", ([owner, account2, account3]) => {
 			// assert.equal(receipt.logs[0].args.value.toNumber(), lockedAmount);
 			assert.equal(receipt.logs[0].event, "Locked");
 			assert.equal(receipt.logs[0].args._of, owner);
-			assert.equal(
-				web3.utils.toAscii(receipt.logs[0].args._reason).replace(/\0/g, ""),
-				web3.utils.toAscii(lockReason1)
-			);
+			assert.equal(web3.utils.toAscii(receipt.logs[0].args._reason).replace(/\0/g, ""), web3.utils.toAscii(lockReason1));
 			assert.equal(receipt.logs[0].args._amount.toNumber(), 2 * lockedAmount);
 			assert(receipt.logs[0].args._validity.toNumber() === lockValidityOrig.validity.toNumber());
 		});
 
 		it("Should revert if NO tokens locked for the reason", async () => {
-			await expectRevert(tokenController.increaseLockAmount(lockReason2, lockPeriod), NOT_LOCKED);
+			await expectRevert(tokenController.increaseLockAmount(lockReason2, thirtyDayPeriod), NOT_LOCKED);
 		});
 
 		it("Should revert when increasing lock time with unspecified reason", async () => {
@@ -382,28 +379,26 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should not allow to increase lock amount by more than balance", async () => {
-			await assertRevert(
-				tokenController.increaseLockAmount(lockReason1, (await plotusToken.balanceOf(owner)).toNumber() + 1)
-			);
+			await assertRevert(tokenController.increaseLockAmount(lockReason1, (await plotusToken.balanceOf(owner)).toNumber() + 1));
 		});
 
 		it("Should revert when increase lock amount by 0 amount", async () => {
 			await assertRevert(tokenController.increaseLockAmount(lockReason1, 0));
 		});
 		it("Should increaseLockAmount and time for reason3", async () => {
-			await tokenController.lock(lockReason3, lockedAmount, thirtyDayPeriod, { from: account2 });
-			let oldStatus = await tokenController.locked(account2, lockReason3);
-			await tokenController.increaseLockAmount(lockReason3, 1, { from: account2 });
-			let newStatus = await tokenController.locked(account2, lockReason3);
+			await tokenController.lock(lockReason2, lockedAmount, thirtyDayPeriod, { from: account2 });
+			let oldStatus = await tokenController.locked(account2, lockReason2);
+			await tokenController.increaseLockAmount(lockReason2, 1, { from: account2 });
+			let newStatus = await tokenController.locked(account2, lockReason2);
 			assert.equal(parseFloat(newStatus.amount), lockedAmount + 1);
 			assert.equal(parseFloat(newStatus.validity)-parseFloat(oldStatus.validity), thirtyDayPeriod);
 			await time.increase(thirtyDayPeriod * 2 + 5);
 			await tokenController.unlock(account2, { from: account2 });
 		});
 		it("Should increaseLockAmount and time for reason2", async () => {
-			await tokenController.lock(lockReason2, lockedAmount, lockPeriod, { from: account2 });
-			await tokenController.increaseLockAmount(lockReason2, 1, { from: account2 });
-			let newStatus = await tokenController.locked(account2, lockReason2);
+			await tokenController.lock(lockReason1, lockedAmount, lockPeriod, { from: account2 });
+			await tokenController.increaseLockAmount(lockReason1, 1, { from: account2 });
+			let newStatus = await tokenController.locked(account2, lockReason1);
 			assert.equal(parseFloat(newStatus.amount), lockedAmount + 1);
 			await time.increase(lockPeriod + 5);
 			await tokenController.unlock(account2, { from: account2 });
@@ -426,10 +421,7 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should revert transfer with lock of 0 amount", async () => {
-			await expectRevert(
-				tokenController.transferWithLock(account2, lockReason1, 0, lockPeriod, { from: owner }),
-				AMOUNT_ZERO
-			);
+			await expectRevert(tokenController.transferWithLock(account2, lockReason1, 0, lockPeriod, { from: owner }), AMOUNT_ZERO);
 		});
 
 		it("Should be able to transfer with lock", async () => {
@@ -443,10 +435,7 @@ contract("TokenController", ([owner, account2, account3]) => {
 			receipt = await tokenController.transferWithLock(account2, lockReason1, lockedAmount, lockPeriod, {
 				from: owner,
 			});
-			await expectRevert(
-				tokenController.transferWithLock(account2, lockReason1, account2Balance, lockPeriod, { from: owner }),
-				ALREADY_LOCKED
-			);
+			await expectRevert(tokenController.transferWithLock(account2, lockReason1, account2Balance, lockPeriod, { from: owner }), ALREADY_LOCKED);
 			const tokensLocked = await tokenController.tokensLocked(account2, lockReason1);
 			assert.equal((await tokenController.totalBalanceOf(account2)).toNumber(), account2Balance + lockedAmount);
 			assert.equal((await tokenController.totalBalanceOf(owner)).toNumber(), ownerBalance - lockedAmount);
@@ -459,10 +448,7 @@ contract("TokenController", ([owner, account2, account3]) => {
 			// assert.equal(receipt.logs[0].args.value.toNumber(), lockedAmount);
 			assert.equal(receipt.logs[0].event, "Locked");
 			assert.equal(receipt.logs[0].args._of, account2);
-			assert.equal(
-				web3.utils.toAscii(receipt.logs[0].args._reason).replace(/\0/g, ""),
-				web3.utils.toAscii(lockReason1)
-			);
+			assert.equal(web3.utils.toAscii(receipt.logs[0].args._reason).replace(/\0/g, ""), web3.utils.toAscii(lockReason1));
 			assert.equal(receipt.logs[0].args._amount.toNumber(), lockedAmount);
 			assert(receipt.logs[0].args._validity.toNumber() >= latestTime.toNumber() + lockPeriod);
 		});
@@ -495,19 +481,17 @@ contract("TokenController", ([owner, account2, account3]) => {
 		});
 
 		it("Should be able to transfer with lock if locked for reason2 and reason3", async() => {
-			await tokenController.transferWithLock(account2, lockReason2, lockedAmount, lockPeriod, { from: owner });
-			await assertRevert(tokenController.transferWithLock(account2, lockReason3, lockedAmount, lockPeriod, { from: owner }));
-			await tokenController.transferWithLock(account2, lockReason3, lockedAmount, thirtyDayPeriod, { from: owner });
 			await tokenController.transferWithLock(account2, lockReason1, lockedAmount, lockPeriod, { from: owner });
+			await assertRevert(tokenController.transferWithLock(account2, lockReason2, lockedAmount, lockPeriod, { from: owner }));
+			await tokenController.transferWithLock(account2, lockReason2, lockedAmount, thirtyDayPeriod, { from: owner });
 			await time.increase(thirtyDayPeriod+1)
 			await tokenController.unlock(account2);
 		})
 	});
-	describe("Burn Commission tokens", () => {
-		it("Burn commission tokens", async () => {
-			const totalSupply = (await plotusToken.totalSupply()).toNumber();
-			const receipt = await tokenController.burnCommissionTokens.call(10);
-			assert.equal(receipt, false);
-		});
-	});
+	// describe("Burn Commission tokens", () => {
+	// 	it("Burn commission tokens", async () => {
+	// 		const receipt = await tokenController.burnCommissionTokens.call(10);
+	// 		assert.equal(receipt, false);
+	// 	});
+	// });
 });
