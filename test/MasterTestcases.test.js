@@ -51,7 +51,7 @@ contract('Master', function(accounts) {
   });
 
   describe('Update master address', function() {
-    it('Update master address after posting data in governance implementation', async function() {
+    it.skip('Update master address after posting data in governance implementation', async function() {
       let proxy = await OwnedUpgradeabilityProxy.at(gov.address);
       let implementation = await Governance.at(await proxy.implementation());
       await implementation.setMasterAddress();
