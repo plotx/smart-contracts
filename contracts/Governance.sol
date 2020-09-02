@@ -35,7 +35,6 @@ contract Governance is IGovernance, Iupgradable {
         VotingStarted,
         Accepted,
         Rejected,
-        Majority_Not_Reached_But_Accepted,
         Denied
     }
 
@@ -912,7 +911,11 @@ contract Governance is IGovernance, Iupgradable {
             _proposalDescHash
         );
 
-        if (_categoryId > 0) _categorizeProposal(_proposalId, _categoryId, 0);
+        if (_categoryId > 0) {
+            (, , , uint defaultIncentive, ) = proposalCategory
+            .categoryActionDetails(_categoryId);
+            _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
+        }
     }
 
     /**
