@@ -9,6 +9,8 @@ contract DummyTokenMock is ERC20 {
     string public symbol;
     uint8 public decimals = 18;
 
+    mapping(address=>bool) _dummyBit;
+
     constructor(string memory tokenName, string memory tokenSymbol) public {
     	name = tokenName;
     	symbol = tokenSymbol;
@@ -87,6 +89,14 @@ contract DummyTokenMock is ERC20 {
     function mint(address account, uint256 amount) public returns(bool) {
         _mint(account, amount);
         return true;
+    }
+
+    function isLockedForGV(address _of) public view returns(bool) {
+        return _dummyBit[_of];
+    }
+
+    function setDummyBit(address _of, bool _val) public {
+        _dummyBit[_of] = _val;
     }
     
 }
