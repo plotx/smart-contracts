@@ -8,7 +8,7 @@ import "../external/proxy/OwnedUpgradeabilityProxy.sol";
 import "../interfaces/IChainLinkOracle.sol";
 import "../interfaces/IToken.sol";
 
-contract MarketConfig {
+contract MarketUtility {
 
     using SafeMath for uint;
     using FixedPoint for *;

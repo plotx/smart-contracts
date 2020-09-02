@@ -4,7 +4,7 @@ const MemberRoles = artifacts.require('MemberRoles');
 const Master = artifacts.require('Master');
 const TokenController = artifacts.require('TokenController');
 const Plotus = artifacts.require("Plotus");
-const MarketConfig = artifacts.require('MarketConfig');
+const MarketConfig = artifacts.require('MarketUtility');
 const PlotusToken = artifacts.require("MockPLOT");
 const Market = artifacts.require('MockMarket');
 const DummyMockMarket = artifacts.require('DummyMockMarket');
@@ -45,7 +45,7 @@ contract('Configure Global Parameters', accounts => {
       mr = await MemberRoles.at(address);
       tc = await TokenController.at(await ms.getLatestAddress('0x5443'));
       pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
-      marketConfig = await MarketConfig.at(await pl.marketConfig());
+      marketConfig = await MarketConfig.at(await pl.marketUtility());
       plotTok = await PlotusToken.deployed();
       await pl.sendTransaction({from: ab1, value: toWei(100)});
       await plotTok.transfer(pl.address, toWei(20));
@@ -60,7 +60,7 @@ contract('Configure Global Parameters', accounts => {
         params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
         params.push(plotTok.address);
         params.push((await marketConfig.getFeedAddresses())[1]);
-        let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketConfig());
+        let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         oldImplementation = await oldImplementation.implementation();
         let actionHash = encode(
           'upgradeContractImplementation(address,address)',
@@ -75,7 +75,7 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketConfig());
+        let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         assert.equal(await proxyCon.implementation(), oldImplementation);
       });
 
@@ -99,7 +99,7 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketConfig());
+        let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         assert.equal(await proxyCon.implementation(), newMarketConfig.address);
       });
 

@@ -8,7 +8,7 @@ import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
-import "./interfaces/IConfig.sol";
+import "./interfaces/IMarketUtility.sol";
 
 contract Plotus is usingProvable, Governed, Iupgradable {
 
@@ -70,7 +70,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     bool public marketCreationPaused;
 
     IToken public plotusToken;
-    IConfig public marketConfig;
+    IMarketUtility public marketUtility;
     IGovernance internal governance;
     IMaster ms;
 
@@ -104,17 +104,17 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     /**
     * @dev Initialize the Plotus.
     * @param _marketImplementation The address of market implementation.
-    * @param _marketConfig The address of market config.
+    * @param _marketUtility The address of market config.
     * @param _plotusToken The instance of plotus token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketConfig, address _plotusToken, address payable[] memory _configParams) public {
+    function initiatePlotus(address _marketImplementation, address _marketUtility, address _plotusToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketImplementation = _marketImplementation;
       plotusToken = IToken(_plotusToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
-      marketConfig = IConfig(_generateProxy(_marketConfig));
-      marketConfig.initialize(_configParams);
+      marketUtility = IMarketUtility(_generateProxy(_marketUtility));
+      marketUtility.initialize(_configParams);
       plotusToken.approve(address(governance), ~uint256(0));
       // provable_setProof(proofType_Android | proofType_Ledger);
     }
@@ -227,7 +227,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       } else {
         _feedAddress = address(plotusToken);
       }
-      marketConfig.update(_feedAddress);
+      marketUtility.update(_feedAddress);
       address payable _market = _generateProxy(marketImplementation);
       isMarket[_market] = true;
       markets.push(_market);
@@ -244,7 +244,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     */
     function createMarketFallback(uint256 _marketType, uint256 _marketCurrencyIndex) external payable{
       (, uint _marketStartTime, , uint256 _optionRangePerc) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
-      uint currentPrice = marketConfig.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
+      uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
       uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
@@ -531,11 +531,11 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     }
 
     function updateConfigUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      marketConfig.updateUintParameters(code, value);
+      marketUtility.updateUintParameters(code, value);
     }
 
     function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
-      marketConfig.updateAddressParameters(code, value);
+      marketUtility.updateAddressParameters(code, value);
     }
 
 }

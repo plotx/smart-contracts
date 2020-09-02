@@ -4,7 +4,7 @@ const MemberRoles = artifacts.require('MemberRoles');
 const Master = artifacts.require('Master');
 const TokenController = artifacts.require('TokenController');
 const Plotus = artifacts.require("Plotus");
-const MarketConfig = artifacts.require('MarketConfig');
+const MarketConfig = artifacts.require('MarketUtility');
 const PlotusToken = artifacts.require("MockPLOT");
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const MockchainLink = artifacts.require('MockChainLinkAggregator');
@@ -46,7 +46,7 @@ contract('Configure Global Parameters', accounts => {
       mr = await MemberRoles.at(address);
       tc = await TokenController.at(await ms.getLatestAddress('0x5443'));
       pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
-      marketConfig = await MarketConfig.at(await pl.marketConfig());
+      marketConfig = await MarketConfig.at(await pl.marketUtility());
       plotTok = await PlotusToken.deployed();
       feedInstance = await MockchainLink.deployed()
 

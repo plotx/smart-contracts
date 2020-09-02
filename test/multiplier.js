@@ -161,7 +161,7 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
-			marketConfig = await plotusNewInstance.marketConfig();
+			marketConfig = await plotusNewInstance.marketUtility();
 			marketConfig = await MarketConfig.at(marketConfig);
 
 			openMarkets = await plotusNewInstance.getOpenMarkets();
@@ -252,7 +252,7 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
-			marketConfig = await plotusNewInstance.marketConfig();
+			marketConfig = await plotusNewInstance.marketUtility();
 			marketConfig = await MarketConfig.at(marketConfig);
 
 			openMarkets = await plotusNewInstance.getOpenMarkets();

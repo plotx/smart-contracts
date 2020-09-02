@@ -40,7 +40,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
-			marketConfig = await plotusNewInstance.marketConfig();
+			marketConfig = await plotusNewInstance.marketUtility();
 			marketConfig = await MarketConfig.at(marketConfig);
 			// console.log(await plotusNewInstance.getOpenMarkets());
 			openMarkets = await plotusNewInstance.getOpenMarkets();

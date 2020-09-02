@@ -31,7 +31,7 @@ contract DummyMockMarket is Market {
 	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
       mockFlag = true;
       pl = IPlotus(msg.sender);
-      marketConfig = MarketConfig(pl.marketConfig());
+      marketUtility = MarketUtility(pl.marketUtility());
       tokenController = ITokenController(pl.tokenController());
       token = tokenController.token();
       startTime = _startTime;
@@ -41,7 +41,7 @@ contract DummyMockMarket is Market {
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;
-      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketConfig.getMarketInitialParams();
+      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketUtility.getMarketInitialParams();
 
       rate = _rate;
       predictionTime = _predictionTime; 
@@ -83,7 +83,7 @@ contract DummyMockMarket is Market {
     function exchangeCommission() external {
       uint256 _uniswapDeadline;
       uint256 _lotPurchasePerc;
-      (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
+      (_lotPurchasePerc, _uniswapDeadline) = marketUtility.getPurchasePercAndDeadline();
       if(commissionAmount[token] > 0){
         bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
         if(!burned) {
@@ -97,7 +97,7 @@ contract DummyMockMarket is Market {
         uint256 _tokenOutput;
         address[] memory path;
         address _router;
-        (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
+        (_router , path) = marketUtility.getETHtoTokenRouterAndPath();
         IUniswapV2Router02 router = IUniswapV2Router02(_router);
         uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
         _tokenOutput = output[1];

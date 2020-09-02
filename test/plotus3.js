@@ -36,7 +36,7 @@ contract("Market", async function ([
       web3.utils.toHex("PL")
     );
     plotusNewInstance = await Plotus.at(plotusNewAddress);
-    marketConfig = await plotusNewInstance.marketConfig();
+    marketConfig = await plotusNewInstance.marketUtility();
     marketConfig = await MarketConfig.at(marketConfig);
     // console.log(await plotusNewInstance.getOpenMarkets());
     openMarkets = await plotusNewInstance.getOpenMarkets();

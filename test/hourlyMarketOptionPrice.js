@@ -22,7 +22,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -99,7 +99,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -174,7 +174,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -264,7 +264,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -354,7 +354,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -444,7 +444,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -533,7 +533,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 
@@ -622,7 +622,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
-		let marketConfig = await plotusNewInstance.marketConfig();
+		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 

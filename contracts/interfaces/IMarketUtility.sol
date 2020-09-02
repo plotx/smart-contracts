@@ -1,5 +1,5 @@
 pragma solidity 0.5.7;
-contract IConfig {
+contract IMarketUtility {
 
     function initialize(address payable[] calldata _addressParams) external;
 

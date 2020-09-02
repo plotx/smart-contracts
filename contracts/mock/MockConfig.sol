@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "../config/MarketConfig.sol";
+import "../config/MarketUtility.sol";
 
-contract MockConfig is MarketConfig {
+contract MockConfig is MarketUtility {
 
 	uint public priceOfToken;
 

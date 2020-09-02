@@ -29,9 +29,9 @@ contract Master is Governed {
     * @dev Initialize the Master.
     * @param _implementations The address of market implementation.
     * @param _token The address of token.
-    * @param _marketConfig The addresses of market configs.
+    * @param _marketUtiliy The addresses of market utility.
     */
-    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _defaultbLOTMinter, address _marketConfig, address payable[] calldata _configParams, address _vesting) external {
+    function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _defaultbLOTMinter, address _marketUtiliy, address payable[] calldata _configParams, address _vesting) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(!masterInitialised);
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -55,7 +55,7 @@ contract Master is Governed {
 
         _setMasterAddress();
 
-        IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketConfig, _token, _configParams);
+        IPlotus(contractAddress["PL"]).initiatePlotus(_marketImplementation, _marketUtiliy, _token, _configParams);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
     }

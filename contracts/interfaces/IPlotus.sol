@@ -9,7 +9,7 @@ contract IPlotus {
     }
     address public owner;
     address public tokenController;
-    address public marketConfig;
+    address public marketUtility;
     bool public marketCreationPaused;
 
     mapping(address => bool) public isMarket;

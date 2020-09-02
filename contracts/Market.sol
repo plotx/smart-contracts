@@ -2,7 +2,7 @@ pragma solidity 0.5.7;
 
 import "./external/oraclize/ethereum-api/provableAPI.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./config/MarketConfig.sol";
+import "./config/MarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IPlotus.sol";
@@ -60,7 +60,7 @@ contract Market is usingProvable {
 
     IPlotus internal pl;
     ITokenController internal tokenController;
-    MarketConfig internal marketConfig;
+    MarketUtility internal marketUtility;
     address internal token;
     
     struct option
@@ -90,7 +90,7 @@ contract Market is usingProvable {
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       require(startTime == 0, "Already initialized");
       pl = IPlotus(msg.sender);
-      marketConfig = MarketConfig(pl.marketConfig());
+      marketUtility = MarketUtility(pl.marketUtility());
       tokenController = ITokenController(pl.tokenController());
       token = tokenController.token();
       startTime = _startTime;
@@ -99,7 +99,7 @@ contract Market is usingProvable {
       isChainlinkFeed = _isChainlinkFeed;
       uint _coolDownTime;
       uint _rate;
-      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketConfig.getMarketInitialParams();
+      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketUtility.getMarketInitialParams();
 
       rate = _rate;
       predictionTime = _predictionTime; 
@@ -134,7 +134,7 @@ contract Market is usingProvable {
     function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
       _optionPrice = 0;
       uint currentPriceOption = 0;
-      (uint stakeWeightage,uint stakeWeightageMinAmount, uint currentPrice, uint minTimeElapsedDivisor) = marketConfig.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
+      (uint stakeWeightage,uint stakeWeightageMinAmount, uint currentPrice, uint minTimeElapsedDivisor) = marketUtility.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
       uint predictionWeightage = 100 - stakeWeightage;
       uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
       if(now > expireTime) {
@@ -187,7 +187,7 @@ contract Market is usingProvable {
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint optionPrice;
       uint flag = 0;
-      (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+      (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(token);
       uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
       uint _assetStakedOnOption = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS]
                                   .add(
@@ -248,7 +248,7 @@ contract Market is usingProvable {
     * @return uint256 representing the prediction points.
     */
     function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
-      ( , , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      ( , , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
     }
 
@@ -258,7 +258,7 @@ contract Market is usingProvable {
     * @return Price of the option.
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
-      (uint _price, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(token);
 
      return _calculateOptionPrice(
                 _prediction,
@@ -292,7 +292,7 @@ contract Market is usingProvable {
         _optionPrice = new uint[](totalOptions);
         _ethStaked = new uint[](totalOptions);
         _plotStaked = new uint[](totalOptions);
-        (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
+        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(token);
         uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
         uint _assetStaked;
         for (uint i = 0; i < totalOptions; i++) {
@@ -352,9 +352,9 @@ contract Market is usingProvable {
 
       _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
       
-      uint256 _stakeValue = marketConfig.getAssetValueETH(_asset, _predictionStake);
+      uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
 
-      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketConfig.getBasicMarketDetails();
+      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
@@ -422,7 +422,7 @@ contract Market is usingProvable {
       uint _minPredictionForMultiplier;
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", now);
       uint _predictionValueInToken;
-      (_minPredictionForMultiplier, _predictionValueInToken) = marketConfig.getValueAndMultiplierParameters(_asset, _predictionStake);
+      (_minPredictionForMultiplier, _predictionValueInToken) = marketUtility.getValueAndMultiplierParameters(_asset, _predictionStake);
       if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
         return predictionPoints;
       }
@@ -452,7 +452,7 @@ contract Market is usingProvable {
         commissionExchanged = true;
         uint256 _uniswapDeadline;
         uint256 _lotPurchasePerc;
-        (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
+        (_lotPurchasePerc, _uniswapDeadline) = marketUtility.getPurchasePercAndDeadline();
         if(commissionAmount[token] > 0){
           bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
           if(!burned) {
@@ -466,7 +466,7 @@ contract Market is usingProvable {
           uint256 _tokenOutput;
           address[] memory path;
           address _router;
-          (_router , path) = marketConfig.getETHtoTokenRouterAndPath();
+          (_router , path) = marketUtility.getETHtoTokenRouterAndPath();
           IUniswapV2Router02 router = IUniswapV2Router02(_router);
           uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
           _tokenOutput = output[1];
@@ -479,7 +479,7 @@ contract Market is usingProvable {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
-      uint256 _value = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
+      uint256 _value = marketUtility.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
       _postResult(_value);
     }
 
@@ -491,7 +491,7 @@ contract Market is usingProvable {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
       require(marketStatus() == PredictionStatus.InSettlement || marketStatus() == PredictionStatus.InDispute);
-      ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      ( , uint lossPercentage, , ) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       marketCoolDownTime = (now).add(marketCoolDownTime);
       if(_value < optionsAvailable[2].minValue) {
@@ -534,7 +534,7 @@ contract Market is usingProvable {
     */
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
-      uint _stakeForDispute =  marketConfig.getDisputeResolutionParams();
+      uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       require(IToken(token).transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
       pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
@@ -619,7 +619,7 @@ contract Market is usingProvable {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint lossPercentage, , ) = marketConfig.getBasicMarketDetails();
+      ( , uint lossPercentage, , ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
@@ -698,7 +698,7 @@ contract Market is usingProvable {
     // function __callback(bytes32 myid, string memory result) public {
     //   require(msg.sender == provable_cbAddress());
     //   require ((myid==marketResultId));
-    //   uint _currentPrice = marketConfig.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
+    //   uint _currentPrice = marketUtility.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
     //   _postResult(_currentPrice);
     //   delete marketResultId;
     // }

@@ -52,7 +52,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		address = await nxms.getLatestAddress(toHex("PL"));
 		pl = await Plotus.at(address);
 		mockchainLinkInstance = await MockchainLink.deployed();
-		marketConfig = await pl.marketConfig();
+		marketConfig = await pl.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
@@ -292,7 +292,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		address = await nxms.getLatestAddress(toHex("PL"));
 		pl = await Plotus.at(address);
 		mockchainLinkInstance = await MockchainLink.deployed();
-		marketConfig = await pl.marketConfig();
+		marketConfig = await pl.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
