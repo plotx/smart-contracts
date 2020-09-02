@@ -468,6 +468,7 @@ contract Market is usingProvable {
     */
     function _exchangeCommission() internal {
       if(marketStatus() >= PredictionStatus.InSettlement) {
+        commissionExchanged = true;
         uint256 _uniswapDeadline;
         uint256 _lotPurchasePerc;
         (_lotPurchasePerc, _uniswapDeadline) = marketConfig.getPurchasePercAndDeadline();
@@ -490,7 +491,6 @@ contract Market is usingProvable {
           _tokenOutput = output[1];
           incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
         }
-        commissionExchanged = true;
       }
     }
 
@@ -684,11 +684,18 @@ contract Market is usingProvable {
     /**
     * @dev Claim the return amount of the specified address.
     * @param _user The address to query the claim return amount of.
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
     */
-    function claimReturn(address payable _user) public {
-      require(now > marketCoolDownTime && !lockedForDispute);
-      require(!userClaimedReward[_user],"Already claimed");
-      require(marketStatus() == PredictionStatus.Settled,"Result not declared");
+    function claimReturn(address payable _user) public returns(uint256) {
+      if(lockedForDispute || marketStatus() != PredictionStatus.Settled) {
+        return 0;
+      }
+      if(userClaimedReward[_user]) {
+        return 1;
+      }
+      // require(now > marketCoolDownTime && !lockedForDispute);
+      // require(!userClaimedReward[_user],"Already claimed");
+      // require(marketStatus() == PredictionStatus.Settled,"Result not declared");
       if(!commissionExchanged) {
         _exchangeCommission();
       }
@@ -701,6 +708,7 @@ contract Market is usingProvable {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);
       }
       pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
+      return 2;
     }
 
     // /**

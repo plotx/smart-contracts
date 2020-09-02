@@ -525,8 +525,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       uint lastClaimed = len;
       uint count;
       for(i = lastClaimedIndex[msg.sender]; i < len && count < maxRecords; i++) {
-        if(marketWinningOption[marketsParticipated[msg.sender][i]] > 0 && !(disputeStakes[marketsParticipated[msg.sender][i]].inDispute)) {
-          IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender);
+        if(IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender) > 0) {
           count++;
         } else {
           if(lastClaimed == len) {

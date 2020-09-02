@@ -63,7 +63,8 @@ contract IMarket {
     /**
     * @dev Claim the return amount of the specified address.
     * @param _user The address to query the claim return amount of.
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
     */
-    function claimReturn(address payable _user) public;
+    function claimReturn(address payable _user) public returns(uint256);
 
 }
