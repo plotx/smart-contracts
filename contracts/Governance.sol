@@ -465,7 +465,7 @@ contract Governance is IGovernance, Iupgradable {
                 (
                     allVotes[allVotesByMember[msg.sender][allVotesByMember[msg
                         .sender]
-                        .length - 1]]
+                        .length.sub(1)]]
                         .dateAdd
                 )
                     .add(tokenHoldingTime) < now
@@ -475,9 +475,9 @@ contract Governance is IGovernance, Iupgradable {
         require(isOpenForDelegation[_add]);
 
         allDelegation.push(DelegateVote(msg.sender, _add, now));
-        followerDelegation[msg.sender] = allDelegation.length - 1;
+        followerDelegation[msg.sender] = allDelegation.length.sub(1);
         followerIndex[msg.sender] = leaderDelegation[_add].length;
-        leaderDelegation[_add].push(allDelegation.length - 1);
+        leaderDelegation[_add].push(allDelegation.length.sub(1));
         followerCount[_add]++;
         lastRewardClaimed[msg.sender] = allVotesByMember[_add].length;
     }
@@ -963,7 +963,7 @@ contract Governance is IGovernance, Iupgradable {
         emit Solution(
             _proposalId,
             msg.sender,
-            allProposalSolutions[_proposalId].length - 1,
+            allProposalSolutions[_proposalId].length.sub(1),
             _solutionHash,
             now
         );
@@ -1108,8 +1108,7 @@ contract Governance is IGovernance, Iupgradable {
             .voteValue[_solution]
             .add(voteWeight);
         proposalVoteTally[_proposalId].voters =
-            proposalVoteTally[_proposalId].voters +
-            voters;
+            proposalVoteTally[_proposalId].voters.add(voters);
     }
 
     /**
@@ -1118,7 +1117,7 @@ contract Governance is IGovernance, Iupgradable {
      * @return the bool which tells if the time since last update has exceeded token holding time or not
      */
     function _checkLastUpd(uint256 _lastUpd) internal view returns (bool) {
-        return (now - _lastUpd) > tokenHoldingTime;
+        return ((now).sub(_lastUpd)) > tokenHoldingTime;
     }
 
     /**
