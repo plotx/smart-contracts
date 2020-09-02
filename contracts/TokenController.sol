@@ -6,7 +6,7 @@ import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
-import "./interfaces/IPlotus.sol";
+import "./interfaces/IMarketRegistry.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 

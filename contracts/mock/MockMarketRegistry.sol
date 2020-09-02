@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
 
-import "../Plotus.sol";
+import "../MarketRegistry.sol";
 
 contract MockPlotus is Plotus {
 

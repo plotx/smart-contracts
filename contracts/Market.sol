@@ -5,7 +5,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./config/MarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
-import "./interfaces/IPlotus.sol";
+import "./interfaces/IMarketRegistry.sol";
 
 contract Market is usingProvable {
     using SafeMath for uint;

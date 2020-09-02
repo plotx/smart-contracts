@@ -21,7 +21,7 @@ import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./interfaces/Iupgradable.sol";
-import "./interfaces/IPlotus.sol";
+import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IMaster.sol";
