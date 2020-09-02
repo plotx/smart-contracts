@@ -213,6 +213,7 @@ contract('Configure Global Parameters', accounts => {
           newAB,
           1000000000000
         );
+        let pId = await gv.getProposalLength();
         await gvProposal(
           19,
           actionHash,
@@ -221,6 +222,7 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
+        console.log(await gv.proposal(pId));
         let plbalPlotAfter = await plotTok.balanceOf(pl.address);
         let userbalPlotAfter = await plotTok.balanceOf(newAB);
         assert.equal(plbalPlot - plbalPlotAfter, 1000000000000);
