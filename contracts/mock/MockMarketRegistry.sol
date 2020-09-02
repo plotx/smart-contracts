@@ -2,7 +2,7 @@ pragma solidity 0.5.7;
 
 import "../MarketRegistry.sol";
 
-contract MockPlotus is Plotus {
+contract MockPlotus is MarketRegistry {
 
 	mapping(address => bytes32) marketId;
   uint256 blockId;

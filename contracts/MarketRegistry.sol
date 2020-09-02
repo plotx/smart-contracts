@@ -10,7 +10,7 @@ import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IMarketUtility.sol";
 
-contract Plotus is usingProvable, Governed, Iupgradable {
+contract MarketRegistry is usingProvable, Governed, Iupgradable {
 
     using SafeMath for uint256; 
     using strings for *; 

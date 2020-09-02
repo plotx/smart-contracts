@@ -30,9 +30,9 @@ contract DummyMockMarket is Market {
 
 	function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
       mockFlag = true;
-      pl = IPlotus(msg.sender);
-      marketUtility = MarketUtility(pl.marketUtility());
-      tokenController = ITokenController(pl.tokenController());
+      marketRegistry = IMarketRegistry(msg.sender);
+      marketUtility = MarketUtility(marketRegistry.marketUtility());
+      tokenController = ITokenController(marketRegistry.tokenController());
       plotToken = tokenController.token();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
@@ -87,13 +87,13 @@ contract DummyMockMarket is Market {
       if(commissionAmount[plotToken] > 0){
         bool burned = tokenController.burnCommissionTokens(commissionAmount[plotToken]);
         if(!burned) {
-          _transferAsset(plotToken, address(pl), commissionAmount[plotToken]);
+          _transferAsset(plotToken, address(marketRegistry), commissionAmount[plotToken]);
         }
       } 
       if(commissionAmount[ETH_ADDRESS] > 0) {
         uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
         uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
-        _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
+        _transferAsset(ETH_ADDRESS, address(marketRegistry), _amountToPool);
         uint256 _tokenOutput;
         address[] memory path;
         address _router;

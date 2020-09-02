@@ -97,7 +97,7 @@ contract Governance is IGovernance, Iupgradable {
 
     IMaster public ms;
     IMemberRoles internal memberRole;
-    IPlotus internal plotus;
+    IMarketRegistry internal marketRegistry;
     IProposalCategory internal proposalCategory;
     //Plot Token Instance
     IToken internal tokenInstance;
@@ -740,7 +740,7 @@ contract Governance is IGovernance, Iupgradable {
         memberRole = IMemberRoles(ms.getLatestAddress("MR"));
         proposalCategory = IProposalCategory(ms.getLatestAddress("PC"));
         tokenController = ITokenController(ms.getLatestAddress("TC"));
-        plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
+        marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
     }
 
     /**
@@ -1290,13 +1290,13 @@ contract Governance is IGovernance, Iupgradable {
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
             bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
             if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
-                plotus.burnDisputedProposalTokens(_proposalId);
+                marketRegistry.burnDisputedProposalTokens(_proposalId);
             }
         }
 
         if (proposalVoteTally[_proposalId].voters > 0 && allProposalData[_proposalId].commonIncentive > 0) {
             tokenInstance.transferFrom(
-                address(plotus),
+                address(marketRegistry),
                 address(this),
                 allProposalData[_proposalId].commonIncentive
             );

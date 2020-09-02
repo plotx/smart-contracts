@@ -1,5 +1,5 @@
 const Master = artifacts.require('Master');
-const Plotus = artifacts.require('MockPlotus');
+const Plotus = artifacts.require('MockMarketRegistry');
 const Governance = artifacts.require('Governance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');

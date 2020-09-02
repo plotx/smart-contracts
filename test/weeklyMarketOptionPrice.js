@@ -1,6 +1,6 @@
 const { assert } = require("chai");
 const Market = artifacts.require("MockMarket");
-const Plotus = artifacts.require("Plotus");
+const Plotus = artifacts.require("MarketRegistry");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");

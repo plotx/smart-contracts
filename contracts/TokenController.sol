@@ -28,12 +28,12 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     bool internal constructorCheck;
 
     PlotXToken public token;
-    IPlotus public plotus;
+    IMarketRegistry public marketRegistry;
     IbLOTToken public bLOTToken;
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(plotus.isMarket(msg.sender));
+        require(marketRegistry.isMarket(msg.sender));
         _;
     }
 
@@ -51,7 +51,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         IMaster ms = IMaster(msg.sender);
         token = PlotXToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
-        plotus = IPlotus(address(uint160(ms.getLatestAddress("PL"))));
+        marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
     }
 
     function initiateVesting(address _vesting) external {

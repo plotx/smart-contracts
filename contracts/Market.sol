@@ -58,7 +58,7 @@ contract Market is usingProvable {
     mapping(address => bool) internal predictedWithBlot;
     mapping(address => bool) internal multiplierApplied;
 
-    IPlotus internal pl;
+    IMarketRegistry internal marketRegistry;
     ITokenController internal tokenController;
     MarketUtility internal marketUtility;
     address internal plotToken;
@@ -89,9 +89,9 @@ contract Market is usingProvable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       require(startTime == 0, "Already initialized");
-      pl = IPlotus(msg.sender);
-      marketUtility = MarketUtility(pl.marketUtility());
-      tokenController = ITokenController(pl.tokenController());
+      marketRegistry = IMarketRegistry(msg.sender);
+      marketUtility = MarketUtility(marketRegistry.marketUtility());
+      tokenController = ITokenController(marketRegistry.tokenController());
       plotToken = tokenController.token();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
@@ -330,7 +330,7 @@ contract Market is usingProvable {
     * @param _leverage The leverage opted by user at the time of prediction.
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-      require(!pl.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
+      require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
       require(now >= startTime && now <= expireTime);
 
 
@@ -361,7 +361,7 @@ contract Market is usingProvable {
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
-      pl.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
     /**
@@ -457,13 +457,13 @@ contract Market is usingProvable {
         if(commissionAmount[plotToken] > 0){
           bool burned = tokenController.burnCommissionTokens(commissionAmount[plotToken]);
           if(!burned) {
-            _transferAsset(plotToken, address(pl), commissionAmount[plotToken]);
+            _transferAsset(plotToken, address(marketRegistry), commissionAmount[plotToken]);
           }
         } 
         if(commissionAmount[ETH_ADDRESS] > 0) {
           uint256 _lotPurchaseAmount = (commissionAmount[ETH_ADDRESS]).mul(_lotPurchasePerc).div(100);
           uint256 _amountToPool = (commissionAmount[ETH_ADDRESS]).sub(_lotPurchaseAmount);
-          _transferAsset(ETH_ADDRESS, address(pl), _amountToPool);
+          _transferAsset(ETH_ADDRESS, address(marketRegistry), _amountToPool);
           uint256 _tokenOutput;
           address[] memory path;
           address _router;
@@ -518,11 +518,11 @@ contract Market is usingProvable {
           tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[plotToken])).div(100));
           ethAmountToPool = ethAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
         }
-        _transferAsset(plotToken, address(pl), tokenAmountToPool);
-        _transferAsset(ETH_ADDRESS, address(pl), ethAmountToPool);
+        _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool);
+        _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
       }
       marketCloseValue = _value;
-      pl.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
     }
 
     /**
@@ -535,9 +535,9 @@ contract Market is usingProvable {
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      require(IToken(plotToken).transferFrom(msg.sender, address(pl), _stakeForDispute));
+      require(IToken(plotToken).transferFrom(msg.sender, address(marketRegistry), _stakeForDispute));
       lockedForDispute = true;
-      pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
+      marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
       predictionStatus = PredictionStatus.InDispute;
     }
 
@@ -547,7 +547,7 @@ contract Market is usingProvable {
     * @param finalResult The final correct value of market currency.
     */
     function resolveDispute(bool accepted, uint256 finalResult) external {
-      require(msg.sender == address(pl));
+      require(msg.sender == address(marketRegistry));
       if(accepted) {
         _postResult(finalResult);
       }
@@ -669,7 +669,7 @@ contract Market is usingProvable {
     */
     function claimReturn(address payable _user) public returns(uint256) {
 
-      if(lockedForDispute || marketStatus() != PredictionStatus.Settled || pl.marketCreationPaused()) {
+      if(lockedForDispute || marketStatus() != PredictionStatus.Settled || marketRegistry.marketCreationPaused()) {
         return 0;
       }
       if(userClaimedReward[_user]) {
@@ -686,7 +686,7 @@ contract Market is usingProvable {
       for(i = 0;i < incentiveTokens.length; i++) {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);
       }
-      pl.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
+      marketRegistry.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
       return 2;
     }
 
