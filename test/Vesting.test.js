@@ -1,5 +1,5 @@
 const Vesting = artifacts.require('Vesting');
-const PlotusToken = artifacts.require('PlotusToken');
+const PlotusToken = artifacts.require('PlotXToken');
 const DummyTokenMock = artifacts.require('DummyTokenMock');
 
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
@@ -32,8 +32,6 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
     await dummyToken.mint(toWei(10000000));
   });
   describe('Vesting: Adding vesting data', function () {
-    const value = toWei('42');
-    const tokenSupply = toWei(10000);
 
     it('Vesting contract should initialize correctly', async function () {
       assert.equal(await vesting.token(), plotusToken.address);
