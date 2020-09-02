@@ -481,6 +481,7 @@ contract Market is usingProvable {
     */
     function settleMarket() external {
       uint256 _value = marketUtility.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
+      require(marketStatus() == PredictionStatus.InSettlement);
       _postResult(_value);
     }
 
@@ -491,7 +492,6 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      require(marketStatus() == PredictionStatus.InSettlement || marketStatus() == PredictionStatus.InDispute);
       ( , uint lossPercentage, , ) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       marketCoolDownTime = (now).add(marketCoolDownTime);
@@ -549,6 +549,7 @@ contract Market is usingProvable {
     function resolveDispute(bool accepted, uint256 finalResult) external {
       require(msg.sender == address(marketRegistry));
       if(accepted) {
+        require(marketStatus() == PredictionStatus.InDispute);
         _postResult(finalResult);
       }
       lockedForDispute = false;
