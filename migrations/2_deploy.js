@@ -57,6 +57,7 @@ module.exports = function(deployer, network, accounts){
       await pc.proposalCategoryInitiate();
       console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
+      await plotusToken.transfer(plotus.address, "10000000000000000000000");
   });
 };
 
