@@ -206,6 +206,35 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(await pl.marketCreationPaused(), false);
       });
 
+
+      it('Transfer Plotus Assets(PlotusToken)', async function() {
+        let plbalPlot = await plotTok.balanceOf(pl.address);
+        await plotTok.burnTokens(pl.address, plbalPlot);
+        await plotTok.transfer(pl.address, 1000000000000);
+        plbalPlot = await plotTok.balanceOf(pl.address);
+        let userbalPlot = await plotTok.balanceOf(newAB);
+        let actionHash = encode(
+          'transferAssets(address,address,uint256)',
+          plotTok.address,
+          newAB,
+          1000000000000
+        );
+        let pId = await gv.getProposalLength();
+        await gvProposal(
+          19,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+        console.log(await gv.proposal(pId));
+        let plbalPlotAfter = await plotTok.balanceOf(pl.address);
+        let userbalPlotAfter = await plotTok.balanceOf(newAB);
+        assert.equal(plbalPlot/1 - plbalPlotAfter/1, 1000000000000);
+        assert.equal(userbalPlotAfter/1 - userbalPlot/1, 1000000000000);
+      });
+
       it('Transfer Plotus Assets(ETH)', async function() {
         let plbalEth = await web3.eth.getBalance(pl.address);
         let userbalEth = await web3.eth.getBalance(newAB);
@@ -227,31 +256,6 @@ contract('Configure Global Parameters', accounts => {
         let userbalEthAfter = await web3.eth.getBalance(newAB);
         assert.equal(plbalEth - plbalEthAfter, toWei(10));
         assert.equal(userbalEthAfter/1e18 - userbalEth/1e18, 10);
-      });
-
-      it('Transfer Plotus Assets(PlotusToken)', async function() {
-        let plbalPlot = await plotTok.balanceOf(pl.address);
-        let userbalPlot = await plotTok.balanceOf(newAB);
-        let actionHash = encode(
-          'transferAssets(address,address,uint256)',
-          plotTok.address,
-          newAB,
-          1000000000000
-        );
-        let pId = await gv.getProposalLength();
-        await gvProposal(
-          19,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        console.log(await gv.proposal(pId));
-        let plbalPlotAfter = await plotTok.balanceOf(pl.address);
-        let userbalPlotAfter = await plotTok.balanceOf(newAB);
-        assert.equal(plbalPlot - plbalPlotAfter, 1000000000000);
-        assert.equal(userbalPlotAfter/1e18 - userbalPlot/1e18, 1);
       });
 
       it('Should not Change token operator if null address', async function() {
