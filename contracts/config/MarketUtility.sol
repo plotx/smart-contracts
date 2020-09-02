@@ -142,10 +142,10 @@ contract MarketUtility {
         } else if (code == "CDTIME") {
             marketCoolDownTime = value;
         } else if (code == "ETHCOM") {
-            require(value > 0 && value < 100, "Value must be between 0-100");
+            require(value > 0 && value < 10000, "Value must be between 0-10000");
             commissionPerc[ETH_ADDRESS] = value;
         } else if (code == "PLOTCOM") {
-            require(value > 0 && value < 100, "Value must be between 0-100");
+            require(value > 0 && value < 10000, "Value must be between 0-10000");
             commissionPerc[plotToken] = value;
         } else {
             revert("Invalid code");

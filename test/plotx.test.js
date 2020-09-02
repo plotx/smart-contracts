@@ -123,7 +123,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await (marketInstance.claimReturn(ab1));
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
-		await marketConfig.setPLOTCommissionPerc(900);
+		await marketConfig.setPLOTCommissionPerc(9000);
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000000", 1, 1);
 		await marketInstance.placePrediction(plotusToken.address, "8000000000000000000000000", 1, 1);
 		await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "10000000000000000000", 1, 1, { value: 1000 }));
