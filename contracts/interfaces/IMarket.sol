@@ -40,7 +40,8 @@ contract IMarket {
     * @return minvalue uint[] memory representing the minimum range of all the options of the market.
     * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
-    * @return _assetStaked uint[] memory representing the assets staked on each option ranges of the market.
+    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
+    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
     * @return _predictionType uint representing the type of market.
     * @return _expireTime uint representing the expire time of the market.
     * @return _predictionStatus uint representing the status of the market.
@@ -48,7 +49,7 @@ contract IMarket {
     function getData() external view 
     	returns (
     		bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
-        	uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,
+        	uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionType,
         	uint _expireTime, uint _predictionStatus
         );
 

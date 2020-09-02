@@ -178,37 +178,26 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       emit MarketCurrencies(_marketCurrencyIndex, _priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
     }
 
-     /**
-     * @dev Update the configs of the market.
-     * @param _marketConfig the address of market configs.
-     */
-    function updateMarketConfigImplementation(address _marketConfig) external onlyAuthorizedToGovern {
-      _upgradeTo(address(uint160(address(marketConfig))), _marketConfig);
-    }
-
-     /**
-     * @dev Update the implementations of the market.
-     * @param _marketImplementation the address of market implementation.
-     */
+    /**
+    * @dev Update the implementations of the market.
+    * @param _marketImplementation the address of market implementation.
+    */
     function updateMarketImplementation(address _marketImplementation) external onlyAuthorizedToGovern {
       marketImplementation = _marketImplementation;
     }
 
-     /**
-     * @dev Upgrade the implementations of the contract.
-     * @param _proxyAddress the proxy address.
-     * @param _contractsAddress the contract address to be upgraded.
-     */
-    function upgradeContractImplementation(address payable _proxyAddress, address _contractsAddress) 
+    /**
+    * @dev Upgrade the implementations of the contract.
+    * @param _proxyAddress the proxy address.
+    * @param _newImplementation Address of new implementation contract
+    */
+    function upgradeContractImplementation(address payable _proxyAddress, address _newImplementation) 
         external onlyAuthorizedToGovern
     {
-      _upgradeTo(_proxyAddress, _contractsAddress);
-    }
-
-    function _upgradeTo(address payable _proxyAddress, address _contractsAddress) internal {
-        OwnedUpgradeabilityProxy tempInstance 
-            = OwnedUpgradeabilityProxy(_proxyAddress);
-        tempInstance.upgradeTo(_contractsAddress);
+      require(_newImplementation != address(0));
+      OwnedUpgradeabilityProxy tempInstance 
+          = OwnedUpgradeabilityProxy(_proxyAddress);
+      tempInstance.upgradeTo(_newImplementation);
     }
 
     /**
@@ -273,7 +262,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       MarketTypeData storage _marketTypeData = marketTypes[_marketType];
       predictionTime = _marketTypeData.predictionTime;
       _optionRangePerc = _marketTypeData.optionRangePerc;
-      (,,,,,,, uint _status) = getMarketDetails(_previousMarket);
+      (,,,,,,,, uint _status) = getMarketDetails(_previousMarket);
       require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       require(now > _marketStartTime.add(marketCreationFallbackTime));
       if(now > _marketStartTime.add(_marketTypeData.predictionTime)) {
@@ -340,13 +329,9 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public OnlyMarket {
       // lockedForDispute[msg.sender] = true;
       // require(disputeStakes[msg.sender].staker == address(0));
-      disputeStakes[msg.sender].staker = _user;
-      disputeStakes[msg.sender].stakeAmount = _stakeForDispute;
-      disputeStakes[msg.sender].ethDeposited = _ethSentToPool;
-      disputeStakes[msg.sender].tokenDeposited = _tokenSentToPool;
+      disputeStakes[msg.sender] = DisputeStake(_user, _stakeForDispute, governance.getProposalLength(), _ethSentToPool, _tokenSentToPool, true);
       disputeStakes[msg.sender].proposalId = governance.getProposalLength();
       disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
-      disputeStakes[msg.sender].inDispute = true;
       governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, actionHash);
     }
 
@@ -359,7 +344,8 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       _transferAsset(ETH_ADDRESS, _marketAddress, disputeStakes[_marketAddress].ethDeposited);
       _transferAsset(address(plotusToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
       IMarket(_marketAddress).resolveDispute(true, _result);
-      plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
+      _transferAsset(address(plotusToken), address(uint160(disputeStakes[_marketAddress].staker)), disputeStakes[_marketAddress].stakeAmount);
+      // plotusToken.transfer(disputeStakes[_marketAddress].staker, disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
     }
 
@@ -450,13 +436,14 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
     * @return optionprice uint[] memory representing the option price of each option ranges of the market.
     * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
+    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
     * @return _predictionType uint representing the type of market.
     * @return _expireTime uint representing the expire time of the market.
     * @return _predictionStatus uint representing the status of the market.
     */
     function getMarketDetails(address _marketAdd)public view returns
     (bytes32 _feedsource,uint256[] memory minvalue,uint256[] memory maxvalue,
-      uint256[] memory optionprice,uint256[] memory _ethStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
+      uint256[] memory optionprice,uint256[] memory _ethStaked, uint256[] memory _plotStaked,uint256 _predictionType,uint256 _expireTime, uint256 _predictionStatus){
       // Market _market = Market(_marketAdd);
       return IMarket(_marketAdd).getData();
     }

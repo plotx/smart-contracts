@@ -97,7 +97,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         ); // 5
         _addInitialCategories(
-            "Update Existing Market's Implementation",
+            "Update contract's Implementation",
             "",
             "PL",
             "upgradeContractImplementation(address,address)",
@@ -231,15 +231,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2,
             2
         ); //20
-        _addInitialCategories(
-            "Update Market Config Implementation",
-            "",
-            "PL",
-            "updateMarketConfigImplementation(address)",
-            60,
-            2,
-            2
-        ); //21
         _addInitialCategories(
             "Update Market Address parameters",
             "",

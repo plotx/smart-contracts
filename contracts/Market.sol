@@ -285,31 +285,36 @@ contract Market is usingProvable {
     * @return minvalue uint[] memory representing the minimum range of all the options of the market.
     * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
-    * @return _assetStaked uint[] memory representing the assets staked on each option ranges of the market.
+    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
+    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
     * @return _predictionType uint representing the type of market.
     * @return _expireTime uint representing the time at which market closes for preidction
     * @return _predictionStatus uint representing the status of the market.
     */
     function getData() public view returns
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice, uint[] memory _assetStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
+        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionType,uint _expireTime, uint _predictionStatus){
         _marketCurrency = marketCurrency;
         _expireTime =expireTime;
         _predictionStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
         maxvalue = new uint[](totalOptions);
         _optionPrice = new uint[](totalOptions);
-        _assetStaked = new uint[](totalOptions);
+        _ethStaked = new uint[](totalOptions);
+        _plotStaked = new uint[](totalOptions);
         (uint _tokenPrice, uint _decimals) = marketConfig.getAssetPriceInETH(token);
         uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
+        uint _assetStaked;
         for (uint i = 0; i < totalOptions; i++) {
-        _assetStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
-        _assetStaked[i] = _assetStaked[i].add(
+        _assetStaked = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
+        _assetStaked = _assetStaked.add(
           _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[token], _tokenPrice, _decimals)
         );
+        _ethStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
+        _plotStaked[i] = optionsAvailable[i+1].assetStaked[token];
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked[i]);
+        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked);
        }
     }
 
