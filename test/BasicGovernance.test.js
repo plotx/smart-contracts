@@ -184,6 +184,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     assert.equal(pendingRewards.toNumber(), 0, "Rewards not claimed");
     pId = await gv.getProposalLength();
     lastClaimed = await gv.lastRewardClaimed(ab1);
+    pendingRewards = await gv.getPendingReward(ab1);
   });
 
   // it('15.23 Should not claim reward twice for same proposal', async function() {
@@ -228,6 +229,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       await gvProposalWithIncentiveViaTokenHolder(12, actionHash, mr, gv, 2, 10);
     }
     let p = await gv.getProposalLength();
+    await assertRevert(gv.rejectAction(pId));
     await gv.createProposal("proposal", "proposal", "proposal", 0);
     await gv.categorizeProposal(p, 12, 10);
     await gv.submitProposalWithSolution(p, "proposal", actionHash);
@@ -276,6 +278,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await nxmToken.transfer(mem1, toWei(1));
     await gv.delegateVote(ab1, { from: mem1 });
     await increaseTime(604805);
+    await assertRevert(gv.rejectAction(pId));
     let lastClaimedAb1 = await gv.lastRewardClaimed(ab1);
     let lastClaimedMem1 = await gv.lastRewardClaimed(mem1);
     //ab1 has 2 reward pending to be claimed in previous case
@@ -416,7 +419,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       let alreadyDelegated = await gv.alreadyDelegated(ab1);
       assert.equal(alreadyDelegated, true);
       assert.equal(await gv.alreadyDelegated(ab2), false);
-      assert.equal(await gv.alreadyDelegated(ab3), false);
+      assert.equal(await gv.alreadyDelegated(notMember), false);
     });
     it("15.34 Member can delegate vote to Member who is not follower", async function () {
       await gv.setDelegationStatus(true, { from: mem3 });
