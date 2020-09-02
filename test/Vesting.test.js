@@ -1,5 +1,5 @@
 const Vesting = artifacts.require('Vesting');
-const PlotusToken = artifacts.require('PlotusToken');
+const PlotusToken = artifacts.require('PlotXToken');
 const DummyTokenMock = artifacts.require('DummyTokenMock');
 
 const assertRevert = require("./utils/assertRevert.js").assertRevert;

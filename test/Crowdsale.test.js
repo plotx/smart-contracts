@@ -1,5 +1,5 @@
 const Crowdsale = artifacts.require('Crowdsale');
-const PlotusToken = artifacts.require('PlotusToken');
+const PlotusToken = artifacts.require('PlotXToken');
 const TokenMock = artifacts.require('TokenMock');
 const DummyTokenMock = artifacts.require('DummyTokenMock');
 
