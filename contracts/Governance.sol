@@ -99,6 +99,7 @@ contract Governance is IGovernance, Iupgradable {
     IMemberRoles internal memberRole;
     IPlotus internal plotus;
     IProposalCategory internal proposalCategory;
+    //Plot Token Instance
     IToken internal tokenInstance;
     ITokenController internal tokenController;
 

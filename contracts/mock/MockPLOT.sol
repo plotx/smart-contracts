@@ -1,5 +1,5 @@
 pragma solidity 0.5.7;
-import "../PlotusToken.sol";
+import "../PlotXToken.sol";
 
 contract MockPLOT is PlotusToken {
 

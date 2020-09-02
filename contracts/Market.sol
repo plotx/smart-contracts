@@ -61,7 +61,7 @@ contract Market is usingProvable {
     IPlotus internal pl;
     ITokenController internal tokenController;
     MarketUtility internal marketUtility;
-    address internal token;
+    address internal plotToken;
     
     struct option
     {
@@ -92,14 +92,14 @@ contract Market is usingProvable {
       pl = IPlotus(msg.sender);
       marketUtility = MarketUtility(pl.marketUtility());
       tokenController = ITokenController(pl.tokenController());
-      token = tokenController.token();
+      plotToken = tokenController.plotToken();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
       isChainlinkFeed = _isChainlinkFeed;
       uint _coolDownTime;
       uint _rate;
-      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketUtility.getMarketInitialParams();
+      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotToken]) = marketUtility.getMarketInitialParams();
 
       rate = _rate;
       predictionTime = _predictionTime; 
@@ -187,11 +187,11 @@ contract Market is usingProvable {
     function _calculatePredictionValue(uint _prediction, uint _stake, uint _positionDecimals, uint _priceStep, uint _leverage) internal view returns(uint _predictionValue) {
       uint optionPrice;
       uint flag = 0;
-      (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(token);
+      (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
       uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
       uint _assetStakedOnOption = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS]
                                   .add(
-                                    (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[token], _tokenPrice, _decimals)));
+                                    (_calculateAssetValueInEth(optionsAvailable[_prediction].assetStaked[plotToken], _tokenPrice, _decimals)));
       _predictionValue = 0;
 
       // Step price with step limit as `_priceStep`
@@ -258,13 +258,13 @@ contract Market is usingProvable {
     * @return Price of the option.
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
-      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(token);
+      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
 
      return _calculateOptionPrice(
                 _prediction,
                 totalStakedETH.add(totalStakedToken.mul(_price).div(10**_decimals)),
                 optionsAvailable[_prediction].assetStaked[ETH_ADDRESS].add(
-                  (optionsAvailable[_prediction].assetStaked[token]).mul(_price).div(10**_decimals)
+                  (optionsAvailable[_prediction].assetStaked[plotToken]).mul(_price).div(10**_decimals)
                 )
             );
     }
@@ -292,16 +292,16 @@ contract Market is usingProvable {
         _optionPrice = new uint[](totalOptions);
         _ethStaked = new uint[](totalOptions);
         _plotStaked = new uint[](totalOptions);
-        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(token);
+        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
         uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
         uint _assetStaked;
         for (uint i = 0; i < totalOptions; i++) {
         _assetStaked = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
         _assetStaked = _assetStaked.add(
-          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[token], _tokenPrice, _decimals)
+          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[plotToken], _tokenPrice, _decimals)
         );
         _ethStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
-        _plotStaked[i] = optionsAvailable[i+1].assetStaked[token];
+        _plotStaked[i] = optionsAvailable[i+1].assetStaked[plotToken];
         minvalue[i] = optionsAvailable[i+1].minValue;
         maxvalue[i] = optionsAvailable[i+1].maxValue;
         _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked);
@@ -318,12 +318,12 @@ contract Market is usingProvable {
     * @return uint256 representing the PLOT staked on winning option.
     */
     function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
-      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[token]);
+      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken]);
     }
 
     /**
     * @dev Place prediction on the available options of the market.
-    * @param _asset The asset used by user during prediction whether it is token address or in ether.
+    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
     * @param _leverage The leverage opted by user at the time of prediction.
@@ -339,7 +339,7 @@ contract Market is usingProvable {
         require(!predictedWithBlot[msg.sender]);
         predictedWithBlot[msg.sender] = true;
         tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
-        _asset = token;
+        _asset = plotToken;
       } else {
         require(_isAllowedToStake(_asset));
         if(_asset == ETH_ADDRESS) {
@@ -365,11 +365,11 @@ contract Market is usingProvable {
 
     /**
     * @dev Check if the given `_asset` is supported to stake
-    * @param _asset The asset used by user during prediction whether it is token address or in ether.
+    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     */
     function _isAllowedToStake(address _asset) internal view returns(bool) {
       return (_asset == ETH_ADDRESS ||
-               _asset == token ||
+               _asset == plotToken ||
                _asset == tokenController.bLOTToken()
               );
     }
@@ -453,10 +453,10 @@ contract Market is usingProvable {
         uint256 _uniswapDeadline;
         uint256 _lotPurchasePerc;
         (_lotPurchasePerc, _uniswapDeadline) = marketUtility.getPurchasePercAndDeadline();
-        if(commissionAmount[token] > 0){
-          bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
+        if(commissionAmount[plotToken] > 0){
+          bool burned = tokenController.burnCommissionTokens(commissionAmount[plotToken]);
           if(!burned) {
-            _transferAsset(token, address(pl), commissionAmount[token]);
+            _transferAsset(plotToken, address(pl), commissionAmount[plotToken]);
           }
         } 
         if(commissionAmount[ETH_ADDRESS] > 0) {
@@ -470,7 +470,7 @@ contract Market is usingProvable {
           IUniswapV2Router02 router = IUniswapV2Router02(_router);
           uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
           _tokenOutput = output[1];
-          incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
+          incentiveToDistribute[plotToken] = incentiveToDistribute[plotToken].add(_tokenOutput);
         }
       }
     }
@@ -503,21 +503,21 @@ contract Market is usingProvable {
       }
       uint[] memory totalReward = new uint256[](2);
       if(optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
-        optionsAvailable[WinningOption].assetStaked[token] > 0
+        optionsAvailable[WinningOption].assetStaked[plotToken] > 0
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
-          totalReward[0] = totalReward[0].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[token])).div(100));
+          totalReward[0] = totalReward[0].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[plotToken])).div(100));
           totalReward[1] = totalReward[1].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
           }
         }
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
-          tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[token])).div(100));
+          tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[plotToken])).div(100));
           ethAmountToPool = ethAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
         }
-        _transferAsset(token, address(pl), tokenAmountToPool);
+        _transferAsset(plotToken, address(pl), tokenAmountToPool);
         _transferAsset(ETH_ADDRESS, address(pl), ethAmountToPool);
       }
       marketCloseValue = _value;
@@ -535,7 +535,7 @@ contract Market is usingProvable {
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory shortDesc, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      require(IToken(token).transferFrom(msg.sender, address(pl), _stakeForDispute));
+      require(IToken(plotToken).transferFrom(msg.sender, address(pl), _stakeForDispute));
       lockedForDispute = true;
       pl.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
       predictionStatus = PredictionStatus.InDispute;
@@ -583,7 +583,7 @@ contract Market is usingProvable {
        return (returnAmount, _predictionAssets, incentive, _incentiveTokens);
       }
       _predictionAssets = new address[](2);
-      _predictionAssets[0] = token;
+      _predictionAssets[0] = plotToken;
       _predictionAssets[1] = ETH_ADDRESS;
 
       uint256 _totalUserPredictionPoints = 0;
@@ -624,7 +624,7 @@ contract Market is usingProvable {
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, token);
+        _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, plotToken);
         _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
       }
     }
@@ -681,7 +681,7 @@ contract Market is usingProvable {
       userClaimedReward[_user] = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
       uint256 i;
-      _transferAsset(token, _user, _returnAmount[0]);
+      _transferAsset(plotToken, _user, _returnAmount[0]);
       _transferAsset(ETH_ADDRESS, _user, _returnAmount[1]);
       for(i = 0;i < incentiveTokens.length; i++) {
         _transferAsset(incentiveTokens[i], _user, _incentives[i]);

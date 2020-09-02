@@ -33,7 +33,7 @@ contract DummyMockMarket is Market {
       pl = IPlotus(msg.sender);
       marketUtility = MarketUtility(pl.marketUtility());
       tokenController = ITokenController(pl.tokenController());
-      token = tokenController.token();
+      plotToken = tokenController.token();
       startTime = _startTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
@@ -41,7 +41,7 @@ contract DummyMockMarket is Market {
       // optionsAvailable[0] = option(0,0,0,0,0,address(0));
       uint _coolDownTime;
       uint _rate;
-      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[token]) = marketUtility.getMarketInitialParams();
+      (incentiveTokens, _coolDownTime, _rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotToken]) = marketUtility.getMarketInitialParams();
 
       rate = _rate;
       predictionTime = _predictionTime; 
@@ -84,10 +84,10 @@ contract DummyMockMarket is Market {
       uint256 _uniswapDeadline;
       uint256 _lotPurchasePerc;
       (_lotPurchasePerc, _uniswapDeadline) = marketUtility.getPurchasePercAndDeadline();
-      if(commissionAmount[token] > 0){
-        bool burned = tokenController.burnCommissionTokens(commissionAmount[token]);
+      if(commissionAmount[plotToken] > 0){
+        bool burned = tokenController.burnCommissionTokens(commissionAmount[plotToken]);
         if(!burned) {
-          _transferAsset(token, address(pl), commissionAmount[token]);
+          _transferAsset(plotToken, address(pl), commissionAmount[plotToken]);
         }
       } 
       if(commissionAmount[ETH_ADDRESS] > 0) {
@@ -101,7 +101,7 @@ contract DummyMockMarket is Market {
         IUniswapV2Router02 router = IUniswapV2Router02(_router);
         uint[] memory output = router.swapExactETHForTokens.value(_lotPurchaseAmount)(1, path, address(this), _uniswapDeadline);
         _tokenOutput = output[1];
-        incentiveToDistribute[token] = incentiveToDistribute[token].add(_tokenOutput);
+        incentiveToDistribute[plotToken] = incentiveToDistribute[plotToken].add(_tokenOutput);
       }
       commissionExchanged = true;
     }

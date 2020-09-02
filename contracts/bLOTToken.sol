@@ -9,14 +9,14 @@ import "./interfaces/Iupgradable.sol";
 contract BLOT is ERC20, Iupgradable {
     using Roles for Roles.Role;
 
-    string public constant name = "PlotusBonusToken";
+    string public constant name = "PlotXBonusToken";
     string public constant symbol = "bLOT";
     uint8 public constant decimals = 18;
 
     Roles.Role private _minters;
 
     address public operator;
-    address public plotusToken;
+    address public plotToken;
 
     event MinterAdded(address indexed account);
     event MinterRemoved(address indexed account);
@@ -53,9 +53,9 @@ contract BLOT is ERC20, Iupgradable {
             address(uint160(address(this)))
         );
         require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
-        require(plotusToken == address(0), "Plotus Token is address(0)");
+        require(plotToken == address(0), "Plotus Token is address(0)");
         IMaster ms = IMaster(msg.sender);
-        plotusToken = ms.dAppToken();
+        plotToken = ms.dAppToken();
         operator = ms.getLatestAddress("TC");
     }
 
@@ -129,7 +129,7 @@ contract BLOT is ERC20, Iupgradable {
         returns (bool)
     {
         require(
-            IERC20(plotusToken).transferFrom(msg.sender, address(this), amount),
+            IERC20(plotToken).transferFrom(msg.sender, address(this), amount),
             "Error in transfer"
         );
         _mint(account, amount);
@@ -147,7 +147,7 @@ contract BLOT is ERC20, Iupgradable {
         uint256 amount
     ) public onlyOperator {
         _burn(_of, amount);
-        require(IERC20(plotusToken).transfer(_to, amount), "Error in transfer");
+        require(IERC20(plotToken).transfer(_to, amount), "Error in transfer");
     }
 
     /**

@@ -69,7 +69,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
 
     bool public marketCreationPaused;
 
-    IToken public plotusToken;
+    IToken public plotToken;
     IMarketUtility public marketUtility;
     IGovernance internal governance;
     IMaster ms;
@@ -105,17 +105,17 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     * @dev Initialize the Plotus.
     * @param _marketImplementation The address of market implementation.
     * @param _marketUtility The address of market config.
-    * @param _plotusToken The instance of plotus token.
+    * @param _plotToken The instance of PlotX token.
     */
-    function initiatePlotus(address _marketImplementation, address _marketUtility, address _plotusToken, address payable[] memory _configParams) public {
+    function initiatePlotus(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketImplementation = _marketImplementation;
-      plotusToken = IToken(_plotusToken);
+      plotToken = IToken(_plotToken);
       tokenController = ms.getLatestAddress("TC");
       markets.push(address(0));
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
-      plotusToken.approve(address(governance), ~uint256(0));
+      plotToken.approve(address(governance), ~uint256(0));
       // provable_setProof(proofType_Android | proofType_Ledger);
     }
 
@@ -225,7 +225,7 @@ contract Plotus is usingProvable, Governed, Iupgradable {
       if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
         _feedAddress = _marketCurrencyData.currencyFeedAddress;
       } else {
-        _feedAddress = address(plotusToken);
+        _feedAddress = address(plotToken);
       }
       marketUtility.update(_feedAddress);
       address payable _market = _generateProxy(marketImplementation);
@@ -334,16 +334,16 @@ contract Plotus is usingProvable, Governed, Iupgradable {
     */
     function resolveDispute(address payable _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
       _transferAsset(ETH_ADDRESS, _marketAddress, disputeStakes[_marketAddress].ethDeposited);
-      _transferAsset(address(plotusToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
+      _transferAsset(address(plotToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
       IMarket(_marketAddress).resolveDispute(true, _result);
-      _transferAsset(address(plotusToken), address(uint160(disputeStakes[_marketAddress].staker)), disputeStakes[_marketAddress].stakeAmount);
+      _transferAsset(address(plotToken), address(uint160(disputeStakes[_marketAddress].staker)), disputeStakes[_marketAddress].stakeAmount);
       disputeStakes[msg.sender].inDispute = false;
     }
 
     function burnDisputedProposalTokens(uint _proposaId) external onlyAuthorizedToGovern {
       IMarket(disputeProposalId[_proposaId]).resolveDispute(false, 0);
       uint _stakedAmount = disputeStakes[disputeProposalId[_proposaId]].stakeAmount;
-      plotusToken.burn(_stakedAmount);
+      plotToken.burn(_stakedAmount);
     }
 
     function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {

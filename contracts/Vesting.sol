@@ -17,7 +17,7 @@
 
 pragma solidity 0.5.7;
 
-import "./PlotusToken.sol";
+import "./PlotXToken.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 

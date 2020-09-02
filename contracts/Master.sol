@@ -28,7 +28,7 @@ contract Master is Governed {
     /**
     * @dev Initialize the Master.
     * @param _implementations The address of market implementation.
-    * @param _token The address of token.
+    * @param _token The address of PLOT token.
     * @param _marketUtiliy The addresses of market utility.
     */
     function initiateMaster(address[] calldata _implementations, address _marketImplementation, address _token, address _defaultbLOTMinter, address _marketUtiliy, address payable[] calldata _configParams, address _vesting) external {

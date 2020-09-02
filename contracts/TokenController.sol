@@ -1,7 +1,7 @@
 pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
-import "./PlotusToken.sol";
+import "./PlotXToken.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";

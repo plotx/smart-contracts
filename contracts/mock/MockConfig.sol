@@ -22,7 +22,7 @@ contract MockConfig is MarketUtility {
 	function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
-            // address pair = uniswapFactory.getPair(plotusToken, weth);
+            // address pair = uniswapFactory.getPair(plotToken, weth);
             _value = _amount.mul(1e18).div(priceOfToken);
             // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
             // _value = output[1];

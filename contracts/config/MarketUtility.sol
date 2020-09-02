@@ -30,7 +30,7 @@ contract MarketUtility {
     uint internal uniswapDeadline;
     uint internal tokenStakeForDispute;
     uint internal marketCoolDownTime;
-    address internal plotusToken;
+    address internal plotToken;
     address internal plotETHpair;
     address internal weth;
     address public authorizedAddress;
@@ -72,15 +72,15 @@ contract MarketUtility {
         authorizedAddress = msg.sender;
         chainLinkPriceOracle = _addressParams[0];
         uniswapRouter = _addressParams[1];
-        plotusToken = _addressParams[2];
+        plotToken = _addressParams[2];
         weth = IUniswapV2Router02(_addressParams[1]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[3]);
-        plotETHpair = uniswapFactory.getPair(plotusToken, weth);
+        plotETHpair = uniswapFactory.getPair(plotToken, weth);
         uniswapEthToTokenPath.push(weth);
-        uniswapEthToTokenPath.push(plotusToken);
-        incentiveTokens.push(plotusToken);
+        uniswapEthToTokenPath.push(plotToken);
+        incentiveTokens.push(plotToken);
         commissionPerc[ETH_ADDRESS] = 10;
-        commissionPerc[plotusToken] = 5;
+        commissionPerc[plotToken] = 5;
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
@@ -143,7 +143,7 @@ contract MarketUtility {
             commissionPerc[ETH_ADDRESS] = value;
         } else if(code == "PLOTCOM") {
             require(value > 0 && value < 100);
-            commissionPerc[plotusToken] = value;
+            commissionPerc[plotToken] = value;
         } else {
             revert("Invalid code");
         }
@@ -161,7 +161,7 @@ contract MarketUtility {
             uniswapRouter = value;
         } else if(code == "UNIFAC") {
             uniswapFactory = IUniswapV2Factory(value);
-            plotETHpair = uniswapFactory.getPair(plotusToken, weth);
+            plotETHpair = uniswapFactory.getPair(plotToken, weth);
         } else if(code == "INCTOK") {
             incentiveTokens.push(address(value));
         } else {
@@ -254,7 +254,7 @@ contract MarketUtility {
     function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
         uint _value = _amount;
         if(_asset == ETH_ADDRESS) {
-            address pair = uniswapFactory.getPair(plotusToken, weth);
+            address pair = uniswapFactory.getPair(plotToken, weth);
             _value = (uniswapPairData[pair].price1Average).mul(_amount).decode144();
         }
         return (minStakeForMultiplier, _value);
@@ -278,7 +278,7 @@ contract MarketUtility {
     * @return Commission percent for predictions with PLOT
     **/
     function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint) {
-        return (incentiveTokens, marketCoolDownTime, rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotusToken]);
+        return (incentiveTokens, marketCoolDownTime, rate, commissionPerc[ETH_ADDRESS], commissionPerc[plotToken]);
     }
 
     /**
@@ -304,7 +304,7 @@ contract MarketUtility {
     * @param pairAddress Token pair address
     **/
     function update(address pairAddress) external onlyAuthorized {
-        if(pairAddress != plotusToken) {
+        if(pairAddress != plotToken) {
             _update(pairAddress);
         }
         _update(plotETHpair);
