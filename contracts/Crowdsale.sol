@@ -290,7 +290,7 @@ contract Crowdsale is ReentrancyGuard {
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
     function _getTokenAmount(uint256 amount) internal view returns (uint256, uint256) {
-        uint tokenRate = (_slope.mul(_tokenSold)).add(_startRate);
+        uint tokenRate = (_slope.mul(_tokenSold).div(10**18)).add(_startRate);
         uint tokenToSell = amount.mul(10 ** 18).div(tokenRate);
         uint usdToReturn = 0;
         if(_tokenSold.add(tokenToSell) > _maxTokensToSold)
