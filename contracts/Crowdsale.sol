@@ -48,6 +48,8 @@ contract Crowdsale is ReentrancyGuard {
     // Authorised address to whitelist
     address private _authorisedToWhitelist;
 
+    uint256 private _maxTokensToSold;
+
     // USDC Token
     IERC20 private _tokenUSDC;
     // USDT Token
@@ -104,6 +106,7 @@ contract Crowdsale is ReentrancyGuard {
         _spendingLimit = uint(10000).mul(10 ** 18);
         _startRate = uint(7).mul(10 ** 16); 
         _slope = 4000000000;
+        _maxTokensToSold = uint256(5000000).mul(10 ** 18);
         _startTime = startTime;
         _endTime = endTime;
     }
@@ -206,10 +209,10 @@ contract Crowdsale is ReentrancyGuard {
         
 
         // calculate token amount to be created
-        uint256 tokens = _getTokenAmount(_amount);
+        (uint256 tokens, uint usdToReturn) = _getTokenAmount(_amount);
 
 
-        _processPurchase(beneficiary, tokens);
+        _processPurchase(beneficiary, tokens, spendingAsset, usdToReturn);
         emit TokensPurchased(msg.sender, beneficiary, _amount, tokens);
 
         _updatePurchasingState(beneficiary, _amount, tokens);
@@ -263,8 +266,11 @@ contract Crowdsale is ReentrancyGuard {
      * @param beneficiary Address receiving the tokens
      * @param tokenAmount Number of tokens to be purchased
      */
-    function _processPurchase(address beneficiary, uint256 tokenAmount) internal {
+    function _processPurchase(address beneficiary, uint256 tokenAmount, IERC20 spendingAsset, uint256 returnAmount) internal {
+        
         _token.safeTransfer(beneficiary, tokenAmount);
+        spendingAsset.safeTransfer(msg.sender, returnAmount);
+
     }
 
     /**
@@ -283,9 +289,17 @@ contract Crowdsale is ReentrancyGuard {
      * @param amount Value in (USDC/USDT) involved in the purchase
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
-    function _getTokenAmount(uint256 amount) internal view returns (uint256) {
+    function _getTokenAmount(uint256 amount) internal view returns (uint256, uint256) {
         uint tokenRate = (_slope.mul(_tokenSold)).add(_startRate);
-        return amount.mul(10 ** 18).div(tokenRate); // need to update aording to bonding curve.
+        uint tokenToSell = amount.mul(10 ** 18).div(tokenRate);
+        uint usdToReturn = 0;
+        if(_tokenSold.add(tokenToSell) > _maxTokensToSold)
+        {
+            tokenToSell = _maxTokensToSold.sub(_tokenSold);
+            uint usdRate = tokenToSell.mul(tokenRate).div(10 ** 18);
+            usdToReturn = amount.sub(usdRate);
+        }
+        return (tokenToSell, usdToReturn);
     }
 
     /**
