@@ -53,7 +53,32 @@ contract('Configure Global Parameters', accounts => {
     });
 
     describe('Testing Governanace Test Cases', function() {
-    
+      
+      it('Should Not Update Market Config if zero address passed', async function() {
+        let params = [];
+        params.push((await marketConfig.getFeedAddresses())[0]);
+        params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
+        params.push(plotTok.address);
+        params.push((await marketConfig.getFeedAddresses())[1]);
+        let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketConfig());
+        oldImplementation = await oldImplementation.implementation();
+        let actionHash = encode(
+          'upgradeContractImplementation(address,address)',
+          marketConfig.address,
+          0x0000000000000000000000000000000000000000
+        );
+        await gvProposal(
+          6,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+        let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketConfig());
+        assert.equal(await proxyCon.implementation(), oldImplementation);
+      });
+
       it('Should Update Market Config', async function() {
         let params = [];
         params.push((await marketConfig.getFeedAddresses())[0]);

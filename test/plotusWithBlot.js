@@ -324,10 +324,10 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			// console.log(`Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `);
 		}
 	});
-	it("4. Market should have 0 balance after all claims", async () => {
-		console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
-		assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
-	});
+	// it("4. Market should have 0 balance after all claims", async () => {
+	// 	console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
+	// 	assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
+	// });
 });
 contract("Market", async function ([user1, user2]) {
 	let masterInstance, BLOTInstance;

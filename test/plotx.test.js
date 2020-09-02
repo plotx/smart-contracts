@@ -68,7 +68,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// 	console.log(e);
 		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
-
+        await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now()/1000), mem1, plotusToken.address));
+		await assertRevert(pl.initiatePlotus(mem1, mem1, mem1, [mem1,mem1, mem1, mem1]));
 		await plotusToken.transfer(mem1, toWei(100));
 		await plotusToken.transfer(mem2, toWei(100));
 		await plotusToken.transfer(mem3, toWei(100));
@@ -138,6 +139,40 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await pl.exchangeCommission(marketInstance.address);
 	});
 
+	it("Should not add new market type if invalid start time passed", async function () {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 15, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1;
+		// startTime = Math.round((Date.now())/1000) + 2*604800;
+		let actionHash = encode("addNewMarketType(uint256,uint256,uint256,uint256,uint256)", 60 * 60 * 2, 60 * 60 * 4, startTime, 160000, 10);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+
+		actionHash = encode("addNewMarketType(uint256,uint256,uint256,uint256,uint256)", 60 * 60 * 2, 60 * 60 * 4, 1, 160000, 10);
+		await assertRevert(gv.submitProposalWithSolution(pId, "update max followers limit", actionHash)); //should revert as start time is not enough
+		actionHash = encode("addNewMarketType(uint256,uint256,uint256,uint256,uint256)", 60 * 60 * 2, 60 * 60 * 4, await latestTime(), 160000, 10);
+		await assertRevert(gv.submitProposalWithSolution(pId, "update max followers limit", actionHash)); //should revert as start time is not enough
+
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await gv.submitVote(pId, 1, { from: mem1 });
+		await gv.submitVote(pId, 1, { from: mem2 });
+		await gv.submitVote(pId, 1, { from: mem3 });
+		await gv.submitVote(pId, 1, { from: mem4 });
+		await gv.submitVote(pId, 1, { from: mem5 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let openMarketsBefore = await pl.getOpenMarkets();
+		await increaseTime(604810);
+		await gv.triggerAction(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+
+		let openMarkets = await pl.getOpenMarkets();
+		assert.equal(openMarkets[1].length, openMarketsBefore[1].length, "Currency not added");
+	});
+
 	it("Should create a proposal to add new market type", async function () {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
@@ -202,6 +237,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
 		let reward = await marketInstance.getReturn(ab1);
 		assert.equal(reward[0].length, 0);
+		await increaseTime(3650);
+		await pl.createMarketFallback(0,0);
 		await increaseTime(604810);
 		await marketInstance.settleMarket();
 		await increaseTime(604800);
@@ -230,6 +267,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 	it("Create market using fallback function", async function () {
 		// function createMarketFallback(_marketType, uint256 _marketCurrencyIndex) external payable{
 		await pl.createMarketFallback(0,0);
+		await assertRevert(pl.createMarketFallback(0,0));
 		await assertRevert(pl.createMarket(0, 0));
 		await pl.createMarket(0,1);
 		// let actionHash = encode("pauseMarketCreation()");

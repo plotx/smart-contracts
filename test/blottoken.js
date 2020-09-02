@@ -15,6 +15,7 @@ contract('bLOTToken', function([user1,user2]){
         BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.fromAscii("BL")));
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
         let canMint = await BLOTInstance.mint(user1,"1000000000000000000000");
+        await assertRevert(BLOTInstance.setMasterAddress());
         assert.ok(canMint)
         })
 
