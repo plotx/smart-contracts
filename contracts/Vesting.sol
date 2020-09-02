@@ -77,20 +77,18 @@ contract Vesting {
   /// @param _amount Total number of tokens in grant
   /// @param _vestingDuration Number of months of the grant's duration
   /// @param _vestingCliff Number of months of the grant's vesting cliff
-  function addTokenGrant(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff, uint256 _upFront) public 
+  function addTokenVesting(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff, uint256 _upFront) public 
   onlyOwner
   noGrantExistsForUser(_recipient)
   {
     if(_vestingCliff > 0){
       require(_upFront == 0, "Upfront is non zero for non zero cliff");
     }
-    // require(_vestingCliff > 0, "token-zero-vesting-cliff");
-    require(_vestingDuration > _vestingCliff, "token-cliff-longer-than-duration");
     uint256 amountVestedPerPeriod = _amount.div(_vestingDuration); // need to change 
     require(amountVestedPerPeriod > 0, "token-zero-amount-vested-per-period");
 
     // Transfer the grant tokens under the control of the vesting contract
-    token.transferFrom(owner, address(this), _amount);
+    token.transferFrom(owner, address(this), _amount.add(_upFront));
 
     Allocation memory _allocation = Allocation({
       startTime: _startTime, 
@@ -102,7 +100,8 @@ contract Vesting {
       periodClaimed: 0,
       totalClaimed: 0
     });
-    if(_upFront > 0 && !token.isLockedForGV(_recipient)) {
+
+    if(_upFront > 0) {
       token.transfer(_recipient, _upFront);
     }
 
@@ -150,9 +149,12 @@ contract Vesting {
     // If over vesting duration, all tokens vested
     if (elapsedDaysAfterCliffPeriod >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
       uint256 remainingTokens = _tokenAllocations.amount.sub(_tokenAllocations.totalClaimed);
-      return (_tokenAllocations.vestingDuration, remainingTokens);
+      return (_tokenAllocations.vestingDuration.sub(_tokenAllocations.periodClaimed), remainingTokens);
     } else {
       uint256 elapsedPeriod = elapsedDaysAfterCliffPeriod.div(_tokenAllocations.periodInDays);
+      if(_tokenAllocations.vestingCliff > 0) {
+        elapsedPeriod = elapsedPeriod.add(1);
+      }
       uint256 periodVested = elapsedPeriod.sub(_tokenAllocations.periodClaimed); //need to review
       uint256 amountVestedPerPeriod = _tokenAllocations.amount.div(_tokenAllocations.vestingDuration);
       uint256 amountVested = periodVested.mul(amountVestedPerPeriod);
