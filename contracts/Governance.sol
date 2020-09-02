@@ -138,7 +138,8 @@ contract Governance is IGovernance, Iupgradable {
     modifier voteNotStarted(uint256 _proposalId) {
         require(
             allProposalData[_proposalId].propStatus <
-                uint256(ProposalStatus.VotingStarted)
+                uint256(ProposalStatus.VotingStarted),
+            "Voting not started"
         );
         _;
     }
@@ -271,7 +272,8 @@ contract Governance is IGovernance, Iupgradable {
     ) external onlyProposalOwner(_proposalId) {
         require(
             allProposalData[_proposalId].propStatus ==
-                uint256(ProposalStatus.AwaitingSolution)
+                uint256(ProposalStatus.AwaitingSolution),
+            "Status is not Awaiting solution"
         );
 
         _proposalSubmission(_proposalId, _solutionHash, _action);
@@ -300,7 +302,7 @@ contract Governance is IGovernance, Iupgradable {
             _categoryId
         );
 
-        require(_categoryId > 0);
+        require(_categoryId > 0, "Category Id must be > 0");
 
         _proposalSubmission(proposalId, _solutionHash, _action);
     }
@@ -317,7 +319,10 @@ contract Governance is IGovernance, Iupgradable {
             "Not allowed"
         );
 
-        require(_solutionChosen < allProposalSolutions[_proposalId].length);
+        require(
+            _solutionChosen < allProposalSolutions[_proposalId].length,
+            "Solution chosen is undefined"
+        );
 
         _submitVote(_proposalId, _solutionChosen);
     }
@@ -337,7 +342,10 @@ contract Governance is IGovernance, Iupgradable {
         ) {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
         } else {
-            require(canCloseProposal(_proposalId) == 1);
+            require(
+                canCloseProposal(_proposalId) == 1,
+                "Cannot close proposal"
+            );
             _closeVote(_proposalId, category);
         }
     }
@@ -427,28 +435,34 @@ contract Governance is IGovernance, Iupgradable {
      * @param _add is the address to delegate vote to.
      */
     function delegateVote(address _add) external checkPendingRewards {
-        require(delegatedTo(_add) == address(0));
+        require(
+            delegatedTo(_add) == address(0),
+            "delegatedTo is not address(0)"
+        );
 
         if (followerDelegation[msg.sender] > 0) {
             require(
                 (allDelegation[followerDelegation[msg.sender]].lastUpd).add(
                     tokenHoldingTime
-                ) < now
+                ) < now,
+                "Time remaining"
             );
         }
 
-        require(!alreadyDelegated(msg.sender));
+        require(!alreadyDelegated(msg.sender), "Already delegated");
         require(
             !memberRole.checkRole(
                 msg.sender,
                 uint256(IMemberRoles.Role.AdvisoryBoard)
-            )
+            ),
+            "AB cannot delegate"
         );
         require(
             !memberRole.checkRole(
                 msg.sender,
                 uint256(IMemberRoles.Role.DisputeResolution)
-            )
+            ),
+            "DR cannot delegate"
         );
         require(
             memberRole.checkRole(
@@ -458,21 +472,23 @@ contract Governance is IGovernance, Iupgradable {
             "Not a token holder"
         );
 
-        require(followerCount[_add] < maxFollowers);
+        require(followerCount[_add] < maxFollowers, "maxFollowers reached");
 
         if (allVotesByMember[msg.sender].length > 0) {
             require(
                 (
                     allVotes[allVotesByMember[msg.sender][allVotesByMember[msg
                         .sender]
-                        .length.sub(1)]]
+                        .length
+                        .sub(1)]]
                         .dateAdd
                 )
-                    .add(tokenHoldingTime) < now
+                    .add(tokenHoldingTime) < now,
+                "Time remaining"
             );
         }
 
-        require(isOpenForDelegation[_add]);
+        require(isOpenForDelegation[_add], "Not open for delegation");
 
         allDelegation.push(DelegateVote(msg.sender, _add, now));
         followerDelegation[msg.sender] = allDelegation.length.sub(1);
@@ -508,14 +524,19 @@ contract Governance is IGovernance, Iupgradable {
     function rejectAction(uint256 _proposalId) external {
         require(
             memberRole.checkRole(msg.sender, actionRejectAuthRole) &&
-                proposalExecutionTime[_proposalId] > now
+                proposalExecutionTime[_proposalId] > now,
+            "Time exceeded"
         );
 
         require(
-            proposalActionStatus[_proposalId] == uint256(ActionStatus.Accepted)
+            proposalActionStatus[_proposalId] == uint256(ActionStatus.Accepted),
+            "ActionStatus is not Accepted"
         );
 
-        require(!isActionRejected[_proposalId][msg.sender]);
+        require(
+            !isActionRejected[_proposalId][msg.sender],
+            "Action is rejected"
+        );
 
         isActionRejected[_proposalId][msg.sender] = true;
         actionRejectedCount[_proposalId]++;
@@ -562,7 +583,7 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Gets all details of a propsal
+     * @dev Gets all details of a proposal
      * @param _proposalId whose details we want
      * @return proposalId
      * @return category
@@ -628,8 +649,8 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Gets length of propsal
-     * @return length of propsal
+     * @dev Gets length of proposal
+     * @return length of proposal
      */
     function getProposalLength() external view returns (uint256) {
         return totalProposals;
@@ -704,7 +725,10 @@ contract Governance is IGovernance, Iupgradable {
      * @param val value to set
      */
     function updateUintParameters(bytes8 code, uint256 val) public {
-        require(ms.isAuthorizedToGovern(msg.sender));
+        require(
+            ms.isAuthorizedToGovern(msg.sender),
+            "Not authorised to govern"
+        );
         if (code == "GOVHOLD") {
             tokenHoldingTime = val * 1 days;
         } else if (code == "MAXFOL") {
@@ -730,10 +754,12 @@ contract Governance is IGovernance, Iupgradable {
      * @dev Updates all dependency addresses to latest ones from Master
      */
     function setMasterAddress() public {
-        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
+            address(uint160(address(this)))
+        );
+        require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
 
-        require(!constructorCheck);
+        require(!constructorCheck, "Already constructed");
         _initiateGovernance();
         ms = IMaster(msg.sender);
         tokenInstance = IToken(ms.dAppToken());
@@ -762,8 +788,8 @@ contract Governance is IGovernance, Iupgradable {
         }
     }
 
-    function delegatedTo(address _follower) public returns(address) {
-        if(followerDelegation[_follower] > 0) {
+    function delegatedTo(address _follower) public returns (address) {
+        if (followerDelegation[_follower] > 0) {
             return allDelegation[followerDelegation[_follower]].leader;
         }
     }
@@ -799,7 +825,7 @@ contract Governance is IGovernance, Iupgradable {
 
     /**
      * @dev Checks If the proposal voting time is up and it's ready to close
-     *      i.e. Closevalue is 1 if proposal is ready to be closed, 2 if already closed, 0 otherwise!
+     *      i.e. Close value is 1 if proposal is ready to be closed, 2 if already closed, 0 otherwise!
      * @param _proposalId Proposal id to which closing value is being checked
      */
     function canCloseProposal(uint256 _proposalId)
@@ -837,9 +863,8 @@ contract Governance is IGovernance, Iupgradable {
                     return 1;
                 }
             } else {
-                if(_roleId == uint256(IMemberRoles.Role.TokenHolder)) {
-                    if(dateUpdate.add(_closingTime) <= now)
-                        return 1;
+                if (_roleId == uint256(IMemberRoles.Role.TokenHolder)) {
+                    if (dateUpdate.add(_closingTime) <= now) return 1;
                 } else if (
                     numberOfMembers <= proposalVoteTally[_proposalId].voters ||
                     dateUpdate.add(_closingTime) <= now
@@ -883,7 +908,7 @@ contract Governance is IGovernance, Iupgradable {
      * @dev Internal call to create proposal
      * @param _proposalTitle of proposal
      * @param _proposalSD is short description of proposal
-     * @param _proposalDescHash IPFS hash value of propsal
+     * @param _proposalDescHash IPFS hash value of proposal
      * @param _categoryId of proposal
      */
     function _createProposal(
@@ -900,7 +925,8 @@ contract Governance is IGovernance, Iupgradable {
                 roleAuthorizedToVote ==
                 uint256(IMemberRoles.Role.AdvisoryBoard) ||
                 roleAuthorizedToVote ==
-                uint256(IMemberRoles.Role.DisputeResolution)
+                uint256(IMemberRoles.Role.DisputeResolution),
+            "Category id not 0 or auth issue"
         );
         uint256 _proposalId = totalProposals;
         allProposalData[_proposalId].owner = msg.sender;
@@ -918,8 +944,8 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         if (_categoryId > 0) {
-            (, , , uint defaultIncentive, ) = proposalCategory
-            .categoryActionDetails(_categoryId);
+            (, , , uint256 defaultIncentive, ) = proposalCategory
+                .categoryActionDetails(_categoryId);
             _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
         }
     }
@@ -979,7 +1005,7 @@ contract Governance is IGovernance, Iupgradable {
     ) internal {
         uint256 _categoryId = allProposalData[_proposalId].category;
         if (proposalCategory.categoryActionHashes(_categoryId).length == 0) {
-            require(keccak256(_action) == keccak256(""));
+            require(keccak256(_action) == keccak256(""), "keccak256 issue");
             proposalActionStatus[_proposalId] = uint256(ActionStatus.NoAction);
         }
 
@@ -1022,7 +1048,8 @@ contract Governance is IGovernance, Iupgradable {
             (delegationId == 0) ||
                 (delegationId > 0 &&
                     allDelegation[delegationId].leader == address(0) &&
-                    _checkLastUpd(allDelegation[delegationId].lastUpd))
+                    _checkLastUpd(allDelegation[delegationId].lastUpd)),
+            "Delegation issue"
         );
 
         require(memberRole.checkRole(msg.sender, mrSequence), "Not Authorized");
@@ -1033,7 +1060,8 @@ contract Governance is IGovernance, Iupgradable {
                         msg.sender,
                         "DR",
                         lockTimeForDR.add(now)
-                    ), "Not locked"
+                    ),
+                "Not locked"
             );
         }
         uint256 totalVotes = allVotes.length;
@@ -1107,8 +1135,9 @@ contract Governance is IGovernance, Iupgradable {
             .voteValue[_solution] = proposalVoteTally[_proposalId]
             .voteValue[_solution]
             .add(voteWeight);
-        proposalVoteTally[_proposalId].voters =
-            proposalVoteTally[_proposalId].voters.add(voters);
+        proposalVoteTally[_proposalId].voters = proposalVoteTally[_proposalId]
+            .voters
+            .add(voters);
     }
 
     /**
@@ -1226,19 +1255,23 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Internal call to undelegate a follower
-     * @param _follower is address of follower to undelegate
+     * @dev Internal call to un delegate a follower
+     * @param _follower is address of follower to un delegate
      */
     function _unDelegate(address _follower) internal {
         uint256 followerId = followerDelegation[_follower];
         address leader = allDelegation[followerId].leader;
         if (followerId > 0) {
             //Remove followerId from leaderDelegation array
-                uint256 idOfLastFollower = leaderDelegation[leader][leaderDelegation[leader].length.sub(1)];
-                leaderDelegation[leader][followerIndex[_follower]] = idOfLastFollower;
-                followerIndex[allDelegation[idOfLastFollower].follower] = followerIndex[_follower];
-                leaderDelegation[leader].length--;
-                delete followerIndex[_follower];
+
+
+                uint256 idOfLastFollower
+             = leaderDelegation[leader][leaderDelegation[leader].length.sub(1)];
+            leaderDelegation[leader][followerIndex[_follower]] = idOfLastFollower;
+            followerIndex[allDelegation[idOfLastFollower]
+                .follower] = followerIndex[_follower];
+            leaderDelegation[leader].length--;
+            delete followerIndex[_follower];
 
             followerCount[allDelegation[followerId]
                 .leader] = followerCount[allDelegation[followerId].leader].sub(
@@ -1265,11 +1298,9 @@ contract Governance is IGovernance, Iupgradable {
         if (_checkForThreshold(_proposalId, category)) {
             if (
                 (
-                    (
-                        proposalVoteTally[_proposalId].voteValue[1]
-                            .mul(100)
+                    (proposalVoteTally[_proposalId].voteValue[1].mul(100)).div(
+                        allProposalData[_proposalId].totalVoteValue
                     )
-                        .div(allProposalData[_proposalId].totalVoteValue)
                 ) >= majorityVote
             ) {
                 _callIfMajReached(
@@ -1288,14 +1319,27 @@ contract Governance is IGovernance, Iupgradable {
         } else {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
         }
-        if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
-            bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
-            if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
+        if (
+            allProposalData[_proposalId].propStatus >
+            uint256(ProposalStatus.Accepted)
+        ) {
+            bytes memory _functionHash = proposalCategory.categoryActionHashes(
+                category
+            );
+            if (
+                keccak256(_functionHash) ==
+                keccak256(
+                    abi.encodeWithSignature("resolveDispute(address,uint256)")
+                )
+            ) {
                 plotus.burnDisputedProposalTokens(_proposalId);
             }
         }
 
-        if (proposalVoteTally[_proposalId].voters > 0 && allProposalData[_proposalId].commonIncentive > 0) {
+        if (
+            proposalVoteTally[_proposalId].voters > 0 &&
+            allProposalData[_proposalId].commonIncentive > 0
+        ) {
             tokenInstance.transferFrom(
                 address(plotus),
                 address(this),
@@ -1321,5 +1365,4 @@ contract Governance is IGovernance, Iupgradable {
         actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
     }
-
 }
