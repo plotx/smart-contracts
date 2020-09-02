@@ -1291,8 +1291,9 @@ contract Governance is IGovernance, Iupgradable {
         } else {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
         }
-        if(category == 10) {
-            if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
+        if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
+            bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
+            if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
                 plotus.burnDisputedProposalTokens(_proposalId);
             }
         }
