@@ -54,7 +54,7 @@ contract Market is usingProvable {
     // mapping(address => uint256) internal stakedTokenApplied;
     mapping(address => bool) internal userClaimedReward;
 
-    //Flag to prevent user from predicting multiple times in a market with bLOTtoken
+    //Flag to prevent user from predicting multiple times in a market with bLOTToken
     mapping(address => bool) internal predictedWithBlot;
     mapping(address => bool) internal multiplierApplied;
 
@@ -278,7 +278,7 @@ contract Market is usingProvable {
     * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
     * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
     * @return _predictionType uint representing the type of market.
-    * @return _expireTime uint representing the time at which market closes for preidction
+    * @return _expireTime uint representing the time at which market closes for prediction
     * @return _predictionStatus uint representing the status of the market.
     */
     function getData() public view returns
@@ -311,7 +311,7 @@ contract Market is usingProvable {
    /**
     * @dev Gets the result of the market.
     * @return uint256 representing the winning option of the market.
-    * @return uint256 Value of market currenct at the time closing market.
+    * @return uint256 Value of market currently at the time closing market.
     * @return uint256 representing the positions of the winning option.
     * @return uint[] memory representing the reward to be distributed.
     * @return uint256 representing the Eth staked on winning option.
@@ -543,7 +543,7 @@ contract Market is usingProvable {
 
     /**
     * @dev Resolve the dispute
-    * @param accepted Flag mentioning if deispute is acceted or not
+    * @param accepted Flag mentioning if dispute is accepted or not
     * @param finalResult The final correct value of market currency.
     */
     function resolveDispute(bool accepted, uint256 finalResult) external {
