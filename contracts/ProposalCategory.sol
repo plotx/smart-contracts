@@ -140,7 +140,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             3,
             2
-        ); 
+        );
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",
             "",
@@ -158,7 +158,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); 
+        );
         _addInitialCategories(
             "Update governance parameters",
             "",
@@ -167,7 +167,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); 
+        );
         _addInitialCategories(
             "Update Token Controller parameters",
             "",
@@ -176,7 +176,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); 
+        );
         _addInitialCategories(
             "Add new market type",
             "",
@@ -194,7 +194,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             60,
             2,
             2
-        ); 
+        );
         _addInitialCategories(
             "Pause Market Creation",
             "",
@@ -286,7 +286,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-     * @dev Gets the category acion details
+     * @dev Gets the category action details
      * @param _categoryId is the category id in concern
      * @return the category id
      * @return the contract address
@@ -312,7 +312,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     }
 
     /**
-     * @dev Gets the category acion details of a category id
+     * @dev Gets the category action details of a category id
      * @param _categoryId is the category id in concern
      * @return the category id
      * @return the contract address
@@ -344,10 +344,12 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
      * @dev Changes the master address and update it's instance
      */
     function setMasterAddress() public {
-        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
+            address(uint160(address(this)))
+        );
+        require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
 
-        require(masterAddress == address(0));
+        require(masterAddress == address(0), "Master address already set");
         masterAddress = msg.sender;
         mr = IMemberRoles(IMaster(masterAddress).getLatestAddress("MR"));
     }
@@ -386,7 +388,8 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
 
         require(
             (_contractName == "EX" && _contractAddress == address(0)) ||
-                bytes(_functionHash).length > 0
+                bytes(_functionHash).length > 0,
+            "Wrong parameters passed"
         );
 
         _addCategory(
@@ -452,7 +455,8 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
 
         require(
             (_contractName == "EX" && _contractAddress == address(0)) ||
-                bytes(_functionHash).length > 0
+                bytes(_functionHash).length > 0,
+            "Wrong parameters passed"
         );
 
         delete categoryActionHashes[_categoryId];
@@ -566,7 +570,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         allowedToCreateProposal[0] = _allowedToCreate;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
-        if(_memberRoleToVote == 3) {
+        if (_memberRoleToVote == 3) {
             stakeIncentive[1] = 100 ether;
         }
         if (bytes(_actionHash).length > 0) {
