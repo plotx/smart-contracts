@@ -173,7 +173,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let solutionAction = await gv.getSolutionAction(pId, 1);
 		assert.equal(parseFloat(solutionAction[0]), 1);
 		let voteData = await gv.voteTallyData(pId,1)
-		assert.equal(parseFloat(voteData[0]),2.999989e+25);
+		assert.equal(parseFloat(voteData[0]),2.998989e+25);
 		assert.equal(parseFloat(voteData[1]),6);
 
 		let openMarkets = await pl.getOpenMarkets();
@@ -324,6 +324,6 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.equal(oldGVBalance, newGVBalance);
 		await increaseTime(604810);
 		actionStatus = await gv.proposal(pId);
-		assert.equal(parseFloat(actionStatus[2]), 6);
+		assert.equal(parseFloat(actionStatus[2]), 5);
 	});
 });

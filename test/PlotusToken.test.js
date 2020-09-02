@@ -44,7 +44,7 @@ contract("PlotusToken", ([owner, account2, account3]) => {
 			assert.equal(tokenSymbol, symbol);
 			assert.equal(tokenDecimals.toNumber(), decimals);
 			assert.equal(web3.utils.fromWei(totalSupply), initialSupply);
-			assert.equal(web3.utils.fromWei(ownerBalance), initialSupply - web3.utils.fromWei("100000000000000000000"));
+			assert.equal(web3.utils.fromWei(ownerBalance), initialSupply - web3.utils.fromWei("10100000000000000000000"));
 			assert.equal(operator, defaultOperator);
 		});
 	});
@@ -120,7 +120,7 @@ contract("PlotusToken", ([owner, account2, account3]) => {
 			assert.equal(receipt.logs[0].args.from, owner);
 			assert.equal(receipt.logs[0].args.to, account2);
 			assert.equal(web3.utils.fromWei(receipt.logs[0].args.value), 5);
-			assert.equal(web3.utils.fromWei(newOwnerBalance), 29999880);
+			assert.equal(web3.utils.fromWei(newOwnerBalance), 29989880);
 			assert.equal(web3.utils.fromWei(account2Balance), 10); //account2Balance = 10
 		});
 
@@ -190,7 +190,7 @@ contract("PlotusToken", ([owner, account2, account3]) => {
 			const allowanceAmount = web3.utils.fromWei(await plotusToken.allowance(owner, account2));
 
 			assert.equal(transferFromCall, true);
-			assert.equal(fromAccountBalance, 29999875);
+			assert.equal(fromAccountBalance, 29989875);
 			assert.equal(toAccountBalance, 5);
 			assert.equal(receipt.logs.length, 2);
 			assert.equal(receipt.logs[0].event, "Transfer");

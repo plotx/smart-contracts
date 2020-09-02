@@ -62,11 +62,12 @@ contract('Configure Global Parameters', accounts => {
         params.push((await marketConfig.getFeedAddresses())[1]);
         let newMarketConfig = await MarketConfig.new(params);
         let actionHash = encode(
-          'updateMarketConfigImplementation(address)',
+          'upgradeContractImplementation(address,address)',
+          marketConfig.address,
           newMarketConfig.address
         );
         await gvProposal(
-          21,
+          6,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
@@ -210,7 +211,7 @@ contract('Configure Global Parameters', accounts => {
           'transferAssets(address,address,uint256)',
           plotTok.address,
           newAB,
-          toWei(10)
+          1000000000000
         );
         await gvProposal(
           19,
@@ -222,8 +223,8 @@ contract('Configure Global Parameters', accounts => {
         );
         let plbalPlotAfter = await plotTok.balanceOf(pl.address);
         let userbalPlotAfter = await plotTok.balanceOf(newAB);
-        assert.equal(plbalPlot - plbalPlotAfter, toWei(10));
-        assert.equal(userbalPlotAfter/1e18 - userbalPlot/1e18, 10);
+        assert.equal(plbalPlot - plbalPlotAfter, 1000000000000);
+        assert.equal(userbalPlotAfter/1e18 - userbalPlot/1e18, 1);
       });
 
       it('Should not Change token operator if null address', async function() {
@@ -233,7 +234,7 @@ contract('Configure Global Parameters', accounts => {
           ZERO_ADDRESS
         );
         await gvProposal(
-          23,
+          22,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
@@ -250,7 +251,7 @@ contract('Configure Global Parameters', accounts => {
           newAB
         );
         await gvProposal(
-          23,
+          22,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,

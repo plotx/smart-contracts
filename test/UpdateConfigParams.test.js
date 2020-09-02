@@ -240,33 +240,33 @@ contract('Configure Global Parameters', accounts => {
       });
 
       it('Should update Chain Link Price Oracle', async function() {
-        await updateParameter(22, 2, 'CLORCLE', pl, 'configAddress', pl.address);
+        await updateParameter(21, 2, 'CLORCLE', pl, 'configAddress', pl.address);
         let configData = await marketConfig.getFeedAddresses();
         assert.equal(configData[0], pl.address, 'Not updated');
       });
 
       it('Should update Uniswap Router', async function() {
-        await updateParameter(22, 2, 'UNIRTR', pl, 'configAddress', pl.address);
+        await updateParameter(21, 2, 'UNIRTR', pl, 'configAddress', pl.address);
         let configData = await marketConfig.getETHtoTokenRouterAndPath();
         assert.equal(configData[0], pl.address, 'Not updated');
       });
 
       it('Should update Uniswap Factory', async function() {
         let uniswapFactory = await MockUniswapFactory.new();
-        await updateParameter(22, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
+        await updateParameter(21, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
         let configData = await marketConfig.getFeedAddresses();
         assert.equal(configData[1], uniswapFactory.address, 'Not updated');
       });
 
       it('Should Add new incentive token', async function() {
         let newToken = await PlotusToken.new(30000000000);
-        await updateParameter(22, 2, 'INCTOK', pl, 'configAddress', newToken.address);
+        await updateParameter(21, 2, 'INCTOK', pl, 'configAddress', newToken.address);
         let configData = await marketConfig.getMarketInitialParams();
         assert.equal(configData[0][configData[0].length-1], newToken.address, 'Not updated');
       });
 
       it('Should not update if invalid code is passed', async function() {
-        await updateParameter(22, 2, 'CDTIM1', pl, 'configAddress', pl.address);
+        await updateParameter(21, 2, 'CDTIM1', pl, 'configAddress', pl.address);
       });
 
     });
