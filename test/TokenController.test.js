@@ -420,25 +420,22 @@ contract("TokenController", ([owner, account2, account3]) => {
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), 2000);
 		});
 
-		it("Should revert transfer with lock of 0 amount", async () => {
-			await expectRevert(tokenController.transferWithLock(account2, lockReason1, 0, lockPeriod, { from: owner }), AMOUNT_ZERO);
-		});
-
-		it("Should be able to transfer with lock", async () => {
+		it("Should be able to lock", async () => {
 			const ownerBalance = (await plotusToken.balanceOf(owner)).toNumber();
 			const account2Balance = (await plotusToken.balanceOf(account2)).toNumber();
-			let receipt = await tokenController.transferWithLock.call(account2, lockReason1, lockedAmount, lockPeriod, {
-				from: owner,
+			await plotusToken.transfer(account2, lockedAmount);
+			let receipt = await tokenController.lock.call(lockReason1, lockedAmount, lockPeriod, {
+				from: account2,
 			});
 			assert.equal(receipt, true);
 			const latestTime = await time.latest();
-			receipt = await tokenController.transferWithLock(account2, lockReason1, lockedAmount, lockPeriod, {
-				from: owner,
+			receipt = await tokenController.lock(lockReason1, lockedAmount, lockPeriod, {
+				from: account2,
 			});
-			await expectRevert(tokenController.transferWithLock(account2, lockReason1, account2Balance, lockPeriod, { from: owner }), ALREADY_LOCKED);
+			await expectRevert(tokenController.lock(lockReason1, account2Balance, lockPeriod, { from: account2 }), ALREADY_LOCKED);
 			const tokensLocked = await tokenController.tokensLocked(account2, lockReason1);
 			assert.equal((await tokenController.totalBalanceOf(account2)).toNumber(), account2Balance + lockedAmount);
-			assert.equal((await tokenController.totalBalanceOf(owner)).toNumber(), ownerBalance - lockedAmount);
+			// assert.equal((await tokenController.totalBalanceOf(owner)).toNumber(), ownerBalance - lockedAmount);
 			assert.equal((await plotusToken.balanceOf(account2)).toNumber(), 0);
 			assert.equal(tokensLocked.toNumber(), lockedAmount);
 			assert.equal(receipt.logs.length, 1);
@@ -479,14 +476,6 @@ contract("TokenController", ([owner, account2, account3]) => {
 			assert.equal((await plotusToken.balanceOf(account3)).toNumber(), lockedAmount);
 			assert.equal((await tokenController.totalBalanceOf(account3)).toNumber(), lockedAmount);
 		});
-
-		it("Should be able to transfer with lock if locked for reason2 and reason3", async() => {
-			await tokenController.transferWithLock(account2, lockReason1, lockedAmount, lockPeriod, { from: owner });
-			await assertRevert(tokenController.transferWithLock(account2, lockReason2, lockedAmount, lockPeriod, { from: owner }));
-			await tokenController.transferWithLock(account2, lockReason2, lockedAmount, thirtyDayPeriod, { from: owner });
-			await time.increase(thirtyDayPeriod+1)
-			await tokenController.unlock(account2);
-		})
 	});
 	// describe("Burn Commission tokens", () => {
 	// 	it("Burn commission tokens", async () => {
