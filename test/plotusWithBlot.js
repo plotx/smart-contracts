@@ -335,7 +335,7 @@ contract("Market", async function ([user1, user2]) {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		plotusToken = await PlotusToken.deployed();
-		BLOTInstance = await BLOT.deployed();
+		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 		plotusNewInstance = await Plotus.at(plotusNewAddress);
@@ -343,19 +343,18 @@ contract("Market", async function ([user1, user2]) {
 		marketConfig = await MarketConfig.at(marketConfig);
 		// console.log(await plotusNewInstance.getOpenMarkets());
 
-		let operatorNow = await BLOTInstance.operator();
-		assert.equal(operatorNow, "0x0000000000000000000000000000000000000000");
+		// let operatorNow = await BLOTInstance.operator();
+		// assert.equal(operatorNow, "0x0000000000000000000000000000000000000000");
 
-		let receipt = await BLOTInstance.changeOperator.call(user1);
-		await BLOTInstance.changeOperator(user1);
-		operatorNow = await BLOTInstance.operator();
-		assert.equal(receipt, true);
-		assert.equal(operatorNow, user1);
+		// let receipt = await BLOTInstance.changeOperator.call(user1);
+		await assertRevert(BLOTInstance.changeOperator(user1));
+		// operatorNow = await BLOTInstance.operator();
+		// assert.equal(receipt, true);
+		// assert.equal(operatorNow, user1);
 
 		let isMinter = await BLOTInstance.isMinter(user1);
-		assert.equal(isMinter, false);
-		await BLOTInstance.initiatebLOT(user1);
-		isMinter = await BLOTInstance.isMinter(user1);
+		// assert.equal(isMinter, false);
+		// isMinter = await BLOTInstance.isMinter(user1);
 		assert.equal(isMinter, true);
 
 		isMinter = await BLOTInstance.isMinter(user2);

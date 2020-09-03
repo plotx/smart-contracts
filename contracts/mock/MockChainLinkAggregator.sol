@@ -1,8 +1,7 @@
 pragma solidity 0.5.7;
   
 import "../interfaces/IChainLinkOracle.sol";
-import "../external/openzeppelin-solidity/ownership/Ownable.sol";
-contract MockChainLinkAggregator is Ownable,IChainLinkOracle{
+contract MockChainLinkAggregator is IChainLinkOracle{
 
 	 int256 latestAns = 934999802346 ;
 
@@ -20,7 +19,7 @@ contract MockChainLinkAggregator is Ownable,IChainLinkOracle{
     * @dev Set the latest answer of chainLink oracle.
     * @param _latestAnswer The latest anser of chainLink oracle.
     */
-	 function setLatestAnswer(int256 _latestAnswer) public onlyOwner
+	 function setLatestAnswer(int256 _latestAnswer) public
 	 {
 	 	latestAns = _latestAnswer;
 	 }

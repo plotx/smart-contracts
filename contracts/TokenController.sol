@@ -123,37 +123,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         return true;
     }
 
-
-    /**
-     * @dev Transfers and Locks a specified amount of tokens,
-     *      for a specified reason and time
-     * @param _to address to which tokens are to be transferred
-     * @param _reason The reason to lock tokens
-     * @param _amount Number of tokens to be transferred and locked
-     * @param _time Lock time in seconds
-     */
-    function transferWithLock(address _to, bytes32 _reason, uint256 _amount, uint256 _time)
-        public
-        returns (bool)
-    {
-
-        require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR","Unspecified reason or time");
-        require(tokensLocked(_to, _reason) == 0, ALREADY_LOCKED);
-        require(_amount != 0, AMOUNT_ZERO);
-        require(!(token.isLockedForGV(msg.sender)), "Locked for governance");
-
-        uint256 validUntil = now.add(_time); //solhint-disable-line
-
-        lockReason[_to].push(_reason);
-
-        token.operatorTransfer(msg.sender, _amount);
-
-        locked[_to][_reason] = LockToken(_amount, validUntil, false);
-        
-        emit Locked(_to, _reason, _amount, validUntil);
-        return true;
-    }
-
     /**
      * @dev Returns tokens locked for a specified address for a
      *      specified reason
@@ -338,8 +307,8 @@ contract TokenController is IERC1132, Governed, Iupgradable {
      * @dev Lock the user's tokens
      * @param _of user's address.
      */
-    function lockForGovernanceVote(address _of, uint _days) public onlyAuthorizedToGovern {
-        token.lockForGovernanceVote(_of, _days);
+    function lockForGovernanceVote(address _of, uint _period) public onlyAuthorizedToGovern {
+        token.lockForGovernanceVote(_of, _period);
     }
 
 

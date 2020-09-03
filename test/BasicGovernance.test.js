@@ -99,28 +99,19 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await assertRevert(gv.categorizeProposal(proposalId, 35, 0));
   });
 
-  it("15.8 Should categorize proposal", async function () {
-    assert.equal(await mr.checkRole(ab1, 1), 1);
-    await gv.categorizeProposal(proposalId, 1, 0);
-    let proposalData = await gv.proposal(proposalId);
-    assert.equal(proposalData[1].toNumber(), 1, "Proposal not categorized");
-  });
-
-  it("15.9 Should update proposal details", async function () {
-    let { logs } = await gv.updateProposal(proposalId, "Addnewmember", "AddnewmemberSD", "AddnewmemberDescription");
-  });
-
-  it("15.10 Should reset proposal category", async function () {
-    var proposalDataUpdated = await gv.proposal(proposalId);
-    assert.equal(proposalDataUpdated[1].toNumber(), 0, "Category not reset");
-  });
-
-  it("15.11 Should not open proposal for voting before categorizing", async () => {
+  it("Should not open proposal for voting before categorizing", async () => {
     await assertRevert(gv.submitProposalWithSolution(proposalId, "Addnewmember", "0x4d52"));
   });
 
-  it("15.12 Should allow only owner to open proposal for voting", async () => {
+  it("Should categorize proposal", async function () {
+    assert.equal(await mr.checkRole(ab1, 1), 1);
     await gv.categorizeProposal(proposalId, 2, 0);
+    let proposalData = await gv.proposal(proposalId);
+    assert.equal(proposalData[1].toNumber(), 2, "Proposal not categorized");
+  });
+
+  it("Should allow only owner to open proposal for voting", async () => {
+    // await gv.categorizeProposal(proposalId, 2, 0);
     await gv.proposal(proposalId);
     await pc.category(9);
     await assertRevert(gv.submitVote(proposalId, 1));
@@ -140,9 +131,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     assert.equal((await gv.canCloseProposal(proposalId)).toNumber(), 0);
   });
 
-  it("15.13 Should not update proposal if solution exists", async function () {
+  it("15.13 Should not categorize proposal if solution exists", async function () {
     await assertRevert(gv.categorizeProposal(proposalId, 2, toWei(1)));
-    await assertRevert(gv.updateProposal(proposalId, "Addnewrole", "AddnewRoleSD", "AddnewRoleDescription"));
   });
 
   it("15.14 Should not allow voting for non existent solution", async () => {

@@ -25,8 +25,7 @@ contract BLOT is ERC20, Iupgradable {
      * @dev Checks if msg.sender is token operator address.
      */
     modifier onlyOperator() {
-        if (operator != address(0))
-            require(msg.sender == operator, "Only operator");
+        require(msg.sender == operator, "Only operator");
         _;
     }
 
@@ -68,6 +67,7 @@ contract BLOT is ERC20, Iupgradable {
         onlyOperator
         returns (bool)
     {
+        require(_newOperator != address(0), "New operator cannot be 0 address");
         operator = _newOperator;
         return true;
     }
