@@ -210,27 +210,13 @@ contract Governance is IGovernance, Iupgradable {
     /**
      * @dev Edits the details of an existing proposal
      * To implement the governance interface
-     * @param _proposalId Proposal id that details needs to be updated
-     * @param _proposalDescHash Proposal description hash having long and short description of proposal.
      */
     function updateProposal(
         uint256 _proposalId,
         string calldata _proposalTitle,
         string calldata _proposalSD,
         string calldata _proposalDescHash
-    ) external onlyProposalOwner(_proposalId) {
-        require(allProposalSolutions[_proposalId].length < 2, "Not allowed");
-        allProposalData[_proposalId].propStatus = uint256(ProposalStatus.Draft);
-        allProposalData[_proposalId].category = 0;
-        allProposalData[_proposalId].commonIncentive = 0;
-        emit Proposal(
-            allProposalData[_proposalId].owner,
-            _proposalId,
-            now,
-            _proposalTitle,
-            _proposalSD,
-            _proposalDescHash
-        );
+    ) external {
     }
 
     /**
