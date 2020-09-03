@@ -57,9 +57,8 @@ contract PlotXToken is ERC20 {
      * account.
      * @param amount The amount that will be burnt.
      */
-    function burn(uint256 amount) public returns (bool) {
+    function burn(uint256 amount) public {
         _burn(msg.sender, amount);
-        return true;
     }
 
     /**
@@ -67,9 +66,8 @@ contract PlotXToken is ERC20 {
      * @param from address The address which you want to send tokens from
      * @param value uint256 The amount of token to be burned
      */
-    function burnFrom(address from, uint256 value) public returns (bool) {
+    function burnFrom(address from, uint256 value) public {
         _burnFrom(from, value);
-        return true;
     }
 
     /**
