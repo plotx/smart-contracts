@@ -218,9 +218,9 @@ contract('Configure Global Parameters', accounts => {
       });
 
       it('Should not update Eth commission percent, if invalid percent is passed', async function() {
-        await updateParameter(20, 2, 'ETHCOM', pl, 'configUint', 140);
+        await updateParameter(20, 2, 'ETHCOM', pl, 'configUint', 140001);
         let configData = await marketConfig.getMarketInitialParams();
-        assert.notEqual(configData[3]/1, 140, 'Not updated');
+        assert.notEqual(configData[3]/1, 140001, 'Not updated');
       });
 
       it('Should update PLOT commission percen', async function() {
@@ -230,9 +230,9 @@ contract('Configure Global Parameters', accounts => {
       });
 
       it('Should not update PLOT commission percent, if invalid percent is passed', async function() {
-        await updateParameter(20, 2, 'PLOTCOM', pl, 'configUint', 150);
+        await updateParameter(20, 2, 'PLOTCOM', pl, 'configUint', 100000);
         let configData = await marketConfig.getMarketInitialParams();
-        assert.notEqual(configData[4]/1, 150, 'Not updated');
+        assert.notEqual(configData[4]/1, 100000, 'Not updated');
       });
 
       it('Should not update if invalid code is passed', async function() {
