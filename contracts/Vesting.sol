@@ -68,7 +68,7 @@ contract Vesting {
     owner = _owner;
   }
 
-  /// @Dev Add a new token vesting for user `_recipient`. Only one vesting per user is allowed
+  /// @dev Add a new token vesting for user `_recipient`. Only one vesting per user is allowed
   /// The amount of PlotX tokens here need to be preapproved for transfer by this `Vesting` contract before this call
   /// @param _recipient Address of the token recipient entitled to claim the vested funds
   /// @param _startTime Vesting start time as seconds since unix epoch 
@@ -109,7 +109,7 @@ contract Vesting {
     emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff);
   }
 
-  /// @Dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested
+  /// @dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested
   /// It is advised recipients check they are entitled to claim via `calculateVestingClaim` before calling this
   function claimVestedTokens() public {
 
@@ -127,7 +127,7 @@ contract Vesting {
     emit TokensClaimed(msg.sender, amountVested);
   }
 
-  /// @Dev Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
+  /// @dev Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
   /// Due to rounding errors once grant duration is reached, returns the entire left grant amount
   /// Returns (0, 0) if cliff has not been reached
   function calculateVestingClaim(address _recipient) public view returns (uint256, uint256) {
@@ -162,7 +162,7 @@ contract Vesting {
     }
   }
 
-  /// @Dev Returns unclaimed allocation of user. 
+  /// @dev Returns unclaimed allocation of user. 
   function unclaimedAllocation(address _user) external view returns(uint) {
     return tokenAllocations[_user].amount.sub(tokenAllocations[_user].totalClaimed);
   }
