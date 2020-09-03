@@ -53,7 +53,7 @@ contract BLOT is ERC20, Iupgradable {
             address(uint160(address(this)))
         );
         require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
-        require(plotToken == address(0), "Zero address");
+        require(plotToken == address(0), "Already Initialized");
         IMaster ms = IMaster(msg.sender);
         plotToken = ms.dAppToken();
         operator = ms.getLatestAddress("TC");
