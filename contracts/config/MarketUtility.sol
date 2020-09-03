@@ -176,6 +176,48 @@ contract MarketUtility {
     }
 
     /**
+     * @dev Update cumulative price of token in uniswap
+     * @param pairAddress Token pair address
+     **/
+    function update(address pairAddress) external onlyAuthorized {
+        if (pairAddress != plotToken) {
+            _update(pairAddress);
+        }
+        _update(plotETHpair);
+    }
+
+    function _update(address pair) internal {
+        UniswapPriceData storage _priceData = uniswapPairData[pair];
+        (
+            uint256 price0Cumulative,
+            uint256 price1Cumulative,
+            uint32 blockTimestamp
+        ) = UniswapV2OracleLibrary.currentCumulativePrices(pair);
+        uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
+
+        if (timeElapsed >= updatePeriod) {
+            // overflow is desired, casting never truncates
+            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+            _priceData.price0Average = FixedPoint.uq112x112(
+                uint224(
+                    (price0Cumulative - _priceData.price0CumulativeLast) /
+                        timeElapsed
+                )
+            );
+            _priceData.price1Average = FixedPoint.uq112x112(
+                uint224(
+                    (price1Cumulative - _priceData.price1CumulativeLast) /
+                        timeElapsed
+                )
+            );
+
+            _priceData.price0CumulativeLast = price0Cumulative;
+            _priceData.price1CumulativeLast = price1Cumulative;
+            _priceData.blockTimestampLast = blockTimestamp;
+        }
+    }
+
+    /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
      * @return Percentage of users prediction amount to deduct when placed in wrong prediction
@@ -377,48 +419,6 @@ contract MarketUtility {
      **/
     function getFeedAddresses() public view returns (address, address) {
         return (address(chainLinkOracle), address(uniswapFactory));
-    }
-
-    /**
-     * @dev Update cumulative price of token in uniswap
-     * @param pairAddress Token pair address
-     **/
-    function update(address pairAddress) external onlyAuthorized {
-        if (pairAddress != plotToken) {
-            _update(pairAddress);
-        }
-        _update(plotETHpair);
-    }
-
-    function _update(address pair) internal {
-        UniswapPriceData storage _priceData = uniswapPairData[pair];
-        (
-            uint256 price0Cumulative,
-            uint256 price1Cumulative,
-            uint32 blockTimestamp
-        ) = UniswapV2OracleLibrary.currentCumulativePrices(pair);
-        uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
-
-        if (timeElapsed >= updatePeriod) {
-            // overflow is desired, casting never truncates
-            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-            _priceData.price0Average = FixedPoint.uq112x112(
-                uint224(
-                    (price0Cumulative - _priceData.price0CumulativeLast) /
-                        timeElapsed
-                )
-            );
-            _priceData.price1Average = FixedPoint.uq112x112(
-                uint224(
-                    (price1Cumulative - _priceData.price1CumulativeLast) /
-                        timeElapsed
-                )
-            );
-
-            _priceData.price0CumulativeLast = price0Cumulative;
-            _priceData.price1CumulativeLast = price1Cumulative;
-            _priceData.blockTimestampLast = blockTimestamp;
-        }
     }
 
     /**

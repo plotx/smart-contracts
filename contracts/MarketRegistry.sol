@@ -340,14 +340,69 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       disputeStakes[msg.sender].inDispute = false;
     }
 
+    /**
+    * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
+    * @param _proposalId Id of dispute resolution proposal
+    */
     function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
       IMarket(disputeProposalId[_proposalId]).resolveDispute(false, 0);
       uint _stakedAmount = disputeStakes[disputeProposalId[_proposalId]].stakeAmount;
       plotToken.burn(_stakedAmount);
     }
+ 
+    /**
+    * @dev Claim the pending return of the market.
+    * @param maxRecords Maximum number of records to claim reward for
+    */
+    function claimPendingReturn(uint256 maxRecords) external {
+      uint256 i;
+      uint len = marketsParticipated[msg.sender].length;
+      uint lastClaimed = len;
+      uint count;
+      for(i = lastClaimedIndex[msg.sender]; i < len && count < maxRecords; i++) {
+        if(IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender) > 0) {
+          count++;
+        } else {
+          if(lastClaimed == len) {
+            lastClaimed = i;
+          }
+        }
+      }
+      if(lastClaimed == len) {
+        lastClaimed = i;
+      }
+      lastClaimedIndex[msg.sender] = lastClaimed;
+    }
 
-    function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(disputeStakes[_marketAddress].proposalId);
+    function () external payable {
+    }
+
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
+      _transferAsset(_asset, _to, _amount);
+    }
+
+    /**
+    * @dev Transfer the assets to specified address.
+    * @param _asset The asset transfer to the specific address.
+    * @param _recipient The address to transfer the asset of
+    * @param _amount The amount which is transfer.
+    */
+    function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
+      if(_amount > 0) { 
+        if(_asset == ETH_ADDRESS) {
+          _recipient.transfer(_amount);
+        } else {
+          require(IToken(_asset).transfer(_recipient, _amount));
+        }
+      }
+    }
+
+    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      marketUtility.updateUintParameters(code, value);
+    }
+
+    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
+      marketUtility.updateAddressParameters(code, value);
     }
 
     /**
@@ -399,6 +454,15 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint[] calldata incentives, address[] calldata incentiveTokens) external OnlyMarket {
       emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveTokens);
     }
+
+    /**
+    * @dev Get status of dispute resolution proposal of market
+    * @param _marketAddress Address of market for which status is queried
+    */
+    function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
+      (, , _status, , ) = governance.proposal(disputeStakes[_marketAddress].proposalId);
+    }
+
 
     /**
     * @dev Gets the market details of the specified address.
@@ -479,60 +543,5 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     //     incentive = incentive.add(_incentive);
     //   }
     // }
-
-    /**
-    * @dev Claim the pending return of the market.
-    * @param maxRecords Maximum number of records to claim reward for
-    */
-    function claimPendingReturn(uint256 maxRecords) external {
-      uint256 i;
-      uint len = marketsParticipated[msg.sender].length;
-      uint lastClaimed = len;
-      uint count;
-      for(i = lastClaimedIndex[msg.sender]; i < len && count < maxRecords; i++) {
-        if(IMarket(marketsParticipated[msg.sender][i]).claimReturn(msg.sender) > 0) {
-          count++;
-        } else {
-          if(lastClaimed == len) {
-            lastClaimed = i;
-          }
-        }
-      }
-      if(lastClaimed == len) {
-        lastClaimed = i;
-      }
-      lastClaimedIndex[msg.sender] = lastClaimed;
-    }
-
-    function () external payable {
-    }
-
-    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
-      _transferAsset(_asset, _to, _amount);
-    }
-
-    /**
-    * @dev Transfer the assets to specified address.
-    * @param _asset The asset transfer to the specific address.
-    * @param _recipient The address to transfer the asset of
-    * @param _amount The amount which is transfer.
-    */
-    function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
-      if(_amount > 0) { 
-        if(_asset == ETH_ADDRESS) {
-          _recipient.transfer(_amount);
-        } else {
-          require(IToken(_asset).transfer(_recipient, _amount));
-        }
-      }
-    }
-
-    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      marketUtility.updateUintParameters(code, value);
-    }
-
-    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
-      marketUtility.updateAddressParameters(code, value);
-    }
 
 }

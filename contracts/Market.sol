@@ -111,57 +111,6 @@ contract Market is usingProvable {
       // marketResultId = provable_query(settleTime, "", "");
     }
 
-    /**
-    * @dev Gets the status of market.
-    * @return PredictionStatus representing the status of market.
-    */
-    function marketStatus() internal view returns(PredictionStatus){
-      if(predictionStatus == PredictionStatus.Live && now >= expireTime) {
-        return PredictionStatus.InSettlement;
-      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime) {
-        return PredictionStatus.Cooling;
-      }
-      return predictionStatus;
-    }
-
-    /**
-    * @dev Calculates the price of `_option`.
-    * @param _option Option chosen
-    * @param _totalStaked The total asset staked on market.
-    * @param _assetStakedOnOption Asset staked on options.
-    * @return _optionPrice Price of the given option.
-    */
-    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
-      _optionPrice = 0;
-      uint currentPriceOption = 0;
-      (uint stakeWeightage,uint stakeWeightageMinAmount, uint currentPrice, uint minTimeElapsedDivisor) = marketUtility.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
-      uint predictionWeightage = 100 - stakeWeightage;
-      uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
-      if(now > expireTime) {
-        return 0;
-      }
-      if(_totalStaked > stakeWeightageMinAmount) {
-        _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
-      }
-
-      uint maxDistance;
-      if(currentPrice < optionsAvailable[2].minValue) {
-        currentPriceOption = 1;
-        maxDistance = 2;
-      } else if(currentPrice > optionsAvailable[2].maxValue) {
-        currentPriceOption = 3;
-        maxDistance = 2;
-      } else {
-        currentPriceOption = 2;
-        maxDistance = 1;
-      }
-      uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
-      uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
-      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
-      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
-      _optionPrice = _optionPrice.div(100);
-    }
-
    /**
     * @dev Set the option ranges of the market
     * @param _midRangeMin The minimum value of middle option.
@@ -174,6 +123,120 @@ contract Market is usingProvable {
       optionsAvailable[2].maxValue = _midRangeMax;
       optionsAvailable[3].minValue = _midRangeMax.add(1);
       optionsAvailable[3].maxValue = ~uint256(0) ;
+    }
+
+    /**
+    * @dev Place prediction on the available options of the market.
+    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _prediction The option on which user placed prediction.
+    * @param _leverage The leverage opted by user at the time of prediction.
+    */
+    function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
+      require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
+      require(now >= startTime && now <= expireTime);
+
+
+      if(_asset == tokenController.bLOTToken()) {
+        require(_leverage == MAX_LEVERAGE);
+        require(msg.value == 0);
+        require(!predictedWithBlot[msg.sender]);
+        predictedWithBlot[msg.sender] = true;
+        tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
+        _asset = plotToken;
+      } else {
+        require(_isAllowedToStake(_asset));
+        if(_asset == ETH_ADDRESS) {
+          require(_predictionStake == msg.value);
+        } else {
+          require(msg.value == 0);
+          require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+        }
+      }
+
+      _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
+      
+      uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
+
+      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
+      require(_stakeValue >= minPrediction,"Min prediction amount required");
+      uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
+      predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
+
+      _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
+      marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+    }
+
+    /**
+    * @dev Stores the prediction data.
+    * @param _prediction The option on which user place prediction.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _asset The asset used by user during prediction.
+    * @param _leverage The leverage opted by user during prediction.
+    * @param predictionPoints The positions user got during prediction.
+    */
+    function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
+      if(_asset == ETH_ADDRESS) {
+        totalStakedETH = totalStakedETH.add(_predictionStake);
+      }
+      else {
+        totalStakedToken = totalStakedToken.add(_predictionStake);
+      }
+      userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
+      assetStaked[msg.sender][_asset][_prediction] = assetStaked[msg.sender][_asset][_prediction].add(_predictionStake);
+      LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
+      optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
+      optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_predictionStake);
+      optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
+    }
+
+    /**
+    * @dev Check if the given `_asset` is supported to stake
+    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
+    */
+    function _isAllowedToStake(address _asset) internal view returns(bool) {
+      return (_asset == ETH_ADDRESS ||
+               _asset == plotToken ||
+               _asset == tokenController.bLOTToken()
+              );
+    }
+
+    /**
+    * @dev Gets the interest return of the stake after commission.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _asset The assets uses by user during prediction.
+    * @return uint256 representing the interest return of the stake.
+    */
+    function _collectInterestReturnStake(uint256 _predictionStake, address _asset) internal returns(uint256) {
+      uint _commision = _predictionStake.mul(commissionPerc[_asset]).div(10000);
+      _predictionStake = _predictionStake.sub(_commision);
+      commissionAmount[_asset] = commissionAmount[_asset].add(_commision);
+      return _predictionStake;
+    }
+
+    /**
+    * @dev Check if user gets any multiplier on his positions
+    * @param _asset The assets uses by user during prediction.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param predictionPoints The actual positions user got during prediction.
+    * @param _stakeValue The stake value of asset.
+    * @return uint256 representing multiplied positions
+    */
+    function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
+      uint _minPredictionForMultiplier;
+      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", now);
+      uint _predictionValueInToken;
+      (_minPredictionForMultiplier, _predictionValueInToken) = marketUtility.getValueAndMultiplierParameters(_asset, _predictionStake);
+      if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
+        return predictionPoints;
+      }
+      uint _muliplier = 100;
+      if(_stakedBalance.div(_predictionValueInToken) > 0) {
+        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+        multiplierApplied[msg.sender] = true;
+      }
+      predictionPoints = predictionPoints.mul(_muliplier).div(100);
+      return predictionPoints;
     }
 
    /**
@@ -221,6 +284,45 @@ contract Market is usingProvable {
       return value.mul(sqrt(value.mul(10000))).mul(_leverage*100*leverageMultiplier).div(optionPrice.mul(1250000000));
     }
 
+
+    /**
+    * @dev Calculates the price of `_option`.
+    * @param _option Option chosen
+    * @param _totalStaked The total asset staked on market.
+    * @param _assetStakedOnOption Asset staked on options.
+    * @return _optionPrice Price of the given option.
+    */
+    function _calculateOptionPrice(uint _option, uint _totalStaked, uint _assetStakedOnOption) internal view returns(uint _optionPrice) {
+      _optionPrice = 0;
+      uint currentPriceOption = 0;
+      (uint stakeWeightage,uint stakeWeightageMinAmount, uint currentPrice, uint minTimeElapsedDivisor) = marketUtility.getPriceCalculationParams(marketFeedAddress, isChainlinkFeed);
+      uint predictionWeightage = 100 - stakeWeightage;
+      uint minTimeElapsed = predictionTime.div(minTimeElapsedDivisor);
+      if(now > expireTime) {
+        return 0;
+      }
+      if(_totalStaked > stakeWeightageMinAmount) {
+        _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
+      }
+
+      uint maxDistance;
+      if(currentPrice < optionsAvailable[2].minValue) {
+        currentPriceOption = 1;
+        maxDistance = 2;
+      } else if(currentPrice > optionsAvailable[2].maxValue) {
+        currentPriceOption = 3;
+        maxDistance = 2;
+      } else {
+        currentPriceOption = 2;
+        maxDistance = 1;
+      }
+      uint distance = currentPriceOption > _option ? currentPriceOption.sub(_option) : _option.sub(currentPriceOption);
+      uint timeElapsed = now > startTime ? now.sub(startTime) : 0;
+      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
+      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
+      _optionPrice = _optionPrice.div(100);
+    }
+
     /**
     * @dev function to calculate square root of a number
     */
@@ -231,209 +333,6 @@ contract Market is usingProvable {
           y = z;
           z = (x / z + z) / 2;
       }
-    }
-
-    /**
-    * @dev Calculate the given asset value in eth 
-    */
-    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal pure returns(uint) {
-      return _amount.mul(_price).div(10**_decimals);
-    }
-
-   /**
-    * @dev Get estimated amount of prediction points for given inputs.
-    * @param _prediction The option on which user place prediction.
-    * @param _stakeValueInEth The amount staked by user.
-    * @param _leverage The leverage opted by user at the time of prediction.
-    * @return uint256 representing the prediction points.
-    */
-    function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
-      ( , , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
-      return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
-    }
-
-    /**
-    * @dev Gets the price of specific option.
-    * @param _prediction The option number to query the balance of.
-    * @return Price of the option.
-    */
-    function getOptionPrice(uint _prediction) public view returns(uint) {
-      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
-
-     return _calculateOptionPrice(
-                _prediction,
-                totalStakedETH.add(totalStakedToken.mul(_price).div(10**_decimals)),
-                optionsAvailable[_prediction].assetStaked[ETH_ADDRESS].add(
-                  (optionsAvailable[_prediction].assetStaked[plotToken]).mul(_price).div(10**_decimals)
-                )
-            );
-    }
-
-    /**
-    * @dev Gets the market data.
-    * @return _marketCurrency bytes32 representing the currency or stock name of the market.
-    * @return minvalue uint[] memory representing the minimum range of all the options of the market.
-    * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
-    * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
-    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
-    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
-    * @return _predictionTime uint representing the type of market.
-    * @return _expireTime uint representing the time at which market closes for prediction
-    * @return _predictionStatus uint representing the status of the market.
-    */
-    function getData() public view returns
-       (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, uint _predictionStatus){
-        _marketCurrency = marketCurrency;
-        _predictionTime = expireTime.sub(startTime);
-        _expireTime =expireTime;
-        _predictionStatus = uint(marketStatus());
-        minvalue = new uint[](totalOptions);
-        maxvalue = new uint[](totalOptions);
-        _optionPrice = new uint[](totalOptions);
-        _ethStaked = new uint[](totalOptions);
-        _plotStaked = new uint[](totalOptions);
-        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
-        uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
-        uint _assetStaked;
-        for (uint i = 0; i < totalOptions; i++) {
-        _assetStaked = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
-        _assetStaked = _assetStaked.add(
-          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[plotToken], _tokenPrice, _decimals)
-        );
-        _ethStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
-        _plotStaked[i] = optionsAvailable[i+1].assetStaked[plotToken];
-        minvalue[i] = optionsAvailable[i+1].minValue;
-        maxvalue[i] = optionsAvailable[i+1].maxValue;
-        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked);
-       }
-    }
-
-   /**
-    * @dev Gets the result of the market.
-    * @return uint256 representing the winning option of the market.
-    * @return uint256 Value of market currently at the time closing market.
-    * @return uint256 representing the positions of the winning option.
-    * @return uint[] memory representing the reward to be distributed.
-    * @return uint256 representing the Eth staked on winning option.
-    * @return uint256 representing the PLOT staked on winning option.
-    */
-    function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
-      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken]);
-    }
-
-    /**
-    * @dev Place prediction on the available options of the market.
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _prediction The option on which user placed prediction.
-    * @param _leverage The leverage opted by user at the time of prediction.
-    */
-    function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-      require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
-      require(now >= startTime && now <= expireTime);
-
-
-      if(_asset == tokenController.bLOTToken()) {
-        require(_leverage == MAX_LEVERAGE);
-        require(msg.value == 0);
-        require(!predictedWithBlot[msg.sender]);
-        predictedWithBlot[msg.sender] = true;
-        tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
-        _asset = plotToken;
-      } else {
-        require(_isAllowedToStake(_asset));
-        if(_asset == ETH_ADDRESS) {
-          require(_predictionStake == msg.value);
-        } else {
-          require(msg.value == 0);
-          require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
-        }
-      }
-
-      _predictionStake = _collectInterestReturnStake(_predictionStake, _asset);
-      
-      uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
-
-      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
-      require(_stakeValue >= minPrediction,"Min prediction amount required");
-      uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
-      predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
-
-      _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
-      marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
-    }
-
-    /**
-    * @dev Check if the given `_asset` is supported to stake
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
-    */
-    function _isAllowedToStake(address _asset) internal view returns(bool) {
-      return (_asset == ETH_ADDRESS ||
-               _asset == plotToken ||
-               _asset == tokenController.bLOTToken()
-              );
-    }
-
-    /**
-    * @dev Gets the interest return of the stake after commission.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _asset The assets uses by user during prediction.
-    * @return uint256 representing the interest return of the stake.
-    */
-    function _collectInterestReturnStake(uint256 _predictionStake, address _asset) internal returns(uint256) {
-      uint _commision = _predictionStake.mul(commissionPerc[_asset]).div(10000);
-      _predictionStake = _predictionStake.sub(_commision);
-      commissionAmount[_asset] = commissionAmount[_asset].add(_commision);
-      return _predictionStake;
-    }
-
-    /**
-    * @dev Stores the prediction data.
-    * @param _prediction The option on which user place prediction.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _asset The asset used by user during prediction.
-    * @param _leverage The leverage opted by user during prediction.
-    * @param predictionPoints The positions user got during prediction.
-    */
-    function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
-      if(_asset == ETH_ADDRESS) {
-        totalStakedETH = totalStakedETH.add(_predictionStake);
-      }
-      else {
-        totalStakedToken = totalStakedToken.add(_predictionStake);
-      }
-      userPredictionPoints[msg.sender][_prediction] = userPredictionPoints[msg.sender][_prediction].add(predictionPoints);
-      assetStaked[msg.sender][_asset][_prediction] = assetStaked[msg.sender][_asset][_prediction].add(_predictionStake);
-      LeverageAsset[msg.sender][_asset][_prediction] = LeverageAsset[msg.sender][_asset][_prediction].add(_predictionStake.mul(_leverage));
-      optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
-      optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_predictionStake);
-      optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
-    }
-
-    /**
-    * @dev Check if user gets any multiplier on his positions
-    * @param _asset The assets uses by user during prediction.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param predictionPoints The actual positions user got during prediction.
-    * @param _stakeValue The stake value of asset.
-    * @return uint256 representing multiplied positions
-    */
-    function _checkMultiplier(address _asset, uint _predictionStake, uint predictionPoints, uint _stakeValue) internal returns(uint) {
-      uint _minPredictionForMultiplier;
-      uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", now);
-      uint _predictionValueInToken;
-      (_minPredictionForMultiplier, _predictionValueInToken) = marketUtility.getValueAndMultiplierParameters(_asset, _predictionStake);
-      if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
-        return predictionPoints;
-      }
-      uint _muliplier = 100;
-      if(_stakedBalance.div(_predictionValueInToken) > 0) {
-        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
-        multiplierApplied[msg.sender] = true;
-      }
-      predictionPoints = predictionPoints.mul(_muliplier).div(100);
-      return predictionPoints;
     }
 
     /**
@@ -556,6 +455,35 @@ contract Market is usingProvable {
       predictionStatus = PredictionStatus.Settled;
     }
 
+
+    /**
+    * @dev Claim the return amount of the specified address.
+    * @param _user The address to query the claim return amount of.
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
+    */
+    function claimReturn(address payable _user) public returns(uint256) {
+
+      if(lockedForDispute || marketStatus() != PredictionStatus.Settled || marketRegistry.marketCreationPaused()) {
+        return 0;
+      }
+      if(userClaimedReward[_user]) {
+        return 1;
+      }
+      if(!commissionExchanged) {
+        _exchangeCommission();
+      }
+      userClaimedReward[_user] = true;
+      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
+      uint256 i;
+      _transferAsset(plotToken, _user, _returnAmount[0]);
+      _transferAsset(ETH_ADDRESS, _user, _returnAmount[1]);
+      for(i = 0;i < incentiveTokens.length; i++) {
+        _transferAsset(incentiveTokens[i], _user, _incentives[i]);
+      }
+      marketRegistry.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
+      return 2;
+    }
+
     /**
     * @dev Transfer the assets to specified address.
     * @param _asset The asset transfer to the specific address.
@@ -571,6 +499,97 @@ contract Market is usingProvable {
         }
       }
     }
+
+
+    /**
+    * @dev Calculate the given asset value in eth 
+    */
+    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal pure returns(uint) {
+      return _amount.mul(_price).div(10**_decimals);
+    }
+
+   /**
+    * @dev Get estimated amount of prediction points for given inputs.
+    * @param _prediction The option on which user place prediction.
+    * @param _stakeValueInEth The amount staked by user.
+    * @param _leverage The leverage opted by user at the time of prediction.
+    * @return uint256 representing the prediction points.
+    */
+    function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
+      ( , , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
+      return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
+    }
+
+    /**
+    * @dev Gets the price of specific option.
+    * @param _prediction The option number to query the balance of.
+    * @return Price of the option.
+    */
+    function getOptionPrice(uint _prediction) public view returns(uint) {
+      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
+
+     return _calculateOptionPrice(
+                _prediction,
+                totalStakedETH.add(totalStakedToken.mul(_price).div(10**_decimals)),
+                optionsAvailable[_prediction].assetStaked[ETH_ADDRESS].add(
+                  (optionsAvailable[_prediction].assetStaked[plotToken]).mul(_price).div(10**_decimals)
+                )
+            );
+    }
+
+    /**
+    * @dev Gets the market data.
+    * @return _marketCurrency bytes32 representing the currency or stock name of the market.
+    * @return minvalue uint[] memory representing the minimum range of all the options of the market.
+    * @return maxvalue uint[] memory representing the maximum range of all the options of the market.
+    * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
+    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
+    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
+    * @return _predictionTime uint representing the type of market.
+    * @return _expireTime uint representing the time at which market closes for prediction
+    * @return _predictionStatus uint representing the status of the market.
+    */
+    function getData() public view returns
+       (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
+        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, uint _predictionStatus){
+        _marketCurrency = marketCurrency;
+        _predictionTime = expireTime.sub(startTime);
+        _expireTime =expireTime;
+        _predictionStatus = uint(marketStatus());
+        minvalue = new uint[](totalOptions);
+        maxvalue = new uint[](totalOptions);
+        _optionPrice = new uint[](totalOptions);
+        _ethStaked = new uint[](totalOptions);
+        _plotStaked = new uint[](totalOptions);
+        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
+        uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
+        uint _assetStaked;
+        for (uint i = 0; i < totalOptions; i++) {
+        _assetStaked = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
+        _assetStaked = _assetStaked.add(
+          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[plotToken], _tokenPrice, _decimals)
+        );
+        _ethStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
+        _plotStaked[i] = optionsAvailable[i+1].assetStaked[plotToken];
+        minvalue[i] = optionsAvailable[i+1].minValue;
+        maxvalue[i] = optionsAvailable[i+1].maxValue;
+        _optionPrice[i] = _calculateOptionPrice(i+1, _totalStaked, _assetStaked);
+       }
+    }
+
+   /**
+    * @dev Gets the result of the market.
+    * @return uint256 representing the winning option of the market.
+    * @return uint256 Value of market currently at the time closing market.
+    * @return uint256 representing the positions of the winning option.
+    * @return uint[] memory representing the reward to be distributed.
+    * @return uint256 representing the Eth staked on winning option.
+    * @return uint256 representing the PLOT staked on winning option.
+    */
+    function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
+      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken]);
+    }
+
 
     /**
     * @dev Gets the return amount of the specified address.
@@ -663,32 +682,18 @@ contract Market is usingProvable {
       return _return.add(assetStaked[_user][_asset][i].sub((LeverageAsset[_user][_asset][i].mul(lossPercentage)).div(100)));
     }
 
-    /**
-    * @dev Claim the return amount of the specified address.
-    * @param _user The address to query the claim return amount of.
-    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
-    */
-    function claimReturn(address payable _user) public returns(uint256) {
 
-      if(lockedForDispute || marketStatus() != PredictionStatus.Settled || marketRegistry.marketCreationPaused()) {
-        return 0;
+    /**
+    * @dev Gets the status of market.
+    * @return PredictionStatus representing the status of market.
+    */
+    function marketStatus() internal view returns(PredictionStatus){
+      if(predictionStatus == PredictionStatus.Live && now >= expireTime) {
+        return PredictionStatus.InSettlement;
+      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime) {
+        return PredictionStatus.Cooling;
       }
-      if(userClaimedReward[_user]) {
-        return 1;
-      }
-      if(!commissionExchanged) {
-        _exchangeCommission();
-      }
-      userClaimedReward[_user] = true;
-      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
-      uint256 i;
-      _transferAsset(plotToken, _user, _returnAmount[0]);
-      _transferAsset(ETH_ADDRESS, _user, _returnAmount[1]);
-      for(i = 0;i < incentiveTokens.length; i++) {
-        _transferAsset(incentiveTokens[i], _user, _incentives[i]);
-      }
-      marketRegistry.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentives, incentiveTokens);
-      return 2;
+      return predictionStatus;
     }
 
     // /**

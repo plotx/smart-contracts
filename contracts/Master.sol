@@ -78,26 +78,6 @@ contract Master is Governed {
     }
 
     /**
-     * @dev To check if we use the particular contract.
-     * @param _address The contract address to check if it is active or not.
-     */
-    function isInternal(address _address) public view returns (bool) {
-        return contractsActive[_address];
-    }
-
-    /**
-     * @dev Gets latest contract address
-     * @param _contractName Contract name to fetch
-     */
-    function getLatestAddress(bytes2 _contractName)
-        public
-        view
-        returns (address)
-    {
-        return contractAddress[_contractName];
-    }
-
-    /**
      * @dev adds a new contract type to master
      */
     function addNewContract(bytes2 _contractName, address _contractAddress)
@@ -134,6 +114,27 @@ contract Master is Governed {
             );
             _replaceImplementation(_contractNames[i], _contractAddresses[i]);
         }
+    }
+
+    
+    /**
+     * @dev To check if we use the particular contract.
+     * @param _address The contract address to check if it is active or not.
+     */
+    function isInternal(address _address) public view returns (bool) {
+        return contractsActive[_address];
+    }
+
+    /**
+     * @dev Gets latest contract address
+     * @param _contractName Contract name to fetch
+     */
+    function getLatestAddress(bytes2 _contractName)
+        public
+        view
+        returns (address)
+    {
+        return contractAddress[_contractName];
     }
 
     /**
