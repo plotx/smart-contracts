@@ -68,26 +68,26 @@ contract Vesting {
     owner = _owner;
   }
 
-  /// @notice Add a new token grant for user `_recipient`. Only one grant per user is allowed
-  /// The amount of CLNY tokens here need to be preapproved for transfer by this `Vesting` contract before this call
-  /// Secured to the Colony MultiSig only
-  /// @param _recipient Address of the token grant recipient entitled to claim the grant funds
-  /// @param _startTime Grant start time as seconds since unix epoch
-  /// Allows backdating grants by passing time in the past. If `0` is passed here current blocktime is used. 
-  /// @param _amount Total number of tokens in grant
-  /// @param _vestingDuration Number of months of the grant's duration
-  /// @param _vestingCliff Number of months of the grant's vesting cliff
+  /// @Dev Add a new token vesting for user `_recipient`. Only one vesting per user is allowed
+  /// The amount of PlotX tokens here need to be preapproved for transfer by this `Vesting` contract before this call
+  /// @param _recipient Address of the token recipient entitled to claim the vested funds
+  /// @param _startTime Vesting start time as seconds since unix epoch 
+  /// @param _amount Total number of tokens in vested
+  /// @param _vestingDuration Number of Periods of the Periods
+  /// @param _vestingPeriodInDays Number of days in each Period
+  /// @param _vestingCliff Number of days of the vesting cliff
+  /// @param _upFront Amount of tokens `_recipient` will get  right away
   function addTokenVesting(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff, uint256 _upFront) public 
   onlyOwner
   noGrantExistsForUser(_recipient)
   {
     if(_vestingCliff > 0){
-      require(_upFront == 0, "Upfront is non zero for non zero cliff");
+      require(_upFront == 0, "Upfront is non zero");
     }
-    uint256 amountVestedPerPeriod = _amount.div(_vestingDuration); // need to change 
-    require(amountVestedPerPeriod > 0, "token-zero-amount-vested-per-period");
+    uint256 amountVestedPerPeriod = _amount.div(_vestingDuration);
+    require(amountVestedPerPeriod > 0, "0-amount-vested-per-period");
 
-    // Transfer the grant tokens under the control of the vesting contract
+    // Transfer the vesting tokens under the control of the vesting contract
     token.transferFrom(owner, address(this), _amount.add(_upFront));
 
     Allocation memory _allocation = Allocation({
@@ -100,23 +100,23 @@ contract Vesting {
       periodClaimed: 0,
       totalClaimed: 0
     });
+    tokenAllocations[_recipient] = _allocation;
 
     if(_upFront > 0) {
       token.transfer(_recipient, _upFront);
     }
 
-    tokenAllocations[_recipient] = _allocation;
     emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff);
   }
 
-  /// @notice Allows a grant recipient to claim their vested tokens. Errors if no tokens have vested
-  /// It is advised recipients check they are entitled to claim via `calculateGrantClaim` before calling this
+  /// @Dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested
+  /// It is advised recipients check they are entitled to claim via `calculateVestingClaim` before calling this
   function claimVestedTokens() public {
 
-    require(!token.isLockedForGV(msg.sender));
-    uint256 periodVested;  //
+    require(!token.isLockedForGV(msg.sender),"Locked for GV vote");
+    uint256 periodVested;
     uint256 amountVested;
-    (periodVested, amountVested) = calculateGrantClaim(msg.sender);
+    (periodVested, amountVested) = calculateVestingClaim(msg.sender);
     require(amountVested > 0, "token-zero-amount-vested");
 
     Allocation storage _tokenAllocated = tokenAllocations[msg.sender];
@@ -127,13 +127,13 @@ contract Vesting {
     emit TokensClaimed(msg.sender, amountVested);
   }
 
-  /// @notice Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
+  /// @Dev Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
   /// Due to rounding errors once grant duration is reached, returns the entire left grant amount
   /// Returns (0, 0) if cliff has not been reached
-  function calculateGrantClaim(address _recipient) public view returns (uint256, uint256) {
+  function calculateVestingClaim(address _recipient) public view returns (uint256, uint256) {
     Allocation storage _tokenAllocations = tokenAllocations[_recipient];
 
-    // For grants created with a future start date, that hasn't been reached, return 0, 0
+    // For vesting created with a future start date, that hasn't been reached, return 0, 0
     if (now < _tokenAllocations.startTime) {
       return (0, 0);
     }
@@ -155,13 +155,14 @@ contract Vesting {
       if(_tokenAllocations.vestingCliff > 0) {
         elapsedPeriod = elapsedPeriod.add(1);
       }
-      uint256 periodVested = elapsedPeriod.sub(_tokenAllocations.periodClaimed); //need to review
+      uint256 periodVested = elapsedPeriod.sub(_tokenAllocations.periodClaimed);
       uint256 amountVestedPerPeriod = _tokenAllocations.amount.div(_tokenAllocations.vestingDuration);
       uint256 amountVested = periodVested.mul(amountVestedPerPeriod);
       return (periodVested, amountVested);
     }
   }
 
+  /// @Dev Returns unclaimed allocation of user. 
   function unclaimedAllocation(address _user) external view returns(uint) {
     return tokenAllocations[_user].amount.sub(tokenAllocations[_user].totalClaimed);
   }
