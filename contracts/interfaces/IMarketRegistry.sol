@@ -20,6 +20,12 @@ contract IMarketRegistry {
     function burnDisputedProposalTokens(uint _proposaId) external;
 
     /**
+    * @dev Transfer plot to market for reward distribution in case of all winners situation
+    * @param _amount Amount to transfer to market
+    */
+    function withdrawForRewardDistribution(uint256 _amount) external;
+
+    /**
     * @dev Initialize the PlotX.
     * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.

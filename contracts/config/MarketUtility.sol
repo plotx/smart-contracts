@@ -26,6 +26,8 @@ contract MarketUtility {
     uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
     uint256 internal lossPercentage;
+    uint256 internal disributePercFromMFPool;
+    uint256 internal transferPercToMFPool;
     uint256 internal uniswapDeadline;
     uint256 internal tokenStakeForDispute;
     uint256 internal marketCoolDownTime;
@@ -93,6 +95,8 @@ contract MarketUtility {
         STAKE_WEIGHTAGE = 40; //
         STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
         minTimeElapsedDivisor = 6;
+        transferPercToMFPool = 2;
+        disributePercFromMFPool= 5;
         minBet = 1e15;
         positionDecimals = 1e2;
         lotPurchasePerc = 50;
@@ -125,8 +129,14 @@ contract MarketUtility {
         } else if (code == "PDEC") {
             positionDecimals = value;
         } else if (code == "PPPERC") {
-            require(value < 100, "Value must be less than 100");
+            require(value <= 100, "Value must be less or equal to 100");
             lotPurchasePerc = value;
+        } else if (code == "FROMMF") {
+            require(value <= 100, "Value must be less or equal to 100");
+            disributePercFromMFPool = value;
+        } else if (code == "TOMFPOOL") {
+            require(value <= 100, "Value must be less or equal to 100");
+            transferPercToMFPool = value;
         } else if (code == "PSTEP") {
             priceStep = value;
         } else if (code == "RATE") {
@@ -231,10 +241,12 @@ contract MarketUtility {
             uint256,
             uint256,
             uint256,
+            uint256,
+            uint256,
             uint256
         )
     {
-        return (minBet, lossPercentage, priceStep, positionDecimals);
+        return (minBet, lossPercentage, priceStep, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
     }
 
     /**

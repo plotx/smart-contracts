@@ -349,6 +349,10 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint _stakedAmount = disputeStakes[disputeProposalId[_proposalId]].stakeAmount;
       plotToken.burn(_stakedAmount);
     }
+
+    function withdrawForRewardDistribution(uint256 _amount) external OnlyMarket {
+      _transferAsset(address(plotToken), msg.sender, _amount);
+    }
  
     /**
     * @dev Claim the pending return of the market.

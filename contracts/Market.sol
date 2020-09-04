@@ -46,7 +46,7 @@ contract Market is usingProvable {
 
     mapping(address => uint) internal commissionPerc;
     address[] incentiveTokens;
-    
+
     mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
     mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
     mapping(address => mapping(uint => uint)) public userPredictionPoints;
@@ -158,7 +158,7 @@ contract Market is usingProvable {
       
       uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
 
-      (uint minPrediction, , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
+      (uint minPrediction, , uint priceStep, uint256 positionDecimals, , ) = marketUtility.getBasicMarketDetails();
       require(_stakeValue >= minPrediction,"Min prediction amount required");
       uint predictionPoints = _calculatePredictionValue(_prediction, _stakeValue, positionDecimals, priceStep, _leverage);
       predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
@@ -391,7 +391,10 @@ contract Market is usingProvable {
     function _postResult(uint256 _value) internal {
       require(now >= settleTime,"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      ( , uint lossPercentage, , ) = marketUtility.getBasicMarketDetails();
+      uint disributePercFromMFPool;
+      uint transferPercToMFPool;
+      uint lossPercentage;
+      ( , lossPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       marketCoolDownTime = (now).add(marketCoolDownTime);
       if(_value < optionsAvailable[2].minValue) {
@@ -407,21 +410,32 @@ contract Market is usingProvable {
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
-          totalReward[0] = totalReward[0].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[plotToken])).div(100));
-          totalReward[1] = totalReward[1].add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
+          totalReward[0] = totalReward[0].add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
+          totalReward[1] = totalReward[1].add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
           }
+        }
+        if(totalReward[0].add(totalReward[1]) == 0) {
+          totalReward[0] = _calculatePercentage(transferPercToMFPool, IToken(plotToken).balanceOf(address(marketRegistry)), 100);
+          marketRegistry.withdrawForRewardDistribution(totalReward[0]);
+        } else {
+          tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
+          totalReward[0] = totalReward[0].sub(tokenAmountToPool);
         }
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
-          tokenAmountToPool = tokenAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[plotToken])).div(100));
-          ethAmountToPool = ethAmountToPool.add((lossPercentage.mul(optionsAvailable[i].assetLeveraged[ETH_ADDRESS])).div(100));
+          tokenAmountToPool = tokenAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
+          ethAmountToPool = ethAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
         }
-        _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool);
         _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
       }
+      _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool);
       marketCloseValue = _value;
       marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
+    }
+
+    function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
+      return _percent.mul(_value).div(_divisor);
     }
 
     /**
@@ -516,7 +530,7 @@ contract Market is usingProvable {
     * @return uint256 representing the prediction points.
     */
     function estimatePredictionValue(uint _prediction, uint _stakeValueInEth, uint _leverage) public view returns(uint _predictionValue){
-      ( , , uint priceStep, uint256 positionDecimals) = marketUtility.getBasicMarketDetails();
+      ( , , uint priceStep, uint256 positionDecimals, , ) = marketUtility.getBasicMarketDetails();
       return _calculatePredictionValue(_prediction, _stakeValueInEth, positionDecimals, priceStep, _leverage);
     }
 
@@ -639,7 +653,7 @@ contract Market is usingProvable {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint lossPercentage, , ) = marketUtility.getBasicMarketDetails();
+      ( , uint lossPercentage, , , , ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userPredictionPoints[_user][i]);
