@@ -268,16 +268,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
                 "already active"
             );
 
-            if (
-                _roleId == uint256(Role.AdvisoryBoard) ||
-                _roleId == uint256(Role.DisputeResolution)
-            ) {
-                require(
-                    governance.delegatedTo(_memberAddress) == address(0),
-                    "Member delegated"
-                );
-            }
-
             memberRoleData[_roleId].memberCounter = SafeMath.add(
                 memberRoleData[_roleId].memberCounter,
                 1
