@@ -226,4 +226,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		}
 		// console.log((await web3.eth.getBalance(marketInstance.address)) / 1);
 	});
+	it("4. Market should have 0 balance after all claims", async () => {
+		// console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
+		assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
+	});
+	it("5. Option price must be 0 after expire time", async () => {
+		await marketInstance.setMockPriceFlag(false);
+		let marketData = await marketInstance.getData();
+		let optionPrice1 = parseFloat(marketData._optionPrice[0]);
+		let optionPrice2 = parseFloat(marketData._optionPrice[1]);
+		let optionPrice3 = parseFloat(marketData._optionPrice[2]);
+		assert.equal(optionPrice1, 0);
+		assert.equal(optionPrice2, 0);
+		assert.equal(optionPrice3, 0);
+	});
 });

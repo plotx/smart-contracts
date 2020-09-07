@@ -131,7 +131,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			betPoins = betPoins / 1;
 			return betPoins;
 		};
-		betPointsExpected = [11.10555556, 177.6888889, 46.64333333, 614.6925, 444.0, 1110, 222, 999, 111, 888];
+		betPointsExpected = [
+			3.511006943,
+			166.8345382,
+			22.43778204,
+			918.2061216,
+			510.3446361,
+			1882.790363,
+			232.9834208,
+			1902.398719,
+			110.9444861,
+			1443.472612,
+		];
 
 		// console.log("bet points for user 1");
 		// betPointsUser1 = await getBetPoints(accounts[0], options[0]);
@@ -149,40 +160,38 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			let betPoints = await getBetPoints(accounts[index], options[index]);
 			betPoints = betPoints / 1000;
 			betPoints = betPoints.toFixed(1);
-			// console.log(`user${index + 1} : option : ${options[index]}  `);
-			// console.log(
-			//   `bet points : ${betPoints} expected : ${betPointsExpected[
-			//     index
-			//   ].toFixed(1)} `
-			// );
+			await assert.equal(betPoints, betPointsExpected[index].toFixed(1));
+
 			// await assert.isTrue(
 			//    === betPointsExpected[index]
 			// );
 		}
 		// console.log(await plotusToken.balanceOf(user1));
 
+		// pool balance
+		// console.log(parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address))));
+
 		// close market
 		await increaseTime(36001);
 		await marketInstance.calculatePredictionResult(1);
 		await increaseTime(36001);
 		// plotus contract balance eth balance
-		plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-		// console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
+
+		plotusBalanceBefore = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
 		lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		lotBalanceBefore = lotBalanceBefore / 1;
-		// console.log(`Lot Balance of market before commision : ${lotBalanceBefore}`);
-		// lot supply , lot balance of market
+		assert.equal(parseFloat(plotusBalanceBefore), 0);
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (1333).toFixed(2));
+
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-
 		await marketInstance.exchangeCommission();
+		await increaseTime(360001);
 
 		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-		// console.log(`plotus balance after commision : ${plotusBalanceAfter}`);
 		lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		lotBalanceAfter = lotBalanceAfter / 1;
-		// console.log(`Lot Balance of market before commision : ${lotBalanceAfter}`);
-		// console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
+		assert.equal(parseFloat(plotusBalanceAfter), web3.utils.toWei("0.005"));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (1337.5835).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
 	});
 
 	it("2.check total return for each user bet values in eth", async () => {
@@ -191,41 +200,41 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		getReturnsInEth = async (user) => {
 			// return userReturn in eth
 			const response = await marketInstance.getReturn(user);
-			let returnAmountInEth = response[0][1];
+			let returnAmountInEth = web3.utils.fromWei(response[0][1]);
 			return returnAmountInEth;
 		};
 
 		const returnInEthExpected = [0, 0, 0, 0, 0.999, 1.998, 0.999, 2.997, 0.999, 1.998];
 		// calulate  rewards for every user in eth
 
-		console.log("Rewards in Eth");
 		for (let index = 0; index < 10; index++) {
 			// check eth returns
 			let returns = await getReturnsInEth(accounts[index]);
-			console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
+			assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
+			// commented by parv as already added assert
+			// console.log("Rewards in Eth");
+			// console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
 		}
 	});
 	it("3.Check User Recived The appropriate amount", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		const totalReturnLotExpexted = [
-			99.96200826,
-			399.9921322,
-			209.9454347,
-			123.6031574,
-			0.48009028,
-			1.2002257,
-			0.24004514,
-			1.08020313,
-			0.12002257,
-			0.9601805601,
+			100.1964661,
+			411.5114728,
+			211.4700904,
+			187.394854,
+			35.82523981,
+			132.1683653,
+			16.35500078,
+			133.5448352,
+			7.788095612,
+			101.32908,
 		];
 		const returnInEthExpected = [0, 0, 0, 0, 0.999, 1.998, 0.999, 2.997, 0.999, 1.998];
 
 		for (let account of accounts) {
-			// console.log(`User ${accounts.indexOf(account) + 1}`);
 			beforeClaim = await web3.eth.getBalance(account);
 			beforeClaimToken = await plotusToken.balanceOf(account);
-			// if(returnInEthExpected[accounts.indexOf(account)] > 0)
 			await marketInstance.claimReturn(account);
 			afterClaim = await web3.eth.getBalance(account);
 			afterClaimToken = await plotusToken.balanceOf(account);
@@ -235,16 +244,27 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			diff = diff / conv;
 			diff = diff.toFixed(2);
 			expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
-			console.log(`Returned in Eth : ${diff}  Expected : ${expectedInEth} `);
-			// assert.equal(diff, expectedInEth);
+			assert.equal(diff, expectedInEth);
 
 			diffToken = afterClaimToken - beforeClaimToken;
 			diffToken = diffToken / conv;
-			diffToken = diffToken.toFixed(2);
-			expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(2);
-			// assert.equal(diffToken, expectedInLot);
-			console.log(`Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `);
+			diffToken = diffToken.toFixed(1);
+			expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(1);
+			assert.equal(diffToken, expectedInLot);
 		}
-		console.log((await web3.eth.getBalance(marketInstance.address)) / 1);
+	});
+	it("4. Market should have 0 balance after all claims", async () => {
+		// console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
+		assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
+	});
+	it("5. Option price must be 0 after expire time", async () => {
+		await marketInstance.setMockPriceFlag(false);
+		let marketData = await marketInstance.getData();
+		let optionPrice1 = parseFloat(marketData._optionPrice[0]);
+		let optionPrice2 = parseFloat(marketData._optionPrice[1]);
+		let optionPrice3 = parseFloat(marketData._optionPrice[2]);
+		assert.equal(optionPrice1, 0);
+		assert.equal(optionPrice2, 0);
+		assert.equal(optionPrice3, 0);
 	});
 });
