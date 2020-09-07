@@ -61,33 +61,20 @@ contract Governance is IGovernance, Iupgradable {
         uint256 voters;
     }
 
-    struct DelegateVote {
-        address follower;
-        address leader;
-        uint256 lastUpd;
-    }
-
     ProposalVote[] internal allVotes;
-    DelegateVote[] public allDelegation;
 
     mapping(uint256 => ProposalData) internal allProposalData;
     mapping(uint256 => bytes[]) internal allProposalSolutions;
     mapping(address => uint256[]) internal allVotesByMember;
     mapping(uint256 => mapping(address => bool)) public rewardClaimed;
     mapping(address => mapping(uint256 => uint256)) public memberProposalVote;
-    mapping(address => uint256) public followerDelegation;
-    mapping(address => uint256) internal followerCount;
-    mapping(address => uint256[]) internal leaderDelegation;
-    mapping(address => uint256) public followerIndex;
     mapping(uint256 => VoteTally) public proposalVoteTally;
-    mapping(address => bool) public isOpenForDelegation;
     mapping(address => uint256) public lastRewardClaimed;
 
     bool internal constructorCheck;
     uint256 public tokenHoldingTime;
     uint256 internal roleIdAllowedToCatgorize;
     // uint internal maxVoteWeigthPer;
-    uint256 internal maxFollowers;
     uint256 internal totalProposals;
     uint256 internal maxDraftTime;
     uint256 internal minTokenLockedForDR;
@@ -340,18 +327,8 @@ contract Governance is IGovernance, Iupgradable {
         returns (uint256 pendingDAppReward)
     {
         uint256 voteId;
-        address leader;
-        uint256 lastUpd;
-
-        uint256 delegationId = followerDelegation[_memberAddress];
-        DelegateVote memory delegationData = allDelegation[delegationId];
-        if (delegationId > 0 && delegationData.leader != address(0)) {
-            leader = delegationData.leader;
-            lastUpd = delegationData.lastUpd;
-        } else leader = _memberAddress;
-
         uint256 proposalId;
-        uint256 totalVotes = allVotesByMember[leader].length;
+        uint256 totalVotes = allVotesByMember[_memberAddress].length;
         uint256 lastClaimed = totalVotes;
         uint256 j;
         uint256 i;
@@ -360,12 +337,10 @@ contract Governance is IGovernance, Iupgradable {
             i < totalVotes && j < _maxRecords;
             i++
         ) {
-            voteId = allVotesByMember[leader][i];
+            voteId = allVotesByMember[_memberAddress][i];
             proposalId = allVotes[voteId].proposalId;
             if (
-                proposalVoteTally[proposalId].voters > 0 &&
-                (allVotes[voteId].dateAdd > (lastUpd.add(tokenHoldingTime)) ||
-                    leader == _memberAddress)
+                proposalVoteTally[proposalId].voters > 0
             ) {
                 if (
                     allProposalData[proposalId].propStatus >
@@ -398,81 +373,6 @@ contract Governance is IGovernance, Iupgradable {
             tokenInstance.transfer(_memberAddress, pendingDAppReward);
             emit RewardClaimed(_memberAddress, pendingDAppReward);
         }
-    }
-
-    /**
-     * @dev Sets delegation acceptance status of individual user
-     * @param _status delegation acceptance status
-     */
-    function setDelegationStatus(bool _status) external checkPendingRewards {
-        isOpenForDelegation[msg.sender] = _status;
-    }
-
-    /**
-     * @dev Delegates vote to an address.
-     * @param _add is the address to delegate vote to.
-     */
-    function delegateVote(address _add) external checkPendingRewards {
-        require(delegatedTo(_add) == address(0));
-
-        if (followerDelegation[msg.sender] > 0) {
-            require(
-                (allDelegation[followerDelegation[msg.sender]].lastUpd).add(
-                    tokenHoldingTime
-                ) < now
-            );
-        }
-
-        require(!alreadyDelegated(msg.sender));
-        require(
-            !memberRole.checkRole(
-                msg.sender,
-                uint256(IMemberRoles.Role.AdvisoryBoard)
-            )
-        );
-        require(
-            !memberRole.checkRole(
-                msg.sender,
-                uint256(IMemberRoles.Role.DisputeResolution)
-            )
-        );
-        require(
-            memberRole.checkRole(
-                msg.sender,
-                uint256(IMemberRoles.Role.TokenHolder)
-            ),
-            "Not a token holder"
-        );
-
-        require(followerCount[_add] < maxFollowers);
-
-        if (allVotesByMember[msg.sender].length > 0) {
-            require(
-                (
-                    allVotes[allVotesByMember[msg.sender][allVotesByMember[msg
-                        .sender]
-                        .length.sub(1)]]
-                        .dateAdd
-                )
-                    .add(tokenHoldingTime) < now
-            );
-        }
-
-        require(isOpenForDelegation[_add]);
-
-        allDelegation.push(DelegateVote(msg.sender, _add, now));
-        followerDelegation[msg.sender] = allDelegation.length.sub(1);
-        followerIndex[msg.sender] = leaderDelegation[_add].length;
-        leaderDelegation[_add].push(allDelegation.length.sub(1));
-        followerCount[_add]++;
-        lastRewardClaimed[msg.sender] = allVotesByMember[_add].length;
-    }
-
-    /**
-     * @dev Undelegates the sender
-     */
-    function unDelegate() external checkPendingRewards {
-        _unDelegate(msg.sender);
     }
 
     /**
@@ -530,8 +430,6 @@ contract Governance is IGovernance, Iupgradable {
 
         if (code == "GOVHOLD") {
             val = tokenHoldingTime / (1 days);
-        } else if (code == "MAXFOL") {
-            val = maxFollowers;
         } else if (code == "MAXDRFT") {
             val = maxDraftTime / (1 days);
         } else if (code == "ACWT") {
@@ -622,18 +520,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Get followers of an address
-     * @return get followers of an address
-     */
-    function getFollowers(address _add)
-        external
-        view
-        returns (uint256[] memory)
-    {
-        return leaderDelegation[_add];
-    }
-
-    /**
      * @dev Gets pending rewards of a member
      * @param _memberAddress in concern
      * @return amount of pending reward
@@ -643,42 +529,27 @@ contract Governance is IGovernance, Iupgradable {
         view
         returns (uint256 pendingDAppReward)
     {
-        uint256 delegationId = followerDelegation[_memberAddress];
-        address leader;
-        uint256 lastUpd;
-        DelegateVote memory delegationData = allDelegation[delegationId];
-        if (delegationId > 0 && delegationData.leader != address(0)) {
-            leader = delegationData.leader;
-            lastUpd = delegationData.lastUpd;
-        } else leader = _memberAddress;
-
         uint256 proposalId;
         for (
             uint256 i = lastRewardClaimed[_memberAddress];
-            i < allVotesByMember[leader].length;
+            i < allVotesByMember[_memberAddress].length;
             i++
         ) {
             if (
-                allVotes[allVotesByMember[leader][i]].dateAdd >
-                (lastUpd.add(tokenHoldingTime)) ||
-                leader == _memberAddress
+                !rewardClaimed[allVotesByMember[_memberAddress][i]][_memberAddress]
             ) {
+                proposalId = allVotes[allVotesByMember[_memberAddress][i]]
+                    .proposalId;
                 if (
-                    !rewardClaimed[allVotesByMember[leader][i]][_memberAddress]
+                    proposalVoteTally[proposalId].voters > 0 &&
+                    allProposalData[proposalId].propStatus >
+                    uint256(ProposalStatus.VotingStarted)
                 ) {
-                    proposalId = allVotes[allVotesByMember[leader][i]]
-                        .proposalId;
-                    if (
-                        proposalVoteTally[proposalId].voters > 0 &&
-                        allProposalData[proposalId].propStatus >
-                        uint256(ProposalStatus.VotingStarted)
-                    ) {
-                        pendingDAppReward = pendingDAppReward.add(
-                            allProposalData[proposalId].commonIncentive.div(
-                                proposalVoteTally[proposalId].voters
-                            )
-                        );
-                    }
+                    pendingDAppReward = pendingDAppReward.add(
+                        allProposalData[proposalId].commonIncentive.div(
+                            proposalVoteTally[proposalId].voters
+                        )
+                    );
                 }
             }
         }
@@ -693,8 +564,6 @@ contract Governance is IGovernance, Iupgradable {
         require(ms.isAuthorizedToGovern(msg.sender));
         if (code == "GOVHOLD") {
             tokenHoldingTime = val * 1 days;
-        } else if (code == "MAXFOL") {
-            maxFollowers = val;
         } else if (code == "MAXDRFT") {
             maxDraftTime = val * 1 days;
         } else if (code == "ACWT") {
@@ -745,29 +614,6 @@ contract Governance is IGovernance, Iupgradable {
                 mrAllowed[i] == 0 ||
                 memberRole.checkRole(msg.sender, mrAllowed[i])
             ) return true;
-        }
-    }
-
-    function delegatedTo(address _follower) public returns(address) {
-        if(followerDelegation[_follower] > 0) {
-            return allDelegation[followerDelegation[_follower]].leader;
-        }
-    }
-
-    /**
-     * @dev Checks if an address is already delegated
-     * @param _add in concern
-     * @return bool value if the address is delegated or not
-     */
-    function alreadyDelegated(address _add)
-        public
-        view
-        returns (bool delegated)
-    {
-        for (uint256 i = 0; i < leaderDelegation[_add].length; i++) {
-            if (allDelegation[leaderDelegation[_add][i]].leader == _add) {
-                return true;
-            }
         }
     }
 
@@ -987,7 +833,6 @@ contract Governance is IGovernance, Iupgradable {
      * @param _solution for that proposal
      */
     function _submitVote(uint256 _proposalId, uint256 _solution) internal {
-        uint256 delegationId = followerDelegation[msg.sender];
         uint256 mrSequence;
         uint256 majority;
         uint256 closingTime;
@@ -1003,12 +848,6 @@ contract Governance is IGovernance, Iupgradable {
         require(
             memberProposalVote[msg.sender][_proposalId] == 0,
             "Not allowed"
-        );
-        require(
-            (delegationId == 0) ||
-                (delegationId > 0 &&
-                    allDelegation[delegationId].leader == address(0) &&
-                    _checkLastUpd(allDelegation[delegationId].lastUpd))
         );
 
         require(memberRole.checkRole(msg.sender, mrSequence), "Not Authorized");
@@ -1052,35 +891,9 @@ contract Governance is IGovernance, Iupgradable {
             ProposalVote(msg.sender, _proposalId, _solution, tokenBalance, now)
         );
         if (
-            mrSequence != uint256(IMemberRoles.Role.AdvisoryBoard) &&
-            mrSequence != uint256(IMemberRoles.Role.DisputeResolution)
+            mrSequence == uint256(IMemberRoles.Role.TokenHolder)
         ) {
             voteWeight = tokenBalance;
-            DelegateVote memory delegationData;
-            for (uint256 i = 0; i < leaderDelegation[msg.sender].length; i++) {
-                delegationData = allDelegation[leaderDelegation[msg.sender][i]];
-                if (
-                    delegationData.leader == msg.sender &&
-                    _checkLastUpd(delegationData.lastUpd)
-                ) {
-                    if (
-                        memberRole.checkRole(
-                            delegationData.follower,
-                            mrSequence
-                        )
-                    ) {
-                        tokenBalance = tokenController.totalBalanceOf(
-                            delegationData.follower
-                        );
-                        tokenController.lockForGovernanceVote(
-                            delegationData.follower,
-                            tokenHoldingTime
-                        );
-                        voters++;
-                        voteWeight = voteWeight.add(tokenBalance);
-                    }
-                }
-            }
         } else {
             voteWeight = 1;
         }
@@ -1211,32 +1024,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Internal call to undelegate a follower
-     * @param _follower is address of follower to undelegate
-     */
-    function _unDelegate(address _follower) internal {
-        uint256 followerId = followerDelegation[_follower];
-        address leader = allDelegation[followerId].leader;
-        if (followerId > 0) {
-            //Remove followerId from leaderDelegation array
-                uint256 idOfLastFollower = leaderDelegation[leader][leaderDelegation[leader].length.sub(1)];
-                leaderDelegation[leader][followerIndex[_follower]] = idOfLastFollower;
-                followerIndex[allDelegation[idOfLastFollower].follower] = followerIndex[_follower];
-                leaderDelegation[leader].length--;
-                delete followerIndex[_follower];
-
-            followerCount[allDelegation[followerId]
-                .leader] = followerCount[allDelegation[followerId].leader].sub(
-                1
-            );
-            allDelegation[followerId].leader = address(0);
-            allDelegation[followerId].lastUpd = now;
-
-            lastRewardClaimed[_follower] = allVotesByMember[_follower].length;
-        }
-    }
-
-    /**
      * @dev Internal call to close member voting
      * @param _proposalId of proposal in concern
      * @param category of proposal in concern
@@ -1295,9 +1082,7 @@ contract Governance is IGovernance, Iupgradable {
     function _initiateGovernance() internal {
         allVotes.push(ProposalVote(address(0), 0, 0, 0, 0));
         totalProposals = 1;
-        allDelegation.push(DelegateVote(address(0), address(0), now));
         tokenHoldingTime = 1 * 7 days;
-        maxFollowers = 40;
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         minTokenLockedForDR = 1000 ether;

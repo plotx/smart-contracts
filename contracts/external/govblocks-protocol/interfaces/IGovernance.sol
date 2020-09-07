@@ -157,8 +157,6 @@ contract IGovernance {
     function pauseProposal(uint _proposalId) public;
     
     function resumeProposal(uint _proposalId) public;
-    
-    function delegatedTo(address _follower) public returns(address);
 
     function allowedToCatgorize() public view returns(uint roleId);
 
