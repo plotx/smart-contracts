@@ -26,7 +26,7 @@ contract("Market", async function ([
   user9,
   user10,
 ]) {
-    it("Place the bets with ether", async () => {
+  it("Place the bets with ether", async () => {
       masterInstance = await OwnedUpgradeabilityProxy.deployed();
       masterInstance = await Master.at(masterInstance.address);
       plotusToken = await PlotusToken.deployed();
@@ -193,78 +193,58 @@ contract("Market", async function ([
       );
     });
 
-    it("1.Bet Points allocated properly in ether", async () => {
-      accounts = [
-        user1,
-        user2,
-        user3,
-        user4,
-        user5,
-        user6,
-        user7,
-        user8,
-        user9,
-        user10,
-      ];
-      options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
-      getBetPoints = async (user, option, expected) => {
-        // return bet points of user
-        let betPoins = await marketInstance.userPredictionPoints(user, option);
-        betPoins = betPoins / 1;
-        return betPoins;
-      };
-      betPointsExpected = [
-        5.552777778,
-        88.84444444,
-        23.32166667,
-        204.8975,
-        444.0,
-        1110,
-        111,
-        333,
-        37,
-        444,
-      ];
+    it("1.0 Bet Points allocated properly in ether", async () => {
+			accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
+			options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
+			getBetPoints = async (user, option, expected) => {
+				// return bet points of user
+				let betPoins = await marketInstance.userPredictionPoints(user, option);
+				betPoins = betPoins / 1;
+				return betPoins;
+			};
+			betPointsExpected = [
+				1.755503471,
+				83.41726908,
+				11.21889102,
+				306.0687072,
+				255.1723181,
+				627.5967878,
+				116.4917104,
+				634.1329064,
+				36.98149537,
+				721.7363059,
+			];
 
-      for (let index = 0; index < 10; index++) {
-        let betPoints = await getBetPoints(accounts[index], options[index]);
-        betPoints = betPoints / 1000;
-        betPoints = betPoints.toFixed(1);
-        // console.log(`user${index + 1} : option : ${options[index]}  `);
-        // console.log(
-        //   `bet points : ${betPoints} expected : ${betPointsExpected[
-        //     index
-        //   ].toFixed(1)} `
-        // );
-      }
-      // close market
+			for (let index = 0; index < 10; index++) {
+				let betPoints = await getBetPoints(accounts[index], options[index]);
+				betPoints = betPoints / 1000;
+				betPoints = betPoints.toFixed(1);
+        await assert.equal(betPoints, betPointsExpected[index].toFixed(1));
+			}
       await increaseTime(36001);
       await marketInstance.calculatePredictionResult(1);
       await increaseTime(36001);
       // plotus contract balance eth balance
-      plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-      // console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
-      lotBalanceBefore = await plotusToken.balanceOf(
-        openMarkets["_openMarkets"][0]
+
+      plotusBalanceBefore = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
+			lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
+			assert.equal(parseFloat(plotusBalanceBefore), (6.7982-0.01*0.5).toFixed(5)); //stake-amount lost
+      assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833-337.6311).toFixed(2));
+      
+			await MockUniswapRouterInstance.setPrice("1000000000000000");
+			await marketConfig.setPrice("1000000000000000");
+			await marketInstance.exchangeCommission();
+			await increaseTime(360001);
+
+			plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
+			lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
+			assert.equal(parseFloat(plotusBalanceAfter), web3.utils.toWei("6.7982"));
+			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (499.9524).toFixed(2));
+			assert.equal(
+				parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2),
+				(4.5835).toFixed(2)
       );
-      lotBalanceBefore = lotBalanceBefore / 1;
-      // console.log(`Lot Balance of market before commision : ${lotBalanceBefore}`);
-      // lot supply , lot balance of market
-      await MockUniswapRouterInstance.setPrice("1000000000000000");
-      await marketConfig.setPrice("1000000000000000");
-
-      await marketInstance.exchangeCommission();
-
-      plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-      // console.log(`plotus balance after commision : ${plotusBalanceAfter}`);
-      lotBalanceAfter = await plotusToken.balanceOf(
-        openMarkets["_openMarkets"][0]
-      );
-      lotBalanceAfter = lotBalanceAfter / 1;
-      // console.log(`Lot Balance of market before commision : ${lotBalanceAfter}`);
-      // console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
-    });
-
+      });
     it("2.check total return for each user bet values in eth", async () => {
       accounts = [
         user1,
@@ -280,34 +260,18 @@ contract("Market", async function ([
       ];
       options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
       getReturnsInEth = async (user) => {
-        // return userReturn in eth
-        const response = await marketInstance.getReturn(user);
-        let returnAmountInEth = response[0][1];
-        return returnAmountInEth;
-      };
-
-      const returnInEthExpected = [
-        0,
-        0,
-        0,
-        0,
-        0.1998,
-        0,
-        0.5994,
-        1.1988,
-        0.7992,
-        0.3996,
-      ];
+				// return userReturn in eth
+				const response = await marketInstance.getReturn(user);
+				let returnAmountInEth = web3.utils.fromWei(response[0][1]);
+				return returnAmountInEth;
+			};
+      const returnInEthExpected = [0, 0, 0, 0, 0.1998, 0, 0.5994, 1.1988, 0.7992, 0.3996];
       // calulate  rewards for every user in eth
-
-      // console.log("Rewards in Eth");
       for (let index = 0; index < 10; index++) {
-        // check eth returns
-        let returns = await getReturnsInEth(accounts[index]);
-        // console.log(
-        //   `return : ${returns} Expected :${returnInEthExpected[index]}`
-        // );
-      }
+				// check eth returns
+				let returns = await getReturnsInEth(accounts[index]);
+				assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
+			}
     });
     it("3.Check User Recived The appropriate amount", async () => {
       accounts = [
@@ -323,57 +287,38 @@ contract("Market", async function ([
         user10,
       ];
       const totalReturnLotExpexted = [
-        79.97509222,
-        240.1214755,
-        126.0003873,
-        49.73230279,
-        0.6033866662,
-        1.005644444,
-        0.3016933331,
-        0.9050799993,
-        0.1005644444,
-        1.206773332
-      ];
-      const returnInEthExpected = [
-        0,
-        0,
-        0,
-        0,
-        0.1998,
-        0,
-        0.5994,
-        1.1988,
-        0.7992,
-        0.3996,
-      ];
+				79.96314092,
+				240.0292487,
+				125.9570726,
+				49.72301287,
+				0.4565499255,
+				1.122885385,
+				0.208424966,
+				1.134579696,
+				0.06616665587,
+				1.291318193,
+			];
+      const returnInEthExpected = [0, 0, 0, 0, 0.1998, 0, 0.5994, 1.1988, 0.7992, 0.3996];
 
       for (let account of accounts) {
-        // console.log(`User ${accounts.indexOf(account) + 1}`);
         beforeClaim = await web3.eth.getBalance(account);
-        beforeClaimToken = await plotusToken.balanceOf(account);
-        // if(returnInEthExpected[accounts.indexOf(account)] > 0)
-        await marketInstance.claimReturn(account);
-        afterClaim = await web3.eth.getBalance(account);
-        afterClaimToken = await plotusToken.balanceOf(account);
-        diff = afterClaim - beforeClaim;
-        diff = new BigNumber(diff);
-        conv = new BigNumber(1000000000000000000);
-        diff = diff / conv;
-        diff = diff.toFixed(2);
-        expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
-        // console.log(`Returned in Eth : ${diff}  Expected : ${expectedInEth} `);
-        // assert.equal(diff, expectedInEth);
+				beforeClaimToken = await plotusToken.balanceOf(account);
+				await marketInstance.claimReturn(account);
+				afterClaim = await web3.eth.getBalance(account);
+				afterClaimToken = await plotusToken.balanceOf(account);
+				diff = afterClaim - beforeClaim;
+				diff = new BigNumber(diff);
+				conv = new BigNumber(1000000000000000000);
+				diff = diff / conv;
+				diff = diff.toFixed(2);
+				expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
+				assert.equal(diff, expectedInEth);
 
-        diffToken = afterClaimToken - beforeClaimToken;
-        diffToken = diffToken / conv;
-        diffToken = diffToken.toFixed(2);
-        expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(
-          2
-        );
-        // assert.equal(diffToken, expectedInLot);
-        // console.log(
-        //   `Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `
-        // );
+				diffToken = afterClaimToken - beforeClaimToken;
+				diffToken = diffToken / conv;
+				diffToken = diffToken.toFixed(1);
+				expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(1);
+				assert.equal(diffToken, expectedInLot);
       }
       // console.log((await web3.eth.getBalance(marketInstance.address)) / 1);
     });
