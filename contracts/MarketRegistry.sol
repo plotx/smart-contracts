@@ -14,7 +14,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
 
     using SafeMath for uint256; 
     using strings for *; 
-    
+
     enum MarketType {
       HourlyMarket,
       DailyMarket,
@@ -41,10 +41,18 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint256 startTime;
     }
 
+    struct DisputeStake {
+      address staker;
+      uint256 stakeAmount;
+      uint256 proposalId;
+      uint256 ethDeposited;
+      uint256 tokenDeposited;
+    }
+
     struct MarketData {
       bool isMarket;
-      uint256 totalStaked;
       uint256 winningOption;
+      DisputeStake disputeStakes;
     }
 
     struct UserData {
@@ -58,15 +66,14 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
     mapping(bytes32 => MarketOraclize) public marketOracleId;
+    mapping(uint256 => address) disputeProposalId;
+    mapping(uint256 => mapping(uint256 => bytes32)) public marketTypeCurrencyOraclize; //Markets of type and currency
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public tokenController;
     address public marketImplementation;
     address[] markets;
-    // mapping(uint256 => address[]) public currentMarketsOfType; //Markets participated by user
-    // mapping(uint256 => mapping(uint256 => address)) public currentMarketTypeCurrency; //Markets of type and currency
-    mapping(uint256 => mapping(uint256 => bytes32)) public marketTypeCurrencyOraclize; //Markets of type and currency
-    // mapping(uint256 => mapping(uint256 => uint256)) public marketTypeCurrencyStartTime; //Markets of type and currency
+
 
     MarketTypeData[] marketTypes;
     MarketCurrency[] marketCurrencies;
@@ -78,17 +85,6 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     IGovernance internal governance;
     IMaster ms;
 
-    struct DisputeStake {
-      address staker;
-      uint256 stakeAmount;
-      uint256 proposalId;
-      uint256 ethDeposited;
-      uint256 tokenDeposited;
-      bool inDispute;
-    }
-
-    mapping(address => DisputeStake) disputeStakes;
-    mapping(uint => address) disputeProposalId;
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
@@ -114,7 +110,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       require(address(ms) == msg.sender);
       marketImplementation = _marketImplementation;
       plotToken = IToken(_plotToken);
-      tokenController = ms.getLatestAddress("TC");
+      address tcAddress = ms.getLatestAddress("TC");
+      tokenController = tcAddress;
       markets.push(address(0));
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
@@ -125,10 +122,10 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _plotPriceFeed) external payable {
+    function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _btcPriceFeed) external payable {
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethPriceFeed, "ETH", "Qme2JKFxGqSNed98Ec613fY3nfTmSrLLj5tR4R6pwrbaaU", true);
-      _addNewMarketCurrency(_plotPriceFeed, "BTC", "QmQZta2dVxz5m6XqTng8MymQQe7YgBKcmpy2prCA1Fjvot", true);
+      _addNewMarketCurrency(_btcPriceFeed, "BTC", "QmQZta2dVxz5m6XqTng8MymQQe7YgBKcmpy2prCA1Fjvot", true);
       _addMarket(1 hours, 2 hours, 20);
       _addMarket(24 hours, 2 days, 50);
       _addMarket(7 days, 14 days, 100);
@@ -263,9 +260,9 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       (,,,,,,,, uint _status) = getMarketDetails(_previousMarket);
       require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       require(now > _marketStartTime.add(marketCreationFallbackTime));
-      if(now > _marketStartTime.add(_marketTypeData.predictionTime)) {
-        uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(_marketTypeData.predictionTime);
-       _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(_marketTypeData.predictionTime));
+      if(now > _marketStartTime.add(predictionTime)) {
+        uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(predictionTime);
+       _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(predictionTime));
       }
     }
 
@@ -281,22 +278,22 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param result The current price of market currency.
     */
     function __callback(bytes32 myid, string memory result) public {
+      //Check oraclise address
       require(msg.sender == provable_cbAddress());
       // require(provable_randomDS_proofVerify__returnCode(myid, result, proof) == 0, "Proof verification failed");
-      //Check oraclise address
       strings.slice memory s = result.toSlice();
       strings.slice memory delim = "-".toSlice();
       uint[] memory parts = new uint[](s.count(delim) + 1);
       for (uint i = 0; i < parts.length; i++) {
           parts[i] = parseInt(s.split(delim).toString());
       }
-      if(marketOracleId[myid].marketAddress != address(0)) {
-        IMarket(marketOracleId[myid].marketAddress).exchangeCommission();
+      address marketAddress = marketOracleId[myid].marketAddress;
+      if(marketAddress != address(0)) {
+        IMarket(marketAddress).exchangeCommission();
       }
       _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1], marketOracleId[myid].startTime);
       delete marketOracleId[myid];
     }
-
 
     /**
     * @dev Updates Flag to pause creation of market.
@@ -325,9 +322,9 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public {
       require(isMarket(msg.sender));
-      disputeStakes[msg.sender] = DisputeStake(_user, _stakeForDispute, governance.getProposalLength(), _ethSentToPool, _tokenSentToPool, true);
-      disputeStakes[msg.sender].proposalId = governance.getProposalLength();
-      disputeProposalId[disputeStakes[msg.sender].proposalId] = msg.sender;
+      uint256 proposalId = governance.getProposalLength();
+      marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool);
+      disputeProposalId[proposalId] = msg.sender;
       governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, actionHash);
     }
 
@@ -337,11 +334,15 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _result The final result of the market.
     */
     function resolveDispute(address payable _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
-      _transferAsset(ETH_ADDRESS, _marketAddress, disputeStakes[_marketAddress].ethDeposited);
-      _transferAsset(address(plotToken), _marketAddress, disputeStakes[_marketAddress].tokenDeposited);
+      uint256 ethDepositedInPool = marketData[_marketAddress].disputeStakes.ethDeposited;
+      uint256 plotDepositedInPool = marketData[_marketAddress].disputeStakes.tokenDeposited;
+      uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
+      address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
+      address plotTokenAddress = address(plotToken);
+      _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
+      _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
       IMarket(_marketAddress).resolveDispute(true, _result);
-      _transferAsset(address(plotToken), address(uint160(disputeStakes[_marketAddress].staker)), disputeStakes[_marketAddress].stakeAmount);
-      disputeStakes[msg.sender].inDispute = false;
+      _transferAsset(plotTokenAddress, staker, stakedAmount);
     }
 
     /**
@@ -349,8 +350,9 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _proposalId Id of dispute resolution proposal
     */
     function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
-      IMarket(disputeProposalId[_proposalId]).resolveDispute(false, 0);
-      uint _stakedAmount = disputeStakes[disputeProposalId[_proposalId]].stakeAmount;
+      address disputedMarket = disputeProposalId[_proposalId];
+      IMarket(disputedMarket).resolveDispute(false, 0);
+      uint _stakedAmount = marketData[disputedMarket].disputeStakes.stakeAmount;
       plotToken.burn(_stakedAmount);
     }
 
@@ -446,7 +448,6 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external {
       require(isMarket(msg.sender));
-      marketData[_user].totalStaked = marketData[_user].totalStaked.add(_value);
       if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
         userData[_user].marketsParticipated.push(msg.sender);
         userData[_user].marketsParticipatedFlag[msg.sender] = true;
@@ -472,7 +473,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _marketAddress Address of market for which status is queried
     */
     function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(disputeStakes[_marketAddress].proposalId);
+      (, , _status, , ) = governance.proposal(marketData[_marketAddress].disputeStakes.proposalId);
     }
 
 
@@ -505,16 +506,17 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function getMarketDetailsUser(address user, uint256 fromIndex, uint256 toIndex) external view returns
     (address[] memory _market, uint256[] memory _winnigOption){
-      if(userData[user].marketsParticipated.length > 0 && fromIndex < userData[user].marketsParticipated.length) {
+      uint256 totalMarketParticipated = userData[user].marketsParticipated.length;
+      if(totalMarketParticipated > 0 && fromIndex < totalMarketParticipated) {
         uint256 _toIndex = toIndex;
-        if(_toIndex >= userData[user].marketsParticipated.length) {
-          _toIndex = userData[user].marketsParticipated.length - 1;
+        if(_toIndex >= totalMarketParticipated) {
+          _toIndex = totalMarketParticipated - 1;
         }
         _market = new address[](_toIndex.sub(fromIndex).add(1));
         _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i <= _toIndex; i++) {
           _market[i] = userData[user].marketsParticipated[i];
-          _winnigOption[i] = marketData[userData[user].marketsParticipated[i]].winningOption;
+          _winnigOption[i] = marketData[_market[i]].winningOption;
         }
       }
     }
