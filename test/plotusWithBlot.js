@@ -80,11 +80,11 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		//   from: user1,
 		// });
 
-		await BLOTInstance.approve(openMarkets["_openMarkets"][0], "400000000000000000000", {
-			from: user2,
-		});
+		// await BLOTInstance.approve(openMarkets["_openMarkets"][0], "400000000000000000000", {
+		// 	from: user2,
+		// });
 		// console.log(await BLOTInstance.balanceOf(user1));
-		await BLOTInstance.addMinter(marketInstance.address);
+		// await BLOTInstance.addMinter(marketInstance.address);
 		await marketInstance.placePrediction(BLOTInstance.address, "400000000000000000000", 2, 5, { from: user2 });
 
 		// user 3
@@ -113,9 +113,9 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await plotusToken.approve(BLOTInstance.address, "124000000000000000000");
 		await BLOTInstance.mint(user4, "124000000000000000000");
 
-		await BLOTInstance.approve(openMarkets["_openMarkets"][0], "124000000000000000000", {
-			from: user4,
-		});
+		// await BLOTInstance.approve(openMarkets["_openMarkets"][0], "124000000000000000000", {
+		// 	from: user4,
+		// });
 
 		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 4, { from: user4 })); //should revert as leverage is not 5
 		await assertRevert(

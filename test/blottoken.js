@@ -62,11 +62,7 @@ contract('bLOTToken', function([user1,user2]){
         PLOTInstance = await PLOT.deployed();
         // BLOTInstance = await BLOT.deployed();
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
-        await BLOTInstance.mint(user1,"1000000000000000000000");
-        await BLOTInstance.approve(user1,"1000000000000000000")
-        // let canTransferFrom = await BLOTInstance.transferFrom(user1,user2,"100000000000000000",{from : user1});
-        // assert.ok(canTransferFrom)
-        await assertRevert(BLOTInstance.transferFrom(user1,user2,"100000000000000000",{from : user2}))
+        await BLOTInstance.mint(user1,"1000000000000000000000")
         })
 
 
