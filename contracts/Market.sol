@@ -415,7 +415,7 @@ contract Market is usingProvable {
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
-          totalReward[0] = _calculatePercentage(transferPercToMFPool, IToken(plotToken).balanceOf(address(marketRegistry)), 100);
+          totalReward[0] = _calculatePercentage(disributePercFromMFPool, IToken(plotToken).balanceOf(address(marketRegistry)), 100);
           marketRegistry.withdrawForRewardDistribution(totalReward[0]);
         } else {
           tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
