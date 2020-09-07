@@ -419,7 +419,9 @@ contract Market is usingProvable {
           marketRegistry.withdrawForRewardDistribution(totalReward[0]);
         } else {
           tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
+          ethAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[1], 100);
           totalReward[0] = totalReward[0].sub(tokenAmountToPool);
+          totalReward[1] = totalReward[1].sub(ethAmountToPool);
         }
         rewardToDistribute = totalReward;
       } else {
@@ -427,8 +429,8 @@ contract Market is usingProvable {
           tokenAmountToPool = tokenAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
           ethAmountToPool = ethAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
         }
-        _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
       }
+      _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool);
       marketCloseValue = _value;
       marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
