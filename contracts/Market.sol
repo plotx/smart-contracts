@@ -18,50 +18,11 @@ contract Market is usingProvable {
       Settled
     }
     
-    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    uint constant totalOptions = 3;
-    uint constant MAX_LEVERAGE = 5;
-    uint internal startTime;
-    uint internal expireTime;
-    bytes32 internal marketCurrency;
-    address internal marketFeedAddress;
-    bool internal isChainlinkFeed;
-    uint public rate;
-    uint public WinningOption;
-    uint public marketCloseValue;
-    bool public lockedForDispute;
-    bytes32 internal marketResultId;
-    uint[] public rewardToDistribute;
-    PredictionStatus internal predictionStatus;
-    uint internal settleTime;
-    uint internal marketCoolDownTime;
-    uint internal ethAmountToPool;
-    uint internal tokenAmountToPool;
-    // uint totalStaked;
-    uint totalStakedETH;
-    uint totalStakedToken;
-    uint predictionTime;
-
-    bool commissionExchanged;
-
-    mapping(address => uint) internal commissionPerc;
-    address[] incentiveTokens;
-
-    mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
-    mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
-    mapping(address => mapping(uint => uint)) public userPredictionPoints;
-    mapping(address => uint256) public commissionAmount;
-    // mapping(address => uint256) internal stakedTokenApplied;
-    mapping(address => bool) internal userClaimedReward;
-
-    //Flag to prevent user from predicting multiple times in a market with bLOTToken
-    mapping(address => bool) internal predictedWithBlot;
-    mapping(address => bool) internal multiplierApplied;
-
-    IMarketRegistry internal marketRegistry;
-    ITokenController internal tokenController;
-    MarketUtility internal marketUtility;
-    address internal plotToken;
+    struct UserData {
+      bool claimedReward;
+      bool predictedWithBlot;
+      bool multiplierApplied;
+    }
     
     struct option
     {
@@ -71,6 +32,47 @@ contract Market is usingProvable {
       mapping(address => uint256) assetStaked;
       mapping(address => uint256) assetLeveraged;
     }
+
+    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    uint constant totalOptions = 3;
+    uint constant MAX_LEVERAGE = 5;
+    
+    bool internal isChainlinkFeed;
+    bool public lockedForDispute;
+    bool internal commissionExchanged;
+    bytes32 internal marketCurrency;
+    bytes32 internal marketResultId;
+    address internal marketFeedAddress;
+    address internal plotToken;
+    uint internal startTime;
+    uint internal expireTime;
+    uint public rate;
+    uint public WinningOption;
+    uint public marketCloseValue;
+    uint internal settleTime;
+    uint internal marketCoolDownTime;
+    uint internal ethAmountToPool;
+    uint internal tokenAmountToPool;
+    uint internal totalStakedETH;
+    uint internal totalStakedToken;
+    uint internal predictionTime;
+    address[] incentiveTokens;
+    uint[] public rewardToDistribute;
+    PredictionStatus internal predictionStatus;
+
+
+    mapping(address => uint) internal commissionPerc;
+
+    mapping(address => mapping(address => mapping(uint => uint))) public assetStaked;
+    mapping(address => mapping(address => mapping(uint => uint))) internal LeverageAsset;
+    mapping(address => mapping(uint => uint)) public userPredictionPoints;
+    mapping(address => uint256) public commissionAmount;
+
+    mapping(address => UserData) internal userData;
+
+    IMarketRegistry internal marketRegistry;
+    ITokenController internal tokenController;
+    MarketUtility internal marketUtility;
 
     mapping(address => uint256) incentiveToDistribute;
     mapping(uint=>option) public optionsAvailable;
@@ -140,8 +142,8 @@ contract Market is usingProvable {
       if(_asset == tokenController.bLOTToken()) {
         require(_leverage == MAX_LEVERAGE);
         require(msg.value == 0);
-        require(!predictedWithBlot[msg.sender]);
-        predictedWithBlot[msg.sender] = true;
+        require(!userData[msg.sender].predictedWithBlot);
+        userData[msg.sender].predictedWithBlot = true;
         tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
         _asset = plotToken;
       } else {
@@ -227,13 +229,13 @@ contract Market is usingProvable {
       uint _stakedBalance = tokenController.tokensLockedAtTime(msg.sender, "SM", now);
       uint _predictionValueInToken;
       (_minPredictionForMultiplier, _predictionValueInToken) = marketUtility.getValueAndMultiplierParameters(_asset, _predictionStake);
-      if(_stakeValue < _minPredictionForMultiplier || multiplierApplied[msg.sender]) {
+      if(_stakeValue < _minPredictionForMultiplier || userData[msg.sender].multiplierApplied) {
         return predictionPoints;
       }
       uint _muliplier = 100;
       if(_stakedBalance.div(_predictionValueInToken) > 0) {
         _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
-        multiplierApplied[msg.sender] = true;
+        userData[msg.sender].multiplierApplied = true;
       }
       predictionPoints = predictionPoints.mul(_muliplier).div(100);
       return predictionPoints;
@@ -482,13 +484,13 @@ contract Market is usingProvable {
       if(lockedForDispute || marketStatus() != PredictionStatus.Settled || marketRegistry.marketCreationPaused()) {
         return 0;
       }
-      if(userClaimedReward[_user]) {
+      if(userData[_user].claimedReward) {
         return 1;
       }
       if(!commissionExchanged) {
         _exchangeCommission();
       }
-      userClaimedReward[_user] = true;
+      userData[_user].claimedReward = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint[] memory _incentives, ) = getReturn(_user);
       uint256 i;
       _transferAsset(plotToken, _user, _returnAmount[0]);
