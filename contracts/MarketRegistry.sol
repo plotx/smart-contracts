@@ -61,7 +61,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       mapping(address => bool) marketsParticipatedFlag;
     }
 
-    uint public constant marketCreationFallbackTime = 15 minutes;
+    uint internal marketCreationFallbackTime;
+    uint internal marketCreationIncentive;
     
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
@@ -108,6 +109,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function initiate(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
+      marketCreationFallbackTime = 15 minutes;
+      marketCreationIncentive = 10 ether;
       marketImplementation = _marketImplementation;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
@@ -210,6 +213,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
       (address _previousMarket, uint _marketStartTime, uint256 predictionTime, ) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, 0, predictionTime);
+      _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
     }
 
     /**
@@ -248,6 +252,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
+      _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
     }
 
     function _calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) internal returns(address _previousMarket, uint256 _marketStartTime, uint256 predictionTime, uint256 _optionRangePerc) {
@@ -408,8 +413,14 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       }
     }
 
-    function updateConfigUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      marketUtility.updateUintParameters(code, value);
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      if(code == "FBTIME") {
+        marketCreationFallbackTime = value;
+      } else if(code == "MCRINC") {
+        marketCreationIncentive = value;
+      } else {
+        marketUtility.updateUintParameters(code, value);
+      }
     }
 
     function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
@@ -466,6 +477,14 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint[] calldata incentives, address[] calldata incentiveTokens) external {
       require(isMarket(msg.sender));
       emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveTokens);
+    }
+
+    function getUintParameters(bytes8 code) external returns(uint256 value) {
+      if(code == "FBTIME") {
+        value = marketCreationFallbackTime;
+      } else if(code == "MCRINC") {
+        value = marketCreationIncentive;
+      }
     }
 
     /**
