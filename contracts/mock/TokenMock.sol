@@ -29,6 +29,11 @@ contract TokenMock is ERC20 {
         return true;
     }
 
+    function burnAll() public returns (bool) {
+        _burn(msg.sender, _balances[msg.sender]);
+        return true;
+    }
+
     /**
     * @dev Burns a specific amount of tokens from the target address and decrements allowance
     * @param from address The address which you want to send tokens from

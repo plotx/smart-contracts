@@ -28,7 +28,9 @@ contract Crowdsale is ReentrancyGuard {
     address payable private _wallet;
 
     // Max spending amount allowed 
-    uint private _spendingLimit;
+    uint private _spendingLimitPreSale;
+
+    uint private _spendingLimitPublicSale;
 
     // How many token units a buyer gets per wei.
     // The rate is the conversion between wei and the smallest and indivisible token unit.
@@ -43,6 +45,10 @@ contract Crowdsale is ReentrancyGuard {
 
     uint256 private _startTime;
 
+    uint256 public _preSaleStartTime;
+
+    uint256 public _preSaleEndTime;
+
     uint256 private _endTime;
 
     // Authorised address to whitelist
@@ -56,7 +62,7 @@ contract Crowdsale is ReentrancyGuard {
     IERC20 private _tokenUSDT;
 
     // Tells if user is whitlisted or not.
-    mapping(address => bool) public whitelisted;
+    mapping(address => uint) public whitelisted;
 
     // Maintains amount spent by user.
     mapping(address => uint) public userSpentSoFar;
@@ -66,7 +72,7 @@ contract Crowdsale is ReentrancyGuard {
      * @param _user address of user.
      * @param _time time when user is whitelisted.
      */
-    event UserWhitelisted(address indexed _user, uint _time);
+    event UserWhitelisted(address indexed _user, uint _type, uint _time);
 
     /**
      * Event raised when user is removed from whitelisted.
@@ -91,7 +97,7 @@ contract Crowdsale is ReentrancyGuard {
      * @param tokenUSDC Address of the USDC token
      * @param tokenUSDT Address of the USDT token
      */
-    constructor (address authorisedToWhitelist, address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT, uint256 startTime, uint256 endTime) public {
+    constructor (address authorisedToWhitelist, address payable wallet, IERC20 token, IERC20 tokenUSDC, IERC20 tokenUSDT, uint256 startTime, uint256 endTime, uint256 preSaleStartTime, uint256 preSaleEndTime) public {
         require(authorisedToWhitelist != address(0), "Crowdsale: Authorised address is the zero address");
         require(wallet != address(0), "Crowdsale: wallet is the zero address");
         require(address(token) != address(0), "Crowdsale: token is the zero address");
@@ -103,12 +109,15 @@ contract Crowdsale is ReentrancyGuard {
         _tokenUSDT = tokenUSDT;
         _wallet = wallet;
         _token = token;
-        _spendingLimit = uint(10000).mul(10 ** 18);
+        _spendingLimitPublicSale = uint(10000).mul(10 ** 18);
+        _spendingLimitPreSale = uint(1000).mul(10 ** 18);
         _startRate = uint(7).mul(10 ** 16); 
         _slope = 4000000000;
         _maxTokensToSold = uint256(5000000).mul(10 ** 18);
         _startTime = startTime;
         _endTime = endTime;
+        _preSaleStartTime = preSaleStartTime;
+        _preSaleEndTime = preSaleEndTime;
     }
 
     /**
@@ -163,22 +172,35 @@ contract Crowdsale is ReentrancyGuard {
     /**
      * @return the max amount user an spend (in usd).
      */
-    function spendingLimit() public view returns (uint256) {
-        return _spendingLimit;
+    function spendingLimitPublicSale() public view returns (uint256) {
+        return _spendingLimitPublicSale;
     }
     
     function authorisedToWhitelist() public view returns (address) {
         return _authorisedToWhitelist;
     }
 
+    function saleType() public view returns (uint) {
+        if(_preSaleStartTime<= now && _preSaleEndTime >= now)
+        {
+            return 1;
+        } 
+        if(_startTime<= now && _endTime >= now)
+        {
+            return 2;
+        }
+
+        return 3;
+    }
+
     /**
      * @dev This function is used to add users into whitelist by authorised address.
      * @param _user address of user.
      */
-    function addUserToWhiteList(address _user) external {
+    function addUserToWhiteList(address _user, uint _type) external {
         require(msg.sender == _authorisedToWhitelist, "Not authorised to whitelist");
-        whitelisted[_user] = true;
-        emit UserWhitelisted(_user, now);
+        whitelisted[_user] = _type;
+        emit UserWhitelisted(_user, _type, now);
     }
 
     /**
@@ -187,7 +209,7 @@ contract Crowdsale is ReentrancyGuard {
      */
     function removeUserFromWhiteList(address _user) external {
         require(msg.sender == _authorisedToWhitelist, "Not authorised to whitelist");
-        whitelisted[_user] = false;
+        whitelisted[_user] = 0;
         emit UserBlacklisted(_user, now);
     }
 
@@ -201,16 +223,16 @@ contract Crowdsale is ReentrancyGuard {
      */
     function buyTokens(address beneficiary, uint spendingAmount, IERC20 spendingAsset) public nonReentrant {
         
+        uint saleType = saleType();
         uint256 _amount = spendingAmount;
-        _preValidatePurchase(beneficiary, _amount, spendingAsset);
+        _preValidatePurchase(beneficiary, _amount, spendingAsset, saleType);
 
         require(spendingAsset.transferFrom(msg.sender, address(this), _amount), "Tranfer failed");
 
         
 
         // calculate token amount to be created
-        (uint256 tokens, uint usdToReturn) = _getTokenAmount(_amount);
-
+        (uint256 tokens, uint usdToReturn) = _getTokenAmount(_amount, saleType);
 
         _processPurchase(beneficiary, tokens, spendingAsset, usdToReturn);
         emit TokensPurchased(msg.sender, beneficiary, _amount, tokens);
@@ -240,13 +262,22 @@ contract Crowdsale is ReentrancyGuard {
      * @param amount Value in (USDC/USDT) involved in the purchase
      * @param spendingAsset Asset user want to spend
      */
-    function _preValidatePurchase(address beneficiary, uint256 amount, IERC20 spendingAsset) internal view {
-        require(now >= _startTime && now <= _endTime, "Sale is not active");
-        require(beneficiary != address(0), "beneficiary is the zero address");
-        require(amount != 0, "Crowdsale: amount is 0");
+    function _preValidatePurchase(address beneficiary, uint256 amount, IERC20 spendingAsset, uint saleType) internal view {
+        require(saleType == 1 || saleType == 2, "Sale is not active");
         require(spendingAsset == _tokenUSDC || spendingAsset == _tokenUSDT, "Only USDC & USDT are allowed");
-        require(whitelisted[beneficiary], "Not whitelisted");
-        require(userSpentSoFar[beneficiary].add(amount) <= _spendingLimit, "Spending limit exeeds");
+        require(amount != 0, "Crowdsale: amount is 0");
+        require(beneficiary != address(0), "beneficiary is the zero address");
+        if(saleType == 1) {
+
+            require(whitelisted[beneficiary] == 1, "Not whitelisted");
+            require(userSpentSoFar[beneficiary].add(amount) <= _spendingLimitPreSale, "Spending limit exceeds");
+        }
+
+        if(saleType == 2) {
+
+            require(whitelisted[beneficiary] > 0, "Not whitelisted");
+            require(userSpentSoFar[beneficiary].add(amount) <= _spendingLimitPublicSale, "Spending limit exceeds");
+        }
         this; // silence state mutability warning without generating bytecode - see https://github.com/ethereum/solidity/issues/2691
     }
 
@@ -289,7 +320,12 @@ contract Crowdsale is ReentrancyGuard {
      * @param amount Value in (USDC/USDT) involved in the purchase
      * @return Number of tokens that can be purchased with the specified _weiAmount
      */
-    function _getTokenAmount(uint256 amount) internal view returns (uint256, uint256) {
+    function _getTokenAmount(uint256 amount, uint saleType) public view returns (uint256, uint256) {
+
+        if(saleType == 1)
+        {
+            return (amount.mul(10**18).div(_startRate), 0);
+        }
         uint tokenRate = (_slope.mul(_tokenSold).div(10**18)).add(_startRate);
         uint tokenToSell = amount.mul(10 ** 18).div(tokenRate);
         uint usdToReturn = 0;
