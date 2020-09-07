@@ -213,7 +213,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
       (address _previousMarket, uint _marketStartTime, uint256 predictionTime, ) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, 0, predictionTime);
-      _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
+      _transferIncentiveForCreation();
     }
 
     /**
@@ -252,7 +252,16 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
-      _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
+      _transferIncentiveForCreation();
+    }
+
+    /**
+    * @dev Internal function to reward user for initiating market creation call
+    */
+    function _transferIncentiveForCreation() internal {
+      if(plotToken.balanceOf(address(this)) > marketCreationIncentive) {
+        _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
+      }
     }
 
     function _calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) internal returns(address _previousMarket, uint256 _marketStartTime, uint256 predictionTime, uint256 _optionRangePerc) {
