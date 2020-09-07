@@ -13,7 +13,7 @@ const increaseTime = require("./utils/increaseTime.js").increaseTime;
 
 describe("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", () => {
 	let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
-	contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+	contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 		it("1.1 Position without locking PLOT tokens", async () => {
 			let masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -76,7 +76,7 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			assert.equal(predictionPointsBeforeUser5.toFixed(1), (5.383543979).toFixed(1));
 		});
 	});
-	contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+	contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 		it("1.2 Positions After locking PLOT tokens", async () => {
 			let masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -143,7 +143,7 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 
 describe("2. Place prediction with ETH and check multiplier ", () => {
 	let predictionPointsUser1, predictionPointsUser1_2, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4;
-	contract("Market", async function ([user1, user2, user3, user4, user5]) {
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
 		let masterInstance,
 			plotusToken,
 			marketConfig,
@@ -234,7 +234,7 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			assert.equal(Math.floor(predictionPointsUser5), Math.floor(10.41933533));
 		});
 	});
-	contract("Market", async function ([user1, user2, user3, user4, user5]) {
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
 		let masterInstance,
 			plotusToken,
 			marketConfig,
@@ -334,7 +334,7 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 });
 
 describe("3. Multiple Option bets", () => {
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -362,6 +362,8 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.1. Scenario 1 ", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
@@ -385,12 +387,16 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (197.629).toFixed(1));
 			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
 			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			assert.equal(parseFloat(returnUser1).toFixed(3), (582.0209827).toFixed(3));
-			assert.equal(parseFloat(returnUser2).toFixed(3), (477.4490173).toFixed(3));
+			assert.equal(parseFloat(returnUser1).toFixed(3), (580.375563).toFixed(3));
+			assert.equal(parseFloat(returnUser2).toFixed(3), (475.896037).toFixed(3));
 			assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
 		});
 	});
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -418,6 +424,8 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.2. Scenario 2", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
@@ -442,11 +450,15 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
 			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
 			assert.equal(parseFloat(returnUser1).toFixed(3), (319.84).toFixed(3));
-			assert.equal(parseFloat(returnUser2).toFixed(3), (739.63).toFixed(3));
+			assert.equal(parseFloat(returnUser2).toFixed(3), (732.8334).toFixed(3));
 			assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.7966");
 		});
 	});
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -474,6 +486,7 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.3. Scenario 3 ", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
@@ -499,12 +512,16 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.26334208).toFixed(1));
 			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
 			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			assert.equal(parseFloat(returnUser1).toFixed(2), (357.7985393).toFixed(2));
-			assert.equal(parseFloat(returnUser2).toFixed(2), (701.6714607).toFixed(2));
+			assert.equal(parseFloat(returnUser1).toFixed(2), (357.4391685).toFixed(2));
+			assert.equal(parseFloat(returnUser2).toFixed(2), (695.6340315).toFixed(2));
 			assert.equal(parseFloat(returnUser3).toFixed(2), (239.88).toFixed(2));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
 		});
 	});
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -532,6 +549,8 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.4. Scenario 4", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 1, 1, {
 				from: user1,
 				value: web3.utils.toWei("4"),
@@ -564,7 +583,7 @@ describe("3. Multiple Option bets", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (719.7678239).toFixed(2));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (713.3710239).toFixed(2));
 			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9088704).toFixed(2));
 			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (239.9233057).toFixed(2));
 
@@ -585,15 +604,19 @@ describe("3. Multiple Option bets", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (719.7678239).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (713.3710239).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9088704).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (239.9233057).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (3.996).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (0).toFixed(2));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
 		});
 	});
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -621,6 +644,10 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.5. Scenario 5", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const oldPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
+			console.log("oldPlotusETHBalance", oldPlotusETHBalance);
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -655,7 +682,7 @@ describe("3. Multiple Option bets", () => {
 
 			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (80.01684018).toFixed(2));
 			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.91579).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (579.8173699).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (576.2191699).toFixed(2));
 
 			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
 			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
@@ -676,13 +703,20 @@ describe("3. Multiple Option bets", () => {
 
 			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (80.01684018).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.91579).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (579.8173699).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (576.2191699).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.3976).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
-			assert.equal(parseFloat(returnETHUser3).toFixed(2), (1.5984).toFixed(2));
+			assert.equal(parseFloat(returnETHUser3).toFixed(2), (1.566432).toFixed(2));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
+			console.log("newPlotusETHBalance", newPlotusETHBalance);
+
+			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.5982");
 		});
 	});
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -710,6 +744,8 @@ describe("3. Multiple Option bets", () => {
 		});
 
 		it("3.6. Scenario 6", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -748,9 +784,9 @@ describe("3. Multiple Option bets", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (109.0588662).toFixed(2));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (108.8790535).toFixed(2));
 			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (151.1406516).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (148.1220643).toFixed(2));
 
 			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
 			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
@@ -769,18 +805,21 @@ describe("3. Multiple Option bets", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (109.0588662).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (108.8790535).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (151.1406516).toFixed(2));
-			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.487461386).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (148.1220643).toFixed(2));
+			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.485664159).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
-			assert.equal(parseFloat(returnETHUser3).toFixed(2), (5.504538614).toFixed(2));
+			assert.equal(parseFloat(returnETHUser3).toFixed(2), (5.474367841).toFixed(2));
+
+			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
+			console.log("newPlotusETHBalance", newPlotusETHBalance);
 		});
 	});
 });
 
 describe("4. Option 2 for winning", () => {
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -808,6 +847,8 @@ describe("4. Option 2 for winning", () => {
 		});
 
 		it("4.1. Scenario 7", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -850,7 +891,7 @@ describe("4. Option 2 for winning", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (259.98823).toFixed(2));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (256.39003).toFixed(2));
 			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9504822).toFixed(2));
 			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0.2112878285).toFixed(2));
 
@@ -871,17 +912,20 @@ describe("4. Option 2 for winning", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (259.98823).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (256.39003).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9504822).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (0.2112878285).toFixed(2));
-			assert.equal(parseFloat(returnETHUser1).toFixed(2), (5.5944).toFixed(2));
+			assert.equal(parseFloat(returnETHUser1).toFixed(2), (5.562432).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
+
+			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
+			console.log("newPlotusETHBalance", newPlotusETHBalance);
 		});
 	});
 });
 describe("5. Option 3 for winning", () => {
-	contract("Market", async function ([user1, user2, user3]) {
+	contract("Market", async function([user1, user2, user3]) {
 		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -909,6 +953,8 @@ describe("5. Option 3 for winning", () => {
 		});
 
 		it("5.1. Scenario 8", async () => {
+			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -951,7 +997,7 @@ describe("5. Option 3 for winning", () => {
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
 			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (80.07823001).toFixed(2));
-			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (419.8604822).toFixed(2));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (419.4606822).toFixed(2));
 			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0.2112878285).toFixed(2));
 
 			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
@@ -972,10 +1018,10 @@ describe("5. Option 3 for winning", () => {
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
 			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (80.07823001).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (419.8604822).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (419.4606822).toFixed(2));
 			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (0.2112878285).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.3976).toFixed(2));
-			assert.equal(parseFloat(returnETHUser2).toFixed(2), (3.1968).toFixed(2));
+			assert.equal(parseFloat(returnETHUser2).toFixed(2), (3.132864).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
 		});
 	});
