@@ -392,7 +392,6 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
 		});
 	});
@@ -454,7 +453,6 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.7966");
 		});
 	});
@@ -517,7 +515,6 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnUser3).toFixed(2), (239.88).toFixed(2));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
 		});
 	});
@@ -550,6 +547,8 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.4. Scenario 4", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const oldPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
+			assert.equal(oldPlotusETHBalance, 0);
 
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 1, 1, {
 				from: user1,
@@ -611,9 +610,11 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (0).toFixed(2));
 
+			
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
+			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
+			assert.equal(newPlotusETHBalance, 0.002);
 		});
 	});
 	contract("Market", async function([user1, user2, user3]) {
@@ -645,8 +646,6 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.5. Scenario 5", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			const oldPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
-			console.log("oldPlotusETHBalance", oldPlotusETHBalance);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
@@ -709,11 +708,10 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (1.566432).toFixed(2));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
-			console.log("newPlotusETHBalance", newPlotusETHBalance);
+			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
 
-			console.log(newPlotusTokenBalance - oldPlotusTokenBalance);
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.5982");
+			assert.equal(newPlotusETHBalance, 0.033968);
 		});
 	});
 	contract("Market", async function([user1, user2, user3]) {
@@ -812,8 +810,11 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (5.474367841).toFixed(2));
 
-			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
-			console.log("newPlotusETHBalance", newPlotusETHBalance);
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
+
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
+			assert.equal(newPlotusETHBalance, 0.035968);
 		});
 	});
 });
@@ -919,8 +920,11 @@ describe("4. Option 2 for winning", () => {
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
 
-			const newPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
-			console.log("newPlotusETHBalance", newPlotusETHBalance);
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
+
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.5982");
+			assert.equal(newPlotusETHBalance, 0.035968);
 		});
 	});
 });
@@ -1023,6 +1027,12 @@ describe("5. Option 3 for winning", () => {
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.3976).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (3.132864).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
+
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
+
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "0.3998");
+			assert.equal(newPlotusETHBalance, 0.067936);
 		});
 	});
 });
