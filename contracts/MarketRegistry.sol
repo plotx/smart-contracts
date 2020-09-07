@@ -29,9 +29,9 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
 
     struct MarketCurrency {
       address currencyFeedAddress;
+      bool isChainlinkFeed;
       bytes32 currencyName;
       string marketCreationHash;
-      bool isChainlinkFeed;
     }
 
     struct MarketOraclize {
@@ -170,7 +170,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
 
     function _addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string memory _computationHash, bool _isChainlinkFeed) internal {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      marketCurrencies.push(MarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed));
+      marketCurrencies.push(MarketCurrency(_priceFeed, _isChainlinkFeed, _currencyName, _computationHash));
       emit MarketCurrencies(_marketCurrencyIndex, _priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
     }
 
@@ -316,16 +316,16 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param proposalTitle The title of proposal created by user.
     * @param description The description of dispute.
     * @param solutionHash The ipfs solution hash.
-    * @param actionHash The action hash for solution.
+    * @param action The encoded action for solution.
     * @param _stakeForDispute The token staked to raise the diospute.
     * @param _user The address who raises the dispute.
     */
-    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory actionHash, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public {
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public {
       require(isMarket(msg.sender));
       uint256 proposalId = governance.getProposalLength();
       marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool);
       disputeProposalId[proposalId] = msg.sender;
-      governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, actionHash);
+      governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, action);
     }
 
     /**
