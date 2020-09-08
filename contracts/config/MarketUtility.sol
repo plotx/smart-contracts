@@ -31,10 +31,12 @@ contract MarketUtility {
     uint256 internal uniswapDeadline;
     uint256 internal tokenStakeForDispute;
     uint256 internal marketCoolDownTime;
+    uint256 internal kycThreshold;
     address internal plotToken;
     address internal plotETHpair;
     address internal weth;
     address public authorizedAddress;
+    address internal authorizedToWhitelist;
     bool public initialized;
 
     address payable chainLinkPriceOracle;
@@ -46,6 +48,13 @@ contract MarketUtility {
         uint256 price1CumulativeLast;
         uint32 blockTimestampLast;
     }
+    struct UserData {
+        bool isKycCompliant;
+        bool isAMLCompliant;
+    }
+
+    mapping(address => UserData) userData;
+
     mapping(address => UniswapPriceData) internal uniswapPairData;
     address payable uniswapRouter;
     IUniswapV2Factory uniswapFactory;
@@ -58,6 +67,11 @@ contract MarketUtility {
 
     modifier onlyAuthorized() {
         require(msg.sender == authorizedAddress, "Not authorized");
+        _;
+    }
+
+    modifier onlyAuthorizedToWhitelist() {
+        require(msg.sender == authorizedToWhitelist, "Not AUthorized to whitelist");
         _;
     }
 
@@ -84,6 +98,7 @@ contract MarketUtility {
         incentiveTokens.push(plotToken);
         commissionPerc[ETH_ADDRESS] = 10;
         commissionPerc[plotToken] = 5;
+        authorizedToWhitelist = _addressParams[4];
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
@@ -151,6 +166,8 @@ contract MarketUtility {
             tokenStakeForDispute = value;
         } else if (code == "CDTIME") {
             marketCoolDownTime = value;
+        } else if (code == "KYCTH") {
+            kycThreshold = value;
         } else if (code == "ETHCOM") {
             require(value > 0 && value < 10000, "Value must be between 0-10000");
             commissionPerc[ETH_ADDRESS] = value;
@@ -180,6 +197,8 @@ contract MarketUtility {
             plotETHpair = uniswapFactory.getPair(plotToken, weth);
         } else if (code == "INCTOK") {
             incentiveTokens.push(address(value));
+        } else if (code == "WLAUTH") {
+            authorizedToWhitelist = address(value);
         } else {
             revert("Invalid code");
         }
@@ -444,5 +463,30 @@ contract MarketUtility {
         amountOut = (uniswapPairData[pair].price0Average)
             .mul(amountIn)
             .decode144();
+    }
+
+    function setAMLComplianceStatus(address _user, bool _status) external onlyAuthorizedToWhitelist {
+        userData[_user].isAMLCompliant = _status;
+    }
+
+    function setKYCComplianceStatus(address _user, bool _status) external onlyAuthorizedToWhitelist {
+        userData[_user].isKycCompliant = _status;
+    }
+
+    function checkAMLKYCCompliance(address _user, uint256 _totalEthStaked, uint256 _totalPlotStaked) external returns(bool) {
+        if(!userData[_user].isAMLCompliant) {
+            return false;
+        }
+        uint256 _ethPriceUSD = getAssetPriceUSD(ETH_ADDRESS, true);
+        uint _totalStaked = _totalEthStaked.mul(_ethPriceUSD).div(1e18);
+        uint _plotValueInEth = getAssetValueETH(plotToken, _totalPlotStaked);
+        _totalStaked = _totalStaked.add(_plotValueInEth.mul(_ethPriceUSD).div(1e18));
+        // _totalStaked = _totalStaked.add(getAssetPriceUSD(ETH_ADDRESS, _totalEthStaked));
+        if(_totalStaked > kycThreshold) {
+            if(!userData[_user].isKycCompliant) {
+                return false;
+            }
+        }
+        return true;
     }
 }
