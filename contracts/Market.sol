@@ -59,9 +59,9 @@ contract Market is usingProvable {
       bool claimedReward;
       bool predictedWithBlot;
       bool multiplierApplied;
+      mapping(uint => uint) predictionPoints;
       mapping(address => mapping(uint => uint)) assetStaked;
       mapping(address => mapping(uint => uint)) LeverageAsset;
-      mapping(uint => uint) predictionPoints;
     }
 
     struct AssetData {
