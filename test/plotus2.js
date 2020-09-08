@@ -127,7 +127,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
 		getBetPoints = async (user, option, expected) => {
 			// return bet points of user
-			let betPoins = await marketInstance.userPredictionPoints(user, option);
+			let betPoins = await marketInstance.getUserPredictionPoints(user, option);
 			betPoins = betPoins / 1;
 			return betPoins;
 		};

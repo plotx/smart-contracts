@@ -57,11 +57,11 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 3, 4, {
 				from: user5,
 			});
-			predictionPointsBeforeUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 2)) / 1000;
-			predictionPointsBeforeUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
-			predictionPointsBeforeUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1)) / 1000;
-			predictionPointsBeforeUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 3)) / 1000;
-			predictionPointsBeforeUser5 = parseFloat(await marketInstance.userPredictionPoints(user5, 3)) / 1000;
+			predictionPointsBeforeUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2)) / 1000;
+			predictionPointsBeforeUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 2)) / 1000;
+			predictionPointsBeforeUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1)) / 1000;
+			predictionPointsBeforeUser4 = parseFloat(await marketInstance.getUserPredictionPoints(user4, 3)) / 1000;
+			predictionPointsBeforeUser5 = parseFloat(await marketInstance.getUserPredictionPoints(user5, 3)) / 1000;
 			// console.log(
 			// 	predictionPointsBeforeUser1,
 			// 	predictionPointsBeforeUser2,
@@ -125,11 +125,11 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 3, 4, {
 				from: user5,
 			});
-			let predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 2)) / 1000;
-			let predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
-			let predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1)) / 1000;
-			let predictionPointsUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 3)) / 1000;
-			let predictionPointsUser5 = parseFloat(await marketInstance.userPredictionPoints(user5, 3)) / 1000;
+			let predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2)) / 1000;
+			let predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 2)) / 1000;
+			let predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1)) / 1000;
+			let predictionPointsUser4 = parseFloat(await marketInstance.getUserPredictionPoints(user4, 3)) / 1000;
+			let predictionPointsUser5 = parseFloat(await marketInstance.getUserPredictionPoints(user5, 3)) / 1000;
 
 			// console.log(predictionPointsUser1, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4, predictionPointsUser5);
 			assert.equal(predictionPointsUser1.toFixed(1), (116.5791776).toFixed(1));
@@ -211,12 +211,12 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 				value: web3.utils.toWei("0.2"),
 			});
 
-			predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1)) / 1000;
-			predictionPointsUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2)) / 1000;
-			predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
-			predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 3)) / 1000;
-			predictionPointsUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 1)) / 1000;
-			predictionPointsUser5 = parseFloat(await marketInstance.userPredictionPoints(user5, 2)) / 1000;
+			predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1)) / 1000;
+			predictionPointsUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2)) / 1000;
+			predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 2)) / 1000;
+			predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 3)) / 1000;
+			predictionPointsUser4 = parseFloat(await marketInstance.getUserPredictionPoints(user4, 1)) / 1000;
+			predictionPointsUser5 = parseFloat(await marketInstance.getUserPredictionPoints(user5, 2)) / 1000;
 			// console.log(
 			// 	predictionPointsUser1,
 			// 	predictionPointsUser1_2,
@@ -307,12 +307,12 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 				value: web3.utils.toWei("0.2"),
 			});
 
-			let predictionPointsWithLockUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1)) / 1000;
-			let predictionPointsWithLockUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2)) / 1000;
-			let predictionPointsWithLockUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 2)) / 1000;
-			let predictionPointsWithLockUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 3)) / 1000;
-			let predictionPointsWithLockUser4 = parseFloat(await marketInstance.userPredictionPoints(user4, 1)) / 1000;
-			let predictionPointsWithLockUser5 = parseFloat(await marketInstance.userPredictionPoints(user5, 2)) / 1000;
+			let predictionPointsWithLockUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1)) / 1000;
+			let predictionPointsWithLockUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2)) / 1000;
+			let predictionPointsWithLockUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 2)) / 1000;
+			let predictionPointsWithLockUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 3)) / 1000;
+			let predictionPointsWithLockUser4 = parseFloat(await marketInstance.getUserPredictionPoints(user4, 1)) / 1000;
+			let predictionPointsWithLockUser5 = parseFloat(await marketInstance.getUserPredictionPoints(user5, 2)) / 1000;
 
 			// console.log(
 			// 	predictionPointsWithLockUser1,
@@ -369,9 +369,9 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user3 });
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 1));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 2));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 1));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 2));
 
 			await increaseTime(36001);
 			await marketInstance.calculatePredictionResult(1);
@@ -430,9 +430,9 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user3 });
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 1));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 2));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 1));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 2));
 
 			await increaseTime(36001);
 			await marketInstance.calculatePredictionResult(1);
@@ -490,10 +490,10 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user3 });
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 1));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 2));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 1));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 2));
 
 			await increaseTime(36001);
 			await marketInstance.calculatePredictionResult(1);
@@ -558,9 +558,9 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 3, 2, { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user3 });
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 3));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 2));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 2));
 
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (275.2822731).toFixed(1));
 			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
@@ -655,9 +655,9 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 3, 2, { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user3 });
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 3));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (98.74475775).toFixed(1));
 			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
@@ -755,10 +755,10 @@ describe("3. Multiple Option bets", () => {
 				value: web3.utils.toWei("4"),
 			});
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 3));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
 			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
@@ -861,10 +861,10 @@ describe("4. Option 2 for winning", () => {
 				value: web3.utils.toWei("4"),
 			});
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 3));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
 			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
@@ -970,10 +970,10 @@ describe("5. Option 3 for winning", () => {
 				value: web3.utils.toWei("4"),
 			});
 
-			const predictionPointsUser1 = parseFloat(await marketInstance.userPredictionPoints(user1, 1));
-			const predictionPointsUser1_2 = parseFloat(await marketInstance.userPredictionPoints(user1, 2));
-			const predictionPointsUser2 = parseFloat(await marketInstance.userPredictionPoints(user2, 3));
-			const predictionPointsUser3 = parseFloat(await marketInstance.userPredictionPoints(user3, 1));
+			const predictionPointsUser1 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 1));
+			const predictionPointsUser1_2 = parseFloat(await marketInstance.getUserPredictionPoints(user1, 2));
+			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
+			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
 			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
 			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
