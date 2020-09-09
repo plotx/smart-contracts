@@ -16,7 +16,7 @@ const assertRevert = require("./utils/assertRevert.js").assertRevert;
 // get etherum accounts
 // swap ether with LOT
 
-contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 	it("Place the bets with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -329,7 +329,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 	// 	assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
 	// });
 });
-contract("Market", async function ([user1, user2]) {
+contract("Market", async function([user1, user2]) {
 	let masterInstance, BLOTInstance;
 	it("Test BLOT Contract", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
