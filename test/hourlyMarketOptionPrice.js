@@ -45,6 +45,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+
 		await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 1, {
 			value: "1000000000000000000",
 			from: user1,
@@ -122,6 +134,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
 			from: user1,
@@ -196,6 +220,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -287,6 +323,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
@@ -376,6 +424,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -467,6 +527,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
@@ -556,6 +628,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
@@ -644,6 +728,18 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
