@@ -30,7 +30,7 @@ let timeNow,
 	marketStatus,
 	option3RangeMAX;
 
-contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 	describe("Place the bets with ether", async () => {
 		it("0.0", async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -55,6 +55,28 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			priceOption1 = parseFloat(await marketInstance.getOptionPrice(1));
 			priceOption2 = parseFloat(await marketInstance.getOptionPrice(2));
 			priceOption3 = parseFloat(await marketInstance.getOptionPrice(3));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+			await marketConfig.setAMLComplianceStatus(user6, true);
+			await marketConfig.setAMLComplianceStatus(user7, true);
+			await marketConfig.setAMLComplianceStatus(user8, true);
+			await marketConfig.setAMLComplianceStatus(user9, true);
+			await marketConfig.setAMLComplianceStatus(user10, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
+			await marketConfig.setKYCComplianceStatus(user6, true);
+			await marketConfig.setKYCComplianceStatus(user7, true);
+			await marketConfig.setKYCComplianceStatus(user8, true);
+			await marketConfig.setKYCComplianceStatus(user9, true);
+			await marketConfig.setKYCComplianceStatus(user10, true);
 
 			option1RangeMIN = parseFloat(marketData[1][0]);
 			option1RangeMAX = parseFloat(marketData[2][0]);
@@ -300,8 +322,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			// plotus contract balance eth balance
 			plotusBalanceBefore = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
 			lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-			assert.equal(parseFloat(plotusBalanceBefore), (0.08492-0.5*0.01).toFixed(5));
-			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833-6.752622).toFixed(2));
+			assert.equal(parseFloat(plotusBalanceBefore), (0.08492 - 0.5 * 0.01).toFixed(5));
+			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833 - 6.752622).toFixed(2));
 			// commented by parv (added a assert above)
 			// console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
 			// lotBalanceBefore = lotBalanceBefore / 1;
