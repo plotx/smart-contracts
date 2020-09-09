@@ -39,7 +39,7 @@ let pl;
 let mockchainLinkInstance;
 
 contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3]) => {
-	before(async function () {
+	before(async function() {
 		nxms = await OwnedUpgradeabilityProxy.deployed();
 		nxms = await NXMaster.at(nxms.address);
 		plotusToken = await PlotusToken.deployed();
@@ -68,8 +68,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// 	console.log(e);
 		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1));
-        await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now()/1000), mem1, plotusToken.address));
-		await assertRevert(pl.initiate(mem1, mem1, mem1, [mem1,mem1, mem1, mem1]));
+		await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now() / 1000), mem1, plotusToken.address));
+		await assertRevert(pl.initiate(mem1, mem1, mem1, [mem1, mem1, mem1, mem1]));
 		await plotusToken.transfer(mem1, toWei(100));
 		await plotusToken.transfer(mem2, toWei(100));
 		await plotusToken.transfer(mem3, toWei(100));
@@ -79,7 +79,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
-	it("Should create a proposal to add new market curreny", async function () {
+	it("Should create a proposal to add new market curreny", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
@@ -105,7 +105,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.isAbove(openMarkets[2].length, openMarketsBefore[2].length, "Currency not added");
 	});
 
-	it("Prredict on newly created market", async function () {
+	it("Prredict on newly created market", async function() {
 		let openMarkets = await pl.getOpenMarkets();
 		marketInstance = await Market.at(openMarkets[0][2]);
 		// await increaseTime(10001);
@@ -114,13 +114,16 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.setOptionPrice(2, 18);
 		await marketInstance.setOptionPrice(3, 27);
 
+		await marketConfig.setAMLComplianceStatus(ab1, true);
+		await marketConfig.setKYCComplianceStatus(ab1, true);
+
 		// set price
 		// user 1
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 		await plotusToken.approve(openMarkets["_openMarkets"][2], "18000000000000000000000000");
-		await (marketInstance.claimReturn(ab1));
+		await marketInstance.claimReturn(ab1);
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
 		await marketConfig.setPLOTCommissionPerc(9000);
@@ -130,18 +133,18 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(marketInstance.calculatePredictionResult(1));
 		await assertRevert(marketInstance.calculatePredictionResult(0));
 		await increaseTime(604810);
-		await (marketInstance.claimReturn(ab1));
+		await marketInstance.claimReturn(ab1);
 		await pl.exchangeCommission(marketInstance.address);
 		await marketInstance.calculatePredictionResult(1);
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1));
 		await assertRevert(marketInstance.calculatePredictionResult(0));
-		await (marketInstance.claimReturn(ab1));
+		await marketInstance.claimReturn(ab1);
 		await increaseTime(604800);
 		await pl.exchangeCommission(marketInstance.address);
 		await pl.exchangeCommission(marketInstance.address);
 	});
 
-	it("Should not add new market type if invalid start time passed", async function () {
+	it("Should not add new market type if invalid start time passed", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
@@ -175,7 +178,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.equal(openMarkets[1].length, openMarketsBefore[1].length, "Currency not added");
 	});
 
-	it("Should create a proposal to add new market type", async function () {
+	it("Should create a proposal to add new market type", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
@@ -209,15 +212,15 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.equal(actionStatus / 1, 3);
 		let solutionAction = await gv.getSolutionAction(pId, 1);
 		assert.equal(parseFloat(solutionAction[0]), 1);
-		let voteData = await gv.voteTallyData(pId,1)
-		assert.equal(parseFloat(voteData[0]),2.09899e+25);
-		assert.equal(parseFloat(voteData[1]),6);
+		let voteData = await gv.voteTallyData(pId, 1);
+		assert.equal(parseFloat(voteData[0]), 2.09899e25);
+		assert.equal(parseFloat(voteData[1]), 6);
 
 		let openMarkets = await pl.getOpenMarkets();
 		assert.isAbove(openMarkets[1].length, openMarketsBefore[1].length, "Currency not added");
 	});
 
-	it("Predict on newly created market", async function () {
+	it("Predict on newly created market", async function() {
 		let openMarkets = await pl.getOpenMarkets();
 		await increaseTime(604810);
 		marketInstance = await Market.at(openMarkets[0][9]);
@@ -229,6 +232,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.setOptionPrice(3, 27);
 		await assertRevert(pl.createMarketFallback(3, 0)); //should revert as market is live
 
+		await marketConfig.setAMLComplianceStatus(ab1, true);
+		await marketConfig.setKYCComplianceStatus(ab1, true);
 		// set price
 		// user 1
 		// set price lot
@@ -240,7 +245,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let reward = await marketInstance.getReturn(ab1);
 		assert.equal(reward[0].length, 0);
 		await increaseTime(3650);
-		await pl.createMarketFallback(0,0);
+		await pl.createMarketFallback(0, 0);
 		await increaseTime(604810);
 		await marketInstance.settleMarket();
 		await increaseTime(604800);
@@ -252,7 +257,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// assert.isAbove(balanceAfter, balanceBefore);
 	});
 
-	it("Claim Rewards", async function () {
+	it("Claim Rewards", async function() {
 		await pl.getMarketDetailsUser(ab1, 0, 5);
 		await pl.getMarketDetailsUser(ab1, 5, 5);
 		await pl.getMarketDetailsUser(ab1, 0, 0);
@@ -266,12 +271,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.claimReturn(ab1);
 	});
 
-	it("Create market using fallback function", async function () {
+	it("Create market using fallback function", async function() {
 		// function createMarketFallback(_marketType, uint256 _marketCurrencyIndex) external payable{
-		await pl.createMarketFallback(0,0);
-		await assertRevert(pl.createMarketFallback(0,0));
+		await pl.createMarketFallback(0, 0);
+		await assertRevert(pl.createMarketFallback(0, 0));
 		await assertRevert(pl.createMarket(0, 0));
-		await pl.createMarket(0,1);
+		await pl.createMarket(0, 1);
 		// let actionHash = encode("pauseMarketCreation()");
 		pId = (await gv.getProposalLength()).toNumber();
 		await gvProposal(17, "0x", await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
@@ -281,7 +286,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 	});
 });
 contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3]) => {
-	before(async function () {
+	before(async function() {
 		nxms = await OwnedUpgradeabilityProxy.deployed();
 		nxms = await NXMaster.at(nxms.address);
 		plotusToken = await PlotusToken.deployed();
@@ -320,7 +325,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
-	it("Should create a proposal to add new market curreny", async function () {
+	it("Should create a proposal to add new market curreny", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
@@ -349,7 +354,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.isAbove(openMarkets[2].length, openMarketsBefore[2].length, "Currency not added");
 	});
 
-	it("2. Should create a proposal to add new market currency", async function () {
+	it("2. Should create a proposal to add new market currency", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
