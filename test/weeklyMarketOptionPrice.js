@@ -4,6 +4,7 @@ const Plotus = artifacts.require("MarketRegistry");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
+const MarketConfig = artifacts.require("MockConfig");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const BLOT = artifacts.require("BLOT");
 const web3 = Market.web3;
@@ -19,7 +20,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  		let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -35,7 +38,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
   await marketInstance.placePrediction(
     "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE",
@@ -92,7 +107,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  	let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -107,7 +124,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
  
  await plotusToken.approve(marketInstance.address, "10000000000000000000000");
   await marketInstance.placePrediction(
@@ -170,7 +199,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  	let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -185,7 +216,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
  await plotusToken.approve(marketInstance.address, "10000000000000000000000");
   await marketInstance.placePrediction(
@@ -272,7 +315,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  	let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -287,7 +332,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
  await plotusToken.approve(marketInstance.address, "10000000000000000000000");
   await marketInstance.placePrediction(
@@ -374,7 +431,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  	let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -389,7 +448,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
 
  await plotusToken.approve(marketInstance.address, "10000000000000000000000");
   await marketInstance.placePrediction(
@@ -476,7 +547,9 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let BLOTInstance = await BLOT.deployed();
   let MockchainLinkInstance = await MockchainLinkBTC.deployed();
   let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
-  let plotusNewInstance = await Plotus.at(plotusNewAddress);
+  	let plotusNewInstance = await Plotus.at(plotusNewAddress);
+		let marketConfig = await plotusNewInstance.marketUtility();
+		marketConfig = await MarketConfig.at(marketConfig);
   const openMarkets = await plotusNewInstance.getOpenMarkets();
   console.log("marketType",openMarkets["_marketTypes"][4]/1)
   marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
@@ -491,7 +564,19 @@ contract("Market", async function ([user1,user2,user3,user4,user5,user6,user7,us
   let priceOption1 = await marketInstance.getOptionPrice(1);
   let priceOption2 = await marketInstance.getOptionPrice(2);
   let priceOption3 = await marketInstance.getOptionPrice(3);
-  console.log(priceOption1/1,priceOption2/1,priceOption3/1)
+  console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
  
  await plotusToken.approve(marketInstance.address, "10000000000000000000000");
   await marketInstance.placePrediction(
