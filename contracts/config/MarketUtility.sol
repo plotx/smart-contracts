@@ -312,6 +312,9 @@ contract MarketUtility {
         address _currencyFeedAddress,
         bool _isChainlinkFeed
     ) public view returns (uint256 latestAnswer) {
+        if(_currencyFeedAddress == ETH_ADDRESS) {
+            return (uint256(chainLinkOracle.latestAnswer()))/1e8;
+        }
         if (!(_isChainlinkFeed)) {
             uint256 decimals = IToken(
                 IUniswapV2Pair(_currencyFeedAddress).token0()
