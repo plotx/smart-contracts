@@ -123,6 +123,7 @@ contract MarketUtility {
         uniswapDeadline = 20 minutes;
         tokenStakeForDispute = 100 ether;
         marketCoolDownTime = 15 minutes;
+        kycThreshold = 10000;
     }
 
     /**
