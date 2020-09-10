@@ -10,6 +10,7 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const TokenController = artifacts.require("MockTokenController");
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
+const assertRevert = require("./utils/assertRevert").assertRevert;
 
 describe("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", () => {
 	let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
@@ -38,9 +39,25 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
 			await marketInstance.setOptionPrice(3, 27);
+			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
+
+			await assertRevert(
+				marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
+					from: user1,
+				})
+			);
 
 			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
+				from: user1,
+			});
 			await marketConfig.setAMLComplianceStatus(user2, true);
+			await assertRevert(
+				marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, {
+					from: user2,
+				})
+			);
 			await marketConfig.setAMLComplianceStatus(user3, true);
 			await marketConfig.setAMLComplianceStatus(user4, true);
 			await marketConfig.setAMLComplianceStatus(user5, true);
@@ -51,11 +68,6 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setKYCComplianceStatus(user4, true);
 			await marketConfig.setKYCComplianceStatus(user5, true);
 
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
-				from: user1,
-			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, {
 				from: user2,
 			});
