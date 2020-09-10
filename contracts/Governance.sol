@@ -724,16 +724,6 @@ contract Governance is IGovernance, Iupgradable {
         string memory _proposalDescHash,
         uint256 _categoryId
     ) internal {
-        (, uint256 roleAuthorizedToVote, , , , , ) = proposalCategory.category(
-            _categoryId
-        );
-        require(
-            _categoryId == 0 ||
-                roleAuthorizedToVote ==
-                uint256(IMemberRoles.Role.AdvisoryBoard) ||
-                roleAuthorizedToVote ==
-                uint256(IMemberRoles.Role.DisputeResolution)
-        );
         uint256 _proposalId = totalProposals;
         allProposalData[_proposalId].owner = msg.sender;
         allProposalData[_proposalId].dateUpd = now;
@@ -750,8 +740,17 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         if (_categoryId > 0) {
-            (, , , uint defaultIncentive, ) = proposalCategory
+            (, uint256 roleAuthorizedToVote, , , , , ) = proposalCategory.category(
+                _categoryId
+            );
+            (, , , uint defaultIncentive, bytes memory _functionHash) = proposalCategory
             .categoryActionDetails(_categoryId);
+            require(roleAuthorizedToVote ==
+                uint256(IMemberRoles.Role.AdvisoryBoard) ||
+                roleAuthorizedToVote ==
+                uint256(IMemberRoles.Role.DisputeResolution) ||
+                keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
+            );
             _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
         }
     }
