@@ -223,10 +223,10 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2
         );
         _addInitialCategories(
-            "Update Config Uint parameters",
+            "Update Market Uint parameters",
             "",
             "PL",
-            "updateConfigUintParameters(bytes8,uint256)",
+            "updateUintParameters(bytes8,uint256)",
             60,
             2,
             2
