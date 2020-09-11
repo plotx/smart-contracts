@@ -47,6 +47,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint256 proposalId;
       uint256 ethDeposited;
       uint256 tokenDeposited;
+      uint256 proposedValue;
     }
 
     struct MarketData {
@@ -334,10 +335,10 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _stakeForDispute The token staked to raise the diospute.
     * @param _user The address who raises the dispute.
     */
-    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public {
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool, uint256 _proposedValue) public {
       require(isMarket(msg.sender));
       uint256 proposalId = governance.getProposalLength();
-      marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool);
+      marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool, _proposedValue);
       disputeProposalId[proposalId] = msg.sender;
       governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, action);
     }
@@ -500,8 +501,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @dev Get status of dispute resolution proposal of market
     * @param _marketAddress Address of market for which status is queried
     */
-    function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(marketData[_marketAddress].disputeStakes.proposalId);
+    function marketDisputeData(address _marketAddress) external view returns(uint _proposalId, uint _proposedValue) {
+      return(marketData[_marketAddress].disputeStakes.proposalId, marketData[_marketAddress].disputeStakes.proposedValue);
     }
 
 

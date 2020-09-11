@@ -457,7 +457,7 @@ contract Market is usingProvable {
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       require(IToken(plotToken).transferFrom(msg.sender, address(marketRegistry), _stakeForDispute));
       lockedForDispute = true;
-      marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool);
+      marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       predictionStatus = PredictionStatus.InDispute;
     }
 
