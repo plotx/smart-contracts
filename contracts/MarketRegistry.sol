@@ -359,7 +359,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
       _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
       IMarket(_marketAddress).resolveDispute(true, _result);
-      emit DisputeResolved(msg.sender, true);
+      emit DisputeResolved(_marketAddress, true);
       _transferAsset(plotTokenAddress, staker, stakedAmount);
     }
 
