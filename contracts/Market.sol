@@ -466,7 +466,7 @@ contract Market is usingProvable {
     * @param accepted Flag mentioning if dispute is accepted or not
     * @param finalResult The final correct value of market currency.
     */
-    function resolveDispute(bool accepted, uint256 finalResult) external {
+    function resolveDispute(bool accepted, uint256 finalResult) external payable {
       require(msg.sender == address(marketRegistry));
       if(accepted) {
         require(marketStatus() == PredictionStatus.InDispute);
