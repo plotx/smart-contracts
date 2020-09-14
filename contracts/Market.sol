@@ -43,8 +43,8 @@ contract Market is usingProvable {
     uint public rate;
     uint public WinningOption;
     uint public marketCloseValue;
+    uint public marketCoolDownTime;
     uint internal settleTime;
-    uint internal marketCoolDownTime;
     uint internal ethAmountToPool;
     uint internal tokenAmountToPool;
     uint internal totalStakedETH;
