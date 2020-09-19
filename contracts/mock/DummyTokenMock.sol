@@ -11,6 +11,8 @@ contract DummyTokenMock is ERC20 {
 
     mapping(address=>bool) _dummyBit;
 
+    bool public retBit;
+
     constructor(string memory tokenName, string memory tokenSymbol) public {
     	name = tokenName;
     	symbol = tokenSymbol;
@@ -19,6 +21,10 @@ contract DummyTokenMock is ERC20 {
     function mint(uint256 amount) public returns (uint256) {
         _mint(msg.sender, amount);
         return 0;
+    }
+
+    function setRetBit(bool _a) public {
+        retBit = _a;
     }
 
      /**
@@ -48,9 +54,8 @@ contract DummyTokenMock is ERC20 {
     */
     function transfer(address to, uint256 value) public returns (bool) {
 
-        require(value <= _balances[msg.sender]);
         // _transfer(msg.sender, to, value); 
-        return false;
+        return retBit;
     }
 
     /**

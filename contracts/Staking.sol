@@ -97,7 +97,7 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "transferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= oneYear);
+        require(uint(now).sub(stakingStartTime) <= oneYear, "can not stake after 1 year");
         uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(31536000);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
