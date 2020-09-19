@@ -5,7 +5,7 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
 
-contract SimpleStaking {
+contract Staking {
     
     using SafeMath for uint256;
 
@@ -44,8 +44,11 @@ contract SimpleStaking {
 
     uint public totalReward;
 
-    
+    // 10^18
     uint256 constant DECIMAL1e18 = 10**18;
+
+    // seconds in 1 year
+    uint256 constant oneYear = 31536000;
 
     /**
      * @dev Emitted when `staker` stake `value` tokens.
@@ -89,13 +92,13 @@ contract SimpleStaking {
      * @param _amount The amount of tokens to stake
      */
     function stake(uint256 _amount) external {
-        
         require(_amount > 0, "You need to stake a positive token amount");
         require(
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "transferFrom failed, make sure you approved token transfer"
         );
-        uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(356 days);
+        require(uint(now).sub(stakingStartTime) <= oneYear);
+        uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(31536000);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
         updateStakeData(msg.sender, _amount);
@@ -193,14 +196,35 @@ contract SimpleStaking {
      * @dev Withdraws the sender Earned interest.
      */
     function withdrawInterest() public {
-        uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(356 days);
-        interestData.lastUpdated = now;
+        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
+        if(uint(now).sub(stakingStartTime) >= oneYear)
+        {
+            timeSinceLastUpdate = stakingStartTime.add(oneYear).sub(interestData.lastUpdated);
+            interestData.lastUpdated = stakingStartTime.add(oneYear);
+        } else {
+            interestData.lastUpdated = now;
+        }
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(oneYear);
+        
         updateGlobalYieldPerToken(newlyInterestGenerated);
         uint256 interest = calculateInterest(msg.sender);
         Staker storage stakerData = interestData.stakers[msg.sender];
         stakerData.withdrawnToDate = stakerData.withdrawnToDate.add(interest);
         require(rewardToken.transfer(msg.sender, interest), "withdraw interest transfer failed");
         emit InterestCollected(msg.sender, interest);
+    }
+
+    function updateGlobalYield() public {
+        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
+        if(uint(now).sub(stakingStartTime) >= oneYear)
+        {
+            timeSinceLastUpdate = stakingStartTime.add(oneYear).sub(interestData.lastUpdated);
+            interestData.lastUpdated = stakingStartTime.add(oneYear);
+        } else {
+            interestData.lastUpdated = now;
+        }
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(31536000);
+        updateGlobalYieldPerToken(newlyInterestGenerated);
     }
 
     function getYieldData(address _staker) public view returns(uint256, uint256)
@@ -220,7 +244,7 @@ contract SimpleStaking {
      * @return _earnedInterest The amount of tokens credit for the staker.
      */
     function calculateInterest(address _staker)
-        internal
+        public
         view
         returns (uint256 _earnedInterest)
     {
@@ -259,7 +283,6 @@ contract SimpleStaking {
     function updateGlobalYieldPerToken(
         uint256 _interestGenerated
     ) internal {
-        
         if (interestData.globalTotalStaked == 0) return;
         interestData.globalYieldPerToken = interestData.globalYieldPerToken.add(
             _interestGenerated
