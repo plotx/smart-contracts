@@ -128,7 +128,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _btcPriceFeed) external payable {
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethPriceFeed, "ETH/USDT", "Qme2JKFxGqSNed98Ec613fY3nfTmSrLLj5tR4R6pwrbaaU", true);
-      _addNewMarketCurrency(_btcPriceFeed, "BTC/USDT", "QmZPKqeML8kLp1HmBPdmx5weCytBmuFaPCzjo2AUDb1D8a", true);
+      _addNewMarketCurrency(_btcPriceFeed, "BTC/USDT", "Qmc3ewcaqR6tKqsoqzNFJZi6smVg6jPZXyrQqKtVtmpZiu", true);
       _addMarket(1 hours, 2 hours, 20);
       _addMarket(24 hours, 2 days, 50);
       _addMarket(7 days, 14 days, 100);
