@@ -1,24 +1,37 @@
 const Staking = artifacts.require("Staking");
 const UniswapETH_Plot = artifacts.require("TokenMock");
 const PlotusToken = artifacts.require('PlotXToken');
+const MockStaking = artifacts.require('MockStaking');
 const BN = web3.utils.BN;
 const { toHex, toWei } = require("./utils/ethTools.js");
 const expectEvent = require("./utils/expectEvent");
 const increaseTimeTo = require("./utils/increaseTime.js").increaseTimeTo;
+const assertRevert = require("./utils/assertRevert.js").assertRevert;
+const DummyTokenMock = artifacts.require('DummyTokenMock');
 
 contract("InterestDistribution - Scenario based calculations for staking model", ([S1, S2, S3]) => {
   let stakeTok,
       plotusToken,
       staking,
-      stakeStartTime;
+      stakeStartTime,
+      dummystakeTok,
+      dummyRewardTok,
+      dummyStaking;
 
     before(async () => {
       
       stakeTok = await UniswapETH_Plot.new("UEP","UEP");
       plotusToken = await PlotusToken.new(toWei(30000000));
+      dummystakeTok = await DummyTokenMock.new("UEP","UEP");
+      dummyRewardTok = await DummyTokenMock.new("PLT","PLT");
       staking = await Staking.new(stakeTok.address, plotusToken.address);
 
+      dummyStaking = await MockStaking.new(dummystakeTok.address, dummyRewardTok.address);
+
       await plotusToken.transfer(staking.address, toWei(500000));
+
+      await dummyRewardTok.mint(dummyStaking.address, toWei(500000));
+      await dummystakeTok.mint(dummyStaking.address, toWei(100));
       
       await stakeTok.mint(S1, toWei("1000"));
       await stakeTok.mint(S2, toWei("1000"));
@@ -207,7 +220,7 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       
       let interestData = await staking.interestData();
             
-      expect((Math.floor(interestData[1]/1e15)).toString()).to.be.equal("70");
+      expect(((Math.floor(interestData[1]/1e15 - 70)).toString())/1).to.be.below(2);
 
       // globalTotalStake
       expect((interestData[0]).toString()).to.be.equal(web3.utils.toWei("760", "ether")); 
@@ -379,7 +392,7 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       let interestData = await staking.interestData();
       
           
-      expect((Math.floor(interestData[1]/1e15)).toString()).to.be.equal("234");
+      expect(((Math.floor(interestData[1]/1e15 - 234)).toString())/1).to.be.below(2);
 
       // globalTotalStake
       expect((interestData[0]).toString()).to.be.equal(toWei("920")); 
@@ -630,6 +643,58 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       expect((Math.floor((await staking.calculateInterest(S2))/1e18)).toString()).to.be.equal("0");
       
       expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("0");
+    });
+    it("Should revert if tries to stake 0 amount", async () => {
+
+      await assertRevert(staking.stake(0, {
+              from: S1
+            }));
+    });
+    it("Should revert if tries to stake after 365 days", async () => {
+
+      await assertRevert(staking.stake(10, {
+              from: S1
+            }));
+    });
+    it("Should revert if tries to unstake 0 amount", async () => {
+
+      await assertRevert(staking.withdrawStakeAndInterest(0, {
+              from: S1
+            }));
+    });
+    it("Should revert if tries to unstake more than staked", async () => {
+
+      await assertRevert(staking.withdrawStakeAndInterest(10, {
+              from: S1
+            }));
+    });
+  });
+  describe('reverts', function() {
+    it("Should revert if transer token failed while staking", async () => {
+
+      await assertRevert(dummyStaking.stake(100, {
+        from: S1
+      }));
+    });
+    it("Should revert if transer token failed while unstaking", async () => {
+      await dummyStaking.addStake(S1, 200);
+      await dummyStaking.setInterestData(200, toWei(10));
+      await dummyRewardTok.setRetBit(true);
+      await dummyStaking.setStarttime();
+      await assertRevert(dummyStaking.withdrawStakeAndInterest(100, {
+        from: S1
+      }));
+    });
+    it("Should revert if transer token failed while withdrawing interest", async () => {
+      await dummyStaking.setInterestData(200, toWei(10));
+      await dummyRewardTok.setRetBit(false);
+      await assertRevert(dummyStaking.withdrawInterest( {
+        from: S1
+      }));
+    });
+    it("Should return 0 if withdrawnTodate+stakebuin > globalyieldxstaked", async () => {
+      await dummyStaking.setBuyInRate(S1, toWei(100));
+      expect((Math.floor((await dummyStaking.calculateInterest(S1))/1e18)).toString()).to.be.equal("0");
     });
   });
 
