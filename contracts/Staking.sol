@@ -15,7 +15,7 @@ contract Staking {
      */
     struct InterestData {
         uint256 globalTotalStaked;
-        uint256 globalYieldPerToken; // after donations, Precision points = 27 + 2 (G$ decimal) - (token Decimal)
+        uint256 globalYieldPerToken; 
         uint256 lastUpdated;
         mapping(address => Staker) stakers;  
     }
@@ -27,7 +27,7 @@ contract Staking {
     struct Staker {
         uint256 totalStaked;
         uint256 withdrawnToDate;
-        uint256 stakeBuyinRate;  // Precision points = 27 + 2 (G$ decimal) = 29
+        uint256 stakeBuyinRate;  
     }
 
 
@@ -48,7 +48,7 @@ contract Staking {
     uint256 constant DECIMAL1e18 = 10**18;
 
     // seconds in 1 year
-    uint256 constant oneYear = 31536000;
+    uint256 public stakingPeriod = 31536000;
 
     /**
      * @dev Emitted when `staker` stake `value` tokens.
@@ -72,23 +72,33 @@ contract Staking {
     /**     
      * @dev Constructor     
      * @param _stakeToken The address of stake Token       
-     * @param _rewardToken The address of reward Token          
+     * @param _rewardToken The address of reward Token   
+     * @param _stakingPeriod valid staking time after staking starts
+     * @param _totalRewardToBeDistributed total amount to be distributed as reward
      */
     constructor(
         address _stakeToken,
-        address _rewardToken
+        address _rewardToken,
+        uint256 _stakingPeriod,
+        uint256 _totalRewardToBeDistributed,
+        uint256 _stakingStart
     ) public {
+        require(_stakingPeriod > 0, "should be positive");
+        require(_totalRewardToBeDistributed > 0, "Total reward can not be 0");
+        require(_stakingStart >= now, "Can not be past time");
+        require(_stakeToken != address(0), "Can not be null address");
+        require(_rewardToken != address(0), "Can not be null address");
         stakeToken = ERC20(_stakeToken);
         rewardToken = PlotXToken(_rewardToken);
-        stakingStartTime = now;
+        stakingStartTime = _stakingStart;
         interestData.lastUpdated = now;
-        totalReward = uint(500000).mul(DECIMAL1e18);
+        stakingPeriod = _stakingPeriod;
+        totalReward = _totalRewardToBeDistributed;
     }
 
     /**
      * @dev Allows a staker to deposit Tokens. Notice that `approve` is
      * needed to be executed before the execution of this method.
-     * Can be executed only when the contract is not paused.
      * @param _amount The amount of tokens to stake
      */
     function stake(uint256 _amount) external {
@@ -97,7 +107,7 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "transferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= oneYear, "can not stake after 1 year");
+        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "can not stake after 1 year");
         uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(31536000);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
@@ -118,8 +128,7 @@ contract Staking {
     ) internal {
         Staker storage _stakerData = interestData.stakers[_staker];
 
-        uint256 currentStake = _stakerData.totalStaked;
-        _stakerData.totalStaked = currentStake.add(_stake);
+        _stakerData.totalStaked = _stakerData.totalStaked.add(_stake);
 
         updateStakeBuyinRate(
             _stakerData,
@@ -138,7 +147,7 @@ contract Staking {
      *
      * @param _stakerData                  Staker's Data
      * @param _globalYieldPerToken         Total yielding amount per token 
-     * @param _stake              Amount staked 
+     * @param _stake                       Amount staked 
      *
      */
     function updateStakeBuyinRate(
@@ -196,15 +205,8 @@ contract Staking {
      * @dev Withdraws the sender Earned interest.
      */
     function withdrawInterest() public {
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) >= oneYear)
-        {
-            timeSinceLastUpdate = stakingStartTime.add(oneYear).sub(interestData.lastUpdated);
-            interestData.lastUpdated = stakingStartTime.add(oneYear);
-        } else {
-            interestData.lastUpdated = now;
-        }
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(oneYear);
+        uint timeSinceLastUpdate = _timeSinceLastUpdate();
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
         
         updateGlobalYieldPerToken(newlyInterestGenerated);
         uint256 interest = calculateInterest(msg.sender);
@@ -215,14 +217,7 @@ contract Staking {
     }
 
     function updateGlobalYield() public {
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) >= oneYear)
-        {
-            timeSinceLastUpdate = stakingStartTime.add(oneYear).sub(interestData.lastUpdated);
-            interestData.lastUpdated = stakingStartTime.add(oneYear);
-        } else {
-            interestData.lastUpdated = now;
-        }
+        uint timeSinceLastUpdate = _timeSinceLastUpdate();
         uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(31536000);
         updateGlobalYieldPerToken(newlyInterestGenerated);
     }
@@ -231,6 +226,18 @@ contract Staking {
     {
 
       return (interestData.globalYieldPerToken, interestData.stakers[_staker].stakeBuyinRate);
+    }
+
+    function _timeSinceLastUpdate() internal returns(uint256) {
+        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
+        if(uint(now).sub(stakingStartTime) >= stakingPeriod)
+        {
+            timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
+            interestData.lastUpdated = stakingStartTime.add(stakingPeriod);
+        } else {
+            interestData.lastUpdated = now;
+        }
+        return timeSinceLastUpdate;
     }
 
     /**

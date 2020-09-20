@@ -8,6 +8,8 @@ const expectEvent = require("./utils/expectEvent");
 const increaseTimeTo = require("./utils/increaseTime.js").increaseTimeTo;
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const DummyTokenMock = artifacts.require('DummyTokenMock');
+const latestTime = require("./utils/latestTime.js").latestTime;
+const nullAddress = "0x0000000000000000000000000000000000000000";
 
 contract("InterestDistribution - Scenario based calculations for staking model", ([S1, S2, S3]) => {
   let stakeTok,
@@ -24,9 +26,10 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       plotusToken = await PlotusToken.new(toWei(30000000));
       dummystakeTok = await DummyTokenMock.new("UEP","UEP");
       dummyRewardTok = await DummyTokenMock.new("PLT","PLT");
-      staking = await Staking.new(stakeTok.address, plotusToken.address);
+      let nowTime = await latestTime();
+      staking = await Staking.new(stakeTok.address, plotusToken.address, (24*3600*365), toWei(500000), await latestTime());
 
-      dummyStaking = await MockStaking.new(dummystakeTok.address, dummyRewardTok.address);
+      dummyStaking = await MockStaking.new(dummystakeTok.address, dummyRewardTok.address, (24*3600*365), toWei(500000), (await latestTime())/1+1500);
 
       await plotusToken.transfer(staking.address, toWei(500000));
 
@@ -695,6 +698,26 @@ contract("InterestDistribution - Scenario based calculations for staking model",
     it("Should return 0 if withdrawnTodate+stakebuin > globalyieldxstaked", async () => {
       await dummyStaking.setBuyInRate(S1, toWei(100));
       expect((Math.floor((await dummyStaking.calculateInterest(S1))/1e18)).toString()).to.be.equal("0");
+    });
+    it("Should Revert if staking period pass as 0", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(stakeTok.address, plotusToken.address, 0, toWei(500000), nowTime));
+    });
+    it("Should Revert if reward pass as 0", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(stakeTok.address, plotusToken.address, 120, 0, nowTime));
+    });
+    it("Should Revert if start time pass as past time", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(stakeTok.address, plotusToken.address, 1, 120, nowTime-1500));
+    });
+    it("Should Revert if stake token is null", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(nullAddress, plotusToken.address, 1, 120, nowTime));
+    });
+    it("Should Revert if reward token is null", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(stakeTok.address, nullAddress, 1, 120, nowTime));
     });
   });
 
