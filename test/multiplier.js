@@ -10,6 +10,7 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const TokenController = artifacts.require("MockTokenController");
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
+const assertRevert = require("./utils/assertRevert").assertRevert;
 
 describe("1. Players are incentivized to stake DAO tokens to earn a multiplier on their positions", () => {
 	let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
@@ -22,6 +23,8 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			let tokenController = await TokenController.at(tokenControllerAdd);
 			let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			let plotusNewInstance = await Plotus.at(plotusNewAddress);
+			let marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			const openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			// await marketInstance.setMockPriceFlag(false);
@@ -36,12 +39,24 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
 			await marketInstance.setOptionPrice(3, 27);
-
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
 				from: user1,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
+
 			await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, {
 				from: user2,
 			});
@@ -85,6 +100,8 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			let tokenController = await TokenController.at(tokenControllerAdd);
 			let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			let plotusNewInstance = await Plotus.at(plotusNewAddress);
+			let marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			const openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			// await marketInstance.setMockPriceFlag(false);
@@ -104,6 +121,18 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
 			await marketInstance.setOptionPrice(3, 27);
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
@@ -185,6 +214,18 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await marketInstance.setOptionPrice(1, 9);
 			await marketInstance.setOptionPrice(2, 18);
 			await marketInstance.setOptionPrice(3, 27);
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {
 				from: user1,
@@ -282,6 +323,18 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await plotusToken.transfer(user5, web3.utils.toWei("11000"));
 			await tokenController.lock("0x534d", web3.utils.toWei("11000"), 86400 * 30, { from: user5 });
 
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
+
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {
 				from: user1,
 				value: web3.utils.toWei("10"),
@@ -334,8 +387,8 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 });
 
 describe("3. Multiple Option bets", () => {
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -344,6 +397,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -363,6 +418,18 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.1. Scenario 1 ", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user1 });
@@ -395,8 +462,8 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
 		});
 	});
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -405,6 +472,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -424,6 +493,18 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.2. Scenario 2", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
@@ -456,8 +537,8 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.7966");
 		});
 	});
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -466,6 +547,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -485,6 +568,19 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.3. Scenario 3 ", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
+
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user2 });
@@ -518,8 +614,8 @@ describe("3. Multiple Option bets", () => {
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
 		});
 	});
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -528,6 +624,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -549,6 +647,18 @@ describe("3. Multiple Option bets", () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const oldPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
 			assert.equal(oldPlotusETHBalance, 0);
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 1, 1, {
 				from: user1,
@@ -610,15 +720,14 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (0).toFixed(2));
 
-			
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
 			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
 			assert.equal(newPlotusETHBalance, 0.002);
 		});
 	});
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -627,6 +736,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -646,6 +757,18 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.5. Scenario 5", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
@@ -714,8 +837,8 @@ describe("3. Multiple Option bets", () => {
 			assert.equal(newPlotusETHBalance, 0.033968);
 		});
 	});
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -724,6 +847,8 @@ describe("3. Multiple Option bets", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -743,6 +868,18 @@ describe("3. Multiple Option bets", () => {
 
 		it("3.6. Scenario 6", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
@@ -820,8 +957,8 @@ describe("3. Multiple Option bets", () => {
 });
 
 describe("4. Option 2 for winning", () => {
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -830,6 +967,8 @@ describe("4. Option 2 for winning", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -849,6 +988,18 @@ describe("4. Option 2 for winning", () => {
 
 		it("4.1. Scenario 7", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
@@ -928,9 +1079,10 @@ describe("4. Option 2 for winning", () => {
 		});
 	});
 });
+
 describe("5. Option 3 for winning", () => {
-	contract("Market", async function([user1, user2, user3]) {
-		let masterInstance, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
+	contract("Market", async function([user1, user2, user3, user4, user5]) {
+		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -939,6 +1091,8 @@ describe("5. Option 3 for winning", () => {
 			tokenController = await TokenController.at(tokenControllerAdd);
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
+			marketConfig = await plotusNewInstance.marketUtility();
+			marketConfig = await MarketConfig.at(marketConfig);
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 			assert.ok(marketInstance);
@@ -958,6 +1112,18 @@ describe("5. Option 3 for winning", () => {
 
 		it("5.1. Scenario 8", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+
+			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setAMLComplianceStatus(user2, true);
+			await marketConfig.setAMLComplianceStatus(user3, true);
+			await marketConfig.setAMLComplianceStatus(user4, true);
+			await marketConfig.setAMLComplianceStatus(user5, true);
+
+			await marketConfig.setKYCComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user2, true);
+			await marketConfig.setKYCComplianceStatus(user3, true);
+			await marketConfig.setKYCComplianceStatus(user4, true);
+			await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {

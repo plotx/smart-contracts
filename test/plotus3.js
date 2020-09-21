@@ -39,6 +39,28 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await marketInstance.setOptionPrice(2, 18);
 		await marketInstance.setOptionPrice(3, 27);
 
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+		await marketConfig.setAMLComplianceStatus(user6, true);
+		await marketConfig.setAMLComplianceStatus(user7, true);
+		await marketConfig.setAMLComplianceStatus(user8, true);
+		await marketConfig.setAMLComplianceStatus(user9, true);
+		await marketConfig.setAMLComplianceStatus(user10, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+		await marketConfig.setKYCComplianceStatus(user6, true);
+		await marketConfig.setKYCComplianceStatus(user7, true);
+		await marketConfig.setKYCComplianceStatus(user8, true);
+		await marketConfig.setKYCComplianceStatus(user9, true);
+		await marketConfig.setKYCComplianceStatus(user10, true);
+
 		// set price
 		// user 1
 		// set price lot

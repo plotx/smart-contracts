@@ -16,7 +16,7 @@ const assertRevert = require("./utils/assertRevert.js").assertRevert;
 // get etherum accounts
 // swap ether with LOT
 
-contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 	it("Place the bets with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -40,6 +40,28 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await marketInstance.setOptionPrice(1, 9);
 		await marketInstance.setOptionPrice(2, 18);
 		await marketInstance.setOptionPrice(3, 27);
+
+		await marketConfig.setAMLComplianceStatus(user1, true);
+		await marketConfig.setAMLComplianceStatus(user2, true);
+		await marketConfig.setAMLComplianceStatus(user3, true);
+		await marketConfig.setAMLComplianceStatus(user4, true);
+		await marketConfig.setAMLComplianceStatus(user5, true);
+		await marketConfig.setAMLComplianceStatus(user6, true);
+		await marketConfig.setAMLComplianceStatus(user7, true);
+		await marketConfig.setAMLComplianceStatus(user8, true);
+		await marketConfig.setAMLComplianceStatus(user9, true);
+		await marketConfig.setAMLComplianceStatus(user10, true);
+
+		await marketConfig.setKYCComplianceStatus(user1, true);
+		await marketConfig.setKYCComplianceStatus(user2, true);
+		await marketConfig.setKYCComplianceStatus(user3, true);
+		await marketConfig.setKYCComplianceStatus(user4, true);
+		await marketConfig.setKYCComplianceStatus(user5, true);
+		await marketConfig.setKYCComplianceStatus(user6, true);
+		await marketConfig.setKYCComplianceStatus(user7, true);
+		await marketConfig.setKYCComplianceStatus(user8, true);
+		await marketConfig.setKYCComplianceStatus(user9, true);
+		await marketConfig.setKYCComplianceStatus(user10, true);
 
 		await marketInstance.exchangeCommission(); //should have no affect
 		await assertRevert(marketInstance.calculatePredictionResult(1)); //should revert as market is in live status
@@ -234,9 +256,9 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await increaseTime(36001);
 		// plotus contract balance eth balance
 		plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceBefore), 0);
+		assert.equal(parseFloat(plotusBalanceBefore), "79920000000000000");
 		lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (820.46627).toFixed(2));
 
 		// lot supply , lot balance of market
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
@@ -246,9 +268,9 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await marketInstance.exchangeCommission();
 
 		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceAfter), 5000000000000000);
+		assert.equal(parseFloat(plotusBalanceAfter), 84920000000000000);
 		lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (837.5835).toFixed(2));
+		assert.equal(Math.round(parseFloat(web3.utils.fromWei(lotBalanceAfter))), (825));
 		assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
 		// commented by Parv (as asserts already added above)
 		// lotBalanceBefore = lotBalanceBefore / 1;
@@ -270,7 +292,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			return returnAmountInEth;
 		};
 
-		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
+		const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
 		// calulate  rewards for every user in eth
 
 		// console.log("Rewards in Eth");
@@ -289,14 +311,14 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			0.2529948177,
 			125.948909,
 			0.5907176421,
-			134.184883,
-			495.0419515,
+			131.51202,
+			485.1810844,
 			0.1236570051,
 			0.6731378201,
 			0.03925619209,
 			0.7661296217,
 		];
-		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
+		const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
 
 		for (let account of accounts) {
 			beforeClaim = await web3.eth.getBalance(account);
@@ -329,7 +351,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 	// 	assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
 	// });
 });
-contract("Market", async function ([user1, user2]) {
+contract("Market", async function([user1, user2]) {
 	let masterInstance, BLOTInstance;
 	it("Test BLOT Contract", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();

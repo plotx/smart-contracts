@@ -32,4 +32,5 @@ contract IMarketUtility {
     function update(address pair) external;
     function setCommissionPercentage(address _asset, uint _commissionPerc) external;
     function addIncentiveToken(address _tokenAddress) external;
+    function checkAMLKYCCompliance(address _user, uint256 _totalEthStaked, uint256 _totalPlotStaked) external returns(bool  );
 }
