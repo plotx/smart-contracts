@@ -19,6 +19,8 @@ contract IMarketRegistry {
 
     function burnDisputedProposalTokens(uint _proposaId) external;
 
+    function isWhitelistedSponsor(address _address) public view returns(bool);
+
     /**
     * @dev Transfer plot to market for reward distribution in case of all winners situation
     * @param _amount Amount to transfer to market
@@ -62,9 +64,9 @@ contract IMarketRegistry {
     * @param _user The address who claim their reward.
     * @param _reward The reward which is claimed by user.
     * @param incentives The incentives of user.
-    * @param incentiveTokens The incentive tokens of user.
+    * @param incentiveToken The incentive tokens of user.
     */
-    function callClaimedEvent(address _user , uint[] memory _reward, address[] memory predictionAssets, uint[] memory incentives, address[] memory incentiveTokens) public {
+    function callClaimedEvent(address _user , uint[] memory _reward, address[] memory predictionAssets, uint incentives, address incentiveToken) public {
     }
 
         /**

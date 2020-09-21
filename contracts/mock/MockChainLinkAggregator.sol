@@ -3,7 +3,7 @@ pragma solidity 0.5.7;
 import "../interfaces/IChainLinkOracle.sol";
 contract MockChainLinkAggregator is IChainLinkOracle{
 
-	 int256 latestAns = 934999802346 ;
+	 int256 latestAns = 934999802346;
 
 	/**
     * @dev Gets the latest answer of chainLink oracle.

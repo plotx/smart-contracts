@@ -47,9 +47,12 @@ module.exports = function(deployer, network, accounts){
       // await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
       let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
       let plotus = await Plotus.at(plotusAddress);
+      // await mockchainLinkAggregaror.setLatestAnswer(934999802346);
+      console.log((await mockchainLinkAggregaror.latestAnswer())/1);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address);
+      let hash = await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+      console.log(hash.receipt.gasUsed);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate(accounts[0]);
