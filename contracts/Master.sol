@@ -14,6 +14,7 @@ contract Master is Governed {
     bool public masterInitialised;
 
     mapping(address => bool) public contractsActive;
+    mapping(address => bool) public whitelistedSponsor;
     mapping(bytes2 => address payable) public contractAddress;
 
     /**
@@ -114,6 +115,10 @@ contract Master is Governed {
             );
             _replaceImplementation(_contractNames[i], _contractAddresses[i]);
         }
+    }
+
+    function whitelistSponsor(address _address) external onlyAuthorizedToGovern {
+        whitelistedSponsor[_address] = true;
     }
 
     

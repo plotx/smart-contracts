@@ -249,6 +249,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             2,
             2
         );
+        _addInitialCategories(
+            "Whitelist Sponsor",
+            "",
+            "MS",
+            "whitelistSponsor(address)",
+            60,
+            2,
+            2
+        );
     }
 
     /**

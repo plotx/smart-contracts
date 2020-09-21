@@ -108,7 +108,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// console.log(await BLOTInstance.balanceOf(user1));
 		// await BLOTInstance.addMinter(marketInstance.address);
 		await marketInstance.placePrediction(BLOTInstance.address, "400000000000000000000", 2, 5, { from: user2 });
-
+		let flags = await marketInstance.getUserFlags(user2);
+		assert.equal(flags[1], true);
 		// user 3
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");

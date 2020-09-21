@@ -36,9 +36,9 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await plotusToken.transfer(user4, "2500000000000000000000");
 			await plotusToken.transfer(user5, "2500000000000000000000");
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
 
@@ -118,9 +118,9 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await plotusToken.transfer(user5, "2500000000000000000000");
 			await tokenController.lock("0x534d", "1100", 86400 * 30, { from: user5 });
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await marketConfig.setAMLComplianceStatus(user1, true);
 			await marketConfig.setAMLComplianceStatus(user2, true);
@@ -201,9 +201,9 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await MockUniswapRouterInstance.setPrice("1000000000000000");
 			await marketConfig.setPrice("1000000000000000");
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 		});
 
 		it("2.1", async () => {
@@ -211,9 +211,9 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await plotusToken.transfer(user3, web3.utils.toWei("10000"));
 			await plotusToken.transfer(user4, web3.utils.toWei("20000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await marketConfig.setAMLComplianceStatus(user1, true);
 			await marketConfig.setAMLComplianceStatus(user2, true);
@@ -304,9 +304,9 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await MockUniswapRouterInstance.setPrice("1000000000000000");
 			await marketConfig.setPrice("1000000000000000");
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 		});
 		it("2.2", async () => {
 			await tokenController.lock("0x534d", web3.utils.toWei("110000"), 86400 * 30, { from: user1 });
@@ -407,9 +407,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -482,9 +482,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -557,9 +557,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -634,9 +634,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -746,9 +746,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -857,9 +857,9 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -977,9 +977,9 @@ describe("4. Option 2 for winning", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
@@ -1101,9 +1101,9 @@ describe("5. Option 3 for winning", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("5000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("5000"));
 
-			await marketInstance.setOptionPrice(1, 9);
-			await marketInstance.setOptionPrice(2, 18);
-			await marketInstance.setOptionPrice(3, 27);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
 
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
