@@ -30,7 +30,7 @@ contract Market {
     uint constant marketCoolDownTime = 15 minutes;
     
     bool internal isChainlinkFeed;
-    bool public lockedForDispute;
+    bool internal lockedForDispute;
     bool internal commissionExchanged;
     bytes32 internal marketCurrency;
     bytes32 internal marketResultId;
@@ -49,7 +49,7 @@ contract Market {
     uint internal neutralMinValue;
     uint internal neutralMaxValue;
     uint internal incentiveToDistribute;
-    uint[] public rewardToDistribute;
+    uint[] internal rewardToDistribute;
     PredictionStatus internal predictionStatus;
 
     

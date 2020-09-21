@@ -493,10 +493,8 @@ contract MarketUtility {
         if(userData[_user].isAMLCompliant && userData[_user].isKycCompliant) {
             return true;
         } 
-        uint256 _ethPriceUSD = getAssetPriceUSD(ETH_ADDRESS, true);
-        uint _totalStaked = _totalEthStaked.mul(_ethPriceUSD).div(1e18);
         uint _plotValueInEth = getAssetValueETH(plotToken, _totalPlotStaked);
-        _totalStaked = _totalStaked.add(_plotValueInEth.mul(_ethPriceUSD).div(1e18));
+        uint _totalStaked = _totalEthStaked.add(_plotValueInEth);
         if(_totalStaked > kycThreshold) {
             if(!userData[_user].isAMLCompliant || !userData[_user].isKycCompliant) {
                 return false;
