@@ -60,10 +60,10 @@ contract Master is Governed {
         );
         contractsActive[address(this)] = true;
         dAppToken = _token;
-        dAppLocker = _token;
         for (uint256 i = 0; i < allContractNames.length; i++) {
             _generateProxy(allContractNames[i], _implementations[i]);
         }
+        dAppLocker = contractAddress["TC"];
 
         _setMasterAddress();
 
