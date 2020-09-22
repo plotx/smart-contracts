@@ -304,6 +304,15 @@ contract Staking {
       return (interestData.stakers[_staker].totalStaked, interestData.stakers[_staker].withdrawnToDate);
     }
 
+    /**
+     * @dev returns stats data.
+     * @param _staker Address of staker.
+     * @return Total staked.
+     * @return Total reward to be distributed.
+     * @return estimated reward for user at end of staking period if no one stakes from now.
+     * @return Unlocked reward based on elapsed time.
+     * @return Accrued reward for user till now.
+     */
     function getStatsData(address _staker) external view returns(uint, uint, uint, uint, uint)
     {
 
