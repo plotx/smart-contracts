@@ -46,7 +46,7 @@ contract Market {
     address internal incentiveToken;
     uint internal startTime;
     uint internal predictionTime;
-    uint internal WinningOption;
+    uint public WinningOption;
     uint internal marketCloseValue;
     uint internal settleTime;
     uint internal ethAmountToPool;

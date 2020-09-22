@@ -10,6 +10,8 @@ contract IMarket {
       Settled
     }
 
+    function WinningOption() public view returns(uint256);
+
     function marketCurrency() public view returns(bytes32);
 
     function getMarketFeedData() public view returns(bytes32, address, bool);

@@ -49,7 +49,6 @@ contract MarketRegistry is Governed, Iupgradable {
     struct MarketData {
       bool isMarket;
       uint256 marketFlushFund;
-      uint256 winningOption;
       DisputeStake disputeStakes;
     }
 
@@ -444,7 +443,6 @@ contract MarketRegistry is Governed, Iupgradable {
         marketFlushFundPLOT = marketFlushFundPLOT.add(_tokenAmountToPool);
         marketData[msg.sender].marketFlushFund = marketFlushFundPLOT;
       }
-      marketData[msg.sender].winningOption = winningOption;
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue);
     }
     
@@ -532,7 +530,7 @@ contract MarketRegistry is Governed, Iupgradable {
         _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i <= _toIndex; i++) {
           _market[i] = userData[user].marketsParticipated[i];
-          _winnigOption[i] = marketData[_market[i]].winningOption;
+          _winnigOption[i] = IMarket(_market[i]).WinningOption();
         }
       }
     }
