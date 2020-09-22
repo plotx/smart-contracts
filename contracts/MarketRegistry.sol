@@ -48,6 +48,7 @@ contract MarketRegistry is Governed, Iupgradable {
 
     struct MarketData {
       bool isMarket;
+      uint256 marketFlushFund;
       uint256 winningOption;
       DisputeStake disputeStakes;
     }
@@ -62,6 +63,7 @@ contract MarketRegistry is Governed, Iupgradable {
 
     uint internal marketCreationFallbackTime;
     uint internal marketCreationIncentive;
+    uint internal marketFlushFundPLOT;
     
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
@@ -264,7 +266,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev Internal function to reward user for initiating market creation call
     */
     function _transferIncentiveForCreation() internal {
-      if(plotToken.balanceOf(address(this)) > marketCreationIncentive) {
+      if((plotToken.balanceOf(address(this)).sub(marketFlushFundPLOT)) > marketCreationIncentive) {
         _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
       }
     }
@@ -331,6 +333,8 @@ contract MarketRegistry is Governed, Iupgradable {
       uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
       address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
       address plotTokenAddress = address(plotToken);
+      marketFlushFundPLOT = marketFlushFundPLOT.sub(marketData[_marketAddress].marketFlushFund);
+      delete marketData[_marketAddress].marketFlushFund;
       // _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
       _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
       IMarket(_marketAddress).resolveDispute.value(ethDepositedInPool)(true, _result);
@@ -350,9 +354,11 @@ contract MarketRegistry is Governed, Iupgradable {
       plotToken.burn(_stakedAmount);
     }
 
-    function withdrawForRewardDistribution(uint256 _amount) external {
+    function withdrawForRewardDistribution(uint256 withdrawPercent) external returns(uint256) {
+      uint256 _amount = marketFlushFundPLOT.mul(withdrawPercent).div(100);
       require(isMarket(msg.sender));
       _transferAsset(address(plotToken), msg.sender, _amount);
+      return _amount;
     }
  
     /**
@@ -431,8 +437,12 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param winningOption The winning option of the market.
     * @param closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue) external {
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _tokenAmountToPool, bool _isMarketFlushFund) external {
       require(isMarket(msg.sender));
+      if(_isMarketFlushFund) {
+        marketFlushFundPLOT = marketFlushFundPLOT.add(_tokenAmountToPool);
+        marketData[msg.sender].marketFlushFund = marketFlushFundPLOT;
+      }
       marketData[msg.sender].winningOption = winningOption;
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue);
     }

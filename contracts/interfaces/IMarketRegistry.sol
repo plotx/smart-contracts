@@ -25,7 +25,7 @@ contract IMarketRegistry {
     * @dev Transfer plot to market for reward distribution in case of all winners situation
     * @param _amount Amount to transfer to market
     */
-    function withdrawForRewardDistribution(uint256 _amount) external;
+    function withdrawForRewardDistribution(uint256 _amount) external returns(uint256);
 
     /**
     * @dev Initialize the PlotX.
@@ -75,6 +75,6 @@ contract IMarketRegistry {
     * @param _winningOption The winning option of the market.
     * @param _closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue) public {
+    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint _tokenAmountToPool, bool isMarketFlushFund) public {
     }
 }

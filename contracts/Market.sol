@@ -263,6 +263,7 @@ contract Market {
       uint disributePercFromMFPool;
       uint transferPercToMFPool;
       uint lossPercentage;
+      bool isMarketFlushFund;
       ( , lossPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
@@ -288,11 +289,11 @@ contract Market {
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
-          totalReward[0] = _calculatePercentage(disributePercFromMFPool, IToken(plotToken).balanceOf(address(marketRegistry)), 100);
-          marketRegistry.withdrawForRewardDistribution(totalReward[0]);
+          totalReward[0] = marketRegistry.withdrawForRewardDistribution(disributePercFromMFPool);
         } else {
           tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
           ethAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[1], 100);
+          isMarketFlushFund = true;
           totalReward[0] = totalReward[0].sub(tokenAmountToPool);
           totalReward[1] = totalReward[1].sub(ethAmountToPool);
         }
@@ -306,7 +307,7 @@ contract Market {
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool);
       marketCloseValue = _value;
-      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value, tokenAmountToPool, isMarketFlushFund);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
