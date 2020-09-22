@@ -188,7 +188,7 @@ contract('Configure Global Parameters', accounts => {
       });
 
       it('Should update Loss Percentage', async function() {
-        await updateParameter(20, 2, 'LPERC', pl, 'configUint', 24);
+        await updateParameter(20, 2, 'RPERC', pl, 'configUint', 24);
         let configData = await marketConfig.getBasicMarketDetails();
         assert.equal(configData[1], 24, 'Not updated');
       });

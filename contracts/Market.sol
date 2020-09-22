@@ -238,9 +238,9 @@ contract Market {
     function _exchangeCommission() internal {
       if(marketStatus() >= PredictionStatus.InSettlement) {
         commissionExchanged = true;
-      ( , uint256 lossPercentage, , , , ) = marketUtility.getBasicMarketDetails();
-        _transferAsset(plotToken, address(marketRegistry), assetData[plotToken].commissionAmount.mul(lossPercentage).div(100));
-        _transferAsset(ETH_ADDRESS, address(marketRegistry), assetData[ETH_ADDRESS].commissionAmount.mul(lossPercentage).div(100));
+      ( , uint256 riskPercentage, , , , ) = marketUtility.getBasicMarketDetails();
+        _transferAsset(plotToken, address(marketRegistry), assetData[plotToken].commissionAmount.mul(riskPercentage).div(100));
+        _transferAsset(ETH_ADDRESS, address(marketRegistry), assetData[ETH_ADDRESS].commissionAmount.mul(riskPercentage).div(100));
       }
     }
 
@@ -262,9 +262,9 @@ contract Market {
       require(_value > 0,"value should be greater than 0");
       uint disributePercFromMFPool;
       uint transferPercToMFPool;
-      uint lossPercentage;
+      uint riskPercentage;
       bool isMarketFlushFund;
-      ( , lossPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
+      ( , riskPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         settleTime = now;
@@ -284,8 +284,8 @@ contract Market {
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
-          totalReward[0] = totalReward[0].add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
-          totalReward[1] = totalReward[1].add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
+          totalReward[0] = totalReward[0].add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
+          totalReward[1] = totalReward[1].add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
@@ -300,8 +300,8 @@ contract Market {
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
-          tokenAmountToPool = tokenAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
-          ethAmountToPool = ethAmountToPool.add(_calculatePercentage(lossPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
+          tokenAmountToPool = tokenAmountToPool.add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
+          ethAmountToPool = ethAmountToPool.add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
         }
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
@@ -550,13 +550,13 @@ contract Market {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint lossPercentage, , , , ) = marketUtility.getBasicMarketDetails();
+      ( , uint riskPercentage, , , , ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        _return[0] =  _callReturn(_return[0], _user, i, lossPercentage, plotToken);
-        _return[1] =  _callReturn(_return[1], _user, i, lossPercentage, ETH_ADDRESS);
+        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
+        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
       }
     }
 
@@ -583,11 +583,11 @@ contract Market {
     /**
     * @dev Calls the total return amount internally.
     */
-    function _callReturn(uint _return,address _user,uint i,uint lossPercentage, address _asset)internal view returns(uint){
+    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
       if(i == WinningOption) {
-        lossPercentage = 0;
+        riskPercentage = 0;
       }
-      return _return.add(userData[_user].assetStaked[_asset][i].sub((userData[_user].LeverageAsset[_asset][i].mul(lossPercentage)).div(100)));
+      return _return.add(userData[_user].assetStaked[_asset][i].sub((userData[_user].LeverageAsset[_asset][i].mul(riskPercentage)).div(100)));
     }
 
 

@@ -26,7 +26,7 @@ contract MarketUtility {
     uint256 internal priceStep;
     uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
-    uint256 internal lossPercentage;
+    uint256 internal riskPercentage;
     uint256 internal disributePercFromMFPool;
     uint256 internal transferPercToMFPool;
     uint256 internal uniswapDeadline;
@@ -118,7 +118,7 @@ contract MarketUtility {
         priceStep = 10 ether;
         multiplier = 10;
         minStakeForMultiplier = 5e17;
-        lossPercentage = 20;
+        riskPercentage = 20;
         uniswapDeadline = 20 minutes;
         tokenStakeForDispute = 100 ether;
         marketCoolDownTime = 15 minutes;
@@ -180,8 +180,8 @@ contract MarketUtility {
             priceStep = value;
         } else if (code == "MINSTM") {
             minStakeForMultiplier = value;
-        } else if (code == "LPERC") {
-            lossPercentage = value;
+        } else if (code == "RPERC") {
+            riskPercentage = value;
         } else if (code == "UNIDL") {
             uniswapDeadline = value;
         } else if (code == "TSDISP") {
@@ -285,7 +285,7 @@ contract MarketUtility {
             uint256
         )
     {
-        return (minBet, lossPercentage, priceStep, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
+        return (minBet, riskPercentage, priceStep, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
     }
 
     /**
