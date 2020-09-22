@@ -371,7 +371,6 @@ contract Market {
       }
       userData[_user].claimedReward = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user);
-      uint256 i;
       _transferAsset(plotToken, _user, _returnAmount[0]);
       _transferAsset(ETH_ADDRESS, _user, _returnAmount[1]);
       _transferAsset(incentiveToken, _user, _incentive);
@@ -420,7 +419,6 @@ contract Market {
     * @return Price of the option.
     */
     function getOptionPrice(uint _prediction) public view returns(uint) {
-      (uint _price, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
       uint[] memory params = new uint[](9);
       params[0] = _prediction;
       params[1] = neutralMinValue;
@@ -473,14 +471,7 @@ contract Market {
         _optionPrice = new uint[](totalOptions);
         _ethStaked = new uint[](totalOptions);
         _plotStaked = new uint[](totalOptions);
-        (uint _tokenPrice, uint _decimals) = marketUtility.getAssetPriceInETH(plotToken);
-        uint _totalStaked = totalStakedETH.add(_calculateAssetValueInEth(totalStakedToken, _tokenPrice, _decimals));
-        uint _assetStaked;
         for (uint i = 0; i < totalOptions; i++) {
-        _assetStaked = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
-        _assetStaked = _assetStaked.add(
-          _calculateAssetValueInEth(optionsAvailable[i+1].assetStaked[plotToken], _tokenPrice, _decimals)
-        );
         _ethStaked[i] = optionsAvailable[i+1].assetStaked[ETH_ADDRESS];
         _plotStaked[i] = optionsAvailable[i+1].assetStaked[plotToken];
         _optionPrice[i] = getOptionPrice(i+1);

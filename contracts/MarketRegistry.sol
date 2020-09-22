@@ -484,7 +484,7 @@ contract MarketRegistry is Governed, Iupgradable {
       emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveToken);
     }
 
-    function getUintParameters(bytes8 code) external returns(uint256 value) {
+    function getUintParameters(bytes8 code) external view returns(uint256 value) {
       if(code == "FBTIME") {
         value = marketCreationFallbackTime;
       } else if(code == "MCRINC") {
