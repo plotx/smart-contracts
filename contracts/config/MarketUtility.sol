@@ -61,8 +61,6 @@ contract MarketUtility {
     IUniswapV2Factory uniswapFactory;
     address[] uniswapEthToTokenPath;
 
-    mapping(address => uint256) internal commissionPerc;
-
     IChainLinkOracle internal chainLinkOracle;
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
@@ -96,8 +94,6 @@ contract MarketUtility {
         plotETHpair = uniswapFactory.getPair(plotToken, weth);
         uniswapEthToTokenPath.push(weth);
         uniswapEthToTokenPath.push(plotToken);
-        commissionPerc[ETH_ADDRESS] = 10;
-        commissionPerc[plotToken] = 5;
         authorizedToWhitelist = _addressParams[4];
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
@@ -190,12 +186,6 @@ contract MarketUtility {
             marketCoolDownTime = value;
         } else if (code == "KYCTH") {
             kycThreshold = value;
-        } else if (code == "ETHCOM") {
-            require(value > 0 && value < 10000, "Value must be between 0-10000");
-            commissionPerc[ETH_ADDRESS] = value;
-        } else if (code == "PLOTCOM") {
-            require(value > 0 && value < 10000, "Value must be between 0-10000");
-            commissionPerc[plotToken] = value;
         } else {
             revert("Invalid code");
         }
@@ -423,27 +413,6 @@ contract MarketUtility {
         returns (address, address[] memory)
     {
         return (uniswapRouter, uniswapEthToTokenPath);
-    }
-
-    /**
-     * @dev Get Parameters required to initiate market
-     * @return Addresses of tokens to be distributed as incentives
-     * @return Cool down time for market
-     * @return Commission percent for predictions with ETH
-     * @return Commission percent for predictions with PLOT
-     **/
-    function getMarketInitialParams()
-        public
-        view
-        returns (
-            uint256,
-            uint256
-        )
-    {
-        return (
-            commissionPerc[ETH_ADDRESS],
-            commissionPerc[plotToken]
-        );
     }
 
     /**

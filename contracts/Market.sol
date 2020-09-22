@@ -24,18 +24,25 @@ contract Market {
       mapping(address => uint256) assetLeveraged;
     }
 
+    bool constant isChainlinkFeed = true;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address constant marketFeedAddress = 0x5e2aa6b66531142bEAB830c385646F97fa03D80a;
+    address constant plotToken = 0xa626089A947Eadc8a782293B53fCf42247C71111;
+
+    IMarketRegistry constant marketRegistry = IMarketRegistry(0x65Add15C5Ff3Abc069358AAe842dE13Ce92f3447);
+    ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
+    MarketUtility constant marketUtility = MarketUtility(0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2);
+
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
     uint constant coolDownTime = 15 minutes;
+    uint constant ethCommissionPerc = 10; //with 2 decimals
+    uint constant plotCommissionPerc = 5; //with 2 decimals
+    bytes32 public constant marketCurrency = "ETH/USDT";
     
-    bool internal isChainlinkFeed;
     bool internal lockedForDispute;
     bool internal commissionExchanged;
-    bytes32 internal marketCurrency;
     bytes32 internal marketResultId;
-    address internal marketFeedAddress;
-    address internal plotToken;
     address internal incentiveToken;
     uint internal startTime;
     uint internal predictionTime;
@@ -71,39 +78,37 @@ contract Market {
 
     mapping(address => UserData) internal userData;
 
-    IMarketRegistry internal marketRegistry;
-    ITokenController internal tokenController;
-    MarketUtility internal marketUtility;
-
     mapping(uint=>option) public optionsAvailable;
 
     /**
     * @dev Initialize the market.
     * @param _startTime The time at which market will create.
     * @param _predictionTime The time duration of market.
-    * @param _settleTime The time at which result of market will declared.
     * @param _minValue The minimum value of neutral option range.
     * @param _maxValue The maximum value of neutral option range.
-    * @param _marketCurrency The stock name of market.
-    * @param _marketFeedAddress The address to gets the price calculation params.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _minValue, uint _maxValue) public payable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       require(startTime == 0, "Already initialized");
-      marketRegistry = IMarketRegistry(msg.sender);
-      marketUtility = MarketUtility(marketRegistry.marketUtility());
-      tokenController = ITokenController(marketRegistry.tokenController());
-      plotToken = tokenController.token();
+      // marketRegistry = IMarketRegistry(msg.sender);
+      // marketUtility = MarketUtility(marketRegistry.marketUtility());
+      // tokenController = ITokenController(marketRegistry.tokenController());
+      // plotToken = tokenController.token();
       require(_startTime.add(_predictionTime) > now);
       startTime = _startTime;
       predictionTime = _predictionTime;
-      marketCurrency = _marketCurrency;
-      marketFeedAddress = _marketFeedAddress;
-      isChainlinkFeed = _isChainlinkFeed;
-      (assetData[ETH_ADDRESS].commissionPerc, assetData[plotToken].commissionPerc) = marketUtility.getMarketInitialParams();
+      
+      // (assetData[ETH_ADDRESS].commissionPerc, assetData[plotToken].commissionPerc) = marketUtility.getMarketInitialParams();
       neutralMinValue = _minValue;
       neutralMaxValue = _maxValue;
+
+      // if(!(isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
+      //   _feedAddress = _marketCurrencyData.currencyFeedAddress;
+      // } else {
+      //   _feedAddress = address(plotToken);
+      // }
+      marketUtility.update(marketFeedAddress);
     }
 
     function marketSettleTime() public view returns(uint256) {
@@ -119,6 +124,10 @@ contract Market {
 
     function marketCoolDownTime() public view returns(uint256) {
       return settleTime.add(coolDownTime);
+    }
+
+    function getMarketFeedData() public view returns(bytes32, address, bool) {
+      return (marketCurrency, marketFeedAddress, isChainlinkFeed);
     }
 
     /**
@@ -217,7 +226,13 @@ contract Market {
     * @return uint256 representing the interest return of the stake.
     */
     function _collectInterestReturnStake(uint256 _predictionStake, address _asset, uint256 _leverage) internal returns(uint256) {
-      uint _commision = _predictionStake.mul(_leverage).mul(assetData[_asset].commissionPerc).div(10000);
+      uint256 _commissionPerc;
+      if(_asset == ETH_ADDRESS) {
+        _commissionPerc = ethCommissionPerc;
+      } else {
+        _commissionPerc = plotCommissionPerc;
+      }
+      uint _commision = _predictionStake.mul(_leverage).mul(_commissionPerc).div(10000);
       _predictionStake = _predictionStake.sub(_commision.div(_leverage));
       assetData[_asset].commissionAmount = assetData[_asset].commissionAmount.add(_commision);
       return _predictionStake;

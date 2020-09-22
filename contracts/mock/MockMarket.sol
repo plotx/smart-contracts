@@ -23,9 +23,9 @@ contract MockMarket is Market {
       // optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
-    function initiate(uint _startTime, uint _predictionTime, uint _settleTime, uint _minValue, uint _maxValue, bytes32 _marketCurrency,address _marketFeedAddress, bool _isChainlinkFeed) public payable {
+    function initiate(uint _startTime, uint _predictionTime, uint _minValue, uint _maxValue) public payable {
       mockFlag = true;
-      super.initiate(_startTime, _predictionTime, _settleTime, _minValue, _maxValue, _marketCurrency, _marketFeedAddress, _isChainlinkFeed);
+      super.initiate(_startTime, _predictionTime, _minValue, _maxValue);
     }
 
     /**

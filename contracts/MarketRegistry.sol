@@ -22,15 +22,14 @@ contract MarketRegistry is Governed, Iupgradable {
 
     struct MarketTypeData {
       uint256 predictionTime;
-      uint256 settleTime;
       uint256 optionRangePerc;
     }
 
     struct MarketCurrency {
+      address marketImplementation;
       address currencyFeedAddress;
       bool isChainlinkFeed;
       bytes32 currencyName;
-      string marketCreationHash;
     }
 
     struct MarketCreationData {
@@ -73,9 +72,6 @@ contract MarketRegistry is Governed, Iupgradable {
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public tokenController;
-    address public marketImplementation;
-    address[] markets;
-
 
     MarketTypeData[] marketTypes;
     MarketCurrency[] marketCurrencies;
@@ -92,8 +88,8 @@ contract MarketRegistry is Governed, Iupgradable {
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
     event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
-    event MarketTypes(uint256 indexed index, uint256 predictionTime, uint256 settleTime, uint256 optionRangePerc);
-    event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, string marketCreationHash, bool isChainlinkFeed);
+    event MarketTypes(uint256 indexed index, uint256 predictionTime, uint256 optionRangePerc);
+    event MarketCurrencies(uint256 indexed index, address marketImplementation,  address feedAddress, bytes32 currencyName, bool isChainlinkFeed);
     event DisputeRaised(address indexed marketAdd, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(address indexed marketAdd, bool status);
 
@@ -110,19 +106,16 @@ contract MarketRegistry is Governed, Iupgradable {
 
     /**
     * @dev Initialize the PlotX MarketRegistry.
-    * @param _marketImplementation The address of market implementation.
     * @param _marketUtility The address of market config.
     * @param _plotToken The instance of PlotX token.
     */
-    function initiate(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
+    function initiate(address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketCreationFallbackTime = 15 minutes;
       marketCreationIncentive = 10 ether;
-      marketImplementation = _marketImplementation;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
       tokenController = tcAddress;
-      markets.push(address(0));
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
       plotToken.approve(address(governance), ~uint256(0));
@@ -131,13 +124,13 @@ contract MarketRegistry is Governed, Iupgradable {
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _btcPriceFeed) external payable {
+    function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external payable {
       require(marketTypes.length == 0);
-      _addNewMarketCurrency(_ethPriceFeed, "ETH/USDT", "Qme2JKFxGqSNed98Ec613fY3nfTmSrLLj5tR4R6pwrbaaU", true);
-      _addNewMarketCurrency(_btcPriceFeed, "BTC/USDT", "Qmc3ewcaqR6tKqsoqzNFJZi6smVg6jPZXyrQqKtVtmpZiu", true);
-      _addMarket(1 hours, 2 hours, 20);
-      _addMarket(24 hours, 2 days, 50);
-      _addMarket(7 days, 14 days, 100);
+      _addNewMarketCurrency(_ethMarketImplementation);
+      _addNewMarketCurrency(_btcMarketImplementation);
+      _addMarket(1 hours, 20);
+      _addMarket(24 hours, 50);
+      _addMarket(7 days, 100);
 
       for(uint256 i = 0;i < marketTypes.length; i++) {
           marketCreationData[i][0].startTime = _marketStartTime;
@@ -150,49 +143,51 @@ contract MarketRegistry is Governed, Iupgradable {
     /**
     * @dev Add new market type.
     * @param _predictionTime The time duration of market.
-    * @param _settleTime The time at which result of market will declared.
     * @param _marketStartTime The time at which market will create.
     */
-    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyAuthorizedToGovern {
+    function addNewMarketType(uint256 _predictionTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
       uint256 _marketType = marketTypes.length;
-      _addMarket(_predictionTime, _settleTime, _optionRangePerc);
+      _addMarket(_predictionTime, _optionRangePerc);
       for(uint256 j = 0;j < marketCurrencies.length; j++) {
         marketCreationData[_marketType][j].startTime = _marketStartTime;
         createMarket(_marketType, j);
       }
     }
 
-    function _addMarket(uint256 _predictionTime, uint256 _settleTime, uint256 _optionRangePerc) internal {
+    function _addMarket(uint256 _predictionTime, uint256 _optionRangePerc) internal {
       uint256 _marketType = marketTypes.length;
-      marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _optionRangePerc));
-      emit MarketTypes(_marketType, _predictionTime, _settleTime, _optionRangePerc);
+      marketTypes.push(MarketTypeData(_predictionTime, _optionRangePerc));
+      emit MarketTypes(_marketType, _predictionTime, _optionRangePerc);
     }
 
     /**
     * @dev Add new market currency.
     */
-    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isChainlinkFeed, uint256 _marketStartTime) external onlyAuthorizedToGovern {
+    function addNewMarketCurrency(address _marketImplementation, uint256 _marketStartTime) external onlyAuthorizedToGovern {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      _addNewMarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
+      _addNewMarketCurrency(_marketImplementation);
       for(uint256 j = 0;j < marketTypes.length; j++) {
         marketCreationData[j][_marketCurrencyIndex].startTime = _marketStartTime;
         createMarket(j, _marketCurrencyIndex);
       }
     }
 
-    function _addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string memory _computationHash, bool _isChainlinkFeed) internal {
+    function _addNewMarketCurrency(address _marketImplementation) internal {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      marketCurrencies.push(MarketCurrency(_priceFeed, _isChainlinkFeed, _currencyName, _computationHash));
-      emit MarketCurrencies(_marketCurrencyIndex, _priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
+      (bytes32 _currencyName, address _priceFeed, bool _isChainlinkFeed) = IMarket(_marketImplementation).getMarketFeedData();
+      marketCurrencies.push(MarketCurrency(_marketImplementation, _priceFeed, _isChainlinkFeed, _currencyName));
+      emit MarketCurrencies(_marketCurrencyIndex, _marketImplementation, _priceFeed, _currencyName, _isChainlinkFeed);
     }
 
     /**
     * @dev Update the implementations of the market.
-    * @param _marketImplementation the address of market implementation.
     */
-    function updateMarketImplementation(address _marketImplementation) external onlyAuthorizedToGovern {
-      marketImplementation = _marketImplementation;
+    function updateMarketImplementations(uint256[] calldata _currencyIndexes, address[] calldata _marketImplementations) external onlyAuthorizedToGovern {
+      require(_currencyIndexes.length == _marketImplementations.length);
+      for(uint256 i = 0;i< _currencyIndexes.length; i++) {
+        marketCurrencies[_currencyIndexes[i]].marketImplementation = _marketImplementations[i];
+      }
     }
 
     /**
@@ -228,19 +223,18 @@ contract MarketRegistry is Governed, Iupgradable {
     function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue, uint256 _marketStartTime) internal {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
-      address _feedAddress;
-      if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
-        _feedAddress = _marketCurrencyData.currencyFeedAddress;
-      } else {
-        _feedAddress = address(plotToken);
-      }
-      marketUtility.update(_feedAddress);
-      address payable _market = _generateProxy(marketImplementation);
+      // MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
+      // address _feedAddress;
+      // if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
+      //   _feedAddress = _marketCurrencyData.currencyFeedAddress;
+      // } else {
+      //   _feedAddress = address(plotToken);
+      // }
+      // marketUtility.update(_feedAddress);
+      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex].marketImplementation);
       marketData[_market].isMarket = true;
-      markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
-      emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
+      emit MarketQuestion(_market, IMarket(_market).marketCurrency(), _marketType, _marketStartTime);
       _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
       marketCreationData[_marketType][_marketCurrencyIndex].startTime = _marketStartTime;
       marketCreationData[_marketType][_marketCurrencyIndex].marketAddress = _market;

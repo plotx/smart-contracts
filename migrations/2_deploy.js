@@ -36,7 +36,7 @@ module.exports = function(deployer, network, accounts){
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address, accounts[0]], vestingContract.address);
+      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address, accounts[0]], vestingContract.address);
 
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       let gvAddress = await master.getLatestAddress(web3.utils.toHex("GV"));
@@ -50,7 +50,7 @@ module.exports = function(deployer, network, accounts){
       // await mockchainLinkAggregaror.setLatestAnswer(934999802346);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      let hash = await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+      let hash = await plotus.addInitialMarketTypesAndStart(date, deployMarket.address, deployMarket.address);
       console.log(hash.receipt.gasUsed);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));

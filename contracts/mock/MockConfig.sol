@@ -37,10 +37,6 @@ contract MockConfig is MarketUtility {
     
     }
 
-    function setPLOTCommissionPerc(uint _value) external {
-    	commissionPerc[plotToken] = _value;
-    }
-
     function setOptionPrice(uint _option, uint _price) public {
         optionPrices[_option] = _price;
     }

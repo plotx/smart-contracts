@@ -33,7 +33,6 @@ contract Master is Governed {
      */
     function initiateMaster(
         address[] calldata _implementations,
-        address _marketImplementation,
         address _token,
         address _defaultbLOTMinter,
         address _marketUtiliy,
@@ -69,7 +68,6 @@ contract Master is Governed {
         _setMasterAddress();
 
         IMarketRegistry(contractAddress["PL"]).initiate(
-            _marketImplementation,
             _marketUtiliy,
             _token,
             _configParams
