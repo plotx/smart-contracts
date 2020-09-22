@@ -342,12 +342,23 @@ contract Staking {
             .totalStaked
             .mul(updatedGlobalYield).div(DECIMAL1e18);
 
-        accruedReward = accruedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+        if (stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate) > accruedReward)
+        {
+            accruedReward = 0;
+        } else {
+
+            accruedReward = accruedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+        }
+
         estimatedReward = stakerData
             .totalStaked
             .mul(globalYieldEnd).div(DECIMAL1e18);
+        if (stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate) > estimatedReward) {
+            estimatedReward = 0;
+        } else {
 
-        estimatedReward = estimatedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+            estimatedReward = estimatedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+        }
 
         return (interestData.globalTotalStaked, totalReward, estimatedReward, unlockedReward, accruedReward);
 
