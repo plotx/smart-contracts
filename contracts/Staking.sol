@@ -304,4 +304,52 @@ contract Staking {
 
       return (interestData.stakers[_staker].totalStaked, interestData.stakers[_staker].withdrawnToDate);
     }
+
+    function getStatsData(address _staker) external view returns(uint, uint, uint, uint, uint)
+    {
+
+        Staker storage stakerData = interestData.stakers[_staker];
+        uint estimatedReward = 0;
+        uint unlockedReward = 0;
+        uint accruedReward = 0;
+        uint timeElapsed = uint(now).sub(stakingStartTime);
+
+        unlockedReward = timeElapsed.mul(totalReward).div(stakingPeriod);
+
+        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
+        if(uint(now).sub(stakingStartTime) >= stakingPeriod)
+        {
+            timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
+        }
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
+        uint updatedGlobalYield;
+        uint stakingTimeLeft = stakingStartTime.add(stakingPeriod).sub(now);
+        uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(stakingPeriod);
+        uint globalYieldEnd;
+        if (interestData.globalTotalStaked == 0) {
+            updatedGlobalYield = 0;
+            globalYieldEnd = 0;
+        } else {
+            updatedGlobalYield = interestData.globalYieldPerToken.add(
+            newlyInterestGenerated
+                .mul(DECIMAL1e18)
+                .div(interestData.globalTotalStaked));
+
+            globalYieldEnd = updatedGlobalYield.add(interestGeneratedEnd.mul(DECIMAL1e18).div(interestData.globalTotalStaked));
+        }
+        
+        accruedReward = stakerData
+            .totalStaked
+            .mul(updatedGlobalYield).div(DECIMAL1e18);
+
+        accruedReward = accruedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+        estimatedReward = stakerData
+            .totalStaked
+            .mul(globalYieldEnd).div(DECIMAL1e18);
+
+        estimatedReward = estimatedReward.sub(stakerData.withdrawnToDate.add(stakerData.stakeBuyinRate));
+
+        return (interestData.globalTotalStaked, totalReward, estimatedReward, unlockedReward, accruedReward);
+
+    }
 }
