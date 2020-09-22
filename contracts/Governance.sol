@@ -57,7 +57,7 @@ contract Governance is IGovernance, Iupgradable {
     }
     struct VoteTally {
         mapping(uint256 => uint256) voteValue;
-        // mapping(uint=>uint) abVoteValue;
+        mapping(uint=>uint) abVoteValue;
         uint256 voters;
     }
 
@@ -74,7 +74,8 @@ contract Governance is IGovernance, Iupgradable {
     bool internal constructorCheck;
     uint256 public tokenHoldingTime;
     uint256 internal roleIdAllowedToCatgorize;
-    uint internal maxVoteWeigthPer;
+    uint256 internal maxVoteWeigthPer;
+    uint256 internal advisoryBoardMajority;
     uint256 internal totalProposals;
     uint256 internal maxDraftTime;
     uint256 internal minTokenLockedForDR;
@@ -444,6 +445,8 @@ contract Governance is IGovernance, Iupgradable {
             val = votePercRejectAction;
         } else if (code == "MAXVW") {
             val = maxVoteWeigthPer;
+        } else if (code == "ABMAJ") {
+            val = advisoryBoardMajority;
         }
     }
 
@@ -580,6 +583,8 @@ contract Governance is IGovernance, Iupgradable {
             votePercRejectAction = val;
         } else if (code == "MAXVW") {
             maxVoteWeigthPer = val;
+        } else if (code == "ABMAJ") {
+            advisoryBoardMajority = val;
         } else {
             revert("Invalid code");
         }
@@ -707,10 +712,11 @@ contract Governance is IGovernance, Iupgradable {
     function voteTallyData(uint256 _proposalId, uint256 _solution)
         public
         view
-        returns (uint256, uint256)
+        returns (uint256, uint256, uint256)
     {
         return (
             proposalVoteTally[_proposalId].voteValue[_solution],
+            proposalVoteTally[_proposalId].abVoteValue[_solution],
             proposalVoteTally[_proposalId].voters
         );
     }
@@ -891,6 +897,12 @@ contract Governance is IGovernance, Iupgradable {
         uint256 voteWeight;
         uint256 tokenBalance = tokenController.totalBalanceOf(msg.sender);
         uint totalSupply = tokenController.totalSupply();
+        if (mrSequence != uint(IMemberRoles.Role.AdvisoryBoard) &&
+        memberRole.checkRole(msg.sender, uint(IMemberRoles.Role.AdvisoryBoard))
+        )
+         {
+            proposalVoteTally[_proposalId].abVoteValue[_solution]++;
+        }
         if (
             mrSequence == uint256(IMemberRoles.Role.TokenHolder)
         ) {
@@ -1050,7 +1062,7 @@ contract Governance is IGovernance, Iupgradable {
         (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
             category
         );
-        if (_checkForThreshold(_proposalId, category)) {
+        if (_checkForThreshold(_proposalId, category) && mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) {
             if (
                 (
                     (
@@ -1068,6 +1080,18 @@ contract Governance is IGovernance, Iupgradable {
                     mrSequence
                 );
             } else {
+                if (advisoryBoardMajority > 0 && proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
+                .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority) {
+                    _callIfMajReached(
+                        _proposalId,
+                        uint256(ProposalStatus.Accepted),
+                        category,
+                        1,
+                        mrSequence
+                    );
+                } else {
+                    _updateProposalStatus(_proposalId, uint(ProposalStatus.Denied));
+                }
                 _updateProposalStatus(
                     _proposalId,
                     uint256(ProposalStatus.Rejected)
@@ -1107,6 +1131,7 @@ contract Governance is IGovernance, Iupgradable {
         actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
         maxVoteWeigthPer = 5;
+        advisoryBoardMajority = 60;
     }
 
 }
