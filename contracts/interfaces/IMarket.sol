@@ -32,7 +32,7 @@ contract IMarket {
     * @param accepted The flag defining that the dispute raised is accepted or not 
     * @param finalResult The final correct value of market currency.
     */
-    function resolveDispute(bool accepted, uint256 finalResult) external;
+    function resolveDispute(bool accepted, uint256 finalResult) external payable;
 
     /**
     * @dev Gets the market data.

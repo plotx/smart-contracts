@@ -93,6 +93,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
     event MarketTypes(uint256 indexed index, uint256 predictionTime, uint256 settleTime, uint256 optionRangePerc);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, string marketCreationHash, bool isChainlinkFeed);
+    event DisputeRaised(address indexed marketAdd, address raisedBy, uint256 proposalId, uint256 proposedValue);
+    event DisputeResolved(address indexed marketAdd, bool status);
 
     /**
     * @dev Checks if given addres is valid market address.
@@ -334,12 +336,13 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _stakeForDispute The token staked to raise the diospute.
     * @param _user The address who raises the dispute.
     */
-    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool) public {
+    function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool, uint256 _proposedValue) public {
       require(isMarket(msg.sender));
       uint256 proposalId = governance.getProposalLength();
       marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool);
       disputeProposalId[proposalId] = msg.sender;
       governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, action);
+      emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
     }
 
     /**
@@ -353,9 +356,10 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
       address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
       address plotTokenAddress = address(plotToken);
-      _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
+      // _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
       _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
-      IMarket(_marketAddress).resolveDispute(true, _result);
+      IMarket(_marketAddress).resolveDispute.value(ethDepositedInPool)(true, _result);
+      emit DisputeResolved(_marketAddress, true);
       _transferAsset(plotTokenAddress, staker, stakedAmount);
     }
 
@@ -366,6 +370,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
       address disputedMarket = disputeProposalId[_proposalId];
       IMarket(disputedMarket).resolveDispute(false, 0);
+      emit DisputeResolved(disputedMarket, false);
       uint _stakedAmount = marketData[disputedMarket].disputeStakes.stakeAmount;
       plotToken.burn(_stakedAmount);
     }
@@ -495,15 +500,6 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
         value = marketCreationIncentive;
       }
     }
-
-    /**
-    * @dev Get status of dispute resolution proposal of market
-    * @param _marketAddress Address of market for which status is queried
-    */
-    function marketDisputeStatus(address _marketAddress) external view returns(uint _status) {
-      (, , _status, , ) = governance.proposal(marketData[_marketAddress].disputeStakes.proposalId);
-    }
-
 
     /**
     * @dev Gets the market details of the specified address.
