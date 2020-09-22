@@ -47,8 +47,7 @@ contract Staking {
     // 10^18
     uint256 constant DECIMAL1e18 = 10**18;
 
-    // seconds in 1 year
-    uint256 public stakingPeriod = 31536000;
+    uint256 public stakingPeriod;
 
     /**
      * @dev Emitted when `staker` stake `value` tokens.
@@ -107,7 +106,7 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "transferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "can not stake after 1 year");
+        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "can not stake after staking period ends");
         uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(31536000);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
@@ -293,8 +292,8 @@ contract Staking {
         if (interestData.globalTotalStaked == 0) return;
         interestData.globalYieldPerToken = interestData.globalYieldPerToken.add(
             _interestGenerated
-                .mul(DECIMAL1e18) //increase precision of G$
-                .div(interestData.globalTotalStaked) //earnings are after donations so we divide by global stake
+                .mul(DECIMAL1e18) 
+                .div(interestData.globalTotalStaked) 
         );
     }
 
@@ -314,6 +313,11 @@ contract Staking {
         uint accruedReward = 0;
         uint timeElapsed = uint(now).sub(stakingStartTime);
 
+        if(timeElapsed > stakingPeriod)
+        {
+            timeElapsed = stakingPeriod;
+        }
+
         unlockedReward = timeElapsed.mul(totalReward).div(stakingPeriod);
 
         uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
@@ -323,7 +327,10 @@ contract Staking {
         }
         uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
         uint updatedGlobalYield;
-        uint stakingTimeLeft = stakingStartTime.add(stakingPeriod).sub(now);
+        uint stakingTimeLeft = 0;
+        if(now < stakingStartTime.add(stakingPeriod)){
+         stakingTimeLeft = stakingStartTime.add(stakingPeriod).sub(now);
+        }
         uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(stakingPeriod);
         uint globalYieldEnd;
         if (interestData.globalTotalStaked == 0) {

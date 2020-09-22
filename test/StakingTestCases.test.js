@@ -215,6 +215,30 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       // increase time
       await increaseTimeTo(stakeStartTime + 1000);
 
+      let statsDta = await staking.getStatsData(S1);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("760");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("230263");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("15");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("8");
+
+      statsDta = await staking.getStatsData(S2);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("760");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("32896");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("15");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("2");
+
+      statsDta = await staking.getStatsData(S3);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("760");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("236839");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("15");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("4");
+
           
       await staking
           .updateGlobalYield()
@@ -387,6 +411,30 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       // increase time
       await increaseTimeTo(stakeStartTime + 10000);
 
+      let statsDta = await staking.getStatsData(S1);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("222829");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("158");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("74");
+
+      statsDta = await staking.getStatsData(S2);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("81512");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("158");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("16");
+
+      statsDta = await staking.getStatsData(S3);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("195634");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("158");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("44");
+
          
       await staking
           .updateGlobalYield()
@@ -414,6 +462,30 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
       // increase time
       await increaseTimeTo(stakeStartTime + 20000);
+
+      let statsDta = await staking.getStatsData(S1);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("222829");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("317");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("144");
+
+      statsDta = await staking.getStatsData(S2);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("81512");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("317");
+      expect(((Math.floor((statsDta[4])/1e18) - 41).toString())/1).to.be.below(2);
+
+      statsDta = await staking.getStatsData(S3);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("920");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("195634");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("317");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("106");
  
       await staking
           .updateGlobalYield()
@@ -569,6 +641,30 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       // increase time
       await increaseTimeTo(stakeStartTime + 31536000);
 
+      let statsDta = await staking.getStatsData(S1);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("180475");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("180475");
+
+      statsDta = await staking.getStatsData(S2);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("0");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("0");
+
+      statsDta = await staking.getStatsData(S3);
+
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("319250");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("319250");
+
          
       await staking
           .updateGlobalYield()
@@ -646,6 +742,13 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       expect((Math.floor((await staking.calculateInterest(S2))/1e18)).toString()).to.be.equal("0");
       
       expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("0");
+
+      let statsDta = await staking.getStatsData(S1);
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("0");
+      expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("0");
+      expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("500000");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("0");
     });
     it("Should revert if tries to stake 0 amount", async () => {
 
@@ -696,8 +799,12 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       }));
     });
     it("Should return 0 if withdrawnTodate+stakebuin > globalyieldxstaked", async () => {
-      await dummyStaking.setBuyInRate(S1, toWei(100));
+      await dummyStaking.setBuyInRate(S1, toWei(2000000));
       expect((Math.floor((await dummyStaking.calculateInterest(S1))/1e18)).toString()).to.be.equal("0");
+      await dummyStaking.setInterestData(200, 0);
+      let statsDta = await dummyStaking.getStatsData(S1);
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("0");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("0");
     });
     it("Should Revert if staking period pass as 0", async () => {
       let nowTime = await latestTime();
