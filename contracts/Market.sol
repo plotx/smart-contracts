@@ -27,7 +27,7 @@ contract Market {
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
-    uint constant marketCoolDownTime = 15 minutes;
+    uint constant coolDownTime = 15 minutes;
     
     bool internal isChainlinkFeed;
     bool internal lockedForDispute;
@@ -38,10 +38,10 @@ contract Market {
     address internal plotToken;
     address internal incentiveToken;
     uint internal startTime;
-    uint internal expireTime;
+    uint internal predictionTime;
     uint internal WinningOption;
     uint internal marketCloseValue;
-    uint public settleTime;
+    uint internal settleTime;
     uint internal ethAmountToPool;
     uint internal tokenAmountToPool;
     uint internal totalStakedETH;
@@ -95,17 +95,30 @@ contract Market {
       marketUtility = MarketUtility(marketRegistry.marketUtility());
       tokenController = ITokenController(marketRegistry.tokenController());
       plotToken = tokenController.token();
+      require(_startTime.add(_predictionTime) > now);
       startTime = _startTime;
+      predictionTime = _predictionTime;
       marketCurrency = _marketCurrency;
       marketFeedAddress = _marketFeedAddress;
       isChainlinkFeed = _isChainlinkFeed;
       (assetData[ETH_ADDRESS].commissionPerc, assetData[plotToken].commissionPerc) = marketUtility.getMarketInitialParams();
-
-      expireTime = startTime.add(_predictionTime);
-      settleTime = startTime.add(_settleTime);
-      require(expireTime > now);
       neutralMinValue = _minValue;
       neutralMaxValue = _maxValue;
+    }
+
+    function marketSettleTime() public view returns(uint256) {
+      if(settleTime > 0) {
+        return settleTime;
+      }
+      return startTime.add(predictionTime.mul(2));
+    }
+
+    function marketExpireTime() internal view returns(uint256) {
+      return startTime.add(predictionTime);
+    }
+
+    function marketCoolDownTime() public view returns(uint256) {
+      return settleTime.add(coolDownTime);
     }
 
     /**
@@ -117,7 +130,7 @@ contract Market {
     */
     function placePrediction(address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
       require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
-      require(now >= startTime && now <= expireTime);
+      require(now >= startTime && now <= marketExpireTime());
 
 
       if(_asset == ETH_ADDRESS) {
@@ -159,7 +172,7 @@ contract Market {
       params[1] = neutralMinValue;
       params[2] = neutralMaxValue;
       params[3] = startTime;
-      params[4] = expireTime;
+      params[4] = marketExpireTime();
       params[5] = totalStakedETH;
       params[6] = totalStakedToken;
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
@@ -245,14 +258,18 @@ contract Market {
     * @param _value The current price of market currency.
     */
     function _postResult(uint256 _value) internal {
-      require(now >= settleTime,"Time not reached");
+      require(now >= marketSettleTime(),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint disributePercFromMFPool;
       uint transferPercToMFPool;
       uint lossPercentage;
       ( , lossPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
-      settleTime = now;
+      if(marketStatus() != PredictionStatus.InDispute) {
+        settleTime = now;
+      } else {
+        delete settleTime;
+      }
       if(_value < neutralMinValue) {
         WinningOption = 1;
       } else if(_value > neutralMaxValue) {
@@ -408,7 +425,7 @@ contract Market {
       params[1] = neutralMinValue;
       params[2] = neutralMaxValue;
       params[3] = startTime;
-      params[4] = expireTime;
+      params[4] = marketExpireTime();
       params[5] = totalStakedETH;
       params[6] = totalStakedToken;
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
@@ -441,8 +458,8 @@ contract Market {
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
         uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, uint _predictionStatus){
         _marketCurrency = marketCurrency;
-        _predictionTime = expireTime.sub(startTime);
-        _expireTime =expireTime;
+        _predictionTime = predictionTime;
+        _expireTime =marketExpireTime();
         _predictionStatus = uint(marketStatus());
         minvalue = new uint[](totalOptions);
         minvalue[1] = neutralMinValue;
@@ -587,9 +604,9 @@ contract Market {
     * @return PredictionStatus representing the status of market.
     */
     function marketStatus() internal view returns(PredictionStatus){
-      if(predictionStatus == PredictionStatus.Live && now >= expireTime) {
+      if(predictionStatus == PredictionStatus.Live && now >= marketExpireTime()) {
         return PredictionStatus.InSettlement;
-      } else if(predictionStatus == PredictionStatus.Settled && now <= (settleTime.add(marketCoolDownTime))) {
+      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime()) {
         return PredictionStatus.Cooling;
       }
       return predictionStatus;

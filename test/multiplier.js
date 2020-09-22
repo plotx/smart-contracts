@@ -43,6 +43,7 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
 
 			await marketConfig.setAMLComplianceStatus(user1, true);
+			await marketConfig.setKYCComplianceStatus(user1, true);
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
 				from: user1,
 			});
