@@ -14,6 +14,8 @@ contract IMarket {
 
     function getMarketFeedData() public view returns(bytes32, address, bool);
 
+    function settleMarket() external;
+
     /**
     * @dev Initialize the market.
     * @param _startTime The time at which market will create.
