@@ -1062,7 +1062,7 @@ contract Governance is IGovernance, Iupgradable {
         (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
             category
         );
-        if (_checkForThreshold(_proposalId, category) && mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) {
+        if (_checkForThreshold(_proposalId, category)) {
             if (
                 (
                     (
@@ -1080,25 +1080,26 @@ contract Governance is IGovernance, Iupgradable {
                     mrSequence
                 );
             } else {
-                if (advisoryBoardMajority > 0 && proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
-                .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority) {
-                    _callIfMajReached(
-                        _proposalId,
-                        uint256(ProposalStatus.Accepted),
-                        category,
-                        1,
-                        mrSequence
-                    );
-                } else {
-                    _updateProposalStatus(_proposalId, uint(ProposalStatus.Denied));
-                }
                 _updateProposalStatus(
                     _proposalId,
                     uint256(ProposalStatus.Rejected)
                 );
             }
         } else {
-            _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
+            if ((mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
+             proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
+            .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
+            ) {
+                _callIfMajReached(
+                    _proposalId,
+                    uint256(ProposalStatus.Accepted),
+                    category,
+                    1,
+                    mrSequence
+                );
+            } else {
+                _updateProposalStatus(_proposalId, uint(ProposalStatus.Denied));
+            }
         }
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
             bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
