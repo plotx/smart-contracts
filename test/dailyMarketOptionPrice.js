@@ -23,29 +23,21 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1195000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
 		await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 1, {
 			value: "1000000000000000000",
@@ -64,22 +56,22 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(7200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
 
@@ -96,32 +88,32 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1195000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
+		// await marketConfig.setAMLComplianceStatus(user1, true);
+		// await marketConfig.setAMLComplianceStatus(user2, true);
+		// await marketConfig.setAMLComplianceStatus(user3, true);
+		// await marketConfig.setAMLComplianceStatus(user4, true);
+		// await marketConfig.setAMLComplianceStatus(user5, true);
 
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
+		// await marketConfig.setKYCComplianceStatus(user1, true);
+		// await marketConfig.setKYCComplianceStatus(user2, true);
+		// await marketConfig.setKYCComplianceStatus(user3, true);
+		// await marketConfig.setKYCComplianceStatus(user4, true);
+		// await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
@@ -138,22 +130,22 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(7200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
 
@@ -170,32 +162,32 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1195000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
+		// await marketConfig.setAMLComplianceStatus(user1, true);
+		// await marketConfig.setAMLComplianceStatus(user2, true);
+		// await marketConfig.setAMLComplianceStatus(user3, true);
+		// await marketConfig.setAMLComplianceStatus(user4, true);
+		// await marketConfig.setAMLComplianceStatus(user5, true);
 
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
+		// await marketConfig.setKYCComplianceStatus(user1, true);
+		// await marketConfig.setKYCComplianceStatus(user2, true);
+		// await marketConfig.setKYCComplianceStatus(user3, true);
+		// await marketConfig.setKYCComplianceStatus(user4, true);
+		// await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
@@ -227,22 +219,22 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(7200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
 
@@ -259,32 +251,32 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1195000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
+		// await marketConfig.setAMLComplianceStatus(user1, true);
+		// await marketConfig.setAMLComplianceStatus(user2, true);
+		// await marketConfig.setAMLComplianceStatus(user3, true);
+		// await marketConfig.setAMLComplianceStatus(user4, true);
+		// await marketConfig.setAMLComplianceStatus(user5, true);
 
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
+		// await marketConfig.setKYCComplianceStatus(user1, true);
+		// await marketConfig.setKYCComplianceStatus(user2, true);
+		// await marketConfig.setKYCComplianceStatus(user3, true);
+		// await marketConfig.setKYCComplianceStatus(user4, true);
+		// await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
@@ -316,22 +308,22 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(7200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
 
@@ -348,32 +340,32 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1195000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
+		// await marketConfig.setAMLComplianceStatus(user1, true);
+		// await marketConfig.setAMLComplianceStatus(user2, true);
+		// await marketConfig.setAMLComplianceStatus(user3, true);
+		// await marketConfig.setAMLComplianceStatus(user4, true);
+		// await marketConfig.setAMLComplianceStatus(user5, true);
 
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
+		// await marketConfig.setKYCComplianceStatus(user1, true);
+		// await marketConfig.setKYCComplianceStatus(user2, true);
+		// await marketConfig.setKYCComplianceStatus(user3, true);
+		// await marketConfig.setKYCComplianceStatus(user4, true);
+		// await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -405,22 +397,22 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(25200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
 
@@ -437,32 +429,32 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
-		console.log("marketType", openMarkets["_marketTypes"][2] / 1);
+		//console.log("marketType", openMarkets["_marketTypes"][2] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][2]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
 		await MockchainLinkInstance.setLatestAnswer(1222000000000);
 		let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter / 1);
+		//console.log(currentPriceAfter / 1);
 		await marketInstance.setOptionRangesPublic(11900, 12000);
 		let priceOption1 = await marketInstance.getOptionPrice(1);
 		let priceOption2 = await marketInstance.getOptionPrice(2);
 		let priceOption3 = await marketInstance.getOptionPrice(3);
-		console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
+		//console.log(priceOption1 / 1, priceOption2 / 1, priceOption3 / 1);
 
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
+		// await marketConfig.setAMLComplianceStatus(user1, true);
+		// await marketConfig.setAMLComplianceStatus(user2, true);
+		// await marketConfig.setAMLComplianceStatus(user3, true);
+		// await marketConfig.setAMLComplianceStatus(user4, true);
+		// await marketConfig.setAMLComplianceStatus(user5, true);
 
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
+		// await marketConfig.setKYCComplianceStatus(user1, true);
+		// await marketConfig.setKYCComplianceStatus(user2, true);
+		// await marketConfig.setKYCComplianceStatus(user3, true);
+		// await marketConfig.setKYCComplianceStatus(user4, true);
+		// await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -494,21 +486,21 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await increaseTime(25200);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
-		console.log(currentPriceAfter_af / 1);
+		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
 		let priceOption2_af = await marketInstance.getOptionPrice(2);
 		let priceOption3_af = await marketInstance.getOptionPrice(3);
 		let optionPriceETH1 = priceOption1_af / 1;
 		let optionPriceLOT1 = priceOption1_af / tokenPrice;
-		console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
-		console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
+		//console.log("Round off ETH price of option1", optionPriceETH1 / 1000);
+		//console.log("Round off LOT price of option1", optionPriceLOT1 / 1000);
 		let optionPriceETH2 = priceOption2_af / 1;
 		let optionPriceLOT2 = priceOption2_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
-		console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
+		//console.log("Round off ETH price of option2", optionPriceETH2 / 1000);
+		//console.log("Round off LOT price of option2", optionPriceLOT2 / 1000);
 		let optionPriceETH3 = priceOption3_af / 1;
 		let optionPriceLOT3 = priceOption3_af / 1 / tokenPrice;
-		console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
-		console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
+		//console.log("Round off ETH price of option3", optionPriceETH3 / 1000);
+		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 	});
 });
