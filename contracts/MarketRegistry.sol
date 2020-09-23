@@ -243,6 +243,10 @@ contract MarketRegistry is Governed, Iupgradable {
       if(penultimateMarket != address(0)) {
         IMarket(penultimateMarket).settleMarket();
       }
+      if(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress != address(0)) {
+        (,,,,,,,, uint _status) = getMarketDetails(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
+        require(_status >= uint(IMarket.PredictionStatus.InSettlement));
+      }
       uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
       uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
@@ -266,9 +270,9 @@ contract MarketRegistry is Governed, Iupgradable {
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
-      address penultimateMarket = marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket;
-      if(penultimateMarket != address(0)) {
-        (_marketStartTime, , , ) = IMarket(penultimateMarket).marketData();
+      address previousMarket = marketCreationData[_marketType][_marketCurrencyIndex].marketAddress;
+      if(previousMarket != address(0)) {
+        (_marketStartTime, , , ) = IMarket(previousMarket).marketData();
       } else {
         _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
       }
