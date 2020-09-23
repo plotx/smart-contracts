@@ -40,7 +40,6 @@ contract Market {
 
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
-    uint constant coolDownTime = 15 minutes;
     uint constant ethCommissionPerc = 10; //with 2 decimals
     uint constant plotCommissionPerc = 5; //with 2 decimals
     bytes32 public constant marketCurrency = "ETH/USDT";
@@ -377,7 +376,7 @@ contract Market {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime() public view returns(uint256) {
-      return marketSettleData.settleTime.add(coolDownTime);
+      return marketSettleData.settleTime.add(marketData.predictionTime.div(4));
     }
 
     /**
