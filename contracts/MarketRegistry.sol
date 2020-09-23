@@ -54,6 +54,8 @@ contract MarketRegistry is Governed, Iupgradable {
 
     struct UserData {
       uint256 lastClaimedIndex;
+      uint256 totalEthStaked;
+      uint256 totalPlotStaked;
       address[] marketsParticipated;
       mapping(address => bool) marketsParticipatedFlag;
     }
@@ -454,6 +456,11 @@ contract MarketRegistry is Governed, Iupgradable {
     */
     function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external {
       require(isMarket(msg.sender));
+      if(_predictionAsset == ETH_ADDRESS) {
+        userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
+      } else {
+        userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
+      }
       if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
         userData[_user].marketsParticipated.push(msg.sender);
         userData[_user].marketsParticipatedFlag[msg.sender] = true;

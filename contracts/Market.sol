@@ -52,8 +52,6 @@ contract Market {
     uint internal settleTime;
     uint internal ethAmountToPool;
     uint internal tokenAmountToPool;
-    uint internal totalStakedETH;
-    uint internal totalStakedToken;
     uint internal neutralMinValue;
     uint internal neutralMaxValue;
     uint internal incentiveToDistribute;
@@ -164,8 +162,7 @@ contract Market {
       params[2] = neutralMaxValue;
       params[3] = startTime;
       params[4] = marketExpireTime();
-      params[5] = totalStakedETH;
-      params[6] = totalStakedToken;
+      (params[5], params[6]) = getTotalAssetsStaked();
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
       params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
       params[9] = _predictionStake;
@@ -178,6 +175,13 @@ contract Market {
       
     }
 
+    function getTotalAssetsStaked() internal view returns(uint256 ethStaked, uint256 plotStaked) {
+      for(uint256 i = 1; i<= totalOptions;i++) {
+        ethStaked = ethStaked.add(optionsAvailable[i].assetStaked[ETH_ADDRESS]);
+        plotStaked = plotStaked.add(optionsAvailable[i].assetStaked[plotToken]);
+      }
+    }
+
     /**
     * @dev Stores the prediction data.
     * @param _prediction The option on which user place prediction.
@@ -187,12 +191,12 @@ contract Market {
     * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
-      if(_asset == ETH_ADDRESS) {
-        totalStakedETH = totalStakedETH.add(_predictionStake);
-      }
-      else {
-        totalStakedToken = totalStakedToken.add(_predictionStake);
-      }
+      // if(_asset == ETH_ADDRESS) {
+      //   totalStakedETH = totalStakedETH.add(_predictionStake);
+      // }
+      // else {
+      //   totalStakedToken = totalStakedToken.add(_predictionStake);
+      // }
       userData[msg.sender].predictionPoints[_prediction] = userData[msg.sender].predictionPoints[_prediction].add(predictionPoints);
       userData[msg.sender].assetStaked[_asset][_prediction] = userData[msg.sender].assetStaked[_asset][_prediction].add(_predictionStake);
       userData[msg.sender].LeverageAsset[_asset][_prediction] = userData[msg.sender].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
@@ -472,8 +476,7 @@ contract Market {
       params[2] = neutralMaxValue;
       params[3] = startTime;
       params[4] = marketExpireTime();
-      params[5] = totalStakedETH;
-      params[6] = totalStakedToken;
+      (params[5], params[6]) = getTotalAssetsStaked();
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
       params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
       return marketUtility.calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
@@ -547,7 +550,8 @@ contract Market {
     * @return _incentiveTokens address[] memory representing the incentive tokens.
     */
     function getReturn(address _user)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint incentive, address _incentiveToken){
-      if(marketStatus() != PredictionStatus.Settled || totalStakedETH.add(totalStakedToken) ==0) {
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked();
+      if(marketStatus() != PredictionStatus.Settled || ethStaked.add(plotStaked) ==0) {
        return (returnAmount, _predictionAssets, incentive, incentiveToken);
       }
       _predictionAssets = new address[](2);
