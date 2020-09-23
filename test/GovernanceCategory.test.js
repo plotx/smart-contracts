@@ -11,6 +11,7 @@ const DummyMockMarket = artifacts.require('DummyMockMarket');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
 const encode = require('./utils/encoder.js').encode;
+const encode1 = require('./utils/encoder.js').encode1;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { takeSnapshot, revertSnapshot } = require('./utils/snapshot');
 
@@ -57,9 +58,8 @@ contract('Configure Global Parameters', accounts => {
       it('Should Not Update Market Config if zero address passed', async function() {
         let params = [];
         params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
+        params.push((await marketConfig.getFeedAddresses())[0]);
         params.push(plotTok.address);
-        params.push((await marketConfig.getFeedAddresses())[1]);
         let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         oldImplementation = await oldImplementation.implementation();
         let actionHash = encode(
@@ -82,7 +82,7 @@ contract('Configure Global Parameters', accounts => {
       it('Should Update Market Config', async function() {
         let params = [];
         params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
+        params.push((await marketConfig.getFeedAddresses())[0]);
         params.push(plotTok.address);
         params.push((await marketConfig.getFeedAddresses())[1]);
         let newMarketConfig = await MarketConfig.new(params);
@@ -103,22 +103,23 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(await proxyCon.implementation(), newMarketConfig.address);
       });
 
-      it('Should Update Market Implementation', async function() {
-        let newMaketImpl = await Market.new();
-        let actionHash = encode(
-          'updateMarketImplementation(address)',
-          newMaketImpl.address
-        );
-        await gvProposal(
-          5,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        assert.equal(await pl.marketImplementation(), newMaketImpl.address);
-      });
+      // it('Should Update Market Implementation', async function() {
+      //   let newMaketImpl = await Market.new();
+      //   let actionHash = encode1(
+      //     ['uint256[]','address[]'],[
+      //       [0, 1]
+      //       [newMaketImpl.address, newMaketImpl.address]
+      //     ]
+      //   );
+      //   await gvProposal(
+      //     5,
+      //     actionHash,
+      //     await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+      //     gv,
+      //     2,
+      //     0
+      //   );
+      // });
 
       it('Should Update Existing Markets Implementation', async function() {
         let newMarket = await DummyMockMarket.new();
@@ -273,6 +274,24 @@ contract('Configure Global Parameters', accounts => {
           0
         );
         assert.notEqual(await plotTok.operator(), ZERO_ADDRESS);
+      });
+
+      
+      it('Should Whitelist sponsor', async function() {
+
+        let actionHash = encode(
+          'whitelistSponsor(address)',
+          newAB
+        );
+        await gvProposal(
+          23,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+        assert.equal(await ms.whitelistedSponsor(newAB), true);
       });
 
       it('Should Change token operator', async function() {
