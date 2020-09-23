@@ -339,6 +339,41 @@ contract MarketUtility {
     }
 
     /**
+     * @dev Get price of provided feed address
+     * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
+     * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
+     * @return Current price of the market currency
+     **/
+    function getSettlemetPrice(
+        address _currencyFeedAddress,
+        bool _isChainlinkFeed,
+        uint256 _settleTime
+    ) public view returns (uint256 latestAnswer, uint256 roundId) {
+        if (!(_isChainlinkFeed)) {
+            uint256 decimals = IToken(
+                IUniswapV2Pair(_currencyFeedAddress).token0()
+            )
+                .decimals();
+            uint256 price = getPrice(_currencyFeedAddress, 10**decimals);
+            return (price, roundId);
+        } else {
+            uint80 currentRoundId;
+            uint256 currentRoundTime;
+            int256 currentRoundAnswer;
+            (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).latestRoundData();
+            while(currentRoundTime > _settleTime) {
+                currentRoundId--;
+                (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(currentRoundId);
+                if(currentRoundTime < _settleTime) {
+                    break;
+                }
+            }
+            return
+                (uint256(currentRoundAnswer), currentRoundId);
+        }
+    }
+
+    /**
      * @dev Get value of provided currency address in ETH
      * @param _currencyAddress Address of currency
      * @param _amount Amount of provided currency

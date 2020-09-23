@@ -47,6 +47,7 @@ contract Market {
     uint internal startTime;
     uint internal predictionTime;
     uint public WinningOption;
+    uint public marketSettleRoundId;
     uint internal marketCloseValue;
     uint internal settleTime;
     uint internal ethAmountToPool;
@@ -109,25 +110,6 @@ contract Market {
       //   _feedAddress = address(plotToken);
       // }
       marketUtility.update(marketFeedAddress);
-    }
-
-    function marketSettleTime() public view returns(uint256) {
-      if(settleTime > 0) {
-        return settleTime;
-      }
-      return startTime.add(predictionTime.mul(2));
-    }
-
-    function marketExpireTime() internal view returns(uint256) {
-      return startTime.add(predictionTime);
-    }
-
-    function marketCoolDownTime() public view returns(uint256) {
-      return settleTime.add(coolDownTime);
-    }
-
-    function getMarketFeedData() public view returns(bytes32, address, bool) {
-      return (marketCurrency, marketFeedAddress, isChainlinkFeed);
     }
 
     /**
@@ -263,7 +245,8 @@ contract Market {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
-      uint256 _value = marketUtility.getAssetPriceUSD(marketFeedAddress, isChainlinkFeed);
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, marketSettleTime());
+      marketSettleRoundId = _roundId;
       require(marketStatus() == PredictionStatus.InSettlement);
       _postResult(_value);
     }
@@ -417,6 +400,43 @@ contract Market {
       return _amount.mul(_price).div(10**_decimals);
     }
 
+    /**
+    * @dev Get market settle time
+    * @return the time at which the market result will be declared
+    */
+    function marketSettleTime() public view returns(uint256) {
+      if(settleTime > 0) {
+        return settleTime;
+      }
+      return startTime.add(predictionTime.mul(2));
+    }
+
+    /**
+    * @dev Get market expire time
+    * @return the time upto which user can place predictions in market
+    */
+    function marketExpireTime() internal view returns(uint256) {
+      return startTime.add(predictionTime);
+    }
+
+    /**
+    * @dev Get market cooldown time
+    * @return the time upto which user can raise the dispute after the market is settled
+    */
+    function marketCoolDownTime() public view returns(uint256) {
+      return settleTime.add(coolDownTime);
+    }
+
+    /**
+    * @dev Get market Feed data
+    * @return market currency name
+    * @return market currency feed address
+    * @return flag mentioning the feed is chainlink supported
+    */
+    function getMarketFeedData() public view returns(bytes32, address, bool) {
+      return (marketCurrency, marketFeedAddress, isChainlinkFeed);
+    }
+
    /**
     * @dev Get estimated amount of prediction points for given inputs.
     * @param _prediction The option on which user place prediction.
@@ -502,8 +522,8 @@ contract Market {
     * @return uint256 representing the Eth staked on winning option.
     * @return uint256 representing the PLOT staked on winning option.
     */
-    function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256) {
-      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken]);
+    function getMarketResults() public view returns(uint256, uint256, uint256, uint256[] memory, uint256, uint256, uint256) {
+      return (WinningOption, marketCloseValue, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken], marketSettleRoundId);
     }
 
 
