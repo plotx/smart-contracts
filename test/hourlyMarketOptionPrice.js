@@ -28,7 +28,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -44,18 +44,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000000000000", 1, 1, {
 			value: "1000000000000000000",
@@ -117,7 +105,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -133,18 +121,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
@@ -204,7 +180,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -220,18 +196,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -306,7 +270,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -322,18 +286,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -408,7 +360,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -424,18 +376,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -487,9 +427,9 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.13);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.08);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT1 / 1000) * 100) / 100), 11.33);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT2 / 1000) * 100) / 100), 12.5);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT3 / 1000) * 100) / 100), 6.66);
+		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(11.33));
+		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(12.5));
+		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(6.66));
 	});
 });
 
@@ -510,7 +450,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -526,18 +466,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -589,9 +517,9 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.12);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.13);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.1);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT1 / 1000) * 100) / 100), 10.5);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT2 / 1000) * 100) / 100), 10.83);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT3 / 1000) * 100) / 100), 9.08);
+		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(10.5));
+		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(10.83));
+		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(9.08));
 	});
 });
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
@@ -611,7 +539,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -627,18 +555,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -690,9 +606,9 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.13);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.07);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT1 / 1000) * 100) / 100), 11);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT2 / 1000) * 100) / 100), 12.91);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT3 / 1000) * 100) / 100), 6.5);
+		assert.equal(parseInt(optionPriceLOT1 / 1000), parseInt(11));
+		assert.equal(parseInt(optionPriceLOT2 / 1000), parseInt(12.91));
+		assert.equal(parseInt(optionPriceLOT3 / 1000), parseInt(6.5));
 	});
 });
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
@@ -712,7 +628,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		//console.log("marketType", openMarkets["_marketTypes"][0] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -728,18 +644,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
-
-		await marketConfig.setAMLComplianceStatus(user1, true);
-		await marketConfig.setAMLComplianceStatus(user2, true);
-		await marketConfig.setAMLComplianceStatus(user3, true);
-		await marketConfig.setAMLComplianceStatus(user4, true);
-		await marketConfig.setAMLComplianceStatus(user5, true);
-
-		await marketConfig.setKYCComplianceStatus(user1, true);
-		await marketConfig.setKYCComplianceStatus(user2, true);
-		await marketConfig.setKYCComplianceStatus(user3, true);
-		await marketConfig.setKYCComplianceStatus(user4, true);
-		await marketConfig.setKYCComplianceStatus(user5, true);
 
 		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
@@ -791,8 +695,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.16);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.13);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.06);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT1 / 1000) * 100) / 100), 13.41);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT2 / 1000) * 100) / 100), 11.33);
-		assert.equal(parseFloat(Math.floor((optionPriceLOT3 / 1000) * 100) / 100), 5.66);
+		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(13.41));
+		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(11.33));
+		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(5.66));
 	});
 });
