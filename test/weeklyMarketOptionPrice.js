@@ -25,7 +25,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -102,7 +102,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -176,7 +176,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -265,7 +265,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -354,7 +354,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
@@ -443,7 +443,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		const openMarkets = await plotusNewInstance.getOpenMarkets();
 		console.log("marketType", openMarkets["_marketTypes"][4] / 1);
 		marketInstance = await Market.at(openMarkets["_openMarkets"][4]);
-		await marketInstance.setMockPriceFlag(false);
+		await marketConfig.setMockPriceFlag(false);
 		await increaseTime(10001);
 		assert.ok(marketInstance);
 
