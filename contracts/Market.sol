@@ -218,19 +218,19 @@ contract Market {
     /**
     * @dev Exchanges the commission after closing the market.
     */
-    function calculateCommission(uint256 riskPercentage) internal view returns(uint256 ethCommission, uint256 plotCommission, uint256 ethLeveraged, uint256 plotLeveraged) {
+    function calculateCommission(uint256 riskPercentage) internal view returns(uint256 ethCommission, uint256 plotCommission) {
       // if(marketStatus() >= PredictionStatus.InSettlement) {
         // commissionExchanged = true;
         uint256 commission;
         for(uint256 i = 1;i <= totalOptions; i++) {
-          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-          commission = _calculatePercentage(ethCommissionPerc, leveragedAsset, 10000);
+          // uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          commission = _calculatePercentage(ethCommissionPerc, optionsAvailable[i].assetStaked[ETH_ADDRESS], 10000);
           ethCommission = ethCommission.add(commission);
-          ethLeveraged = ethLeveraged.add(leveragedAsset).sub(commission);
-          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-          commission = _calculatePercentage(plotCommissionPerc, leveragedAsset, 10000);
+          // ethLeveraged = ethLeveraged.add(leveragedAsset).sub(commission);
+          // leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          commission = _calculatePercentage(plotCommissionPerc, optionsAvailable[i].assetStaked[plotToken], 10000);
           plotCommission = plotCommission.add(commission);
-          plotLeveraged = plotLeveraged.add(leveragedAsset).sub(commission);
+          // plotLeveraged = plotLeveraged.add(leveragedAsset).sub(commission);
         }
         // _transferAsset(plotToken, address(marketRegistry), plotCommission);
         // _transferAsset(ETH_ADDRESS, address(marketRegistry), ethCommission);
@@ -244,7 +244,7 @@ contract Market {
       (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, marketSettleTime());
       // marketSettleRoundId = _roundId;
       if(marketStatus() == PredictionStatus.InSettlement) {
-        _postResult(_value);
+        _postResult(_value, _roundId);
       }
     }
 
@@ -252,7 +252,7 @@ contract Market {
     * @dev Calculate the result of market.
     * @param _value The current price of market currency.
     */
-    function _postResult(uint256 _value) internal {
+    function _postResult(uint256 _value, uint256 _roundId) internal {
       require(now >= marketSettleTime(),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint disributePercFromMFPool;
@@ -260,7 +260,7 @@ contract Market {
       uint riskPercentage;
       bool isMarketFlushFund;
       ( , riskPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
-      (uint256 ethCommission, uint256 plotCommission, uint256 ethLeveraged, uint256 plotLeveraged) =calculateCommission(riskPercentage);
+      (uint256 ethCommission, uint256 plotCommission) =calculateCommission(riskPercentage);
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         settleTime = now;
@@ -278,18 +278,18 @@ contract Market {
       if(optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
         optionsAvailable[WinningOption].assetStaked[plotToken] > 0
       ){
-        uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[plotToken], 100);
-        totalReward[0] = plotLeveraged.sub(leveragedAsset.sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000)));
-        leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[ETH_ADDRESS], 100);
-        totalReward[1] = ethLeveraged.sub(leveragedAsset.sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000)));
-        // for(uint i=1;i <= totalOptions;i++){
-        //   if(i!=WinningOption) {
-        //     uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-        //     totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
-        //     leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-        //     totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
-        //   }
-        // }
+        // uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[plotToken], 100);
+        // totalReward[0] = plotLeveraged.sub(leveragedAsset.sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000)));
+        // leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[ETH_ADDRESS], 100);
+        // totalReward[1] = ethLeveraged.sub(leveragedAsset.sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000)));
+        for(uint i=1;i <= totalOptions;i++){
+          if(i!=WinningOption) {
+            uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+            totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
+            leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+            totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
+          }
+        }
         if(totalReward[0].add(totalReward[1]) == 0) {
           totalReward[0] = marketRegistry.withdrawForRewardDistribution(disributePercFromMFPool);
         } else {
@@ -301,19 +301,19 @@ contract Market {
         }
         rewardToDistribute = totalReward;
       } else {
-        ethAmountToPool = ethLeveraged;
-        tokenAmountToPool = plotLeveraged;
-        // for(uint i=1;i <= totalOptions;i++){
-        //   uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-        //   tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
-        //   leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-        //   ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
-        // }
+        // ethAmountToPool = ethLeveraged;
+        // tokenAmountToPool = plotLeveraged;
+        for(uint i=1;i <= totalOptions;i++){
+          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
+          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
+        }
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommission));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommission));
       // marketCloseValue = _value;
-      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value, tokenAmountToPool, isMarketFlushFund);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
@@ -345,7 +345,7 @@ contract Market {
       require(msg.sender == address(marketRegistry));
       if(accepted) {
         require(marketStatus() == PredictionStatus.InDispute);
-        _postResult(finalResult);
+        _postResult(finalResult, 0);
       }
       lockedForDispute = false;
       predictionStatus = PredictionStatus.Settled;
@@ -628,7 +628,7 @@ contract Market {
     */
     function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
       uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
-      uint256 fee = _calculatePercentage(commissionPerc, leveragedAsset, 10000);
+      uint256 fee = _calculatePercentage(commissionPerc, userData[_user].assetStaked[_asset][i], 10000);
       if(i == WinningOption) {
         leveragedAsset = 0;
       }

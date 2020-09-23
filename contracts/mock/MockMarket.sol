@@ -33,7 +33,7 @@ contract MockMarket is Market {
     * @param _value The current price of market currency.
     */
     function calculatePredictionResult(uint _value) public {
-      _postResult(_value);
+      _postResult(_value, 0);
     }
 
     function setOptionPrice(uint _option, uint _price) public {
