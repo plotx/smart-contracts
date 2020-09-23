@@ -40,14 +40,15 @@ contract Staking {
     // Interest and staker data
     InterestData public interestData;
 
-    uint public stakingStartTime;
+    uint public stakingStartBlock;
 
     uint public totalReward;
 
     // 10^18
     uint256 constant DECIMAL1e18 = 10**18;
 
-    uint256 public stakingPeriod;
+    //Total blocks over which reward will be distributed
+    uint256 public totalBlocks;
 
     /**
      * @dev Emitted when `staker` stake `value` tokens.
@@ -72,26 +73,26 @@ contract Staking {
      * @dev Constructor     
      * @param _stakeToken The address of stake Token       
      * @param _rewardToken The address of reward Token   
-     * @param _stakingPeriod valid staking time after staking starts
+     * @param _totalBlocks valid staking time after staking starts
      * @param _totalRewardToBeDistributed total amount to be distributed as reward
      */
     constructor(
         address _stakeToken,
         address _rewardToken,
-        uint256 _stakingPeriod,
+        uint256 _totalBlocks,
         uint256 _totalRewardToBeDistributed,
         uint256 _stakingStart
     ) public {
-        require(_stakingPeriod > 0, "should be positive");
+        require(_totalBlocks > 0, "should be positive");
         require(_totalRewardToBeDistributed > 0, "Total reward can not be 0");
-        require(_stakingStart >= now, "Can not be past time");
+        require(_stakingStart >= block.number, "Can not be past time");
         require(_stakeToken != address(0), "Can not be null address");
         require(_rewardToken != address(0), "Can not be null address");
         stakeToken = ERC20(_stakeToken);
         rewardToken = PlotXToken(_rewardToken);
-        stakingStartTime = _stakingStart;
-        interestData.lastUpdated = now;
-        stakingPeriod = _stakingPeriod;
+        stakingStartBlock = _stakingStart;
+        interestData.lastUpdated = _stakingStart;
+        totalBlocks = _totalBlocks;
         totalReward = _totalRewardToBeDistributed;
     }
 
@@ -106,9 +107,9 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "transferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "can not stake after staking period ends");
-        uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(31536000);
-        interestData.lastUpdated = now;
+        require(uint(block.number).sub(stakingStartBlock) <= totalBlocks, "can not stake after staking period ends");
+        uint newlyInterestGenerated = uint(block.number).sub(interestData.lastUpdated).mul(totalReward).div(totalBlocks);
+        interestData.lastUpdated = block.number;
         updateGlobalYieldPerToken(newlyInterestGenerated);
         updateStakeData(msg.sender, _amount);
         emit Staked(msg.sender, _amount);
@@ -155,7 +156,6 @@ contract Staking {
         uint256 _stake
     ) internal {
 
-      
         _stakerData.stakeBuyinRate = _stakerData.stakeBuyinRate.add(
             _globalYieldPerToken.mul(_stake).div(DECIMAL1e18)
         );
@@ -205,7 +205,7 @@ contract Staking {
      */
     function withdrawInterest() public {
         uint timeSinceLastUpdate = _timeSinceLastUpdate();
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
         
         updateGlobalYieldPerToken(newlyInterestGenerated);
         uint256 interest = calculateInterest(msg.sender);
@@ -217,7 +217,7 @@ contract Staking {
 
     function updateGlobalYield() public {
         uint timeSinceLastUpdate = _timeSinceLastUpdate();
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(31536000);
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
         updateGlobalYieldPerToken(newlyInterestGenerated);
     }
 
@@ -228,13 +228,13 @@ contract Staking {
     }
 
     function _timeSinceLastUpdate() internal returns(uint256) {
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) >= stakingPeriod)
+        uint timeSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
+        if(uint(block.number).sub(stakingStartBlock) > totalBlocks)
         {
-            timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
-            interestData.lastUpdated = stakingStartTime.add(stakingPeriod);
+            timeSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
+            interestData.lastUpdated = stakingStartBlock.add(totalBlocks);
         } else {
-            interestData.lastUpdated = now;
+            interestData.lastUpdated = block.number;
         }
         return timeSinceLastUpdate;
     }
@@ -309,9 +309,9 @@ contract Staking {
      * @param _staker Address of staker.
      * @return Total staked.
      * @return Total reward to be distributed.
-     * @return estimated reward for user at end of staking period if no one stakes from now.
+     * @return estimated reward for user at end of staking period if no one stakes from current block.
      * @return Unlocked reward based on elapsed time.
-     * @return Accrued reward for user till now.
+     * @return Accrued reward for user till block.
      */
     function getStatsData(address _staker) external view returns(uint, uint, uint, uint, uint)
     {
@@ -320,27 +320,27 @@ contract Staking {
         uint estimatedReward = 0;
         uint unlockedReward = 0;
         uint accruedReward = 0;
-        uint timeElapsed = uint(now).sub(stakingStartTime);
+        uint timeElapsed = uint(block.number).sub(stakingStartBlock);
 
-        if(timeElapsed > stakingPeriod)
+        if(timeElapsed > totalBlocks)
         {
-            timeElapsed = stakingPeriod;
+            timeElapsed = totalBlocks;
         }
 
-        unlockedReward = timeElapsed.mul(totalReward).div(stakingPeriod);
+        unlockedReward = timeElapsed.mul(totalReward).div(totalBlocks);
 
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) >= stakingPeriod)
+        uint timeSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
+        if(uint(block.number).sub(stakingStartBlock) >= totalBlocks)
         {
-            timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
+            timeSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
         }
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
+        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
         uint updatedGlobalYield;
         uint stakingTimeLeft = 0;
-        if(now < stakingStartTime.add(stakingPeriod)){
-         stakingTimeLeft = stakingStartTime.add(stakingPeriod).sub(now);
+        if(block.number < stakingStartBlock.add(totalBlocks)){
+         stakingTimeLeft = stakingStartBlock.add(totalBlocks).sub(block.number);
         }
-        uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(stakingPeriod);
+        uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(totalBlocks);
         uint globalYieldEnd;
         if (interestData.globalTotalStaked == 0) {
             updatedGlobalYield = 0;

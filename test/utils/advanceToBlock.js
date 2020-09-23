@@ -22,7 +22,7 @@ async function advanceToBlock(number) {
       })`
     );
   }
-
+console.log("lol=> ", web3.eth.blockNumber);
   while (web3.eth.blockNumber < number) {
     await advanceBlock();
   }
