@@ -42,11 +42,6 @@ contract IMarket {
     * @param _maxValue The maximum value of middle option range.
     */
     function initiate(uint64 _startTime, uint64 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable;
-	
-    /**
-    * @dev Exchanges the commission after closing the market.
-    */
-	function exchangeCommission() external;
 
     /**
     * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
