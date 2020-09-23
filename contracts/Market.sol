@@ -225,9 +225,9 @@ contract Market {
         uint256 plotCommission;
         for(uint256 i = 1;i <= totalOptions; i++) {
           uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-          ethCommission = ethCommission.add(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
+          ethCommission = ethCommission.add(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
           leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-          plotCommission = plotCommission.add(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+          plotCommission = plotCommission.add(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
         }
         _transferAsset(plotToken, address(marketRegistry), plotCommission);
         _transferAsset(ETH_ADDRESS, address(marketRegistry), ethCommission);
@@ -276,9 +276,9 @@ contract Market {
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
             uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-            totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+            totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
             leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-            totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
+            totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
@@ -294,9 +294,9 @@ contract Market {
       } else {
         for(uint i=1;i <= totalOptions;i++){
           uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
           leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-          ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
+          ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
         }
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
@@ -617,7 +617,7 @@ contract Market {
     */
     function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
       uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
-      uint256 fee = _calculatePercentage(commissionPerc, leveragedAsset, 100);
+      uint256 fee = _calculatePercentage(commissionPerc, leveragedAsset, 10000);
       if(i == WinningOption) {
         leveragedAsset = 0;
       }
