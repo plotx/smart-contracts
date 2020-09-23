@@ -353,8 +353,9 @@ contract MarketRegistry is Governed, Iupgradable {
     }
 
     function withdrawForRewardDistribution(uint256 withdrawPercent) external returns(uint256) {
-      uint256 _amount = marketFlushFundPLOT.mul(withdrawPercent).div(100);
       require(isMarket(msg.sender));
+      uint256 _amount = marketFlushFundPLOT.mul(withdrawPercent).div(100);
+      marketFlushFundPLOT = marketFlushFundPLOT.sub(_amount);
       _transferAsset(address(plotToken), msg.sender, _amount);
       return _amount;
     }
