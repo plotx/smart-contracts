@@ -113,7 +113,7 @@ contract Market {
       uint256 _commissionStake;
       if(_asset == ETH_ADDRESS) {
         require(_predictionStake == msg.value);
-        _commissionStake = _calculatePercentage(ethCommissionPerc, _predictionStake, 100);
+        _commissionStake = _calculatePercentage(ethCommissionPerc, _predictionStake, 10000);
         ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
       } else {
         require(msg.value == 0);
@@ -127,7 +127,7 @@ contract Market {
           tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
           _asset = plotToken;
         }
-        _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 100);
+        _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 10000);
         plotCommissionAmount = plotCommissionAmount.add(_commissionStake);
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
