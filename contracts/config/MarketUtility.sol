@@ -22,22 +22,16 @@ contract MarketUtility {
     uint256 internal minTimeElapsedDivisor;
     uint256 internal minBet;
     uint256 internal positionDecimals;
-    uint256 internal lotPurchasePerc;
-    uint256 internal priceStep;
     uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
     uint256 internal riskPercentage;
     uint256 internal disributePercFromMFPool;
     uint256 internal transferPercToMFPool;
-    uint256 internal uniswapDeadline;
     uint256 internal tokenStakeForDispute;
-    uint256 internal marketCoolDownTime;
-    uint256 internal kycThreshold;
     address internal plotToken;
     address internal plotETHpair;
     address internal weth;
     address public authorizedAddress;
-    address internal authorizedToWhitelist;
     bool public initialized;
 
     address payable chainLinkPriceOracle;
@@ -49,27 +43,14 @@ contract MarketUtility {
         uint256 price1CumulativeLast;
         uint32 blockTimestampLast;
     }
-    struct UserData {
-        bool isKycCompliant;
-        bool isAMLCompliant;
-    }
-
-    mapping(address => UserData) userData;
 
     mapping(address => UniswapPriceData) internal uniswapPairData;
-    address payable uniswapRouter;
     IUniswapV2Factory uniswapFactory;
-    address[] uniswapEthToTokenPath;
 
     IChainLinkOracle internal chainLinkOracle;
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
         require(msg.sender == authorizedAddress, "Not authorized");
-        _;
-    }
-
-    modifier onlyAuthorizedToWhitelist() {
-        require(msg.sender == authorizedToWhitelist, "Not AUthorized to whitelist");
         _;
     }
 
@@ -87,14 +68,10 @@ contract MarketUtility {
         authorizedAddress = msg.sender;
         tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
         chainLinkPriceOracle = _addressParams[0];
-        uniswapRouter = _addressParams[1];
         plotToken = _addressParams[2];
         weth = IUniswapV2Router02(_addressParams[1]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[3]);
         plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        uniswapEthToTokenPath.push(weth);
-        uniswapEthToTokenPath.push(plotToken);
-        authorizedToWhitelist = _addressParams[4];
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
@@ -110,15 +87,10 @@ contract MarketUtility {
         disributePercFromMFPool= 5;
         minBet = 1e15;
         positionDecimals = 1e2;
-        lotPurchasePerc = 50;
-        priceStep = 10 ether;
         multiplier = 10;
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
-        uniswapDeadline = 20 minutes;
         tokenStakeForDispute = 100 ether;
-        marketCoolDownTime = 15 minutes;
-        kycThreshold = 10000;
     }
 
     /**
@@ -163,29 +135,18 @@ contract MarketUtility {
             minBet = value;
         } else if (code == "PDEC") {
             positionDecimals = value;
-        } else if (code == "PPPERC") {
-            require(value <= 100, "Value must be less or equal to 100");
-            lotPurchasePerc = value;
         } else if (code == "FROMMF") {
             require(value <= 100, "Value must be less or equal to 100");
             disributePercFromMFPool = value;
         } else if (code == "TOMFPOOL") {
             require(value <= 100, "Value must be less or equal to 100");
             transferPercToMFPool = value;
-        } else if (code == "PSTEP") {
-            priceStep = value;
         } else if (code == "MINSTM") {
             minStakeForMultiplier = value;
         } else if (code == "RPERC") {
             riskPercentage = value;
-        } else if (code == "UNIDL") {
-            uniswapDeadline = value;
         } else if (code == "TSDISP") {
             tokenStakeForDispute = value;
-        } else if (code == "CDTIME") {
-            marketCoolDownTime = value;
-        } else if (code == "KYCTH") {
-            kycThreshold = value;
         } else {
             revert("Invalid code");
         }
@@ -202,13 +163,9 @@ contract MarketUtility {
         if (code == "CLORCLE") {
             chainLinkPriceOracle = value;
             chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
-        } else if (code == "UNIRTR") {
-            uniswapRouter = value;
         } else if (code == "UNIFAC") {
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        } else if (code == "WLAUTH") {
-            authorizedToWhitelist = address(value);
         } else {
             revert("Invalid code");
         }
@@ -259,8 +216,7 @@ contract MarketUtility {
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
-     * @return Percentage of users prediction amount to deduct when placed in wrong prediction
-     * @return Range for step pricing calculation
+     * @return Percentage of users leveraged amount to deduct when placed in wrong prediction
      * @return Decimal points for prediction positions
      **/
     function getBasicMarketDetails()
@@ -271,11 +227,10 @@ contract MarketUtility {
             uint256,
             uint256,
             uint256,
-            uint256,
             uint256
         )
     {
-        return (minBet, riskPercentage, priceStep, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
+        return (minBet, riskPercentage, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
     }
 
     /**
@@ -435,32 +390,6 @@ contract MarketUtility {
                 .decode144();
         }
         return (minStakeForMultiplier, _value);
-    }
-
-    /**
-     * @dev Get Ether to Plot token conversion path for uniswap
-     * @return Uniswap router address
-     * @return Path
-     **/
-    function getETHtoTokenRouterAndPath()
-        public
-        view
-        returns (address, address[] memory)
-    {
-        return (uniswapRouter, uniswapEthToTokenPath);
-    }
-
-    /**
-     * @dev Get Parameters required to exchanging commission
-     * @return Percentage of amount to buy PLOT in uniswap
-     * @return Deadline for uniswap exchanges
-     **/
-    function getPurchasePercAndDeadline()
-        public
-        view
-        returns (uint256, uint256)
-    {
-        return (lotPurchasePerc, uniswapDeadline);
     }
 
     /**
