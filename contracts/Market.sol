@@ -24,6 +24,11 @@ contract Market {
       mapping(address => uint256) assetLeveraged;
     }
 
+    struct MarketSettleData {
+      uint64 WinningOption;
+      uint64 settleTime;
+    }
+
     bool constant isChainlinkFeed = true;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant marketFeedAddress = 0x5e2aa6b66531142bEAB830c385646F97fa03D80a;
@@ -46,9 +51,9 @@ contract Market {
     address internal incentiveToken;
     // uint internal startTime;
     // uint internal predictionTime;
-    uint public WinningOption;
+    // uint public WinningOption;
     // uint public marketSettleRoundId;
-    uint internal settleTime;
+    // uint internal settleTime;
     uint internal ethAmountToPool;
     uint internal tokenAmountToPool;
     // uint internal neutralMinValue;
@@ -75,6 +80,7 @@ contract Market {
     }
 
     MarketData public marketData;
+    MarketSettleData public marketSettleData;
 
     mapping(address => UserData) internal userData;
 
@@ -241,7 +247,7 @@ contract Market {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
-      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, marketSettleTime());
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, uint256(marketSettleTime()));
       // marketSettleRoundId = _roundId;
       if(marketStatus() == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId);
@@ -263,27 +269,27 @@ contract Market {
       (uint256 ethCommission, uint256 plotCommission) =calculateCommission(riskPercentage);
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
-        settleTime = now;
+        marketSettleData.settleTime = uint64(now);
       } else {
-        delete settleTime;
+        delete marketSettleData.settleTime;
       }
       if(_value < marketData.neutralMinValue) {
-        WinningOption = 1;
+        marketSettleData.WinningOption = 1;
       } else if(_value > marketData.neutralMaxValue) {
-        WinningOption = 3;
+        marketSettleData.WinningOption = 3;
       } else {
-        WinningOption = 2;
+        marketSettleData.WinningOption = 2;
       }
       uint[] memory totalReward = new uint256[](2);
-      if(optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
-        optionsAvailable[WinningOption].assetStaked[plotToken] > 0
+      if(optionsAvailable[marketSettleData.WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
+        optionsAvailable[marketSettleData.WinningOption].assetStaked[plotToken] > 0
       ){
         // uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[plotToken], 100);
         // totalReward[0] = plotLeveraged.sub(leveragedAsset.sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000)));
         // leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[ETH_ADDRESS], 100);
         // totalReward[1] = ethLeveraged.sub(leveragedAsset.sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000)));
         for(uint i=1;i <= totalOptions;i++){
-          if(i!=WinningOption) {
+          if(i!=marketSettleData.WinningOption) {
             uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
             totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
             leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
@@ -313,7 +319,7 @@ contract Market {
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommission));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommission));
       // marketCloseValue = _value;
-      marketRegistry.callMarketResultEvent(rewardToDistribute, WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
@@ -412,11 +418,11 @@ contract Market {
     * @dev Get market settle time
     * @return the time at which the market result will be declared
     */
-    function marketSettleTime() public view returns(uint256) {
-      if(settleTime > 0) {
-        return settleTime;
+    function marketSettleTime() public view returns(uint64) {
+      if(marketSettleData.settleTime > 0) {
+        return marketSettleData.settleTime;
       }
-      return marketData.startTime.add(marketData.predictionTime.mul(2));
+      return uint64(marketData.startTime.add(marketData.predictionTime.mul(2)));
     }
 
     /**
@@ -432,7 +438,7 @@ contract Market {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime() public view returns(uint256) {
-      return settleTime.add(coolDownTime);
+      return marketSettleData.settleTime.add(coolDownTime);
     }
 
     /**
@@ -530,7 +536,7 @@ contract Market {
     * @return uint256 representing the PLOT staked on winning option.
     */
     function getMarketResults() public view returns(uint256, uint256, uint256[] memory, uint256, uint256) {
-      return (WinningOption, optionsAvailable[WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[WinningOption].assetStaked[plotToken]);
+      return (marketSettleData.WinningOption, optionsAvailable[marketSettleData.WinningOption].predictionPoints, rewardToDistribute, optionsAvailable[marketSettleData.WinningOption].assetStaked[ETH_ADDRESS], optionsAvailable[marketSettleData.WinningOption].assetStaked[plotToken]);
     }
 
 
@@ -554,7 +560,7 @@ contract Market {
       uint256 _totalPredictionPoints = 0;
       (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user);
       incentive = _calculateIncentives(_totalUserPredictionPoints, _totalPredictionPoints);
-      if(userData[_user].predictionPoints[WinningOption] > 0) {
+      if(userData[_user].predictionPoints[marketSettleData.WinningOption] > 0) {
         returnAmount = _addUserReward(_user, returnAmount);
       }
       return (returnAmount, _predictionAssets, incentive, incentiveToken);
@@ -579,7 +585,7 @@ contract Market {
     function _addUserReward(address _user, uint[] memory returnAmount) internal view returns(uint[] memory){
       uint reward;
       for(uint j = 0; j< returnAmount.length; j++) {
-        reward = userData[_user].predictionPoints[WinningOption].mul(rewardToDistribute[j]).div(optionsAvailable[WinningOption].predictionPoints);
+        reward = userData[_user].predictionPoints[marketSettleData.WinningOption].mul(rewardToDistribute[j]).div(optionsAvailable[marketSettleData.WinningOption].predictionPoints);
         returnAmount[j] = returnAmount[j].add(reward);
       }
       return returnAmount;
@@ -629,7 +635,7 @@ contract Market {
     function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
       uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
       uint256 fee = _calculatePercentage(commissionPerc, userData[_user].assetStaked[_asset][i], 10000);
-      if(i == WinningOption) {
+      if(i == marketSettleData.WinningOption) {
         leveragedAsset = 0;
       }
       return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset)).sub(fee);

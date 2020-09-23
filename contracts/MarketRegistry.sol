@@ -544,7 +544,7 @@ contract MarketRegistry is Governed, Iupgradable {
         _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i <= _toIndex; i++) {
           _market[i] = userData[user].marketsParticipated[i];
-          _winnigOption[i] = IMarket(_market[i]).WinningOption();
+          (_winnigOption[i], ) = IMarket(_market[i]).marketSettleData();
         }
       }
     }

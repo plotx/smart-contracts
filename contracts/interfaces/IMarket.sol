@@ -17,6 +17,13 @@ contract IMarket {
       uint64 neutralMaxValue;
     }
 
+    struct MarketSettleData {
+      uint64 WinningOption;
+      uint64 settleTime;
+    }
+
+    MarketSettleData public marketSettleData;
+
     MarketData public marketData;
 
     function WinningOption() public view returns(uint256);
