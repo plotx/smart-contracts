@@ -88,10 +88,10 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             1
         ); //4
         _addInitialCategories(
-            "Update Market Implementation",
-            "QmfCrGsZMnzdXG3Gwwd3bCXaRDTqzFr7JyVzgmeXcBHdFJ",
+            "Update Market Implementations",
+            "QmbyrHnGgTU9WWFq7DgtRTdpExLg9MqcFRYpWNpo7Ezjd5",
             "PL",
-            "updateMarketImplementation(address)",
+            "updateMarketImplementations(uint256[],address[])",
             60,
             2,
             2
@@ -179,18 +179,18 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Add new market type",
-            "QmZ7uv9f2X7o3NEjBwndHYDjeG8TVjrMT6yJPM9f6fTG4M",
+            "QmPwAdEj6quzB65JWr6hDz6HrLtjTfbezwUiAe6mBq2sxY",
             "PL",
-            "addNewMarketType(uint256,uint256,uint256)",
+            "addNewMarketType(uint64,uint64,uint64)",
             60,
             2,
             2
         ); //15
         _addInitialCategories(
             "Add new market currency",
-            "QmRBqNuEfnZdmtaW2iABjsRq1wRx93hhWkLXKgK8RiPGFo",
+            "QmTu2FnkqUWhhNbeQraSrtbdA4DfGLavTsLRKRCeLV51x1",
             "PL",
-            "addNewMarketCurrency(address,uint256)",
+            "addNewMarketCurrency(address,uint64)",
             60,
             2,
             2
