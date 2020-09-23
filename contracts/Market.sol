@@ -183,12 +183,6 @@ contract Market {
     /**
     * @dev Exchanges the commission after closing the market.
     */
-    function exchangeCommission() external {
-    }
-
-    /**
-    * @dev Exchanges the commission after closing the market.
-    */
     function calculateCommission(uint256 riskPercentage) internal view returns(uint256 ethCommission, uint256 plotCommission) {
         uint256 commission;
         for(uint256 i = 1;i <= totalOptions; i++) {
