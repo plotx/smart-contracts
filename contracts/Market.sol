@@ -46,18 +46,9 @@ contract Market {
     bytes32 public constant marketCurrency = "ETH/USDT";
     
     bool internal lockedForDispute;
-    // bool internal commissionExchanged;
-    bytes32 internal marketResultId;
     address internal incentiveToken;
-    // uint internal startTime;
-    // uint internal predictionTime;
-    // uint public WinningOption;
-    // uint public marketSettleRoundId;
-    // uint internal settleTime;
     uint internal ethAmountToPool;
     uint internal tokenAmountToPool;
-    // uint internal neutralMinValue;
-    // uint internal neutralMaxValue;
     uint internal incentiveToDistribute;
     uint[] internal rewardToDistribute;
     PredictionStatus internal predictionStatus;
@@ -97,23 +88,13 @@ contract Market {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       require(marketData.startTime == 0, "Already initialized");
-      // marketRegistry = IMarketRegistry(msg.sender);
-      // marketUtility = MarketUtility(marketRegistry.marketUtility());
-      // tokenController = ITokenController(marketRegistry.tokenController());
-      // plotToken = tokenController.token();
       require(_startTime.add(_predictionTime) > now);
       marketData.startTime = _startTime;
       marketData.predictionTime = _predictionTime;
       
-      // (assetData[ETH_ADDRESS].commissionPerc, assetData[plotToken].commissionPerc) = marketUtility.getMarketInitialParams();
       marketData.neutralMinValue = _minValue;
       marketData.neutralMaxValue = _maxValue;
 
-      // if(!(isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
-      //   _feedAddress = _marketCurrencyData.currencyFeedAddress;
-      // } else {
-      //   _feedAddress = address(plotToken);
-      // }
       marketUtility.update(marketFeedAddress);
     }
 
@@ -145,18 +126,11 @@ contract Market {
         }
       }
 
-      // _predictionStake = _collectInterestReturnStake(_predictionStake, _asset, _leverage);
-      
-      // uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
-
-      // (uint minPrediction, , , , , ) = marketUtility.getBasicMarketDetails();
-      // require(_stakeValue >= minPrediction,"Min prediction amount required");
       (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_prediction, _predictionStake, _leverage, _asset);
       if(isMultiplierApplied) {
         userData[msg.sender].multiplierApplied = true; 
       }
       require(predictionPoints > 0);
-      // predictionPoints = _checkMultiplier(_asset, _predictionStake, predictionPoints, _stakeValue);
 
       _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
       marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
@@ -198,12 +172,6 @@ contract Market {
     * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
-      // if(_asset == ETH_ADDRESS) {
-      //   totalStakedETH = totalStakedETH.add(_predictionStake);
-      // }
-      // else {
-      //   totalStakedToken = totalStakedToken.add(_predictionStake);
-      // }
       userData[msg.sender].predictionPoints[_prediction] = userData[msg.sender].predictionPoints[_prediction].add(predictionPoints);
       userData[msg.sender].assetStaked[_asset][_prediction] = userData[msg.sender].assetStaked[_asset][_prediction].add(_predictionStake);
       userData[msg.sender].LeverageAsset[_asset][_prediction] = userData[msg.sender].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
@@ -216,31 +184,19 @@ contract Market {
     * @dev Exchanges the commission after closing the market.
     */
     function exchangeCommission() external {
-      // if(!commissionExchanged) {
-      //   _exchangeCommission();
-      // }
     }
 
     /**
     * @dev Exchanges the commission after closing the market.
     */
     function calculateCommission(uint256 riskPercentage) internal view returns(uint256 ethCommission, uint256 plotCommission) {
-      // if(marketStatus() >= PredictionStatus.InSettlement) {
-        // commissionExchanged = true;
         uint256 commission;
         for(uint256 i = 1;i <= totalOptions; i++) {
-          // uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
           commission = _calculatePercentage(ethCommissionPerc, optionsAvailable[i].assetStaked[ETH_ADDRESS], 10000);
           ethCommission = ethCommission.add(commission);
-          // ethLeveraged = ethLeveraged.add(leveragedAsset).sub(commission);
-          // leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
           commission = _calculatePercentage(plotCommissionPerc, optionsAvailable[i].assetStaked[plotToken], 10000);
           plotCommission = plotCommission.add(commission);
-          // plotLeveraged = plotLeveraged.add(leveragedAsset).sub(commission);
         }
-        // _transferAsset(plotToken, address(marketRegistry), plotCommission);
-        // _transferAsset(ETH_ADDRESS, address(marketRegistry), ethCommission);
-      // }
     }
 
     /**
@@ -248,7 +204,6 @@ contract Market {
     */
     function settleMarket() external {
       (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, uint256(marketSettleTime()));
-      // marketSettleRoundId = _roundId;
       if(marketStatus() == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId);
       }
@@ -284,10 +239,6 @@ contract Market {
       if(optionsAvailable[marketSettleData.WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
         optionsAvailable[marketSettleData.WinningOption].assetStaked[plotToken] > 0
       ){
-        // uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[plotToken], 100);
-        // totalReward[0] = plotLeveraged.sub(leveragedAsset.sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000)));
-        // leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[WinningOption].assetLeveraged[ETH_ADDRESS], 100);
-        // totalReward[1] = ethLeveraged.sub(leveragedAsset.sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000)));
         for(uint i=1;i <= totalOptions;i++){
           if(i!=marketSettleData.WinningOption) {
             uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
@@ -307,8 +258,6 @@ contract Market {
         }
         rewardToDistribute = totalReward;
       } else {
-        // ethAmountToPool = ethLeveraged;
-        // tokenAmountToPool = plotLeveraged;
         for(uint i=1;i <= totalOptions;i++){
           uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
           tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
@@ -318,7 +267,6 @@ contract Market {
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommission));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommission));
-      // marketCloseValue = _value;
       marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
     }
 
@@ -378,9 +326,6 @@ contract Market {
       if(userData[_user].claimedReward) {
         return 1;
       }
-      // if(!commissionExchanged) {
-      //   _exchangeCommission();
-      // }
       userData[_user].claimedReward = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user);
       _transferAsset(plotToken, _user, _returnAmount[0]);

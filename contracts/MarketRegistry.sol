@@ -69,7 +69,6 @@ contract MarketRegistry is Governed, Iupgradable {
     mapping(address => UserData) userData;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) public marketCreationData;
     mapping(uint64 => address) disputeProposalId;
-    // mapping(uint256 => mapping(uint256 => uint256)) public marketTypeCurrencyStartTime; //Markets of type and currency
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public tokenController;
@@ -224,14 +223,6 @@ contract MarketRegistry is Governed, Iupgradable {
     function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _minValue, uint64 _maxValue, uint64 _marketStartTime) internal {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      // MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
-      // address _feedAddress;
-      // if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
-      //   _feedAddress = _marketCurrencyData.currencyFeedAddress;
-      // } else {
-      //   _feedAddress = address(plotToken);
-      // }
-      // marketUtility.update(_feedAddress);
       address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex].marketImplementation);
       marketData[_market].isMarket = true;
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
@@ -249,11 +240,6 @@ contract MarketRegistry is Governed, Iupgradable {
     */
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public payable{
       address penultimateMarket = marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket;
-      // if(_previousMarket != address(0)) {
-      //   IMarket(_previousMarket).exchangeCommission();
-      //   (,,,,,,,, uint _status) = getMarketDetails(_previousMarket);
-      //   require(_status >= uint(IMarket.PredictionStatus.InSettlement));
-      // }
       if(penultimateMarket != address(0)) {
         IMarket(penultimateMarket).settleMarket();
       }
