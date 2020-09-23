@@ -47,6 +47,8 @@ contract Market {
     bool internal lockedForDispute;
     address internal incentiveToken;
     uint internal ethAmountToPool;
+    uint internal ethCommissionAmount;
+    uint internal plotCommissionAmount;
     uint internal tokenAmountToPool;
     uint internal incentiveToDistribute;
     uint[] internal rewardToDistribute;
@@ -108,9 +110,11 @@ contract Market {
       require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
       require(now >= marketData.startTime && now <= marketExpireTime());
 
-
+      uint256 _commissionStake;
       if(_asset == ETH_ADDRESS) {
         require(_predictionStake == msg.value);
+        _commissionStake = _calculatePercentage(ethCommissionPerc, _predictionStake, 100);
+        ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
       } else {
         require(msg.value == 0);
         if (_asset == plotToken){
@@ -123,15 +127,19 @@ contract Market {
           tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
           _asset = plotToken;
         }
+        _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 100);
+        ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
       }
+      _commissionStake = _predictionStake.sub(_commissionStake);
 
-      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_prediction, _predictionStake, _leverage, _asset);
+
+      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_prediction, _commissionStake, _leverage, _asset);
       if(isMultiplierApplied) {
         userData[msg.sender].multiplierApplied = true; 
       }
       require(predictionPoints > 0);
 
-      _storePredictionData(_prediction, _predictionStake, _asset, _leverage, predictionPoints);
+      _storePredictionData(_prediction, _commissionStake, _asset, _leverage, predictionPoints);
       marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
@@ -180,19 +188,6 @@ contract Market {
     }
 
     /**
-    * @dev Exchanges the commission after closing the market.
-    */
-    function calculateCommission(uint256 riskPercentage) internal view returns(uint256 ethCommission, uint256 plotCommission) {
-        uint256 commission;
-        for(uint256 i = 1;i <= totalOptions; i++) {
-          commission = _calculatePercentage(ethCommissionPerc, optionsAvailable[i].assetStaked[ETH_ADDRESS], 10000);
-          ethCommission = ethCommission.add(commission);
-          commission = _calculatePercentage(plotCommissionPerc, optionsAvailable[i].assetStaked[plotToken], 10000);
-          plotCommission = plotCommission.add(commission);
-        }
-    }
-
-    /**
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
@@ -214,7 +209,6 @@ contract Market {
       uint riskPercentage;
       bool isMarketFlushFund;
       ( , riskPercentage, , , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
-      (uint256 ethCommission, uint256 plotCommission) =calculateCommission(riskPercentage);
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
@@ -235,9 +229,9 @@ contract Market {
         for(uint i=1;i <= totalOptions;i++){
           if(i!=marketSettleData.WinningOption) {
             uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-            totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
+            totalReward[0] = totalReward[0].add(leveragedAsset);
             leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-            totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
+            totalReward[1] = totalReward[1].add(leveragedAsset);
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
@@ -253,13 +247,13 @@ contract Market {
       } else {
         for(uint i=1;i <= totalOptions;i++){
           uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
-          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 10000));
+          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset);
           leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
-          ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 10000));
+          ethAmountToPool = ethAmountToPool.add(leveragedAsset);
         }
       }
-      _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommission));
-      _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommission));
+      _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
+      _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
       marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
     }
 
@@ -571,12 +565,11 @@ contract Market {
     * @dev Calls the total return amount internally.
     */
     function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
-      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
-      uint256 fee = _calculatePercentage(commissionPerc, userData[_user].assetStaked[_asset][i], 10000);
       if(i == marketSettleData.WinningOption) {
-        leveragedAsset = 0;
+        riskPercentage = 0;
       }
-      return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset)).sub(fee);
+      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
+      return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset));
     }
 
 
