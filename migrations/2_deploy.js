@@ -37,7 +37,7 @@ module.exports = function(deployer, network, accounts){
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address, accounts[0]], vestingContract.address);
+      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
       let deployMarketBTC = await deployer.deploy(MarketBTC);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       console.log(`Config: ${marketConfig.address}`);
@@ -61,7 +61,7 @@ module.exports = function(deployer, network, accounts){
       await mr.memberRolesInitiate(accounts[0]);
       console.log(await mr.checkRole(accounts[0], 1));
       await pc.proposalCategoryInitiate();
-      console.log(await plotus.getOpenMarkets());
+      // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
       await plotusToken.transfer(plotus.address, "10000000000000000000000");
   });
