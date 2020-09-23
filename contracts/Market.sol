@@ -140,7 +140,7 @@ contract Market {
         }
       }
 
-      _predictionStake = _collectInterestReturnStake(_predictionStake, _asset, _leverage);
+      // _predictionStake = _collectInterestReturnStake(_predictionStake, _asset, _leverage);
       
       // uint256 _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
 
@@ -235,9 +235,17 @@ contract Market {
     function _exchangeCommission() internal {
       if(marketStatus() >= PredictionStatus.InSettlement) {
         commissionExchanged = true;
-      ( , uint256 riskPercentage, , , , ) = marketUtility.getBasicMarketDetails();
-        _transferAsset(plotToken, address(marketRegistry), assetData[plotToken].commissionAmount.mul(riskPercentage).div(100));
-        _transferAsset(ETH_ADDRESS, address(marketRegistry), assetData[ETH_ADDRESS].commissionAmount.mul(riskPercentage).div(100));
+        ( , uint256 riskPercentage, , , , ) = marketUtility.getBasicMarketDetails();
+        uint256 ethCommission;
+        uint256 plotCommission;
+        for(uint256 i = 1;i <= totalOptions; i++) {
+          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          ethCommission = ethCommission.add(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
+          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          plotCommission = plotCommission.add(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+        }
+        _transferAsset(plotToken, address(marketRegistry), plotCommission);
+        _transferAsset(ETH_ADDRESS, address(marketRegistry), ethCommission);
       }
     }
 
@@ -282,8 +290,10 @@ contract Market {
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=WinningOption) {
-          totalReward[0] = totalReward[0].add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
-          totalReward[1] = totalReward[1].add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
+            uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+            totalReward[0] = totalReward[0].add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+            leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+            totalReward[1] = totalReward[1].add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
           }
         }
         if(totalReward[0].add(totalReward[1]) == 0) {
@@ -298,8 +308,10 @@ contract Market {
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
-          tokenAmountToPool = tokenAmountToPool.add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100));
-          ethAmountToPool = ethAmountToPool.add(_calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100));
+          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          tokenAmountToPool = tokenAmountToPool.add(leveragedAsset).sub(_calculatePercentage(plotCommissionPerc, leveragedAsset, 100));
+          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          ethAmountToPool = ethAmountToPool.add(leveragedAsset).sub(_calculatePercentage(ethCommissionPerc, leveragedAsset, 100));
         }
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool);
@@ -590,8 +602,8 @@ contract Market {
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
-        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
+        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken, plotCommissionPerc);
+        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS, ethCommissionPerc);
       }
     }
 
@@ -618,11 +630,13 @@ contract Market {
     /**
     * @dev Calls the total return amount internally.
     */
-    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
+    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
+      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
+      uint256 fee = _calculatePercentage(commissionPerc, leveragedAsset, 100);
       if(i == WinningOption) {
-        riskPercentage = 0;
+        leveragedAsset = 0;
       }
-      return _return.add(userData[_user].assetStaked[_asset][i].sub((userData[_user].LeverageAsset[_asset][i].mul(riskPercentage)).div(100)));
+      return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset)).sub(fee);
     }
 
 
