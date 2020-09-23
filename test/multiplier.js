@@ -123,18 +123,6 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
 				from: user1,
@@ -161,7 +149,7 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			let predictionPointsUser4 = parseFloat(await marketInstance.getUserPredictionPoints(user4, 3)) / 1000;
 			let predictionPointsUser5 = parseFloat(await marketInstance.getUserPredictionPoints(user5, 3)) / 1000;
 
-			// console.log(predictionPointsUser1, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4, predictionPointsUser5);
+			//console.log(predictionPointsUser1, predictionPointsUser2, predictionPointsUser3, predictionPointsUser4, predictionPointsUser5);
 			assert.equal(predictionPointsUser1.toFixed(1), (116.5791776).toFixed(1));
 			assert.equal(predictionPointsUser2.toFixed(1), (1305.686789).toFixed(1));
 			assert.equal(predictionPointsUser3.toFixed(1), (769.4225722).toFixed(1));
@@ -211,22 +199,6 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await plotusToken.transfer(user2, web3.utils.toWei("1000"));
 			await plotusToken.transfer(user3, web3.utils.toWei("10000"));
 			await plotusToken.transfer(user4, web3.utils.toWei("20000"));
-
-			await marketConfig.setOptionPrice(1, 9);
-			await marketConfig.setOptionPrice(2, 18);
-			await marketConfig.setOptionPrice(3, 27);
-
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {
 				from: user1,
@@ -324,18 +296,6 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await plotusToken.transfer(user5, web3.utils.toWei("11000"));
 			await tokenController.lock("0x534d", web3.utils.toWei("11000"), 86400 * 30, { from: user5 });
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {
 				from: user1,
 				value: web3.utils.toWei("10"),
@@ -377,11 +337,11 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			// 	predictionPointsWithLockUser5
 			// );
 
-			assert.equal(Math.floor(predictionPointsWithLockUser1), Math.floor(33890.88028));
-			assert.equal(Math.floor(predictionPointsWithLockUser1_2), Math.floor(8069.257209));
-			assert.equal(Math.floor(predictionPointsWithLockUser2), Math.floor(10525.1181));
-			assert.equal(Math.floor(predictionPointsWithLockUser3), Math.floor(14033.4908));
-			assert.equal(Math.floor(predictionPointsWithLockUser4), Math.floor(63150.70859));
+			assert.equal(Math.floor(predictionPointsWithLockUser1), Math.floor(33890.707));
+			assert.equal(Math.floor(predictionPointsWithLockUser1_2), Math.floor(8069.216));
+			assert.equal(Math.floor(predictionPointsWithLockUser2), Math.floor(10525.064));
+			assert.equal(Math.floor(predictionPointsWithLockUser3), Math.floor(14033.418));
+			assert.equal(Math.floor(predictionPointsWithLockUser4), Math.floor(63150.384));
 			assert.equal(Math.floor(predictionPointsWithLockUser5), Math.floor(10.41933533));
 		});
 	});
@@ -417,20 +377,8 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
-		it.only("3.1. Scenario 1 ", async () => {
+		it("3.1. Scenario 1 ", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 1, 2, { from: user1 });
@@ -452,22 +400,22 @@ describe("3. Multiple Option bets", () => {
 			returnUser2 = web3.utils.fromWei(returnUser2.toString());
 			returnUser3 = web3.utils.fromWei(returnUser3.toString());
 			
-            console.log("(predictionPointsUser1 / 10000).toFixed(1)", (predictionPointsUser1 / 10000).toFixed(1));
-            console.log("(predictionPointsUser2 / 10000).toFixed(1)", (predictionPointsUser2 / 10000).toFixed(1));
-            console.log("(predictionPointsUser3 / 10000).toFixed(1)", (predictionPointsUser3 / 10000).toFixed(1));
-            console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1).toFixed(3));
-            console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2).toFixed(3));
-            console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3).toFixed(3));
+            //console.log("(predictionPointsUser1 / 10000).toFixed(1)", predictionPointsUser1 );
+            //console.log("(predictionPointsUser2 / 10000).toFixed(1)", predictionPointsUser2 );
+            //console.log("(predictionPointsUser3 / 10000).toFixed(1)", predictionPointsUser3 );
+            //console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1));
+            //console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2));
+            //console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3));
 			
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (197.629).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			// assert.equal(parseFloat(returnUser1).toFixed(3), (580.375563).toFixed(3));
-			// assert.equal(parseFloat(returnUser2).toFixed(3), (475.896037).toFixed(3));
-			// assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (197.629463).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
+			assert.equal(parseFloat(returnUser1).toFixed(), (580.3150636).toFixed());
+			assert.equal(parseFloat(returnUser2).toFixed(), (475.8389364).toFixed());
+			assert.equal(parseFloat(returnUser3).toFixed(), (240).toFixed());
 
-			// const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			// assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(2), (3.846).toFixed(2));
 		});
 	});
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
@@ -499,20 +447,8 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
-		it.only("3.2. Scenario 2", async () => {
+		it("3.2. Scenario 2", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
@@ -534,22 +470,22 @@ describe("3. Multiple Option bets", () => {
 			returnUser2 = web3.utils.fromWei(returnUser2.toString());
 			returnUser3 = web3.utils.fromWei(returnUser3.toString());
 
-			console.log("(predictionPointsUser1 / 10000).toFixed(1)", (predictionPointsUser1 / 10000).toFixed(1));
-            console.log("(predictionPointsUser2 / 10000).toFixed(1)", (predictionPointsUser2 / 10000).toFixed(1));
-            console.log("(predictionPointsUser3 / 10000).toFixed(1)", (predictionPointsUser3 / 10000).toFixed(1));
-            console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1).toFixed(3));
-            console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2).toFixed(3));
-            console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3).toFixed(3));
+			//console.log("(predictionPointsUser1 / 10000).toFixed(1)", predictionPointsUser1 );
+            //console.log("(predictionPointsUser2 / 10000).toFixed(1)", predictionPointsUser2 );
+            //console.log("(predictionPointsUser3 / 10000).toFixed(1)", predictionPointsUser3 );
+            //console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1));
+            //console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2));
+            //console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (98.8147).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			// assert.equal(parseFloat(returnUser1).toFixed(3), (319.84).toFixed(3));
-			// assert.equal(parseFloat(returnUser2).toFixed(3), (732.8334).toFixed(3));
-			// assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (98.81473149).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
+			assert.equal(parseFloat(returnUser1).toFixed(3), (319.84).toFixed(3));
+			assert.equal(parseFloat(returnUser2).toFixed(3), (732.8334).toFixed(3));
+			assert.equal(parseFloat(returnUser3).toFixed(3), (239.88).toFixed(3));
 
-			// const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			// assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.7966");
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "7.4466");
 		});
 	});
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
@@ -581,20 +517,8 @@ describe("3. Multiple Option bets", () => {
 			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
-		it.only("3.3. Scenario 3 ", async () => {
+		it("3.3. Scenario 3 ", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("400"), 2, 2, { from: user1 });
@@ -617,23 +541,23 @@ describe("3. Multiple Option bets", () => {
 			returnUser2 = web3.utils.fromWei(returnUser2.toString());
 			returnUser3 = web3.utils.fromWei(returnUser3.toString());
 
-			console.log("(predictionPointsUser1 / 10000).toFixed(1)", (predictionPointsUser1 / 10000).toFixed(1));
-            console.log("(predictionPointsUser2 / 10000).toFixed(1)", (predictionPointsUser2 / 10000).toFixed(1));
-            console.log("(predictionPointsUser3 / 10000).toFixed(1)", (predictionPointsUser3 / 10000).toFixed(1));
-            console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1).toFixed(3));
-            console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2).toFixed(3));
-            console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3).toFixed(3));
+			//console.log("(predictionPointsUser1 / 10000).toFixed(1)", predictionPointsUser1 );
+            //console.log("(predictionPointsUser2 / 10000).toFixed(1)", predictionPointsUser2 );
+            //console.log("(predictionPointsUser3 / 10000).toFixed(1)", predictionPointsUser3 );
+            //console.log("parseFloat(returnUser1).toFixed(3)", parseFloat(returnUser1));
+            //console.log("parseFloat(returnUser2).toFixed(3)", parseFloat(returnUser2));
+            //console.log("parseFloat(returnUser3).toFixed(3)", parseFloat(returnUser3));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
-			// assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
-			// assert.equal(parseFloat(returnUser1).toFixed(2), (357.4391685).toFixed(2));
-			// assert.equal(parseFloat(returnUser2).toFixed(2), (695.6340315).toFixed(2));
-			// assert.equal(parseFloat(returnUser3).toFixed(2), (239.88).toFixed(2));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
+			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.26334208).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (186.5266842).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
+			assert.equal(parseFloat(returnUser1).toFixed(2), (357.4391685).toFixed(2));
+			assert.equal(parseFloat(returnUser2).toFixed(2), (695.6340315).toFixed(2));
+			assert.equal(parseFloat(returnUser3).toFixed(2), (239.88).toFixed(2));
 
-			// const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
-			// assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
+			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "7.0468");
 		});
 	});
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
@@ -670,18 +594,6 @@ describe("3. Multiple Option bets", () => {
 			const oldPlotusETHBalance = parseFloat(await web3.eth.getBalance(plotusNewInstance.address));
 			assert.equal(oldPlotusETHBalance, 0);
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 1, 1, {
 				from: user1,
 				value: web3.utils.toWei("4"),
@@ -694,9 +606,9 @@ describe("3. Multiple Option bets", () => {
 			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
 			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 2));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (275.2822731).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (275.2822731).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (93.26334208).toFixed(1));
 
 			let oldOwnerBalance1 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user1)).toString()));
 			let oldOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
@@ -705,7 +617,6 @@ describe("3. Multiple Option bets", () => {
 			await increaseTime(360001);
 			await marketInstance.calculatePredictionResult(1);
 			await increaseTime(360001);
-			await marketInstance.exchangeCommission();
 			await marketInstance.claimReturn(user1);
 			await marketInstance.claimReturn(user2);
 			await marketInstance.claimReturn(user3);
@@ -714,13 +625,17 @@ describe("3. Multiple Option bets", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (713.3710239).toFixed(2));
-			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9088704).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (239.9233057).toFixed(2));
+            //console.log("(newOwnerBalance1 - oldOwnerBalance1).toFixed(2)", newOwnerBalance1 - oldOwnerBalance1);
+            //console.log("(newOwnerBalance2 - oldOwnerBalance2).toFixed(2)", newOwnerBalance2 - oldOwnerBalance2);
+			//console.log("(newOwnerBalance3 - oldOwnerBalance3).toFixed(2)", newOwnerBalance3 - oldOwnerBalance3);
+			
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (713.2432).toFixed(2));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.88).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (239.88).toFixed(2));
 
-			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
-			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
-			let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
+			// let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
+			// let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
+			// let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
 
 			let returnTokenUser1 = parseFloat((await marketInstance.getReturn(user1))[0][0]);
 			let returnTokenUser2 = parseFloat((await marketInstance.getReturn(user2))[0][0]);
@@ -735,17 +650,29 @@ describe("3. Multiple Option bets", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (713.3710239).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9088704).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (239.9233057).toFixed(2));
+            //console.log("(parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2)", parseFloat(returnTokenUser1))
+            //console.log("(parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2)", parseFloat(returnTokenUser2))
+            //console.log("(parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2)", parseFloat(returnTokenUser3))
+            //console.log("parseFloat(returnETHUser1).toFixed(2)", parseFloat(returnETHUser1))
+            //console.log("parseFloat(returnETHUser2).toFixed(2)", parseFloat(returnETHUser2))
+			//console.log("parseFloat(returnETHUser3).toFixed(2)", parseFloat(returnETHUser3))
+			
+			assert.equal(parseFloat(returnTokenUser1).toFixed(2), (713.2432).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser2).toFixed(2), (239.88).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser3).toFixed(2), (239.88).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (3.996).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (0).toFixed(2));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
-			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.3968");
-			assert.equal(newPlotusETHBalance, 0.002);
+			//console.log((newPlotusTokenBalance - oldPlotusTokenBalance));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "6.9968");
+			//console.log(newPlotusETHBalance);
+			assert.equal(newPlotusETHBalance, 0.004);
+			//console.log(parseFloat(await plotusToken.balanceOf(marketInstance.address)));
+			//console.log(parseFloat(web3.utils.fromWei(await web3.eth.getBalance(marketInstance.address))));
+
 		});
 	});
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
@@ -780,18 +707,6 @@ describe("3. Multiple Option bets", () => {
 		it("3.5. Scenario 5", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 2, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -804,9 +719,9 @@ describe("3. Multiple Option bets", () => {
 			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
 			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (98.74475775).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.5266842).toFixed(1));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (98.74475775).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
+			assert.equal(parseInt(predictionPointsUser3 / 10000), parseInt(186.3867367));
 
 			let oldOwnerBalance1 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user1)).toString()));
 			let oldOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
@@ -815,7 +730,6 @@ describe("3. Multiple Option bets", () => {
 			await increaseTime(360001);
 			await marketInstance.calculatePredictionResult(1);
 			await increaseTime(360001);
-			await marketInstance.exchangeCommission();
 			await marketInstance.claimReturn(user1);
 			await marketInstance.claimReturn(user2);
 			await marketInstance.claimReturn(user3);
@@ -824,13 +738,9 @@ describe("3. Multiple Option bets", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (80.01684018).toFixed(2));
-			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.91579).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (576.2191699).toFixed(2));
-
-			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
-			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
-			let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (79.96).toFixed(2));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.88).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (576.1118).toFixed(2));
 
 			let returnTokenUser1 = parseFloat((await marketInstance.getReturn(user1))[0][0]);
 			let returnTokenUser2 = parseFloat((await marketInstance.getReturn(user2))[0][0]);
@@ -845,18 +755,29 @@ describe("3. Multiple Option bets", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (80.01684018).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.91579).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (576.2191699).toFixed(2));
+			//console.log("(parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2)", parseFloat(returnTokenUser1))
+            //console.log("(parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2)", parseFloat(returnTokenUser2))
+            //console.log("(parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2)", parseFloat(returnTokenUser3))
+            //console.log("parseFloat(returnETHUser1).toFixed(2)", parseFloat(returnETHUser1))
+            //console.log("parseFloat(returnETHUser2).toFixed(2)", parseFloat(returnETHUser2))
+			//console.log("parseFloat(returnETHUser3).toFixed(2)", parseFloat(returnETHUser3))
+
+			assert.equal((parseFloat(returnTokenUser1)).toFixed(2), (79.96).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser2)).toFixed(2), (239.88).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser3)).toFixed(2), (576.1118).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.3976).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (1.566432).toFixed(2));
 
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
+			//console.log((newPlotusTokenBalance - oldPlotusTokenBalance));
+			//console.log(newPlotusETHBalance);
+			//console.log(parseFloat(await plotusToken.balanceOf(marketInstance.address)));
+			//console.log(parseFloat(web3.utils.fromWei(await web3.eth.getBalance(marketInstance.address))));
 
-			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.5982");
-			assert.equal(newPlotusETHBalance, 0.033968);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "4.0482");
+			assert.equal(newPlotusETHBalance, 0.035968);
 		});
 	});
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
@@ -891,18 +812,6 @@ describe("3. Multiple Option bets", () => {
 		it("3.6. Scenario 6", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -919,10 +828,10 @@ describe("3. Multiple Option bets", () => {
 			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
 			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
-			// assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.3867367).toFixed(1));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
+			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.3867367).toFixed(1));
 
 			let oldOwnerBalance1 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user1)).toString()));
 			let oldOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
@@ -932,7 +841,6 @@ describe("3. Multiple Option bets", () => {
 			await marketInstance.calculatePredictionResult(1);
 			await increaseTime(360001);
 
-			await marketInstance.exchangeCommission();
 			await marketInstance.claimReturn(user1);
 			await marketInstance.claimReturn(user2);
 			await marketInstance.claimReturn(user3);
@@ -941,13 +849,9 @@ describe("3. Multiple Option bets", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (108.8790535).toFixed(2));
-			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (148.1220643).toFixed(2));
-
-			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
-			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
-			let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (108.7608235).toFixed(2));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.88).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (147.9107765).toFixed(2));
 
 			let returnTokenUser1 = parseFloat((await marketInstance.getReturn(user1))[0][0]);
 			let returnTokenUser2 = parseFloat((await marketInstance.getReturn(user2))[0][0]);
@@ -962,9 +866,17 @@ describe("3. Multiple Option bets", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (108.8790535).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (148.1220643).toFixed(2));
+			//console.log("(parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2)", parseFloat(returnTokenUser1))
+            //console.log("(parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2)", parseFloat(returnTokenUser2))
+            //console.log("(parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2)", parseFloat(returnTokenUser3))
+            //console.log("parseFloat(returnETHUser1).toFixed(2)", parseFloat(returnETHUser1))
+            //console.log("parseFloat(returnETHUser2).toFixed(2)", parseFloat(returnETHUser2))
+			//console.log("parseFloat(returnETHUser3).toFixed(2)", parseFloat(returnETHUser3))
+		
+
+			assert.equal(parseFloat(returnTokenUser1).toFixed(2), (108.7608235).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser2).toFixed(2), (239.88).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser3).toFixed(2), (147.9107765).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.485664159).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (5.474367841).toFixed(2));
@@ -972,8 +884,12 @@ describe("3. Multiple Option bets", () => {
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
 
-			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.1984");
-			assert.equal(newPlotusETHBalance, 0.035968);
+			//console.log((newPlotusTokenBalance - oldPlotusTokenBalance));
+			//console.log(newPlotusETHBalance);
+			//console.log(parseFloat(await plotusToken.balanceOf(marketInstance.address)));
+			//console.log(parseFloat(web3.utils.fromWei(await web3.eth.getBalance(marketInstance.address))));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.4484");
+			assert.equal(newPlotusETHBalance, 0.039968);
 		});
 	});
 });
@@ -1011,17 +927,7 @@ describe("4. Option 2 for winning", () => {
 		it("4.1. Scenario 7", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
+			
 
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
@@ -1039,10 +945,10 @@ describe("4. Option 2 for winning", () => {
 			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
 			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
-			// assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.3867367).toFixed(1));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(), (11.10277882).toFixed());
+			assert.equal((predictionPointsUser1_2 / 10000).toFixed(), (93.19336834).toFixed());
+			assert.equal((predictionPointsUser2 / 10000).toFixed(), (62.17556139).toFixed());
+			assert.equal((predictionPointsUser3 / 10000).toFixed(), (186.3867367).toFixed());
 
 			let oldOwnerBalance1 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user1)).toString()));
 			let oldOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
@@ -1056,7 +962,6 @@ describe("4. Option 2 for winning", () => {
 			await marketInstance.calculatePredictionResult(optionValue);
 			await increaseTime(360001);
 
-			await marketInstance.exchangeCommission();
 			await marketInstance.claimReturn(user1);
 			await marketInstance.claimReturn(user2);
 			await marketInstance.claimReturn(user3);
@@ -1065,13 +970,9 @@ describe("4. Option 2 for winning", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (256.39003).toFixed(2));
-			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0.2112878285).toFixed(2));
-
-			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
-			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
-			let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(1), (256.2718).toFixed(1));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(1), (239.88).toFixed(1));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(1), (0).toFixed(1));
 
 			let returnTokenUser1 = parseFloat((await marketInstance.getReturn(user1))[0][0]);
 			let returnTokenUser2 = parseFloat((await marketInstance.getReturn(user2))[0][0]);
@@ -1086,18 +987,27 @@ describe("4. Option 2 for winning", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (256.39003).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (239.9504822).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (0.2112878285).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser1).toFixed(2), (256.2718).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser2).toFixed(2), (239.88).toFixed(2));
+			assert.equal(parseFloat(returnTokenUser3).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (5.562432).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
-
+			//console.log("(parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2)", parseFloat(returnTokenUser1))
+            //console.log("(parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2)", parseFloat(returnTokenUser2))
+            //console.log("(parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2)", parseFloat(returnTokenUser3))
+            //console.log("parseFloat(returnETHUser1).toFixed(2)", parseFloat(returnETHUser1))
+            //console.log("parseFloat(returnETHUser2).toFixed(2)", parseFloat(returnETHUser2))
+			//console.log("parseFloat(returnETHUser3).toFixed(2)", parseFloat(returnETHUser3))
+		
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
-
-			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.5982");
-			assert.equal(newPlotusETHBalance, 0.035968);
+			//console.log((newPlotusTokenBalance - oldPlotusTokenBalance));
+			//console.log(newPlotusETHBalance);
+			//console.log(parseFloat(await plotusToken.balanceOf(marketInstance.address)));
+			//console.log(parseFloat(web3.utils.fromWei(await web3.eth.getBalance(marketInstance.address))));
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "3.8482");
+			assert.equal(newPlotusETHBalance, 0.039968);
 		});
 	});
 });
@@ -1135,18 +1045,6 @@ describe("5. Option 3 for winning", () => {
 		it("5.1. Scenario 8", async () => {
 			const oldPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 
-			// await marketConfig.setAMLComplianceStatus(user1, true);
-			// await marketConfig.setAMLComplianceStatus(user2, true);
-			// await marketConfig.setAMLComplianceStatus(user3, true);
-			// await marketConfig.setAMLComplianceStatus(user4, true);
-			// await marketConfig.setAMLComplianceStatus(user5, true);
-
-			// await marketConfig.setKYCComplianceStatus(user1, true);
-			// await marketConfig.setKYCComplianceStatus(user2, true);
-			// await marketConfig.setKYCComplianceStatus(user3, true);
-			// await marketConfig.setKYCComplianceStatus(user4, true);
-			// await marketConfig.setKYCComplianceStatus(user5, true);
-
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -1163,10 +1061,10 @@ describe("5. Option 3 for winning", () => {
 			const predictionPointsUser2 = parseFloat(await marketInstance.getUserPredictionPoints(user2, 3));
 			const predictionPointsUser3 = parseFloat(await marketInstance.getUserPredictionPoints(user3, 1));
 
-			// assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
-			// assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
-			// assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
-			// assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.3867367).toFixed(1));
+			assert.equal((predictionPointsUser1 / 10000).toFixed(1), (11.10277882).toFixed(1));
+			assert.equal((predictionPointsUser1_2 / 10000).toFixed(1), (93.19336834).toFixed(1));
+			assert.equal((predictionPointsUser2 / 10000).toFixed(1), (62.17556139).toFixed(1));
+			assert.equal((predictionPointsUser3 / 10000).toFixed(1), (186.3867367).toFixed(1));
 
 			let oldOwnerBalance1 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user1)).toString()));
 			let oldOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
@@ -1178,8 +1076,6 @@ describe("5. Option 3 for winning", () => {
 			const optionValue = maxValueOption2 + 1;
 			await marketInstance.calculatePredictionResult(optionValue);
 			await increaseTime(360001);
-
-			await marketInstance.exchangeCommission();
 			await marketInstance.claimReturn(user1);
 			await marketInstance.claimReturn(user2);
 			await marketInstance.claimReturn(user3);
@@ -1188,13 +1084,9 @@ describe("5. Option 3 for winning", () => {
 			let newOwnerBalance2 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user2)).toString()));
 			let newOwnerBalance3 = parseFloat(web3.utils.fromWei((await plotusToken.balanceOf(user3)).toString()));
 
-			// assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (80.07823001).toFixed(2));
-			// assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (419.4606822).toFixed(2));
-			// assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0.2112878285).toFixed(2));
-
-			let returnTokenIncentiveUser1 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user1)).incentive[0].toString()));
-			let returnTokenIncentiveUser2 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user2)).incentive[0].toString()));
-			let returnTokenIncentiveUser3 = parseFloat(web3.utils.fromWei((await marketInstance.getReturn(user3)).incentive[0].toString()));
+			assert.equal((newOwnerBalance1 - oldOwnerBalance1).toFixed(2), (79.96).toFixed(2));
+			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (419.3902).toFixed(2));
+			assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0).toFixed(2));
 
 			let returnTokenUser1 = parseFloat((await marketInstance.getReturn(user1))[0][0]);
 			let returnTokenUser2 = parseFloat((await marketInstance.getReturn(user2))[0][0]);
@@ -1209,9 +1101,9 @@ describe("5. Option 3 for winning", () => {
 			returnETHUser2 = web3.utils.fromWei(returnETHUser2.toString());
 			returnETHUser3 = web3.utils.fromWei(returnETHUser3.toString());
 
-			assert.equal((parseFloat(returnTokenUser1) + returnTokenIncentiveUser1).toFixed(2), (80.07823001).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser2) + returnTokenIncentiveUser2).toFixed(2), (419.4606822).toFixed(2));
-			assert.equal((parseFloat(returnTokenUser3) + returnTokenIncentiveUser3).toFixed(2), (0.2112878285).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser1)).toFixed(2), (79.96).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser2)).toFixed(2), (419.3902).toFixed(2));
+			assert.equal((parseFloat(returnTokenUser3)).toFixed(2), (0).toFixed(2));
 			assert.equal(parseFloat(returnETHUser1).toFixed(2), (2.3976).toFixed(2));
 			assert.equal(parseFloat(returnETHUser2).toFixed(2), (3.132864).toFixed(2));
 			assert.equal(parseFloat(returnETHUser3).toFixed(2), (2.3976).toFixed(2));
@@ -1219,8 +1111,8 @@ describe("5. Option 3 for winning", () => {
 			const newPlotusTokenBalance = parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address)));
 			const newPlotusETHBalance = parseFloat(web3.utils.fromWei(await web3.eth.getBalance(plotusNewInstance.address)));
 
-			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "0.3998");
-			assert.equal(newPlotusETHBalance, 0.067936);
+			assert.equal((newPlotusTokenBalance - oldPlotusTokenBalance).toFixed(4), "0.6498");
+			assert.equal(newPlotusETHBalance, 0.071936);
 		});
 	});
 });
