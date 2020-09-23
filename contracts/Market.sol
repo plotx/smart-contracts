@@ -128,7 +128,7 @@ contract Market {
           _asset = plotToken;
         }
         _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 100);
-        ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
+        plotCommissionPerc = plotCommissionPerc.add(_commissionStake);
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
 
