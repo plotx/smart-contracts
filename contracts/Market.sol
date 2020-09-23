@@ -1,7 +1,8 @@
 pragma solidity 0.5.7;
 
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./config/MarketUtility.sol";
+import "./interfaces/IMarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketRegistry.sol";
@@ -36,7 +37,7 @@ contract Market {
 
     IMarketRegistry constant marketRegistry = IMarketRegistry(0x65Add15C5Ff3Abc069358AAe842dE13Ce92f3447);
     ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
-    MarketUtility constant marketUtility = MarketUtility(0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2);
+    IMarketUtility constant marketUtility = IMarketUtility(0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2);
 
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
@@ -536,8 +537,8 @@ contract Market {
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);
         _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[i].predictionPoints);
-        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken, plotCommissionPerc);
-        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS, ethCommissionPerc);
+        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
+        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
       }
     }
 
@@ -564,7 +565,7 @@ contract Market {
     /**
     * @dev Calls the total return amount internally.
     */
-    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset, uint commissionPerc)internal view returns(uint){
+    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
       if(i == marketSettleData.WinningOption) {
         riskPercentage = 0;
       }

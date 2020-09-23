@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
 
-import "../config/MarketUtility.sol";
+import "../MarketUtility.sol";
 
 contract MockConfig is MarketUtility {
 

@@ -1,14 +1,14 @@
 pragma solidity 0.5.7;
 
-import "../external/uniswap/solidity-interface.sol";
-import "../external/uniswap/FixedPoint.sol";
-import "../external/uniswap/oracleLibrary.sol";
-import "../external/openzeppelin-solidity/math/SafeMath.sol";
-import "../external/proxy/OwnedUpgradeabilityProxy.sol";
-import "../interfaces/ITokenController.sol";
-import "../interfaces/IMarketRegistry.sol";
-import "../interfaces/IChainLinkOracle.sol";
-import "../interfaces/IToken.sol";
+import "./external/uniswap/solidity-interface.sol";
+import "./external/uniswap/FixedPoint.sol";
+import "./external/uniswap/oracleLibrary.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./interfaces/ITokenController.sol";
+import "./interfaces/IMarketRegistry.sol";
+import "./interfaces/IChainLinkOracle.sol";
+import "./interfaces/IToken.sol";
 
 contract MarketUtility {
     using SafeMath for uint256;
@@ -182,6 +182,9 @@ contract MarketUtility {
         _update(plotETHpair);
     }
 
+    /**
+     * @dev Internal function to update pair cummulative price
+     **/
     function _update(address pair) internal {
         UniswapPriceData storage _priceData = uniswapPairData[pair];
         (
@@ -427,18 +430,19 @@ contract MarketUtility {
     }
 
     /**
-    params index
-    0 _prediction
-    1 neutralMinValue
-    2 neutralMaxValue
-    3 startTime
-    4 expireTime
-    5 totalStakedETH
-    6 totalStakedToken
-    7 ethStakedOnOption
-    8 plotStakedOnOption
-    9 _stake
-    10 _leverage
+    * @dev Calculate the prediction value, passing all the required params
+    * params index
+    * 0 _prediction
+    * 1 neutralMinValue
+    * 2 neutralMaxValue
+    * 3 startTime
+    * 4 expireTime
+    * 5 totalStakedETH
+    * 6 totalStakedToken
+    * 7 ethStakedOnOption
+    * 8 plotStakedOnOption
+    * 9 _stake
+    * 10 _leverage
     */
     function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool isChainlinkFeed, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
       uint _stakeValue = getAssetValueETH(asset, params[9]);
@@ -464,16 +468,17 @@ contract MarketUtility {
     }
 
     /**
-    params
-    0 _option
-    1 neutralMinValue
-    2 neutralMaxValue
-    3 startTime
-    4 expireTime
-    5 totalStakedETH
-    6 totalStakedToken
-    7 ethStakedOnOption
-    8 plotStakedOnOption
+    * @dev Calculate the option price for given params
+    * params
+    * 0 _option
+    * 1 neutralMinValue
+    * 2 neutralMaxValue
+    * 3 startTime
+    * 4 expireTime
+    * 5 totalStakedETH
+    * 6 totalStakedToken
+    * 7 ethStakedOnOption
+    * 8 plotStakedOnOption
     */
     function calculateOptionPrice(uint[] memory params, address marketFeedAddress, bool isChainlinkFeed) public view returns(uint _optionPrice) {
       uint _totalStaked = params[5].add(getAssetValueETH(plotToken, params[6]));
@@ -515,6 +520,9 @@ contract MarketUtility {
       _optionPrice = _optionPrice.div(100);
     }
 
+    /**
+    * @dev Internal function to get the absolute difference of two values
+    */
     function _getAbsoluteDifference(uint value1, uint value2) internal pure returns(uint) {
       return value1 > value2 ? value1.sub(value2) : value2.sub(value1);
     }
