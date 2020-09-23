@@ -13,8 +13,8 @@ contract MockBTCMarket is MarketBTC {
 	}
 
   function setOptionRangesPublic(uint _midRangeMin, uint _midRangeMax) public{
-      neutralMinValue = _midRangeMin*1e8;
-      neutralMaxValue = _midRangeMax*1e8;
+      marketData.neutralMinValue = uint64(_midRangeMin*1e8);
+      marketData.neutralMaxValue = uint64(_midRangeMax*1e8);
       // optionsAvailable[1].minValue = 0;
       // optionsAvailable[1].maxValue = _midRangeMin.sub(1);
       // optionsAvailable[2].minValue = _midRangeMin;
@@ -23,7 +23,7 @@ contract MockBTCMarket is MarketBTC {
       // optionsAvailable[3].maxValue = ~uint256(0) ;
     }
 
-    function initiate(uint _startTime, uint _predictionTime, uint _minValue, uint _maxValue) public payable {
+    function initiate(uint64 _startTime, uint64 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable {
       mockFlag = true;
       super.initiate(_startTime, _predictionTime, _minValue, _maxValue);
     }

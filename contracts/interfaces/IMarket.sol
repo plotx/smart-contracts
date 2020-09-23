@@ -10,6 +10,15 @@ contract IMarket {
       Settled
     }
 
+    struct MarketData {
+      uint64 startTime;
+      uint64 predictionTime;
+      uint64 neutralMinValue;
+      uint64 neutralMaxValue;
+    }
+
+    MarketData public marketData;
+
     function WinningOption() public view returns(uint256);
 
     function marketCurrency() public view returns(bytes32);
@@ -25,7 +34,7 @@ contract IMarket {
     * @param _minValue The minimum value of middle option range.
     * @param _maxValue The maximum value of middle option range.
     */
-    function initiate(uint _startTime, uint _predictionTime, uint _minValue, uint _maxValue) external payable; 
+    function initiate(uint64 _startTime, uint64 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable;
 	
     /**
     * @dev Exchanges the commission after closing the market.
