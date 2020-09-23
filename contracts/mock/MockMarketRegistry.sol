@@ -25,7 +25,7 @@ contract MockMarketRegistry is MarketRegistry {
   	return marketId[_marketAddress];
   }
 
-  function exchangeCommission(address _marketAddress) external {
-    IMarket(_marketAddress).exchangeCommission();
+  function addMarketFlushFundPLOT() public {
+    marketFlushFundPLOT = 10000 ether;
   }
 }
