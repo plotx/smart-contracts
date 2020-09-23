@@ -206,25 +206,6 @@ contract Market {
     }
 
     /**
-    * @dev Gets the interest return of the stake after commission.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _asset The assets uses by user during prediction.
-    * @return uint256 representing the interest return of the stake.
-    */
-    function _collectInterestReturnStake(uint256 _predictionStake, address _asset, uint256 _leverage) internal returns(uint256) {
-      uint256 _commissionPerc;
-      if(_asset == ETH_ADDRESS) {
-        _commissionPerc = ethCommissionPerc;
-      } else {
-        _commissionPerc = plotCommissionPerc;
-      }
-      uint _commision = _predictionStake.mul(_leverage).mul(_commissionPerc).div(10000);
-      _predictionStake = _predictionStake.sub(_commision.div(_leverage));
-      assetData[_asset].commissionAmount = assetData[_asset].commissionAmount.add(_commision);
-      return _predictionStake;
-    }
-
-    /**
     * @dev Exchanges the commission after closing the market.
     */
     function exchangeCommission() external {
