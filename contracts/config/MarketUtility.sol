@@ -485,28 +485,6 @@ contract MarketUtility {
             .decode144();
     }
 
-    function setAMLComplianceStatus(address _user, bool _status) external onlyAuthorizedToWhitelist {
-        userData[_user].isAMLCompliant = _status;
-    }
-
-    function setKYCComplianceStatus(address _user, bool _status) external onlyAuthorizedToWhitelist {
-        userData[_user].isKycCompliant = _status;
-    }
-
-    function checkAMLKYCCompliance(address _user, uint256 _totalEthStaked, uint256 _totalPlotStaked) external returns(bool) {
-        if(userData[_user].isAMLCompliant && userData[_user].isKycCompliant) {
-            return true;
-        } 
-        uint _plotValueInEth = getAssetValueETH(plotToken, _totalPlotStaked);
-        uint _totalStaked = _totalEthStaked.add(_plotValueInEth);
-        if(_totalStaked > kycThreshold) {
-            if(!userData[_user].isAMLCompliant || !userData[_user].isKycCompliant) {
-                return false;
-            }
-        }
-        return true;
-    }
-
     /**
     * @dev function to calculate square root of a number
     */

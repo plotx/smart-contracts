@@ -40,17 +40,17 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await marketConfig.setAMLComplianceStatus(user1, true);
-			await marketConfig.setAMLComplianceStatus(user2, true);
-			await marketConfig.setAMLComplianceStatus(user3, true);
-			await marketConfig.setAMLComplianceStatus(user4, true);
-			await marketConfig.setAMLComplianceStatus(user5, true);
+			// await marketConfig.setAMLComplianceStatus(user1, true);
+			// await marketConfig.setAMLComplianceStatus(user2, true);
+			// await marketConfig.setAMLComplianceStatus(user3, true);
+			// await marketConfig.setAMLComplianceStatus(user4, true);
+			// await marketConfig.setAMLComplianceStatus(user5, true);
 
-			await marketConfig.setKYCComplianceStatus(user1, true);
-			await marketConfig.setKYCComplianceStatus(user2, true);
-			await marketConfig.setKYCComplianceStatus(user3, true);
-			await marketConfig.setKYCComplianceStatus(user4, true);
-			await marketConfig.setKYCComplianceStatus(user5, true);
+			// await marketConfig.setKYCComplianceStatus(user1, true);
+			// await marketConfig.setKYCComplianceStatus(user2, true);
+			// await marketConfig.setKYCComplianceStatus(user3, true);
+			// await marketConfig.setKYCComplianceStatus(user4, true);
+			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
@@ -103,17 +103,17 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await marketConfig.setAMLComplianceStatus(user1, true);
-			await marketConfig.setAMLComplianceStatus(user2, true);
-			await marketConfig.setAMLComplianceStatus(user3, true);
-			await marketConfig.setAMLComplianceStatus(user4, true);
-			await marketConfig.setAMLComplianceStatus(user5, true);
+			// await marketConfig.setAMLComplianceStatus(user1, true);
+			// await marketConfig.setAMLComplianceStatus(user2, true);
+			// await marketConfig.setAMLComplianceStatus(user3, true);
+			// await marketConfig.setAMLComplianceStatus(user4, true);
+			// await marketConfig.setAMLComplianceStatus(user5, true);
 
-			await marketConfig.setKYCComplianceStatus(user1, true);
-			await marketConfig.setKYCComplianceStatus(user2, true);
-			await marketConfig.setKYCComplianceStatus(user3, true);
-			await marketConfig.setKYCComplianceStatus(user4, true);
-			await marketConfig.setKYCComplianceStatus(user5, true);
+			// await marketConfig.setKYCComplianceStatus(user1, true);
+			// await marketConfig.setKYCComplianceStatus(user2, true);
+			// await marketConfig.setKYCComplianceStatus(user3, true);
+			// await marketConfig.setKYCComplianceStatus(user4, true);
+			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
 			let tx = await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
@@ -187,17 +187,17 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await marketConfig.setAMLComplianceStatus(user1, true);
-			await marketConfig.setAMLComplianceStatus(user2, true);
-			await marketConfig.setAMLComplianceStatus(user3, true);
-			await marketConfig.setAMLComplianceStatus(user4, true);
-			await marketConfig.setAMLComplianceStatus(user5, true);
+			// await marketConfig.setAMLComplianceStatus(user1, true);
+			// await marketConfig.setAMLComplianceStatus(user2, true);
+			// await marketConfig.setAMLComplianceStatus(user3, true);
+			// await marketConfig.setAMLComplianceStatus(user4, true);
+			// await marketConfig.setAMLComplianceStatus(user5, true);
 
-			await marketConfig.setKYCComplianceStatus(user1, true);
-			await marketConfig.setKYCComplianceStatus(user2, true);
-			await marketConfig.setKYCComplianceStatus(user3, true);
-			await marketConfig.setKYCComplianceStatus(user4, true);
-			await marketConfig.setKYCComplianceStatus(user5, true);
+			// await marketConfig.setKYCComplianceStatus(user1, true);
+			// await marketConfig.setKYCComplianceStatus(user2, true);
+			// await marketConfig.setKYCComplianceStatus(user3, true);
+			// await marketConfig.setKYCComplianceStatus(user4, true);
+			// await marketConfig.setKYCComplianceStatus(user5, true);
 
 			let tx = await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {
 				from: user1,
@@ -218,6 +218,9 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 
 		});
 		it("Create market", async()=> {
+			await increaseTime(3600);
+			tx = await plotusNewInstance.createMarket(0,0);
+			console.log(tx.receipt.gasUsed);
 			await increaseTime(3600);
 			tx = await plotusNewInstance.createMarket(0,0);
 			console.log(tx.receipt.gasUsed);
