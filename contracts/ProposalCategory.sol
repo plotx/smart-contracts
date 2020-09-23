@@ -179,18 +179,18 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Add new market type",
-            "QmRKWbQ3Vg4oHaRrgomhetpVwFbrbV4GWgLSG7XdvosCJR",
+            "QmZ7uv9f2X7o3NEjBwndHYDjeG8TVjrMT6yJPM9f6fTG4M",
             "PL",
-            "addNewMarketType(uint256,uint256,uint256,uint256,uint256)",
+            "addNewMarketType(uint256,uint256,uint256)",
             60,
             2,
             2
         ); //15
         _addInitialCategories(
             "Add new market currency",
-            "QmPhr5Dh5f1YMs8vJRj42Nq2DUxhR3MESCKwQxVpYoaQoR",
+            "QmRBqNuEfnZdmtaW2iABjsRq1wRx93hhWkLXKgK8RiPGFo",
             "PL",
-            "addNewMarketCurrency(address,bytes32,string,bool,uint256)",
+            "addNewMarketCurrency(address,uint256)",
             60,
             2,
             2
@@ -251,7 +251,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Whitelist Sponsor",
-            "",
+            "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
             "MS",
             "whitelistSponsor(address)",
             60,
