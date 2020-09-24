@@ -122,21 +122,17 @@ contract MarketRegistry is Governed, Iupgradable {
     function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external payable {
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
-      // _addNewMarketCurrency(_btcMarketImplementation);
+      _addNewMarketCurrency(_btcMarketImplementation);
       _addMarket(1 hours, 20);
       _addMarket(24 hours, 50);
       _addMarket(7 days, 100);
 
-      // for(uint256 i = 0;i < marketTypes.length; i++) {
-          marketCreationData[0][0].initialStartTime = _marketStartTime;
-          marketCreationData[1][0].initialStartTime = _marketStartTime;
-          marketCreationData[2][0].initialStartTime = _marketStartTime;
-          // marketCreationData[0][1].initialStartTime = _marketStartTime;
-          createMarket(0, 0);
-          createMarket(1, 0);
-          createMarket(2, 0);
-          // createMarket(0, 1);
-      // }
+      for(uint256 i = 0;i < marketTypes.length; i++) {
+          marketCreationData[i][0].initialStartTime = _marketStartTime;
+          marketCreationData[i][1].initialStartTime = _marketStartTime;
+          createMarket(i, 0);
+          createMarket(i, 1);
+      }
     }
 
     /**
