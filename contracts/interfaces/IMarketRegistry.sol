@@ -19,19 +19,20 @@ contract IMarketRegistry {
 
     function burnDisputedProposalTokens(uint _proposaId) external;
 
+    function isWhitelistedSponsor(address _address) public view returns(bool);
+
     /**
     * @dev Transfer plot to market for reward distribution in case of all winners situation
     * @param _amount Amount to transfer to market
     */
-    function withdrawForRewardDistribution(uint256 _amount) external;
+    function withdrawForRewardDistribution(uint256 _amount) external returns(uint256);
 
     /**
     * @dev Initialize the PlotX.
-    * @param _marketImplementation The address of market implementation.
     * @param _marketConfig The address of market config.
     * @param _plotToken The address of PLOT token.
     */
-    function initiate(address _marketImplementation, address _marketConfig, address _plotToken, address payable[] memory _configParams) public;
+    function initiate(address _marketConfig, address _plotToken, address payable[] memory _configParams) public;
 
     /**
     * @dev Create proposal if user wants to raise the dispute.
@@ -62,9 +63,9 @@ contract IMarketRegistry {
     * @param _user The address who claim their reward.
     * @param _reward The reward which is claimed by user.
     * @param incentives The incentives of user.
-    * @param incentiveTokens The incentive tokens of user.
+    * @param incentiveToken The incentive tokens of user.
     */
-    function callClaimedEvent(address _user , uint[] memory _reward, address[] memory predictionAssets, uint[] memory incentives, address[] memory incentiveTokens) public {
+    function callClaimedEvent(address _user , uint[] memory _reward, address[] memory predictionAssets, uint incentives, address incentiveToken) public {
     }
 
         /**
@@ -73,6 +74,6 @@ contract IMarketRegistry {
     * @param _winningOption The winning option of the market.
     * @param _closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue) public {
+    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint _tokenAmountToPool, bool isMarketFlushFund, uint roundId) public {
     }
 }

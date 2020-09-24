@@ -1,6 +1,6 @@
 const Master = artifacts.require('Master');
 const Plotus = artifacts.require('MockMarketRegistry');
-const Governance = artifacts.require('Governance');
+const Governance = artifacts.require('MockGovernance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const PlotusToken = artifacts.require('MockPLOT');
@@ -8,6 +8,7 @@ const TokenController = artifacts.require('MockTokenController');
 const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MockConfig');
 const Market = artifacts.require('MockMarket');
+const MarketBTC = artifacts.require('MockBTCMarket');
 const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
@@ -22,8 +23,8 @@ module.exports = function(deployer, network, accounts){
       let deployGovernance = await deployer.deploy(Governance);
       let deployProposalCategory = await deployer.deploy(ProposalCategory);
       let deployMemberRoles = await deployer.deploy(MemberRoles);
-      let deployTokenController = await deployer.deploy(TokenController);
       let deployMarket = await deployer.deploy(Market);
+      let deployTokenController = await deployer.deploy(TokenController);
       let deployPlotusToken = await deployer.deploy(PlotusToken, "30000000000000000000000000");
       let mockchainLinkAggregaror = await deployer.deploy(MockchainLink);
       let uniswapRouter = await deployer.deploy(MockUniswapRouter, deployPlotusToken.address);
@@ -36,9 +37,12 @@ module.exports = function(deployer, network, accounts){
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployMarket.address, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
-
+      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
+      let deployMarketBTC = await deployer.deploy(MarketBTC);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
+      console.log(`Config: ${marketConfig.address}`);
+      console.log(`Token: ${plotusToken.address}`);
+      console.log(`TC: ${tc.address}`);
       let gvAddress = await master.getLatestAddress(web3.utils.toHex("GV"));
       master = await OwnedUpgradeabilityProxy.at(master.address);
       await master.transferProxyOwnership(gvAddress);
@@ -47,17 +51,20 @@ module.exports = function(deployer, network, accounts){
       // await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
       let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
       let plotus = await Plotus.at(plotusAddress);
+      // await mockchainLinkAggregaror.setLatestAnswer(934999802346);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      await plotus.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, plotusToken.address);
+      let hash = await plotus.addInitialMarketTypesAndStart(date, deployMarket.address, deployMarketBTC.address);
+      console.log(hash.receipt.gasUsed);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate(accounts[0]);
       console.log(await mr.checkRole(accounts[0], 1));
       await pc.proposalCategoryInitiate();
-      console.log(await plotus.getOpenMarkets());
+      // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
       await plotusToken.transfer(plotus.address, "10000000000000000000000");
+      await plotus.addMarketFlushFundPLOT();
   });
 };
 

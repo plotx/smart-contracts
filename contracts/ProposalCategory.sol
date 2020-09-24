@@ -71,7 +71,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); // 2
         _addInitialCategories(
             "Add new category",
-            "QmYzBtW5mRMwHwKQUmRnwdXgq733WNzN5fo2yNPpkVG9Ng",
+            "QmaVtv7NDR36X2ZEBjCmh1ny4UXKYSHPMfg8peuPLnNc3f",
             "PC",
             "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
             50,
@@ -80,7 +80,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); // 3
         _addInitialCategories(
             "Edit category",
-            "QmcVNykyhjni7GFk8x1GrL3idzc6vxz4vNJLHPS9vJ79Qc",
+            "QmdmQhGo6hU5HzrNLuoyq2TUh1N3DQ7pT2SkPUhZvnsBYZ",
             "PC",
             "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
             50,
@@ -88,17 +88,17 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             1
         ); //4
         _addInitialCategories(
-            "Update Market Implementation",
-            "",
+            "Update Market Implementations",
+            "QmbyrHnGgTU9WWFq7DgtRTdpExLg9MqcFRYpWNpo7Ezjd5",
             "PL",
-            "updateMarketImplementation(address)",
+            "updateMarketImplementations(uint256[],address[])",
             60,
             2,
             2
         ); // 5
         _addInitialCategories(
             "Update contract's Implementation",
-            "",
+            "QmesiuX929bJHmgH8E58L6FWPazcLdgcdjmFzinEdsMfre",
             "PL",
             "upgradeContractImplementation(address,address)",
             60,
@@ -107,7 +107,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); // 6
         _addInitialCategories(
             "Upgrade multiple contract Implementations",
-            "Qme4hGas6RuDYk9LKE2XkK9E46LNeCBUzY12DdT5uQstvh",
+            "QmcL1jUk7oda2cumSUTCrF6vTSeQN7qd1bYDFdz3v7BbUH",
             "MS",
             "upgradeMultipleImplementations(bytes2[],address[])",
             50,
@@ -116,7 +116,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); // 7
         _addInitialCategories(
             "Update master Implementation",
-            "",
+            "QmPrGbWA4cuWzZbc9ZmqFmSRSFJnp5sa747wKsJnQkkj4t",
             "MS",
             "upgradeTo(address)",
             50,
@@ -125,7 +125,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); // 8
         _addInitialCategories(
             "Add new contract",
-            "",
+            "QmXq5Jb4oeNzD2NHBLuWqy2m9J4N1KtkwyirBjkPBRNHii",
             "MS",
             "addNewContract(bytes2,address)",
             50,
@@ -134,7 +134,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Raise Dispute",
-            "",
+            "QmQLKazba2dL8nTtGaoon6DsPv5FcpKqWZPRdxLv2tfUQW",
             "PL",
             "resolveDispute(address,uint256)",
             60,
@@ -143,7 +143,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",
-            "",
+            "QmTV2xSz5R5LVi9VozCyvNgnguq6xEsfVx7JaFbSatVVvQ",
             "TC",
             "burnLockedTokens(address,bytes32,uint256)",
             60,
@@ -152,7 +152,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); //11
         _addInitialCategories(
             "Swap AB member",
-            "",
+            "QmV5HJMmhkEiHWt5qdNp6AbCqcn9Lw9ASA9efHDKGm8mdh",
             "MR",
             "swapABMember(address,address)",
             60,
@@ -161,7 +161,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Update governance parameters",
-            "",
+            "QmTzKKxzpp1E4b8N3ch1kumetYRieEpN7ecTd3MNg4V1T9",
             "GV",
             "updateUintParameters(bytes8,uint256)",
             60,
@@ -170,7 +170,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Update Token Controller parameters",
-            "",
+            "QmdVH5FdXbiGbqsj17643KVEEBQ3ciBZnjn9Mj24ehsrGm",
             "TC",
             "updateUintParameters(bytes8,uint256)",
             60,
@@ -179,25 +179,25 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Add new market type",
-            "",
+            "QmPwAdEj6quzB65JWr6hDz6HrLtjTfbezwUiAe6mBq2sxY",
             "PL",
-            "addNewMarketType(uint256,uint256,uint256,uint256,uint256)",
+            "addNewMarketType(uint64,uint64,uint64)",
             60,
             2,
             2
         ); //15
         _addInitialCategories(
             "Add new market currency",
-            "",
+            "QmTu2FnkqUWhhNbeQraSrtbdA4DfGLavTsLRKRCeLV51x1",
             "PL",
-            "addNewMarketCurrency(address,bytes32,string,bool,uint256)",
+            "addNewMarketCurrency(address,uint64)",
             60,
             2,
             2
         );
         _addInitialCategories(
             "Pause Market Creation",
-            "",
+            "QmamFs4k5ZbzajipsbWb4LCaKtyxDUwb9U5dYiNFqExb2W",
             "PL",
             "pauseMarketCreation()",
             60,
@@ -206,7 +206,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Resume Market Creation",
-            "",
+            "QmZ9W1gHTJjSnt3ieiNv1Ux6ooX7ngU4Jrpvk3QiiBeP5r",
             "PL",
             "resumeMarketCreation()",
             60,
@@ -215,7 +215,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Transfer Market Registry Assets",
-            "",
+            "QmeRCfGJuA6oTqY8a7nuVxdHih2SmZUTaZLVrttGv6yKy5",
             "PL",
             "transferAssets(address,address,uint256)",
             60,
@@ -224,7 +224,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Update Market Uint parameters",
-            "",
+            "QmXPXBkSKfidTgbDcRBLqokqAa9SU2wwErTyedPAZPfr5z",
             "PL",
             "updateUintParameters(bytes8,uint256)",
             60,
@@ -233,7 +233,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         ); //20
         _addInitialCategories(
             "Update Market Address parameters",
-            "",
+            "QmbbNRchZHMULBbKFT8qjCWgCRPa4qdkst8mE8A2Kffy7N",
             "PL",
             "updateConfigAddressParameters(bytes8,address)",
             60,
@@ -242,9 +242,18 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Change token operator",
-            "",
+            "QmTVwGtjXEe6gzU1nxdT34GaXmD7h9hExgwc62i1Z6MqVF",
             "TC",
             "changeOperator(address)",
+            60,
+            2,
+            2
+        );
+        _addInitialCategories(
+            "Whitelist Sponsor",
+            "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
+            "MS",
+            "whitelistSponsor(address)",
             60,
             2,
             2

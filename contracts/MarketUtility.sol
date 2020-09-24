@@ -1,12 +1,14 @@
 pragma solidity 0.5.7;
 
-import "../external/uniswap/solidity-interface.sol";
-import "../external/uniswap/FixedPoint.sol";
-import "../external/uniswap/oracleLibrary.sol";
-import "../external/openzeppelin-solidity/math/SafeMath.sol";
-import "../external/proxy/OwnedUpgradeabilityProxy.sol";
-import "../interfaces/IChainLinkOracle.sol";
-import "../interfaces/IToken.sol";
+import "./external/uniswap/solidity-interface.sol";
+import "./external/uniswap/FixedPoint.sol";
+import "./external/uniswap/oracleLibrary.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./interfaces/ITokenController.sol";
+import "./interfaces/IMarketRegistry.sol";
+import "./interfaces/IChainLinkOracle.sol";
+import "./interfaces/IToken.sol";
 
 contract MarketUtility {
     using SafeMath for uint256;
@@ -20,17 +22,12 @@ contract MarketUtility {
     uint256 internal minTimeElapsedDivisor;
     uint256 internal minBet;
     uint256 internal positionDecimals;
-    uint256 internal lotPurchasePerc;
-    uint256 internal priceStep;
-    uint256 internal rate;
     uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
-    uint256 internal lossPercentage;
+    uint256 internal riskPercentage;
     uint256 internal disributePercFromMFPool;
     uint256 internal transferPercToMFPool;
-    uint256 internal uniswapDeadline;
     uint256 internal tokenStakeForDispute;
-    uint256 internal marketCoolDownTime;
     address internal plotToken;
     address internal plotETHpair;
     address internal weth;
@@ -46,16 +43,12 @@ contract MarketUtility {
         uint256 price1CumulativeLast;
         uint32 blockTimestampLast;
     }
-    mapping(address => UniswapPriceData) internal uniswapPairData;
-    address payable uniswapRouter;
-    IUniswapV2Factory uniswapFactory;
-    address[] uniswapEthToTokenPath;
 
-    address[] internal incentiveTokens;
-    mapping(address => uint256) internal commissionPerc;
+    mapping(address => UniswapPriceData) internal uniswapPairData;
+    IUniswapV2Factory uniswapFactory;
 
     IChainLinkOracle internal chainLinkOracle;
-
+    ITokenController internal tokenController;
     modifier onlyAuthorized() {
         require(msg.sender == authorizedAddress, "Not authorized");
         _;
@@ -73,17 +66,12 @@ contract MarketUtility {
         initialized = true;
         _setInitialParameters();
         authorizedAddress = msg.sender;
+        tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
         chainLinkPriceOracle = _addressParams[0];
-        uniswapRouter = _addressParams[1];
         plotToken = _addressParams[2];
         weth = IUniswapV2Router02(_addressParams[1]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[3]);
         plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        uniswapEthToTokenPath.push(weth);
-        uniswapEthToTokenPath.push(plotToken);
-        incentiveTokens.push(plotToken);
-        commissionPerc[ETH_ADDRESS] = 10;
-        commissionPerc[plotToken] = 5;
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
     }
@@ -99,15 +87,34 @@ contract MarketUtility {
         disributePercFromMFPool= 5;
         minBet = 1e15;
         positionDecimals = 1e2;
-        lotPurchasePerc = 50;
-        priceStep = 10 ether;
-        rate = 1e14;
         multiplier = 10;
         minStakeForMultiplier = 5e17;
-        lossPercentage = 20;
-        uniswapDeadline = 20 minutes;
+        riskPercentage = 20;
         tokenStakeForDispute = 100 ether;
-        marketCoolDownTime = 15 minutes;
+    }
+
+    /**
+    * @dev Check if user gets any multiplier on his positions
+    * @param _asset The assets uses by user during prediction.
+    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param predictionPoints The actual positions user got during prediction.
+    * @param _stakeValue The stake value of asset.
+    * @return uint256 representing multiplied positions
+    */
+    function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool) {
+      bool multiplierApplied;
+      uint _stakedBalance = tokenController.tokensLockedAtTime(_user, "SM", now);
+      uint _predictionValueInToken;
+      (, _predictionValueInToken) = getValueAndMultiplierParameters(_asset, _predictionStake);
+      if(_stakeValue < minStakeForMultiplier) {
+        return (predictionPoints,multiplierApplied);
+      }
+      uint _muliplier = 100;
+      if(_stakedBalance.div(_predictionValueInToken) > 0) {
+        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+        multiplierApplied = true;
+      }
+      return (predictionPoints.mul(_muliplier).div(100),multiplierApplied);
     }
 
     /**
@@ -128,35 +135,18 @@ contract MarketUtility {
             minBet = value;
         } else if (code == "PDEC") {
             positionDecimals = value;
-        } else if (code == "PPPERC") {
-            require(value <= 100, "Value must be less or equal to 100");
-            lotPurchasePerc = value;
         } else if (code == "FROMMF") {
             require(value <= 100, "Value must be less or equal to 100");
             disributePercFromMFPool = value;
         } else if (code == "TOMFPOOL") {
             require(value <= 100, "Value must be less or equal to 100");
             transferPercToMFPool = value;
-        } else if (code == "PSTEP") {
-            priceStep = value;
-        } else if (code == "RATE") {
-            rate = value;
         } else if (code == "MINSTM") {
             minStakeForMultiplier = value;
-        } else if (code == "LPERC") {
-            lossPercentage = value;
-        } else if (code == "UNIDL") {
-            uniswapDeadline = value;
+        } else if (code == "RPERC") {
+            riskPercentage = value;
         } else if (code == "TSDISP") {
             tokenStakeForDispute = value;
-        } else if (code == "CDTIME") {
-            marketCoolDownTime = value;
-        } else if (code == "ETHCOM") {
-            require(value > 0 && value < 10000, "Value must be between 0-10000");
-            commissionPerc[ETH_ADDRESS] = value;
-        } else if (code == "PLOTCOM") {
-            require(value > 0 && value < 10000, "Value must be between 0-10000");
-            commissionPerc[plotToken] = value;
         } else {
             revert("Invalid code");
         }
@@ -173,13 +163,9 @@ contract MarketUtility {
         if (code == "CLORCLE") {
             chainLinkPriceOracle = value;
             chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
-        } else if (code == "UNIRTR") {
-            uniswapRouter = value;
         } else if (code == "UNIFAC") {
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        } else if (code == "INCTOK") {
-            incentiveTokens.push(address(value));
         } else {
             revert("Invalid code");
         }
@@ -196,6 +182,9 @@ contract MarketUtility {
         _update(plotETHpair);
     }
 
+    /**
+     * @dev Internal function to update pair cummulative price
+     **/
     function _update(address pair) internal {
         UniswapPriceData storage _priceData = uniswapPairData[pair];
         (
@@ -230,8 +219,7 @@ contract MarketUtility {
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
-     * @return Percentage of users prediction amount to deduct when placed in wrong prediction
-     * @return Range for step pricing calculation
+     * @return Percentage of users leveraged amount to deduct when placed in wrong prediction
      * @return Decimal points for prediction positions
      **/
     function getBasicMarketDetails()
@@ -242,11 +230,10 @@ contract MarketUtility {
             uint256,
             uint256,
             uint256,
-            uint256,
             uint256
         )
     {
-        return (minBet, lossPercentage, priceStep, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
+        return (minBet, riskPercentage, positionDecimals, transferPercToMFPool, disributePercFromMFPool);
     }
 
     /**
@@ -293,6 +280,9 @@ contract MarketUtility {
         address _currencyFeedAddress,
         bool _isChainlinkFeed
     ) public view returns (uint256 latestAnswer) {
+        if(_currencyFeedAddress == ETH_ADDRESS) {
+            return (uint256(chainLinkOracle.latestAnswer()))/1e8;
+        }
         if (!(_isChainlinkFeed)) {
             uint256 decimals = IToken(
                 IUniswapV2Pair(_currencyFeedAddress).token0()
@@ -303,6 +293,41 @@ contract MarketUtility {
         } else {
             return
                 uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
+        }
+    }
+
+    /**
+     * @dev Get price of provided feed address
+     * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
+     * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
+     * @return Current price of the market currency
+     **/
+    function getSettlemetPrice(
+        address _currencyFeedAddress,
+        bool _isChainlinkFeed,
+        uint256 _settleTime
+    ) public view returns (uint256 latestAnswer, uint256 roundId) {
+        if (!(_isChainlinkFeed)) {
+            uint256 decimals = IToken(
+                IUniswapV2Pair(_currencyFeedAddress).token0()
+            )
+                .decimals();
+            uint256 price = getPrice(_currencyFeedAddress, 10**decimals);
+            return (price, roundId);
+        } else {
+            uint80 currentRoundId;
+            uint256 currentRoundTime;
+            int256 currentRoundAnswer;
+            (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).latestRoundData();
+            while(currentRoundTime > _settleTime) {
+                currentRoundId--;
+                (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(currentRoundId);
+                if(currentRoundTime < _settleTime) {
+                    break;
+                }
+            }
+            return
+                (uint256(currentRoundAnswer), currentRoundId);
         }
     }
 
@@ -371,60 +396,6 @@ contract MarketUtility {
     }
 
     /**
-     * @dev Get Ether to Plot token conversion path for uniswap
-     * @return Uniswap router address
-     * @return Path
-     **/
-    function getETHtoTokenRouterAndPath()
-        public
-        view
-        returns (address, address[] memory)
-    {
-        return (uniswapRouter, uniswapEthToTokenPath);
-    }
-
-    /**
-     * @dev Get Parameters required to initiate market
-     * @return Addresses of tokens to be distributed as incentives
-     * @return Cool down time for market
-     * @return Rate
-     * @return Commission percent for predictions with ETH
-     * @return Commission percent for predictions with PLOT
-     **/
-    function getMarketInitialParams()
-        public
-        view
-        returns (
-            address[] memory,
-            uint256,
-            uint256,
-            uint256,
-            uint256
-        )
-    {
-        return (
-            incentiveTokens,
-            marketCoolDownTime,
-            rate,
-            commissionPerc[ETH_ADDRESS],
-            commissionPerc[plotToken]
-        );
-    }
-
-    /**
-     * @dev Get Parameters required to exchanging commission
-     * @return Percentage of amount to buy PLOT in uniswap
-     * @return Deadline for uniswap exchanges
-     **/
-    function getPurchasePercAndDeadline()
-        public
-        view
-        returns (uint256, uint256)
-    {
-        return (lotPurchasePerc, uniswapDeadline);
-    }
-
-    /**
      * @dev Get Market feed address
      * @return Eth Chainlink feed address
      * @return Uniswap factory address
@@ -444,5 +415,115 @@ contract MarketUtility {
         amountOut = (uniswapPairData[pair].price0Average)
             .mul(amountIn)
             .decode144();
+    }
+
+    /**
+    * @dev function to calculate square root of a number
+    */
+    function sqrt(uint x) internal pure returns (uint y) {
+      uint z = (x + 1) / 2;
+      y = x;
+      while (z < y) {
+          y = z;
+          z = (x / z + z) / 2;
+      }
+    }
+
+    /**
+    * @dev Calculate the prediction value, passing all the required params
+    * params index
+    * 0 _prediction
+    * 1 neutralMinValue
+    * 2 neutralMaxValue
+    * 3 startTime
+    * 4 expireTime
+    * 5 totalStakedETH
+    * 6 totalStakedToken
+    * 7 ethStakedOnOption
+    * 8 plotStakedOnOption
+    * 9 _stake
+    * 10 _leverage
+    */
+    function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool isChainlinkFeed, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
+      uint _stakeValue = getAssetValueETH(asset, params[9]);
+      if(_stakeValue < minBet) {
+        return (_predictionValue, _multiplierApplied);
+      }
+      uint optionPrice;
+      
+      optionPrice = calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
+      _predictionValue = _calculatePredictionPoints(_stakeValue.mul(positionDecimals), optionPrice, params[10]);
+      if(_checkMultiplier) {
+        return checkMultiplier(asset, user, params[9],  _predictionValue, _stakeValue);
+      }
+      return (_predictionValue, _multiplierApplied);
+    }
+
+    function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
+      //leverageMultiplier = levergage + (leverage -1)*0.05; Raised by 3 decimals i.e 1000
+      uint leverageMultiplier = 1000 + (_leverage-1)*50;
+      value = value.mul(2500).div(1e18);
+      // (amount*sqrt(amount*100)*leverage*100/(price*10*125000/1000));
+      return value.mul(sqrt(value.mul(10000))).mul(_leverage*100*leverageMultiplier).div(optionPrice.mul(1250000000));
+    }
+
+    /**
+    * @dev Calculate the option price for given params
+    * params
+    * 0 _option
+    * 1 neutralMinValue
+    * 2 neutralMaxValue
+    * 3 startTime
+    * 4 expireTime
+    * 5 totalStakedETH
+    * 6 totalStakedToken
+    * 7 ethStakedOnOption
+    * 8 plotStakedOnOption
+    */
+    function calculateOptionPrice(uint[] memory params, address marketFeedAddress, bool isChainlinkFeed) public view returns(uint _optionPrice) {
+      uint _totalStaked = params[5].add(getAssetValueETH(plotToken, params[6]));
+      uint _assetStakedOnOption = params[7]
+                                .add(
+                                  (getAssetValueETH(plotToken, params[8])));
+      _optionPrice = 0;
+      uint currentPriceOption = 0;
+      uint256 currentPrice = getAssetPriceUSD(
+          marketFeedAddress,
+          isChainlinkFeed
+      );
+      uint stakeWeightage = STAKE_WEIGHTAGE;
+      uint predictionWeightage = 100 - stakeWeightage;
+      uint predictionTime = params[4].sub(params[3]);
+      uint minTimeElapsed = (predictionTime).div(minTimeElapsedDivisor);
+      if(now > params[4]) {
+        return 0;
+      }
+      if(_totalStaked > STAKE_WEIGHTAGE_MIN_AMOUNT) {
+        _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
+      }
+
+      uint maxDistance;
+      if(currentPrice < params[1]) {
+        currentPriceOption = 1;
+        maxDistance = 2;
+      } else if(currentPrice > params[2]) {
+        currentPriceOption = 3;
+        maxDistance = 2;
+      } else {
+        currentPriceOption = 2;
+        maxDistance = 1;
+      }
+      uint distance = _getAbsoluteDifference(currentPriceOption, params[0]);
+      uint timeElapsed = now > params[3] ? now.sub(params[3]) : 0;
+      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
+      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
+      _optionPrice = _optionPrice.div(100);
+    }
+
+    /**
+    * @dev Internal function to get the absolute difference of two values
+    */
+    function _getAbsoluteDifference(uint value1, uint value2) internal pure returns(uint) {
+      return value1 > value2 ? value1.sub(value2) : value2.sub(value1);
     }
 }

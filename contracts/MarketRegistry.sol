@@ -2,7 +2,6 @@ pragma solidity 0.5.7;
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
-import "./external/oraclize/ethereum-api/provableAPI.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
@@ -10,9 +9,9 @@ import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IMarketUtility.sol";
 
-contract MarketRegistry is usingProvable, Governed, Iupgradable {
+contract MarketRegistry is Governed, Iupgradable {
 
-    using SafeMath for uint256; 
+    using SafeMath for *; 
     using strings for *; 
 
     enum MarketType {
@@ -22,59 +21,57 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     }
 
     struct MarketTypeData {
-      uint256 predictionTime;
-      uint256 settleTime;
-      uint256 optionRangePerc;
+      uint64 predictionTime;
+      uint64 optionRangePerc;
     }
 
     struct MarketCurrency {
-      address currencyFeedAddress;
       bool isChainlinkFeed;
+      address marketImplementation;
+      address currencyFeedAddress;
       bytes32 currencyName;
-      string marketCreationHash;
     }
 
-    struct MarketOraclize {
+    struct MarketCreationData {
+      uint64 initialStartTime;
       address marketAddress;
-      uint256 marketType;
-      uint256 marketCurrencyIndex;
-      uint256 startTime;
+      address penultimateMarket;
     }
 
     struct DisputeStake {
+      uint64 proposalId;
       address staker;
       uint256 stakeAmount;
-      uint256 proposalId;
       uint256 ethDeposited;
       uint256 tokenDeposited;
     }
 
     struct MarketData {
       bool isMarket;
-      uint256 winningOption;
+      uint256 marketFlushFund;
       DisputeStake disputeStakes;
     }
 
     struct UserData {
       uint256 lastClaimedIndex;
+      uint256 marketsCreated;
+      uint256 totalEthStaked;
+      uint256 totalPlotStaked;
       address[] marketsParticipated;
       mapping(address => bool) marketsParticipatedFlag;
     }
 
     uint internal marketCreationFallbackTime;
     uint internal marketCreationIncentive;
+    uint internal marketFlushFundPLOT;
     
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
-    mapping(bytes32 => MarketOraclize) public marketOracleId;
-    mapping(uint256 => address) disputeProposalId;
-    mapping(uint256 => mapping(uint256 => bytes32)) public marketTypeCurrencyOraclize; //Markets of type and currency
+    mapping(uint256 => mapping(uint256 => MarketCreationData)) public marketCreationData;
+    mapping(uint64 => address) disputeProposalId;
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public tokenController;
-    address public marketImplementation;
-    address[] markets;
-
 
     MarketTypeData[] marketTypes;
     MarketCurrency[] marketCurrencies;
@@ -89,11 +86,11 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
-    event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue);
-    event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256[] incentive, address[] incentiveTokens);
-    event MarketTypes(uint256 indexed index, uint256 predictionTime, uint256 settleTime, uint256 optionRangePerc);
-    event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, string marketCreationHash, bool isChainlinkFeed);
-    event DisputeRaised(address indexed marketAdd, address raisedBy, uint256 proposalId, uint256 proposedValue);
+    event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
+    event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
+    event MarketTypes(uint256 indexed index, uint64 predictionTime, uint64 optionRangePerc);
+    event MarketCurrencies(uint256 indexed index, address marketImplementation,  address feedAddress, bytes32 currencyName, bool isChainlinkFeed);
+    event DisputeRaised(address indexed marketAdd, address raisedBy, uint64 proposalId, uint256 proposedValue);
     event DisputeResolved(address indexed marketAdd, bool status);
 
     /**
@@ -103,88 +100,94 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       return marketData[_address].isMarket;
     }
 
+    function isWhitelistedSponsor(address _address) public view returns(bool) {
+      return ms.whitelistedSponsor(_address);
+    }
+
     /**
     * @dev Initialize the PlotX MarketRegistry.
-    * @param _marketImplementation The address of market implementation.
     * @param _marketUtility The address of market config.
     * @param _plotToken The instance of PlotX token.
     */
-    function initiate(address _marketImplementation, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
+    function initiate(address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketCreationFallbackTime = 15 minutes;
       marketCreationIncentive = 10 ether;
-      marketImplementation = _marketImplementation;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
       tokenController = tcAddress;
-      markets.push(address(0));
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
       plotToken.approve(address(governance), ~uint256(0));
-      // provable_setProof(proofType_Android | proofType_Ledger);
     }
 
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint _marketStartTime, address _ethPriceFeed, address _btcPriceFeed) external payable {
+    function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external payable {
       require(marketTypes.length == 0);
-      _addNewMarketCurrency(_ethPriceFeed, "ETH", "Qme2JKFxGqSNed98Ec613fY3nfTmSrLLj5tR4R6pwrbaaU", true);
-      _addNewMarketCurrency(_btcPriceFeed, "BTC", "QmQZta2dVxz5m6XqTng8MymQQe7YgBKcmpy2prCA1Fjvot", true);
-      _addMarket(1 hours, 2 hours, 20);
-      _addMarket(24 hours, 2 days, 50);
-      _addMarket(7 days, 14 days, 100);
+      _addNewMarketCurrency(_ethMarketImplementation);
+      _addNewMarketCurrency(_btcMarketImplementation);
+      _addMarket(1 hours, 20);
+      _addMarket(24 hours, 50);
+      _addMarket(7 days, 100);
 
       for(uint256 i = 0;i < marketTypes.length; i++) {
-          _initiateProvableQuery(i, 0, marketCurrencies[0].marketCreationHash, 1600000, address(0), _marketStartTime, marketTypes[i].predictionTime);
-          _initiateProvableQuery(i, 1, marketCurrencies[1].marketCreationHash, 1600000, address(0), _marketStartTime, marketTypes[i].predictionTime);
+          marketCreationData[i][0].initialStartTime = _marketStartTime;
+          marketCreationData[i][1].initialStartTime = _marketStartTime;
+          createMarket(i, 0);
+          createMarket(i, 1);
       }
     }
 
     /**
     * @dev Add new market type.
     * @param _predictionTime The time duration of market.
-    * @param _settleTime The time at which result of market will declared.
     * @param _marketStartTime The time at which market will create.
     */
-    function addNewMarketType(uint256 _predictionTime, uint256 _settleTime, uint256 _marketStartTime, uint256 _gasLimit, uint256 _optionRangePerc) external onlyAuthorizedToGovern {
+    function addNewMarketType(uint64 _predictionTime, uint64 _marketStartTime, uint64 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
       uint256 _marketType = marketTypes.length;
-      _addMarket(_predictionTime, _settleTime, _optionRangePerc);
+      _addMarket(_predictionTime, _optionRangePerc);
       for(uint256 j = 0;j < marketCurrencies.length; j++) {
-        _initiateProvableQuery(_marketType, j, marketCurrencies[j].marketCreationHash, _gasLimit, address(0), _marketStartTime, _predictionTime);
+        marketCreationData[_marketType][j].initialStartTime = _marketStartTime;
+        createMarket(_marketType, j);
       }
     }
 
-    function _addMarket(uint256 _predictionTime, uint256 _settleTime, uint256 _optionRangePerc) internal {
+    function _addMarket(uint64 _predictionTime, uint64 _optionRangePerc) internal {
       uint256 _marketType = marketTypes.length;
-      marketTypes.push(MarketTypeData(_predictionTime, _settleTime, _optionRangePerc));
-      emit MarketTypes(_marketType, _predictionTime, _settleTime, _optionRangePerc);
+      marketTypes.push(MarketTypeData(_predictionTime, _optionRangePerc));
+      emit MarketTypes(_marketType, _predictionTime, _optionRangePerc);
     }
 
     /**
     * @dev Add new market currency.
     */
-    function addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string calldata _computationHash, bool _isChainlinkFeed, uint256 _marketStartTime) external onlyAuthorizedToGovern {
+    function addNewMarketCurrency(address _marketImplementation, uint64 _marketStartTime) external onlyAuthorizedToGovern {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      _addNewMarketCurrency(_priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
+      _addNewMarketCurrency(_marketImplementation);
       for(uint256 j = 0;j < marketTypes.length; j++) {
-        _initiateProvableQuery(j, _marketCurrencyIndex, _computationHash, 1600000, address(0), _marketStartTime, marketTypes[j].predictionTime);
+        marketCreationData[j][_marketCurrencyIndex].initialStartTime = _marketStartTime;
+        createMarket(j, _marketCurrencyIndex);
       }
     }
 
-    function _addNewMarketCurrency(address _priceFeed, bytes32 _currencyName, string memory _computationHash, bool _isChainlinkFeed) internal {
+    function _addNewMarketCurrency(address _marketImplementation) internal {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      marketCurrencies.push(MarketCurrency(_priceFeed, _isChainlinkFeed, _currencyName, _computationHash));
-      emit MarketCurrencies(_marketCurrencyIndex, _priceFeed, _currencyName, _computationHash, _isChainlinkFeed);
+      (bytes32 _currencyName, address _priceFeed, bool _isChainlinkFeed) = IMarket(_marketImplementation).getMarketFeedData();
+      marketCurrencies.push(MarketCurrency(_isChainlinkFeed, _marketImplementation, _priceFeed, _currencyName));
+      emit MarketCurrencies(_marketCurrencyIndex, _marketImplementation, _priceFeed, _currencyName, _isChainlinkFeed);
     }
 
     /**
     * @dev Update the implementations of the market.
-    * @param _marketImplementation the address of market implementation.
     */
-    function updateMarketImplementation(address _marketImplementation) external onlyAuthorizedToGovern {
-      marketImplementation = _marketImplementation;
+    function updateMarketImplementations(uint256[] calldata _currencyIndexes, address[] calldata _marketImplementations) external onlyAuthorizedToGovern {
+      require(_currencyIndexes.length == _marketImplementations.length);
+      for(uint256 i = 0;i< _currencyIndexes.length; i++) {
+        marketCurrencies[_currencyIndexes[i]].marketImplementation = _marketImplementations[i];
+      }
     }
 
     /**
@@ -212,103 +215,72 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       governance = IGovernance(ms.getLatestAddress("GV"));
     }
 
-    function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) external {
-      (address _previousMarket, uint _marketStartTime, uint256 predictionTime, ) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, marketCurrencies[_marketCurrencyIndex].marketCreationHash, 1600000, _previousMarket, 0, predictionTime);
-      _transferIncentiveForCreation();
-    }
-
     /**
     * @dev Creates the new market.
     * @param _marketType The type of the market.
     * @param _marketCurrencyIndex the index of market currency.
     */
-    function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint256 _minValue, uint256 _maxValue, uint256 _marketStartTime) internal {
+    function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _minValue, uint64 _maxValue, uint64 _marketStartTime) internal {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      MarketCurrency memory _marketCurrencyData = marketCurrencies[_marketCurrencyIndex];
-      address _feedAddress;
-      if(!(_marketCurrencyData.isChainlinkFeed) && (_marketTypeData.predictionTime == 1 hours)) {
-        _feedAddress = _marketCurrencyData.currencyFeedAddress;
-      } else {
-        _feedAddress = address(plotToken);
-      }
-      marketUtility.update(_feedAddress);
-      address payable _market = _generateProxy(marketImplementation);
+      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex].marketImplementation);
       marketData[_market].isMarket = true;
-      markets.push(_market);
-      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _marketTypeData.settleTime, _minValue, _maxValue, _marketCurrencyData.currencyName, _marketCurrencyData.currencyFeedAddress, _marketCurrencyData.isChainlinkFeed);
-      emit MarketQuestion(_market, _marketCurrencyData.currencyName, _marketType, _marketStartTime);
-      _marketStartTime = _marketStartTime.add(_marketTypeData.predictionTime);
-      _initiateProvableQuery(_marketType, _marketCurrencyIndex, _marketCurrencyData.marketCreationHash, 1600000, _market, _marketStartTime, _marketTypeData.predictionTime);
+      IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
+      emit MarketQuestion(_market, IMarket(_market).marketCurrency(), _marketType, _marketStartTime);
+      _marketStartTime = uint64(_marketStartTime.add(_marketTypeData.predictionTime));
+
+      (marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress) =
+       (marketCreationData[_marketType][_marketCurrencyIndex].marketAddress, _market);
     }
 
     /**
-    * @dev Creates the new market incase of failure of the provable callback.
+    * @dev Creates the new market
     * @param _marketType The type of the market.
     * @param _marketCurrencyIndex the index of market currency.
     */
-    function createMarketFallback(uint256 _marketType, uint256 _marketCurrencyIndex) external payable{
-      (, uint _marketStartTime, , uint256 _optionRangePerc) = _calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
+    function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public payable{
+      address penultimateMarket = marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket;
+      if(penultimateMarket != address(0)) {
+        IMarket(penultimateMarket).settleMarket();
+      }
+      if(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress != address(0)) {
+        (,,,,,,,, uint _status) = getMarketDetails(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
+        require(_status >= uint(IMarket.PredictionStatus.InSettlement));
+      }
+      uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
+      uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
       uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
-      uint _minValue = currentPrice.sub(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
-      uint _maxValue = currentPrice.add(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
+      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
+      uint64 _minValue = uint64(currentPrice.sub(_optionRangePerc));
+      uint64 _maxValue = uint64(currentPrice.add(_optionRangePerc));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
-      _transferIncentiveForCreation();
+      userData[msg.sender].marketsCreated++;
     }
 
     /**
-    * @dev Internal function to reward user for initiating market creation call
+    * @dev function to reward user for initiating market creation calls
     */
-    function _transferIncentiveForCreation() internal {
-      if(plotToken.balanceOf(address(this)) > marketCreationIncentive) {
-        _transferAsset(address(plotToken), msg.sender, marketCreationIncentive);
+    function claimCreationReward() external {
+      require(userData[msg.sender].marketsCreated > 0);
+      uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
+      if((plotToken.balanceOf(address(this)).sub(marketFlushFundPLOT)) > pendingReward) {
+        _transferAsset(address(plotToken), msg.sender, pendingReward);
+        delete userData[msg.sender].marketsCreated;
       }
     }
 
-    function _calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) internal returns(address _previousMarket, uint256 _marketStartTime, uint256 predictionTime, uint256 _optionRangePerc) {
-      bytes32 _oraclizeId = marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex];
-      _previousMarket = marketOracleId[_oraclizeId].marketAddress;
-      _marketStartTime = marketOracleId[_oraclizeId].startTime;
-      MarketTypeData storage _marketTypeData = marketTypes[_marketType];
-      predictionTime = _marketTypeData.predictionTime;
-      _optionRangePerc = _marketTypeData.optionRangePerc;
-      (,,,,,,,, uint _status) = getMarketDetails(_previousMarket);
-      require(_status >= uint(IMarket.PredictionStatus.InSettlement));
-      require(now > _marketStartTime.add(marketCreationFallbackTime));
+    function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
+      address previousMarket = marketCreationData[_marketType][_marketCurrencyIndex].marketAddress;
+      if(previousMarket != address(0)) {
+        (_marketStartTime, , , ) = IMarket(previousMarket).marketData();
+      } else {
+        _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
+      }
+      uint predictionTime = marketTypes[_marketType].predictionTime;
       if(now > _marketStartTime.add(predictionTime)) {
         uint noOfMarketsSkipped = ((now).sub(_marketStartTime)).div(predictionTime);
-       _marketStartTime = _marketStartTime.add(noOfMarketsSkipped.mul(predictionTime));
+       _marketStartTime = uint64(_marketStartTime.add(noOfMarketsSkipped.mul(predictionTime)));
       }
-    }
-
-    function _initiateProvableQuery(uint256 _marketType, uint256 _marketCurrencyIndex, string memory _marketCreationHash, uint256 _gasLimit, address _previousMarket, uint256 _marketStartTime, uint256 _predictionTime) internal {
-      bytes32 _oraclizeId = provable_query(_marketStartTime, "computation", _marketCreationHash, uint2str(_predictionTime), _gasLimit);
-      marketOracleId[_oraclizeId] = MarketOraclize(_previousMarket, _marketType, _marketCurrencyIndex, _marketStartTime);
-      marketTypeCurrencyOraclize[_marketType][_marketCurrencyIndex] = _oraclizeId;
-    }
-
-    /**
-    * @dev callback for result declaration of market.
-    * @param myid The orcalize market result id.
-    * @param result The current price of market currency.
-    */
-    function __callback(bytes32 myid, string memory result) public {
-      //Check oraclise address
-      require(msg.sender == provable_cbAddress());
-      // require(provable_randomDS_proofVerify__returnCode(myid, result, proof) == 0, "Proof verification failed");
-      strings.slice memory s = result.toSlice();
-      strings.slice memory delim = "-".toSlice();
-      uint[] memory parts = new uint[](s.count(delim) + 1);
-      for (uint i = 0; i < parts.length; i++) {
-          parts[i] = parseInt(s.split(delim).toString());
-      }
-      address marketAddress = marketOracleId[myid].marketAddress;
-      if(marketAddress != address(0)) {
-        IMarket(marketAddress).exchangeCommission();
-      }
-      _createMarket(marketOracleId[myid].marketType, marketOracleId[myid].marketCurrencyIndex, parts[0], parts[1], marketOracleId[myid].startTime);
-      delete marketOracleId[myid];
     }
 
     /**
@@ -338,10 +310,10 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool, uint256 _proposedValue) public {
       require(isMarket(msg.sender));
-      uint256 proposalId = governance.getProposalLength();
-      marketData[msg.sender].disputeStakes = DisputeStake(_user, _stakeForDispute, proposalId, _ethSentToPool, _tokenSentToPool);
+      uint64 proposalId = uint64(governance.getProposalLength());
+      marketData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
       disputeProposalId[proposalId] = msg.sender;
-      governance.createProposalwithSolution(proposalTitle, description, description, 10, solutionHash, action);
+      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, action);
       emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
     }
 
@@ -356,6 +328,8 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
       uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
       address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
       address plotTokenAddress = address(plotToken);
+      marketFlushFundPLOT = marketFlushFundPLOT.sub(marketData[_marketAddress].marketFlushFund);
+      delete marketData[_marketAddress].marketFlushFund;
       // _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
       _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
       IMarket(_marketAddress).resolveDispute.value(ethDepositedInPool)(true, _result);
@@ -368,16 +342,21 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _proposalId Id of dispute resolution proposal
     */
     function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
-      address disputedMarket = disputeProposalId[_proposalId];
+      address disputedMarket = disputeProposalId[uint64(_proposalId)];
       IMarket(disputedMarket).resolveDispute(false, 0);
       emit DisputeResolved(disputedMarket, false);
       uint _stakedAmount = marketData[disputedMarket].disputeStakes.stakeAmount;
       plotToken.burn(_stakedAmount);
     }
 
-    function withdrawForRewardDistribution(uint256 _amount) external {
+    function withdrawForRewardDistribution(uint256 withdrawPercent) external returns(uint256) {
       require(isMarket(msg.sender));
-      _transferAsset(address(plotToken), msg.sender, _amount);
+      if(marketFlushFundPLOT > 0) {
+        uint256 _amount = marketFlushFundPLOT.mul(withdrawPercent).div(100);
+        marketFlushFundPLOT = marketFlushFundPLOT.sub(_amount);
+        _transferAsset(address(plotToken), msg.sender, _amount);
+        return _amount;
+      }
     }
  
     /**
@@ -456,10 +435,13 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param winningOption The winning option of the market.
     * @param closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue) external {
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _tokenAmountToPool, bool _isMarketFlushFund, uint _roundId) external {
       require(isMarket(msg.sender));
-      marketData[msg.sender].winningOption = winningOption;
-      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue);
+      if(_isMarketFlushFund) {
+        marketFlushFundPLOT = marketFlushFundPLOT.add(_tokenAmountToPool);
+        marketData[msg.sender].marketFlushFund = marketFlushFundPLOT;
+      }
+      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
     }
     
     /**
@@ -473,6 +455,11 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external {
       require(isMarket(msg.sender));
+      if(_predictionAsset == ETH_ADDRESS) {
+        userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
+      } else {
+        userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
+      }
       if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
         userData[_user].marketsParticipated.push(msg.sender);
         userData[_user].marketsParticipatedFlag[msg.sender] = true;
@@ -486,14 +473,14 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     * @param _reward The reward which is claimed by user.
     * @param predictionAssets The prediction assets of user.
     * @param incentives The incentives of user.
-    * @param incentiveTokens The incentive tokens of user.
+    * @param incentiveToken The incentive tokens of user.
     */
-    function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint[] calldata incentives, address[] calldata incentiveTokens) external {
+    function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint incentives, address incentiveToken) external {
       require(isMarket(msg.sender));
-      emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveTokens);
+      emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveToken);
     }
 
-    function getUintParameters(bytes8 code) external returns(uint256 value) {
+    function getUintParameters(bytes8 code) external view returns(uint256 value) {
       if(code == "FBTIME") {
         value = marketCreationFallbackTime;
       } else if(code == "MCRINC") {
@@ -521,6 +508,15 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     }
 
     /**
+    * @dev Get total assets staked by user in PlotX platform
+    * @return _plotStaked Total PLOT staked by user
+    * @return _ethStaked Total ETH staked by user
+    */
+    function getTotalAssetStakedByUser(address _user) external view returns(uint256 _plotStaked, uint256 _ethStaked) {
+      return (userData[_user].totalPlotStaked, userData[_user].totalEthStaked);
+    }
+
+    /**
     * @dev Gets the market details of the specified user address.
     * @param user The address to query the details of market.
     * @param fromIndex The index to query the details from.
@@ -540,7 +536,7 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
         _winnigOption = new uint256[](_toIndex.sub(fromIndex).add(1));
         for(uint256 i = fromIndex; i <= _toIndex; i++) {
           _market[i] = userData[user].marketsParticipated[i];
-          _winnigOption[i] = marketData[_market[i]].winningOption;
+          (_winnigOption[i], ) = IMarket(_market[i]).marketSettleData();
         }
       }
     }
@@ -552,12 +548,14 @@ contract MarketRegistry is usingProvable, Governed, Iupgradable {
     */
     function getOpenMarkets() external view returns(address[] memory _openMarkets, uint256[] memory _marketTypes, bytes32[] memory _marketCurrencies) {
       uint256  count = 0;
-      _openMarkets = new address[]((marketTypes.length).mul(marketCurrencies.length));
-      _marketTypes = new uint256[]((marketTypes.length).mul(marketCurrencies.length));
-      _marketCurrencies = new bytes32[]((marketTypes.length).mul(marketCurrencies.length));
-      for(uint256 i = 0; i< marketTypes.length; i++) {
-        for(uint256 j = 0; j< marketCurrencies.length; j++) {
-          _openMarkets[count] = marketOracleId[marketTypeCurrencyOraclize[i][j]].marketAddress;
+      uint256 marketTypeLength = marketTypes.length;
+      uint256 marketCurrencyLength = marketCurrencies.length;
+      _openMarkets = new address[]((marketTypeLength).mul(marketCurrencyLength));
+      _marketTypes = new uint256[]((marketTypeLength).mul(marketCurrencyLength));
+      _marketCurrencies = new bytes32[]((marketTypeLength).mul(marketCurrencyLength));
+      for(uint256 i = 0; i< marketTypeLength; i++) {
+        for(uint256 j = 0; j< marketCurrencyLength; j++) {
+          _openMarkets[count] = marketCreationData[i][j].marketAddress;
           _marketTypes[count] = i;
           _marketCurrencies[count] = marketCurrencies[j].currencyName;
           count++;
