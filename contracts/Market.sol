@@ -205,11 +205,8 @@ contract Market {
     function _postResult(uint256 _value, uint256 _roundId) internal {
       require(now >= marketSettleTime(),"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      uint disributePercFromMFPool;
-      uint transferPercToMFPool;
       uint riskPercentage;
-      bool isMarketFlushFund;
-      ( , riskPercentage, , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
+      ( , riskPercentage, ) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
@@ -235,15 +232,6 @@ contract Market {
             totalReward[1] = totalReward[1].add(leveragedAsset);
           }
         }
-        if(totalReward[0].add(totalReward[1]) == 0) {
-          totalReward[0] = marketRegistry.withdrawForRewardDistribution(disributePercFromMFPool);
-        } else {
-          tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
-          ethAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[1], 100);
-          isMarketFlushFund = true;
-          totalReward[0] = totalReward[0].sub(tokenAmountToPool);
-          totalReward[1] = totalReward[1].sub(ethAmountToPool);
-        }
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
@@ -255,7 +243,7 @@ contract Market {
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
-      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, _roundId);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
@@ -532,7 +520,7 @@ contract Market {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint riskPercentage, , , ) = marketUtility.getBasicMarketDetails();
+      ( , uint riskPercentage, ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);
