@@ -222,7 +222,7 @@ contract MarketRegistry is Governed, Iupgradable {
       marketData[_market].isMarket = true;
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
       emit MarketQuestion(_market, _currencyName, _marketType, _marketStartTime);
-      // marketUtility.update();
+      marketUtility.update();
       (marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress) =
        (marketCreationData[_marketType][_marketCurrencyIndex].marketAddress, _market);
     }
