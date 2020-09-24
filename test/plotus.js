@@ -300,8 +300,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			// plotus contract balance eth balance
 			plotusBalanceBefore = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
 			lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);	
-			assert.equal(parseFloat(plotusBalanceBefore).toFixed(3), (0.08992).toFixed(3));
-			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833 - 7.169122).toFixed(2));
+			assert.equal(parseFloat(plotusBalanceBefore).toFixed(3), (0.010).toFixed(3));
+			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (832.5835).toFixed(2));
 			// commented by parv (added a assert above)
 			// console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
 			// lotBalanceBefore = lotBalanceBefore / 1;
@@ -311,10 +311,10 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			await marketConfig.setPrice("1000000000000000");
 			await increaseTime(360001);
 
-			plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-			assert.equal(parseFloat(plotusBalanceAfter), web3.utils.toWei("0.08992"));
+			plotusBalanceAfter = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
+			assert.equal(parseFloat(plotusBalanceAfter).toFixed(3), (0.010).toFixed(3));
 			lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (825.830878).toFixed(2));
+			assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (832.5835).toFixed(2));
 			assert.equal(
 				parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2),
 				(0).toFixed(2)
@@ -336,7 +336,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 				return returnAmountInEth;
 			};
 
-			const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
+			const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
 			// calulate  rewards for every user in eth
 			// console.log("Rewards in Eth");
 
@@ -350,8 +350,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		});
 		it("3.Check User Recived The appropriate amount", async () => {
 			accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
-			const totalReturnLotExpexted = [79.96, 239.88, 125.937, 49.1754, 70.56102414, 260.3174539, 0, 0, 0, 0];
-			const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
+			const totalReturnLotExpexted = [79.96, 239.88, 125.937, 49.1754, 72.00104504, 265.630055, 0, 0, 0, 0];
+			const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
 
 			for (let account of accounts) {
 				beforeClaim = await web3.eth.getBalance(account);
