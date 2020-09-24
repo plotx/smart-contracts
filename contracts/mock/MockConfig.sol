@@ -33,7 +33,7 @@ contract MockConfig is MarketUtility {
         return (minStakeForMultiplier, _value);
     }
 
-    function update(address pair) external {
+    function update() external {
     
     }
 
@@ -45,10 +45,10 @@ contract MockConfig is MarketUtility {
         mockFlag = _flag;
     }
 
-    function calculateOptionPrice(uint[] memory params, address marketFeedAddress, bool isChainlinkFeed) public view returns(uint _optionPrice) {
+    function calculateOptionPrice(uint[] memory params, address marketFeedAddress) public view returns(uint _optionPrice) {
         if(mockFlag) {
             return optionPrices[params[0]];
           }
-        return super.calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
+        return super.calculateOptionPrice(params, marketFeedAddress);
     }
 }

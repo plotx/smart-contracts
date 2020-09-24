@@ -30,7 +30,6 @@ contract Market {
       uint64 settleTime;
     }
 
-    bool constant isChainlinkFeed = true;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant marketFeedAddress = 0x5e2aa6b66531142bEAB830c385646F97fa03D80a;
     address constant plotToken = 0xa626089A947Eadc8a782293B53fCf42247C71111;
@@ -96,8 +95,6 @@ contract Market {
       
       marketData.neutralMinValue = _minValue;
       marketData.neutralMaxValue = _maxValue;
-
-      marketUtility.update(marketFeedAddress);
     }
 
     /**
@@ -160,7 +157,7 @@ contract Market {
       if(!userData[msg.sender].multiplierApplied) {
         checkMultiplier = true;
       }
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, isChainlinkFeed, checkMultiplier);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
       
     }
 
@@ -192,7 +189,7 @@ contract Market {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
-      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, uint256(marketSettleTime()));
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, uint256(marketSettleTime()));
       if(marketStatus() == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId);
       }
@@ -366,10 +363,9 @@ contract Market {
     * @dev Get market Feed data
     * @return market currency name
     * @return market currency feed address
-    * @return flag mentioning the feed is chainlink supported
     */
-    function getMarketFeedData() public view returns(bytes32, address, bool) {
-      return (marketCurrency, marketFeedAddress, isChainlinkFeed);
+    function getMarketFeedData() public view returns(bytes32, address) {
+      return (marketCurrency, marketFeedAddress);
     }
 
    /**
@@ -398,7 +394,7 @@ contract Market {
       (params[5], params[6]) = getTotalAssetsStaked();
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
       params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
-      return marketUtility.calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
+      return marketUtility.calculateOptionPrice(params, marketFeedAddress);
     }
 
     /**

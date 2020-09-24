@@ -163,12 +163,8 @@ contract MarketUtility {
 
     /**
      * @dev Update cumulative price of token in uniswap
-     * @param pairAddress Token pair address
      **/
-    function update(address pairAddress) external onlyAuthorized {
-        if (pairAddress != plotToken) {
-            _update(pairAddress);
-        }
+    function update() external onlyAuthorized {
         _update(plotETHpair);
     }
 
@@ -227,15 +223,13 @@ contract MarketUtility {
     /**
      * @dev Get Parameter required for option price calculation
      * @param _marketFeedAddress  Feed Address of currency on which market options are based on
-     * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
      * @return Stake weightage percentage for calculation option price
      * @return minimum amount of stake required to consider stake weightage
      * @return Current price of the market currency
      * @return Divisor to calculate minimum time elapsed for a market type
      **/
     function getPriceCalculationParams(
-        address _marketFeedAddress,
-        bool _isChainlinkFeed
+        address _marketFeedAddress
     )
         public
         view
@@ -247,8 +241,7 @@ contract MarketUtility {
         )
     {
         uint256 _currencyPrice = getAssetPriceUSD(
-            _marketFeedAddress,
-            _isChainlinkFeed
+            _marketFeedAddress
         );
         return (
             STAKE_WEIGHTAGE,
@@ -261,62 +254,39 @@ contract MarketUtility {
     /**
      * @dev Get price of provided feed address
      * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
-     * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
      * @return Current price of the market currency
      **/
     function getAssetPriceUSD(
-        address _currencyFeedAddress,
-        bool _isChainlinkFeed
+        address _currencyFeedAddress
     ) public view returns (uint256 latestAnswer) {
         if(_currencyFeedAddress == ETH_ADDRESS) {
             return (uint256(chainLinkOracle.latestAnswer()))/1e8;
         }
-        if (!(_isChainlinkFeed)) {
-            uint256 decimals = IToken(
-                IUniswapV2Pair(_currencyFeedAddress).token0()
-            )
-                .decimals();
-            uint256 price = getPrice(_currencyFeedAddress, 10**decimals);
-            return price;
-        } else {
-            return
-                uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
-        }
+        return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
     }
 
     /**
      * @dev Get price of provided feed address
      * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
-     * @param _isChainlinkFeed Flag to mention if the market currency feed address is chainlink feed
      * @return Current price of the market currency
      **/
     function getSettlemetPrice(
         address _currencyFeedAddress,
-        bool _isChainlinkFeed,
         uint256 _settleTime
     ) public view returns (uint256 latestAnswer, uint256 roundId) {
-        if (!(_isChainlinkFeed)) {
-            uint256 decimals = IToken(
-                IUniswapV2Pair(_currencyFeedAddress).token0()
-            )
-                .decimals();
-            uint256 price = getPrice(_currencyFeedAddress, 10**decimals);
-            return (price, roundId);
-        } else {
-            uint80 currentRoundId;
-            uint256 currentRoundTime;
-            int256 currentRoundAnswer;
-            (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).latestRoundData();
-            while(currentRoundTime > _settleTime) {
-                currentRoundId--;
-                (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(currentRoundId);
-                if(currentRoundTime < _settleTime) {
-                    break;
-                }
+        uint80 currentRoundId;
+        uint256 currentRoundTime;
+        int256 currentRoundAnswer;
+        (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).latestRoundData();
+        while(currentRoundTime > _settleTime) {
+            currentRoundId--;
+            (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(currentRoundId);
+            if(currentRoundTime < _settleTime) {
+                break;
             }
-            return
-                (uint256(currentRoundAnswer), currentRoundId);
         }
+        return
+            (uint256(currentRoundAnswer), currentRoundId);
     }
 
     /**
@@ -432,14 +402,14 @@ contract MarketUtility {
     * 9 _stake
     * 10 _leverage
     */
-    function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool isChainlinkFeed, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
+    function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
       uint _stakeValue = getAssetValueETH(asset, params[9]);
       if(_stakeValue < minBet) {
         return (_predictionValue, _multiplierApplied);
       }
       uint optionPrice;
       
-      optionPrice = calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
+      optionPrice = calculateOptionPrice(params, marketFeedAddress);
       _predictionValue = _calculatePredictionPoints(_stakeValue.mul(positionDecimals), optionPrice, params[10]);
       if(_checkMultiplier) {
         return checkMultiplier(asset, user, params[9],  _predictionValue, _stakeValue);
@@ -468,7 +438,7 @@ contract MarketUtility {
     * 7 ethStakedOnOption
     * 8 plotStakedOnOption
     */
-    function calculateOptionPrice(uint[] memory params, address marketFeedAddress, bool isChainlinkFeed) public view returns(uint _optionPrice) {
+    function calculateOptionPrice(uint[] memory params, address marketFeedAddress) public view returns(uint _optionPrice) {
       uint _totalStaked = params[5].add(getAssetValueETH(plotToken, params[6]));
       uint _assetStakedOnOption = params[7]
                                 .add(
@@ -476,8 +446,7 @@ contract MarketUtility {
       _optionPrice = 0;
       uint currentPriceOption = 0;
       uint256 currentPrice = getAssetPriceUSD(
-          marketFeedAddress,
-          isChainlinkFeed
+          marketFeedAddress
       );
       uint stakeWeightage = STAKE_WEIGHTAGE;
       uint predictionWeightage = 100 - stakeWeightage;
