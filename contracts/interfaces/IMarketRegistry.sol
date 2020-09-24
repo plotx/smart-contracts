@@ -22,12 +22,6 @@ contract IMarketRegistry {
     function isWhitelistedSponsor(address _address) public view returns(bool);
 
     /**
-    * @dev Transfer plot to market for reward distribution in case of all winners situation
-    * @param _amount Amount to transfer to market
-    */
-    function withdrawForRewardDistribution(uint256 _amount) external returns(uint256);
-
-    /**
     * @dev Initialize the PlotX.
     * @param _marketConfig The address of market config.
     * @param _plotToken The address of PLOT token.
@@ -74,6 +68,6 @@ contract IMarketRegistry {
     * @param _winningOption The winning option of the market.
     * @param _closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint _tokenAmountToPool, bool isMarketFlushFund, uint roundId) public {
+    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint _tokenAmountToPool, uint roundId) public {
     }
 }

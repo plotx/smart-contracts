@@ -180,16 +180,16 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		plotusBalanceBefore = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
 		lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
 		assert.equal(parseFloat(plotusBalanceBefore), 0.01);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (1332.5835).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (832.5835).toFixed(2));
 
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 		await increaseTime(360001);
 
-		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
+		plotusBalanceAfter = web3.utils.fromWei(await web3.eth.getBalance(plotusNewAddress));
 		lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(plotusBalanceAfter), web3.utils.toWei("0.01"));
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (1332.5835).toFixed(2));
+		assert.equal(parseFloat(plotusBalanceBefore), 0.01);
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (832.5835).toFixed(2));
 		assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (0).toFixed(2));
 	});
 
@@ -217,19 +217,9 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 	});
 	it("3.Check User Recived The appropriate amount", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
-		const totalReturnLotExpexted = [
-      100.1940259,
-      411.3955177,
-      211.4544954,
-      186.7566722,
-      35.47053447,
-      130.8597676,
-      16.19307008,
-      132.2226091,
-      7.710985754,
-      100.3258218,
-    ];
-    const returnInEthExpected = [0, 0, 0, 0, 0.999, 1.998, 0.999, 2.997, 0.999, 1.998];
+		const totalReturnLotExpexted = [99.9, 399.8, 209.895, 122.9385, 0, 0, 0, 0, 0, 0];
+		const returnInEthExpected = [0, 0, 0, 0, 0.999, 1.998, 0.999, 2.997, 0.999, 1.998];
+
 
 		for (let account of accounts) {
 			beforeClaim = await web3.eth.getBalance(account);

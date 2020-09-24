@@ -30,7 +30,6 @@ contract Market {
       uint64 settleTime;
     }
 
-    bool constant isChainlinkFeed = true;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address constant marketFeedAddress = 0x5e2aa6b66531142bEAB830c385646F97fa03D80a;
     address constant plotToken = 0xa626089A947Eadc8a782293B53fCf42247C71111;
@@ -96,8 +95,6 @@ contract Market {
       
       marketData.neutralMinValue = _minValue;
       marketData.neutralMaxValue = _maxValue;
-
-      marketUtility.update(marketFeedAddress);
     }
 
     /**
@@ -160,7 +157,7 @@ contract Market {
       if(!userData[msg.sender].multiplierApplied) {
         checkMultiplier = true;
       }
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, isChainlinkFeed, checkMultiplier);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
       
     }
 
@@ -192,7 +189,7 @@ contract Market {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket() external {
-      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, isChainlinkFeed, uint256(marketSettleTime()));
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, uint256(marketSettleTime()));
       if(marketStatus() == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId);
       }
@@ -205,11 +202,8 @@ contract Market {
     function _postResult(uint256 _value, uint256 _roundId) internal {
       require(now >= marketSettleTime(),"Time not reached");
       require(_value > 0,"value should be greater than 0");
-      uint disributePercFromMFPool;
-      uint transferPercToMFPool;
       uint riskPercentage;
-      bool isMarketFlushFund;
-      ( , riskPercentage, , transferPercToMFPool, disributePercFromMFPool) = marketUtility.getBasicMarketDetails();
+      ( , riskPercentage, ) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
@@ -235,15 +229,6 @@ contract Market {
             totalReward[1] = totalReward[1].add(leveragedAsset);
           }
         }
-        if(totalReward[0].add(totalReward[1]) == 0) {
-          totalReward[0] = marketRegistry.withdrawForRewardDistribution(disributePercFromMFPool);
-        } else {
-          tokenAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[0], 100);
-          ethAmountToPool = _calculatePercentage(transferPercToMFPool, totalReward[1], 100);
-          isMarketFlushFund = true;
-          totalReward[0] = totalReward[0].sub(tokenAmountToPool);
-          totalReward[1] = totalReward[1].sub(ethAmountToPool);
-        }
         rewardToDistribute = totalReward;
       } else {
         for(uint i=1;i <= totalOptions;i++){
@@ -255,7 +240,7 @@ contract Market {
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
-      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, isMarketFlushFund, _roundId);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, _roundId);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
@@ -295,6 +280,7 @@ contract Market {
 
     function sponsorIncentives(address _token, uint256 _value) external {
       require(marketRegistry.isWhitelistedSponsor(msg.sender));
+      require(marketStatus() <= PredictionStatus.InSettlement);
       incentiveToken = _token;
       incentiveToDistribute = _value;
       require(IToken(_token).transferFrom(msg.sender, address(this), _value));
@@ -378,10 +364,9 @@ contract Market {
     * @dev Get market Feed data
     * @return market currency name
     * @return market currency feed address
-    * @return flag mentioning the feed is chainlink supported
     */
-    function getMarketFeedData() public view returns(bytes32, address, bool) {
-      return (marketCurrency, marketFeedAddress, isChainlinkFeed);
+    function getMarketFeedData() public view returns(bytes32, address) {
+      return (marketCurrency, marketFeedAddress);
     }
 
    /**
@@ -410,7 +395,7 @@ contract Market {
       (params[5], params[6]) = getTotalAssetsStaked();
       params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
       params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
-      return marketUtility.calculateOptionPrice(params, marketFeedAddress, isChainlinkFeed);
+      return marketUtility.calculateOptionPrice(params, marketFeedAddress);
     }
 
     /**
@@ -532,7 +517,7 @@ contract Market {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint riskPercentage, , , ) = marketUtility.getBasicMarketDetails();
+      ( , uint riskPercentage, ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);

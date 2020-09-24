@@ -24,8 +24,4 @@ contract MockMarketRegistry is MarketRegistry {
   function getMarketOraclizeId(address _marketAddress) public view returns(bytes32){
   	return marketId[_marketAddress];
   }
-
-  function addMarketFlushFundPLOT() public {
-    marketFlushFundPLOT = 10000 ether;
-  }
 }

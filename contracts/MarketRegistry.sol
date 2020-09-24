@@ -26,10 +26,7 @@ contract MarketRegistry is Governed, Iupgradable {
     }
 
     struct MarketCurrency {
-      bool isChainlinkFeed;
       address marketImplementation;
-      address currencyFeedAddress;
-      bytes32 currencyName;
     }
 
     struct MarketCreationData {
@@ -48,7 +45,6 @@ contract MarketRegistry is Governed, Iupgradable {
 
     struct MarketData {
       bool isMarket;
-      uint256 marketFlushFund;
       DisputeStake disputeStakes;
     }
 
@@ -63,7 +59,6 @@ contract MarketRegistry is Governed, Iupgradable {
 
     uint internal marketCreationFallbackTime;
     uint internal marketCreationIncentive;
-    uint internal marketFlushFundPLOT;
     
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
@@ -73,8 +68,8 @@ contract MarketRegistry is Governed, Iupgradable {
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address public tokenController;
 
+    address[] marketCurrencies;
     MarketTypeData[] marketTypes;
-    MarketCurrency[] marketCurrencies;
 
     bool public marketCreationPaused;
 
@@ -89,7 +84,7 @@ contract MarketRegistry is Governed, Iupgradable {
     event MarketResult(address indexed marketAdd, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     event Claimed(address indexed marketAdd, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
     event MarketTypes(uint256 indexed index, uint64 predictionTime, uint64 optionRangePerc);
-    event MarketCurrencies(uint256 indexed index, address marketImplementation,  address feedAddress, bytes32 currencyName, bool isChainlinkFeed);
+    event MarketCurrencies(uint256 indexed index, address marketImplementation,  address feedAddress, bytes32 currencyName);
     event DisputeRaised(address indexed marketAdd, address raisedBy, uint64 proposalId, uint256 proposedValue);
     event DisputeResolved(address indexed marketAdd, bool status);
 
@@ -175,9 +170,9 @@ contract MarketRegistry is Governed, Iupgradable {
 
     function _addNewMarketCurrency(address _marketImplementation) internal {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      (bytes32 _currencyName, address _priceFeed, bool _isChainlinkFeed) = IMarket(_marketImplementation).getMarketFeedData();
-      marketCurrencies.push(MarketCurrency(_isChainlinkFeed, _marketImplementation, _priceFeed, _currencyName));
-      emit MarketCurrencies(_marketCurrencyIndex, _marketImplementation, _priceFeed, _currencyName, _isChainlinkFeed);
+      (bytes32 _currencyName, address _priceFeed) = IMarket(_marketImplementation).getMarketFeedData();
+      marketCurrencies.push( _marketImplementation);
+      emit MarketCurrencies(_marketCurrencyIndex, _marketImplementation, _priceFeed, _currencyName);
     }
 
     /**
@@ -186,7 +181,7 @@ contract MarketRegistry is Governed, Iupgradable {
     function updateMarketImplementations(uint256[] calldata _currencyIndexes, address[] calldata _marketImplementations) external onlyAuthorizedToGovern {
       require(_currencyIndexes.length == _marketImplementations.length);
       for(uint256 i = 0;i< _currencyIndexes.length; i++) {
-        marketCurrencies[_currencyIndexes[i]].marketImplementation = _marketImplementations[i];
+        marketCurrencies[_currencyIndexes[i]] = _marketImplementations[i];
       }
     }
 
@@ -220,15 +215,14 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param _marketType The type of the market.
     * @param _marketCurrencyIndex the index of market currency.
     */
-    function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _minValue, uint64 _maxValue, uint64 _marketStartTime) internal {
+    function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _minValue, uint64 _maxValue, uint64 _marketStartTime, bytes32 _currencyName) internal {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex].marketImplementation);
+      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex]);
       marketData[_market].isMarket = true;
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
-      emit MarketQuestion(_market, IMarket(_market).marketCurrency(), _marketType, _marketStartTime);
-      _marketStartTime = uint64(_marketStartTime.add(_marketTypeData.predictionTime));
-
+      emit MarketQuestion(_market, _currencyName, _marketType, _marketStartTime);
+      marketUtility.update();
       (marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress) =
        (marketCreationData[_marketType][_marketCurrencyIndex].marketAddress, _market);
     }
@@ -247,13 +241,14 @@ contract MarketRegistry is Governed, Iupgradable {
         (,,,,,,,, uint _status) = getMarketDetails(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
         require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       }
+      (bytes32 _currencyName, address _priceFeed) = IMarket(marketCurrencies[_marketCurrencyIndex]).getMarketFeedData();
       uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
-      uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].currencyFeedAddress, marketCurrencies[_marketCurrencyIndex].isChainlinkFeed);
+      uint currentPrice = marketUtility.getAssetPriceUSD(_priceFeed);
       _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
       uint64 _minValue = uint64(currentPrice.sub(_optionRangePerc));
       uint64 _maxValue = uint64(currentPrice.add(_optionRangePerc));
-      _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime);
+      _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       userData[msg.sender].marketsCreated++;
     }
 
@@ -263,7 +258,7 @@ contract MarketRegistry is Governed, Iupgradable {
     function claimCreationReward() external {
       require(userData[msg.sender].marketsCreated > 0);
       uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
-      if((plotToken.balanceOf(address(this)).sub(marketFlushFundPLOT)) > pendingReward) {
+      if(plotToken.balanceOf(address(this)) > pendingReward) {
         _transferAsset(address(plotToken), msg.sender, pendingReward);
         delete userData[msg.sender].marketsCreated;
       }
@@ -328,9 +323,6 @@ contract MarketRegistry is Governed, Iupgradable {
       uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
       address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
       address plotTokenAddress = address(plotToken);
-      marketFlushFundPLOT = marketFlushFundPLOT.sub(marketData[_marketAddress].marketFlushFund);
-      delete marketData[_marketAddress].marketFlushFund;
-      // _transferAsset(ETH_ADDRESS, _marketAddress, ethDepositedInPool);
       _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
       IMarket(_marketAddress).resolveDispute.value(ethDepositedInPool)(true, _result);
       emit DisputeResolved(_marketAddress, true);
@@ -349,16 +341,6 @@ contract MarketRegistry is Governed, Iupgradable {
       plotToken.burn(_stakedAmount);
     }
 
-    function withdrawForRewardDistribution(uint256 withdrawPercent) external returns(uint256) {
-      require(isMarket(msg.sender));
-      if(marketFlushFundPLOT > 0) {
-        uint256 _amount = marketFlushFundPLOT.mul(withdrawPercent).div(100);
-        marketFlushFundPLOT = marketFlushFundPLOT.sub(_amount);
-        _transferAsset(address(plotToken), msg.sender, _amount);
-        return _amount;
-      }
-    }
- 
     /**
     * @dev Claim the pending return of the market.
     * @param maxRecords Maximum number of records to claim reward for
@@ -435,12 +417,8 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param winningOption The winning option of the market.
     * @param closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _tokenAmountToPool, bool _isMarketFlushFund, uint _roundId) external {
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _roundId) external {
       require(isMarket(msg.sender));
-      if(_isMarketFlushFund) {
-        marketFlushFundPLOT = marketFlushFundPLOT.add(_tokenAmountToPool);
-        marketData[msg.sender].marketFlushFund = marketFlushFundPLOT;
-      }
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
     }
     
@@ -557,7 +535,7 @@ contract MarketRegistry is Governed, Iupgradable {
         for(uint256 j = 0; j< marketCurrencyLength; j++) {
           _openMarkets[count] = marketCreationData[i][j].marketAddress;
           _marketTypes[count] = i;
-          _marketCurrencies[count] = marketCurrencies[j].currencyName;
+          _marketCurrencies[count] = IMarket(marketCurrencies[j]).marketCurrency();
           count++;
         }
       }
