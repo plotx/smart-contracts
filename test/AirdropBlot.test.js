@@ -390,8 +390,6 @@ contract("More cases for airdrop", async function([user1, user2]) {
 	it("Should Revert if deployed with past time as end date", async () => {
 		let  endDate = (await latestTime())/1-(24);
 		await assertRevert(Airdrop.new(user1, user1, endDate));
-		console.log(plotusToken.address);
-		console.log(BLOTInstance.address);
 	});
 	it("Should Revert if non owner calls airdropBLot, user array have different length than amount array", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
@@ -411,7 +409,7 @@ contract("More cases for airdrop", async function([user1, user2]) {
 		let  endDate = (await latestTime())/1+(24*3600);
 		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
 		await assertRevert(_airdrop.takeLeftOverPlot());
-		await assertRevert(_airdrop.takeLeftOverPlot(),{from:user2});
+		await assertRevert(_airdrop.takeLeftOverPlot({from:user2}));
 		await _airdrop.airdropBLot([user1],[toWei(10)]);
 		await assertRevert(_airdrop.airdropBLot([user1],[toWei(10)]));
 	});
