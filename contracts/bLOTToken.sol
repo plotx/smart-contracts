@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
@@ -24,8 +39,7 @@ contract BLOT is Iupgradable {
 
     mapping (address => uint256) internal _balances;
 
-    mapping (address => mapping (address => uint256)) private _allowances;
-
+    bool private initiated;
     uint256 private _totalSupply;
 
     /**
@@ -56,6 +70,8 @@ contract BLOT is Iupgradable {
      * @dev Initiates the BLOT with default minter address
      */
     function initiatebLOT(address _defaultMinter) public {
+        require(!initiated);
+        initiated = true;
         _addMinter(_defaultMinter);
     }
 
@@ -74,26 +90,13 @@ contract BLOT is Iupgradable {
     }
 
     /**
-     * @dev change operator address
-     * @param _newOperator address of new operator
-     */
-    function changeOperator(address _newOperator)
-        public
-        onlyOperator
-        returns (bool)
-    {
-        require(_newOperator != address(0), "New operator cannot be 0 address");
-        operator = _newOperator;
-        return true;
-    }
-
-    /**
      * @dev See `IERC20.transfer`.
      *
      * Requirements:
      *
      * - `recipient` cannot be the zero address.
      * - the caller must have a balance of at least `amount`.
+     * Transfer is restricted to minter only
      */
     function transfer(address recipient, uint256 amount)
         public
@@ -137,6 +140,7 @@ contract BLOT is Iupgradable {
      * Requirements:
      *
      * - the caller must have the `MinterRole`.
+     * - equivalant number of PLOT will be transferred from sender to this contract
      */
     function mint(address account, uint256 amount)
         public

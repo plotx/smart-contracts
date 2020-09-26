@@ -353,7 +353,6 @@ contract("Market", async function([user1, user2]) {
 		marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		
-		await assertRevert(BLOTInstance.changeOperator(user1));
 
 		let isMinter = await BLOTInstance.isMinter(user1);
 		

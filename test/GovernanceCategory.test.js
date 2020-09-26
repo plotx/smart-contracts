@@ -258,24 +258,6 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(plbalEth - plbalEthAfter, toWei(10));
         assert.equal(userbalEthAfter/1e18 - userbalEth/1e18, 10);
       });
-
-      it('Should not Change token operator if null address', async function() {
-
-        let actionHash = encode(
-          'changeOperator(address)',
-          ZERO_ADDRESS
-        );
-        await gvProposal(
-          22,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        assert.notEqual(await plotTok.operator(), ZERO_ADDRESS);
-      });
-
       
       it('Should Whitelist sponsor', async function() {
 
@@ -284,7 +266,7 @@ contract('Configure Global Parameters', accounts => {
           newAB
         );
         await gvProposal(
-          23,
+          22,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
@@ -294,22 +276,6 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(await ms.whitelistedSponsor(newAB), true);
       });
 
-      it('Should Change token operator', async function() {
-
-        let actionHash = encode(
-          'changeOperator(address)',
-          newAB
-        );
-        await gvProposal(
-          22,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        assert.equal(await plotTok.operator(), newAB);
-      });
 
       // it('Should Swap AB Member', async function() {
 
