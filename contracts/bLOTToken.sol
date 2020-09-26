@@ -26,7 +26,7 @@ contract BLOT is Iupgradable {
     using Roles for Roles.Role;
 
     string public constant name = "PlotXBonusToken";
-    string public constant symbol = "bLOT";
+    string public constant symbol = "bPLOT";
     uint8 public constant decimals = 18;
 
     Roles.Role private _minters;
