@@ -58,7 +58,7 @@ contract Staking {
     /**
      * @dev Emitted when `staker` withdraws their stake `value` tokens.
      */
-    event StakeWithdraw(address indexed staker, uint256 value);
+    event StakeWithdrawn(address indexed staker, uint256 value);
 
 
     /**
@@ -73,7 +73,7 @@ contract Staking {
      * @dev Constructor     
      * @param _stakeToken The address of stake Token       
      * @param _rewardToken The address of reward Token   
-     * @param _totalBlocks valid staking time after staking starts
+     * @param _totalBlocks valid staking blocks after staking starts
      * @param _totalRewardToBeDistributed total amount to be distributed as reward
      */
     constructor(
@@ -83,9 +83,9 @@ contract Staking {
         uint256 _totalRewardToBeDistributed,
         uint256 _stakingStart
     ) public {
-        require(_totalBlocks > 0, "should be positive");
+        require(_totalBlocks > 0, "Should be positive");
         require(_totalRewardToBeDistributed > 0, "Total reward can not be 0");
-        require(_stakingStart >= block.number, "Can not be past time");
+        require(_stakingStart >= block.number, "Can not be past block");
         require(_stakeToken != address(0), "Can not be null address");
         require(_rewardToken != address(0), "Can not be null address");
         stakeToken = ERC20(_stakeToken);
@@ -105,9 +105,9 @@ contract Staking {
         require(_amount > 0, "You need to stake a positive token amount");
         require(
             stakeToken.transferFrom(msg.sender, address(this), _amount),
-            "transferFrom failed, make sure you approved token transfer"
+            "TransferFrom failed, make sure you approved token transfer"
         );
-        require(uint(block.number).sub(stakingStartBlock) <= totalBlocks, "can not stake after staking period ends");
+        require(uint(block.number).sub(stakingStartBlock) <= totalBlocks, "Can not stake after staking block limit passed");
         uint newlyInterestGenerated = uint(block.number).sub(interestData.lastUpdated).mul(totalReward).div(totalBlocks);
         interestData.lastUpdated = block.number;
         updateGlobalYieldPerToken(newlyInterestGenerated);
@@ -171,7 +171,7 @@ contract Staking {
         withdrawInterest();
         updateStakeAndInterestData(msg.sender, _amount);
         require(stakeToken.transfer(msg.sender, _amount), "withdraw transfer failed");
-        emit StakeWithdraw(msg.sender, _amount);
+        emit StakeWithdrawn(msg.sender, _amount);
     }
     
     /**
@@ -204,20 +204,20 @@ contract Staking {
      * @dev Withdraws the sender Earned interest.
      */
     function withdrawInterest() public {
-        uint timeSinceLastUpdate = _timeSinceLastUpdate();
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
+        uint blockSinceLastUpdate = _blockSinceLastUpdate();
+        uint newlyInterestGenerated = blockSinceLastUpdate.mul(totalReward).div(totalBlocks);
         
         updateGlobalYieldPerToken(newlyInterestGenerated);
         uint256 interest = calculateInterest(msg.sender);
         Staker storage stakerData = interestData.stakers[msg.sender];
         stakerData.withdrawnToDate = stakerData.withdrawnToDate.add(interest);
-        require(rewardToken.transfer(msg.sender, interest), "withdraw interest transfer failed");
+        require(rewardToken.transfer(msg.sender, interest), "Withdraw interest transfer failed");
         emit InterestCollected(msg.sender, interest);
     }
 
     function updateGlobalYield() public {
-        uint timeSinceLastUpdate = _timeSinceLastUpdate();
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
+        uint blockSinceLastUpdate = _blockSinceLastUpdate();
+        uint newlyInterestGenerated = blockSinceLastUpdate.mul(totalReward).div(totalBlocks);
         updateGlobalYieldPerToken(newlyInterestGenerated);
     }
 
@@ -227,16 +227,16 @@ contract Staking {
       return (interestData.globalYieldPerToken, interestData.stakers[_staker].stakeBuyinRate);
     }
 
-    function _timeSinceLastUpdate() internal returns(uint256) {
-        uint timeSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
+    function _blockSinceLastUpdate() internal returns(uint256) {
+        uint blockSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
         if(uint(block.number).sub(stakingStartBlock) > totalBlocks)
         {
-            timeSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
+            blockSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
             interestData.lastUpdated = stakingStartBlock.add(totalBlocks);
         } else {
             interestData.lastUpdated = block.number;
         }
-        return timeSinceLastUpdate;
+        return blockSinceLastUpdate;
     }
 
     /**
@@ -329,18 +329,18 @@ contract Staking {
 
         unlockedReward = timeElapsed.mul(totalReward).div(totalBlocks);
 
-        uint timeSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
+        uint blockSinceLastUpdate = uint(block.number).sub(interestData.lastUpdated);
         if(uint(block.number).sub(stakingStartBlock) >= totalBlocks)
         {
-            timeSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
+            blockSinceLastUpdate = stakingStartBlock.add(totalBlocks).sub(interestData.lastUpdated);
         }
-        uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(totalBlocks);
+        uint newlyInterestGenerated = blockSinceLastUpdate.mul(totalReward).div(totalBlocks);
         uint updatedGlobalYield;
-        uint stakingTimeLeft = 0;
+        uint stakingBlocksLeft = 0;
         if(block.number < stakingStartBlock.add(totalBlocks)){
-         stakingTimeLeft = stakingStartBlock.add(totalBlocks).sub(block.number);
+         stakingBlocksLeft = stakingStartBlock.add(totalBlocks).sub(block.number);
         }
-        uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(totalBlocks);
+        uint interestGeneratedEnd = stakingBlocksLeft.mul(totalReward).div(totalBlocks);
         uint globalYieldEnd;
         if (interestData.globalTotalStaked == 0) {
             updatedGlobalYield = 0;
