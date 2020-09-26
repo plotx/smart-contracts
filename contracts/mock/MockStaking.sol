@@ -4,7 +4,7 @@ import "../Staking.sol";
 
 contract MockStaking is Staking {
 
-  constructor(address _stakeToken, address _rewardToken, uint256 stakingPeriod, uint256 _totalRewardToBeDistributed, uint256 startTime) public Staking(_stakeToken, _rewardToken, stakingPeriod, _totalRewardToBeDistributed, startTime) {
+  constructor(address _stakeToken, address _rewardToken, uint256 stakingPeriod, uint256 _totalRewardToBeDistributed, uint256 startTime, address vaultAdd) public Staking(_stakeToken, _rewardToken, stakingPeriod, _totalRewardToBeDistributed, startTime, vaultAdd) {
   }
 
 	function setBuyInRate(address _user, uint _value) public
