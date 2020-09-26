@@ -643,6 +643,43 @@ contract("InterestDistribution - Scenario based calculations for staking model",
         expect((stakerData[0]).toString()).to.be.equal(web3.utils.toWei("460", "ether")); 
     });
 
+    it("Staker 1 stakes 100 Token at 95th block", async () => {
+
+      let beforeStakeTokBal = await stakeTok.balanceOf(S1);
+
+      let beforeStakeTokBalStaking = await stakeTok.balanceOf(staking.address);
+
+      // increase block
+      await evm_mine(stakeStartTime/1+94-(await web3.eth.getBlock('latest')).number);
+
+      
+      await staking.stake(toWei("100"), {
+          from: S1
+        });
+
+        let afterStakeTokBal = await stakeTok.balanceOf(S1);
+
+        let afterStakeTokBalStaking = await stakeTok.balanceOf(staking.address);
+
+        expect((beforeStakeTokBal - afterStakeTokBal)).to.be.equal((toWei("100"))/1);
+        expect((afterStakeTokBalStaking - beforeStakeTokBalStaking)).to.be.equal((toWei("100"))/1); 
+
+        let stakerData = await staking.getStakerData(S1);
+        let interestData = await staking.interestData();
+        let yieldData = await staking.getYieldData(S1);
+
+          
+        expect((Math.floor(yieldData[0]/1e18)).toString()).to.be.equal("940");
+        expect((Math.floor(yieldData[1]/1e18)).toString()).to.be.equal("272682");
+
+        // globalTotalStake
+        expect((interestData[0]).toString()).to.be.equal(toWei("820")); 
+        
+
+        // totalStake of S1
+        expect((stakerData[0]).toString()).to.be.equal(web3.utils.toWei("360", "ether")); 
+    });
+
     it("Computing updated yield data at 100th block", async () => {
 
       // increase block
@@ -650,15 +687,15 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
       let statsDta = await staking.getStatsData(S1);
 
-      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("820");
       expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
-      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("74831");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("76779");
       expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("495000");
-      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("73026");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("74584");
 
       statsDta = await staking.getStatsData(S2);
 
-      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("820");
       expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
       expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("0");
       expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("495000");
@@ -666,11 +703,11 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
       statsDta = await staking.getStatsData(S3);
 
-      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("720");
+      expect((Math.floor((statsDta[0])/1e18)).toString()).to.be.equal("820");
       expect((Math.floor((statsDta[1])/1e18)).toString()).to.be.equal("500000");
-      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("150165");
+      expect((Math.floor((statsDta[2])/1e18)).toString()).to.be.equal("148217");
       expect((Math.floor((statsDta[3])/1e18)).toString()).to.be.equal("495000");
-      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("146970");
+      expect((Math.floor((statsDta[4])/1e18)).toString()).to.be.equal("145412");
 
          
     
@@ -684,17 +721,17 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
       
           
-      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("974");
+      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("970");
 
       // globalTotalStake
-      expect((interestData[0]).toString()).to.be.equal(web3.utils.toWei("720", "ether")); 
+      expect((interestData[0]).toString()).to.be.equal(web3.utils.toWei("820", "ether")); 
     
       
-      expect((Math.floor((await staking.calculateInterest(S1))/1e18)).toString()).to.be.equal("74831");
+      expect((Math.floor((await staking.calculateInterest(S1))/1e18)).toString()).to.be.equal("76779");
       
       expect((Math.floor((await staking.calculateInterest(S2))/1e18)).toString()).to.be.equal("0");
       
-      expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("150165");
+      expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("148217");
     });
   });
 
@@ -711,7 +748,7 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       // increase time
       await evm_mine(50);
 
-      await staking.withdrawStakeAndInterest(toWei("260"), {
+      await staking.withdrawStakeAndInterest(toWei("360"), {
         from: S1
       });
 
@@ -728,18 +765,18 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       let afterstakeTokBalStaking = await stakeTok.balanceOf(staking.address);
       let afterPlotBalStaking = await plotusToken.balanceOf(staking.address);
 
-      expect((Math.floor((afterPlotBalS1 - beforePlotBalS1)/1e18)).toString()).to.be.equal("74831");
-      expect((Math.floor((afterPlotBalS3 - beforePlotBalS3)/1e18)).toString()).to.be.equal("150165");
+      expect((Math.floor((afterPlotBalS1 - beforePlotBalS1)/1e18)).toString()).to.be.equal("76779");
+      expect((Math.floor((afterPlotBalS3 - beforePlotBalS3)/1e18)).toString()).to.be.equal("148217");
       expect((Math.floor((afterPlotBalStaking)/1e18)).toString()).to.be.equal("50000"); 
 
-      expect((Math.floor((afterstakeTokBalS1 - beforestakeTokBalS1)/1e18)).toString()).to.be.equal("260");
+      expect((Math.floor((afterstakeTokBalS1 - beforestakeTokBalS1)/1e18)).toString()).to.be.equal("360");
       expect((Math.floor((afterstakeTokBalS3 - beforestakeTokBalS3)/1e18)).toString()).to.be.equal("460");
       expect((Math.floor((afterstakeTokBalStaking)/1e18)).toString()).to.be.equal("0");
       
       let interestData = await staking.interestData();
       
           
-      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("974");
+      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("970");
 
       // globalTotalStake
       expect((interestData[0]).toString()).to.be.equal(toWei("0")); 
