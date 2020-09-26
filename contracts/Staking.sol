@@ -44,6 +44,9 @@ contract Staking {
 
     uint public totalReward;
 
+    // unclaimed reward will be trasfered to this account
+    address public vaultAddress; 
+
     // 10^18
     uint256 constant DECIMAL1e18 = 10**18;
 
@@ -53,12 +56,12 @@ contract Staking {
     /**
      * @dev Emitted when `staker` stake `value` tokens.
      */
-    event Staked(address indexed staker, uint256 value);
+    event Staked(address indexed staker, uint256 value, uint256 _globalYieldPerToken);
 
     /**
      * @dev Emitted when `staker` withdraws their stake `value` tokens.
      */
-    event StakeWithdrawn(address indexed staker, uint256 value);
+    event StakeWithdrawn(address indexed staker, uint256 value, uint256 _globalYieldPerToken);
 
 
     /**
@@ -66,7 +69,8 @@ contract Staking {
      */
     event InterestCollected(
         address staker,
-        uint256 _value 
+        uint256 _value,
+        uint256 _globalYieldPerToken
     );
 
     /**     
@@ -81,19 +85,22 @@ contract Staking {
         address _rewardToken,
         uint256 _totalBlocks,
         uint256 _totalRewardToBeDistributed,
-        uint256 _stakingStart
+        uint256 _stakingStart,
+        address _vaultAdd
     ) public {
         require(_totalBlocks > 0, "Should be positive");
         require(_totalRewardToBeDistributed > 0, "Total reward can not be 0");
         require(_stakingStart >= block.number, "Can not be past block");
         require(_stakeToken != address(0), "Can not be null address");
         require(_rewardToken != address(0), "Can not be null address");
+        require(_vaultAdd != address(0), "Can not be null address");
         stakeToken = ERC20(_stakeToken);
         rewardToken = PlotXToken(_rewardToken);
         stakingStartBlock = _stakingStart;
         interestData.lastUpdated = _stakingStart;
         totalBlocks = _totalBlocks;
         totalReward = _totalRewardToBeDistributed;
+        vaultAddress = _vaultAdd;
     }
 
     /**
@@ -112,7 +119,7 @@ contract Staking {
         interestData.lastUpdated = block.number;
         updateGlobalYieldPerToken(newlyInterestGenerated);
         updateStakeData(msg.sender, _amount);
-        emit Staked(msg.sender, _amount);
+        emit Staked(msg.sender, _amount, interestData.globalYieldPerToken);
     }
 
     /**
@@ -171,7 +178,7 @@ contract Staking {
         withdrawInterest();
         updateStakeAndInterestData(msg.sender, _amount);
         require(stakeToken.transfer(msg.sender, _amount), "withdraw transfer failed");
-        emit StakeWithdrawn(msg.sender, _amount);
+        emit StakeWithdrawn(msg.sender, _amount, interestData.globalYieldPerToken);
     }
     
     /**
@@ -212,7 +219,7 @@ contract Staking {
         Staker storage stakerData = interestData.stakers[msg.sender];
         stakerData.withdrawnToDate = stakerData.withdrawnToDate.add(interest);
         require(rewardToken.transfer(msg.sender, interest), "Withdraw interest transfer failed");
-        emit InterestCollected(msg.sender, interest);
+        emit InterestCollected(msg.sender, interest, interestData.globalYieldPerToken);
     }
 
     function updateGlobalYield() public {
@@ -289,7 +296,10 @@ contract Staking {
     function updateGlobalYieldPerToken(
         uint256 _interestGenerated
     ) internal {
-        if (interestData.globalTotalStaked == 0) return;
+        if (interestData.globalTotalStaked == 0) {
+            require(rewardToken.transfer(vaultAddress, _interestGenerated), "Transfer failed while trasfering to vault");
+            return;
+        }
         interestData.globalYieldPerToken = interestData.globalYieldPerToken.add(
             _interestGenerated
                 .mul(DECIMAL1e18) 

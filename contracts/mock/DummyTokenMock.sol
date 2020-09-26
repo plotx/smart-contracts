@@ -73,7 +73,7 @@ contract DummyTokenMock is ERC20 {
         returns (bool)
     {
         // _transferFrom(from, to, value);
-        return false;
+        return retBit;
     }
 
     /**
