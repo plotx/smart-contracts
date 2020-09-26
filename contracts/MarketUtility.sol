@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.5.7;
 
 import "./external/uniswap/solidity-interface.sol";
@@ -120,22 +135,22 @@ contract MarketUtility {
         external
         onlyAuthorized
     {
-        if (code == "SW") {
+        if (code == "SW") { // Stake weightage
             require(value <= 100, "Value must be less or equal to 100");
             STAKE_WEIGHTAGE = value;
-        } else if (code == "SWMA") {
+        } else if (code == "SWMA") { // Minimum amount required for stake weightage
             STAKE_WEIGHTAGE_MIN_AMOUNT = value;
-        } else if (code == "MTED") {
+        } else if (code == "MTED") { // Minimum time elapsed divisor
             minTimeElapsedDivisor = value;
-        } else if (code == "MINBET") {
+        } else if (code == "MINBET") { // Minimum predictionamount
             minBet = value;
-        } else if (code == "PDEC") {
+        } else if (code == "PDEC") { // Position's Decimals
             positionDecimals = value;
-        } else if (code == "MINSTM") {
+        } else if (code == "MINSTM") { // Min stake required for applying multiplier
             minStakeForMultiplier = value;
-        } else if (code == "RPERC") {
+        } else if (code == "RPERC") { // Risk percentage
             riskPercentage = value;
-        } else if (code == "TSDISP") {
+        } else if (code == "TSDISP") { // Amount of tokens to be staked for raising a dispute
             tokenStakeForDispute = value;
         } else {
             revert("Invalid code");
@@ -150,10 +165,10 @@ contract MarketUtility {
         onlyAuthorized
     {
         require(value != address(0), "Value cannot be address(0)");
-        if (code == "CLORCLE") {
+        if (code == "CLORCLE") { // Chainlink Eth oracle address
             chainLinkPriceOracle = value;
             chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
-        } else if (code == "UNIFAC") {
+        } else if (code == "UNIFAC") { // Uniswap factory address
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotToken, weth);
         } else {

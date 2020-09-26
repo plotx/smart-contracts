@@ -1,17 +1,17 @@
-// /* Copyright (C) 2017 GovBlocks.io
+/* Copyright (C) 2020 PlotX.io
 
-//   This program is free software: you can redistribute it and/or modify
-//     it under the terms of the GNU General Public License as published by
-//     the Free Software Foundation, either version 3 of the License, or
-//     (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-//   This program is distributed in the hope that it will be useful,
-//     but WITHOUT ANY WARRANTY; without even the implied warranty of
-//     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-//     GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
-//   You should have received a copy of the GNU General Public License
-//     along with this program.  If not, see http://www.gnu.org/licenses/ */
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
 
 pragma solidity 0.5.7;
 
@@ -429,23 +429,23 @@ contract Governance is IGovernance, Iupgradable {
     {
         codeVal = code;
 
-        if (code == "GOVHOLD") {
+        if (code == "GOVHOLD") { // Governance token holding time
             val = tokenHoldingTime / (1 days);
-        } else if (code == "MAXDRFT") {
+        } else if (code == "MAXDRFT") { // Maximum draft time for proposals
             val = maxDraftTime / (1 days);
-        } else if (code == "ACWT") {
+        } else if (code == "ACWT") { //Action wait time
             val = actionWaitingTime / (1 hours);
-        } else if (code == "MINLOCDR") {
+        } else if (code == "MINLOCDR") { // Minimum locked tokens for DR voting
             val = minTokenLockedForDR;
-        } else if (code == "TLOCDR") {
+        } else if (code == "TLOCDR") { // Lock period required for DR voting
             val = lockTimeForDR / (1 days);
-        } else if (code == "REJAUTH") {
+        } else if (code == "REJAUTH") { // Authorized role to stop executing actions
             val = actionRejectAuthRole;
-        } else if (code == "REJCOUNT") {
+        } else if (code == "REJCOUNT") { // Majorty percentage for action rejection
             val = votePercRejectAction;
-        } else if (code == "MAXVW") {
+        } else if (code == "MAXVW") { // Max vote weight percentage
             val = maxVoteWeigthPer;
-        } else if (code == "ABMAJ") {
+        } else if (code == "ABMAJ") { // Advisory board majority percentage
             val = advisoryBoardMajority;
         }
     }

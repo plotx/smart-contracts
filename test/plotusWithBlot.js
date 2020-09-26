@@ -330,7 +330,6 @@ contract("Market", async function([user1, user2]) {
 		// assert.equal(operatorNow, "0x0000000000000000000000000000000000000000");
 
 		// let receipt = await BLOTInstance.changeOperator.call(user1);
-		await assertRevert(BLOTInstance.changeOperator(user1));
 		// operatorNow = await BLOTInstance.operator();
 		// assert.equal(receipt, true);
 		// assert.equal(operatorNow, user1);

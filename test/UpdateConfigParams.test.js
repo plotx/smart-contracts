@@ -201,9 +201,6 @@ contract('Configure Global Parameters', accounts => {
       it('Should update Lock period for Stake multiplier', async function() {
         await updateParameter(14, 2, 'SMLP', tc, 'uint', '2');
       });
-      it('Should update Burn Upto Limit', async function() {
-        await updateParameter(14, 2, 'BRLIM', tc, 'uint', '2');
-      });
       it('Should not update if parameter code is incorrect', async function() {
         await updateInvalidParameter(14, 2, 'EPTIM', tc, 'uint', '86400');
       });
