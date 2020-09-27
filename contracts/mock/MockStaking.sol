@@ -23,7 +23,7 @@ contract MockStaking is Staking {
   }
 
   function setStarttime() public {
-    stakingStartBlock = block.number;
+    stakingStartTime = now;
   }
 
 }
