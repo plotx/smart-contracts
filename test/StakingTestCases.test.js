@@ -665,7 +665,7 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
           
         expect((Math.floor(yieldData[0]/1e18)).toString()).to.be.equal("15");
-        expect((Math.floor(yieldData[1]/1e18)).toString()).to.be.equal("1687  ");
+        expect((Math.floor(yieldData[1]/1e18)).toString()).to.be.equal("1687");
 
         // globalTotalStake
         expect((interestData[0]).toString()).to.be.equal(toWei("820")); 
@@ -714,17 +714,17 @@ contract("InterestDistribution - Scenario based calculations for staking model",
 
       
           
-      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("694");
+      expect((Math.floor(interestData[1]/1e18)).toString()).to.be.equal("611");
 
       // globalTotalStake
-      expect((interestData[0]).toString()).to.be.equal(toWei("720", "ether")); 
+      expect((interestData[0]).toString()).to.be.equal(toWei("820", "ether")); 
     
       
-      expect((Math.floor((await staking.calculateInterest(S1))/1e18)).toString()).to.be.equal("180475");
+      expect((Math.floor((await staking.calculateInterest(S1))/1e18)).toString()).to.be.equal("218567");
       
       expect((Math.floor((await staking.calculateInterest(S2))/1e18)).toString()).to.be.equal("0");
       
-      expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("319250");
+      expect((Math.floor((await staking.calculateInterest(S3))/1e18)).toString()).to.be.equal("281158");
     });
   });
 
@@ -872,6 +872,10 @@ contract("InterestDistribution - Scenario based calculations for staking model",
       let nowTime = await latestTime();
       await assertRevert(Staking.new(stakeTok.address, nullAddress, 1, 120, nowTime,vaultAdd));
     });
+    it("Should Revert if vault address is null", async () => {
+      let nowTime = await latestTime();
+      await assertRevert(Staking.new(stakeTok.address, plotusToken.address, 1, 120, nowTime, nullAddress));
+    });
   });
 
 });
@@ -904,7 +908,7 @@ contract("InterestDistribution - Scenario5 All staker unstakes before stake peri
         from: S3
       });
 
-      stakeStartTime = (await staking.stakingStartBlock())/1;
+      stakeStartTime = (await staking.stakingStartTime())/1;
       
     });
   describe('All staker unstakes before staking period and no one stakes', function() {
@@ -929,9 +933,9 @@ contract("InterestDistribution - Scenario5 All staker unstakes before stake peri
 
         let afterStakeTokBalStaking = await stakeTok.balanceOf(staking.address);
 
-        expect((beforeStakeTokBal - afterStakeTokBal)).to.be.equal((toWei("100", "ether"))/1);
-        expect((afterStakeTokBalStaking - beforeStakeTokBalStaking)).to.be.equal((toWei("100", "ether"))/1); 
-        expect((vaultBalAfter - vaultBal)).to.be.equal((toWei("13698", "ether"))/1);
+        expect((beforeStakeTokBal - afterStakeTokBal)).to.be.equal((toWei("100"))/1);
+        expect((afterStakeTokBalStaking - beforeStakeTokBalStaking)).to.be.equal((toWei("100"))/1); 
+        expect((Math.floor((vaultBalAfter - vaultBal)/1e18)).toString()).to.be.equal("13698");
 
 
         let stakerData = await staking.getStakerData(S1);
@@ -944,11 +948,11 @@ contract("InterestDistribution - Scenario5 All staker unstakes before stake peri
         expect((yieldData[1]).toString()).to.be.equal("0");
 
         // globalTotalStake
-        expect((interestData[0]).toString()).to.be.equal(toWei("100", "ether")); 
+        expect((interestData[0]).toString()).to.be.equal(toWei("100")); 
         
 
         // totalStake of S1
-        expect((stakerData[0]).toString()).to.be.equal(toWei("100", "ether")); 
+        expect((stakerData[0]).toString()).to.be.equal(toWei("100")); 
     });
 
     it("Staker 2 stakes 50 Token at 4320000th seconds", async () => {
