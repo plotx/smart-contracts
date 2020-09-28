@@ -196,18 +196,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Edits the details of an existing proposal
-     * To implement the governance interface
-     */
-    function updateProposal(
-        uint256 _proposalId,
-        string calldata _proposalTitle,
-        string calldata _proposalSD,
-        string calldata _proposalDescHash
-    ) external {
-    }
-
-    /**
      * @dev Categorizes proposal to proceed further. Categories shows the proposal objective.
      */
     function categorizeProposal(
@@ -217,22 +205,6 @@ contract Governance is IGovernance, Iupgradable {
     ) external voteNotStarted(_proposalId) isAllowedToCategorize {
         _categorizeProposal(_proposalId, _categoryId, _incentive);
     }
-
-    /**
-     * @dev Initiates add solution
-     * To implement the governance interface
-     */
-    function addSolution(
-        uint256,
-        string calldata,
-        bytes calldata
-    ) external {}
-
-    /**
-     * @dev Opens proposal for voting
-     * To implement the governance interface
-     */
-    function openProposalForVoting(uint256) external {}
 
     /**
      * @dev Submit proposal with solution
@@ -625,18 +597,6 @@ contract Governance is IGovernance, Iupgradable {
             ) return true;
         }
     }
-
-    /**
-     * @dev Pauses a proposal
-     * To implement govblocks interface
-     */
-    function pauseProposal(uint256) public {}
-
-    /**
-     * @dev Resumes a proposal
-     * To implement govblocks interface
-     */
-    function resumeProposal(uint256) public {}
 
     /**
      * @dev Checks If the proposal voting time is up and it's ready to close

@@ -17,7 +17,6 @@ pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
-import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/Iupgradable.sol";
@@ -25,7 +24,6 @@ import "./interfaces/ITokenController.sol";
 
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     ITokenController internal tokenController;
-    IGovernance internal governance;
     struct MemberRoleDetails {
         uint256 memberCounter;
         mapping(address => uint256) memberIndex;
@@ -74,7 +72,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         tokenController = ITokenController(
             masterInstance.getLatestAddress("TC")
         );
-        governance = IGovernance(masterInstance.getLatestAddress("GV"));
     }
 
     /**

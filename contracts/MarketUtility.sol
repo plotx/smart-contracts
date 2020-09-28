@@ -38,7 +38,6 @@ contract MarketUtility {
     uint256 internal minPredictionAmount;
     uint256 internal maxPredictionAmount;
     uint256 internal positionDecimals;
-    uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
@@ -100,7 +99,6 @@ contract MarketUtility {
         minPredictionAmount = 1e15;
         maxPredictionAmount = 28 ether;
         positionDecimals = 1e2;
-        multiplier = 10;
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
         tokenStakeForDispute = 100 ether;

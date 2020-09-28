@@ -42,14 +42,6 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     address = await nxms.getLatestAddress(toHex("MR"));
     mr = await MemberRoles.at(address);
     tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
-    //To cover functions in govblocks interface, which are not implemented by NexusMutual
-    await gv.addSolution(0, "", "0x");
-    await gv.openProposalForVoting(0);
-    await gv.pauseProposal(0);
-    await gv.resumeProposal(0);
-    //
-    // await mr.payJoiningFee(ab1, { value: 2000000000000000 });
-    // await mr.kycVerdict(ab1, true);
   });
 
   it("15.1 Should be able to change tokenHoldingTime manually", async function () {
