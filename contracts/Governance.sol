@@ -746,6 +746,14 @@ contract Governance is IGovernance, Iupgradable {
             ProposalStatus.AwaitingSolution
         );
 
+        if (_incentive > 0) {
+            tokenInstance.transferFrom(
+                address(marketRegistry),
+                address(this),
+                _incentive
+            );
+        }
+
         emit ProposalCategorized(_proposalId, msg.sender, _categoryId);
     }
 
@@ -1068,10 +1076,9 @@ contract Governance is IGovernance, Iupgradable {
             }
         }
 
-        if (proposalVoteTally[_proposalId].voters > 0 && allProposalData[_proposalId].commonIncentive > 0) {
-            tokenInstance.transferFrom(
+        if (proposalVoteTally[_proposalId].voters == 0 && allProposalData[_proposalId].commonIncentive > 0) {
+            tokenInstance.transfer(
                 address(marketRegistry),
-                address(this),
                 allProposalData[_proposalId].commonIncentive
             );
         }
