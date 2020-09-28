@@ -68,6 +68,6 @@ contract IMarketRegistry {
     * @param _winningOption The winning option of the market.
     * @param _closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint _tokenAmountToPool, uint roundId) public {
+    function callMarketResultEvent(uint[] memory _totalReward, uint _winningOption, uint _closeValue, uint roundId) public {
     }
 }

@@ -255,7 +255,7 @@ contract Market {
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
-      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, tokenAmountToPool, _roundId);
+      marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, _roundId);
     }
 
     function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
