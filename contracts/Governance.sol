@@ -376,6 +376,11 @@ contract Governance is IGovernance, Iupgradable {
 
         require(!isActionRejected[_proposalId][msg.sender]);
 
+        require(
+            keccak256(proposalCategory.categoryActionHashes(allProposalData[_proposalId].category))
+            != keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
+        );
+
         isActionRejected[_proposalId][msg.sender] = true;
         actionRejectedCount[_proposalId]++;
         emit ActionRejected(_proposalId, msg.sender);
