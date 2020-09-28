@@ -278,8 +278,8 @@ contract MarketRegistry is Governed, Iupgradable {
       require(userData[msg.sender].marketsCreated > 0);
       uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
       if(plotToken.balanceOf(address(this)) > pendingReward) {
-        _transferAsset(address(plotToken), msg.sender, pendingReward);
         delete userData[msg.sender].marketsCreated;
+        _transferAsset(address(plotToken), msg.sender, pendingReward);
       }
     }
 
