@@ -48,7 +48,8 @@ contract('Configure Global Parameters', accounts => {
       pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
       marketConfig = await MarketConfig.at(await pl.marketUtility());
       plotTok = await PlotusToken.deployed();
-      await pl.sendTransaction({from: ab1, value: toWei(100)});
+      await pl.sendTransaction({from: ab1, value: toWei(5)});
+      await pl.sendTransaction({from: newAB, value: toWei(10)});
       await plotTok.transfer(pl.address, toWei(20));
 
     });

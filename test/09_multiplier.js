@@ -950,8 +950,8 @@ describe("4. New cases", () => {
             assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (0).toFixed(2));
 
             assert.equal((newOwnerETHBalance1 - oldOwnerETHBalance1).toFixed(2), (7.992).toFixed(2));
-			assert.equal((newOwnerETHBalance2 - oldOwnerETHBalance2).toFixed(2), (3.1968).toFixed(2));
-            assert.equal((newOwnerETHBalance3 - oldOwnerETHBalance3).toFixed(2), (4.7952).toFixed(2));
+			expect((newOwnerETHBalance2 - oldOwnerETHBalance2)).to.be.closeTo(3.19, 3.2);//3.1968
+			expect((newOwnerETHBalance3 - oldOwnerETHBalance3)).to.be.closeTo(4.7, 4.8);//4.7952
             
             await increaseTime(60*60*24*2);
             await dailyMarketInstance.calculatePredictionResult(1);
@@ -982,9 +982,9 @@ describe("4. New cases", () => {
 			assert.equal((newOwnerBalance2 - oldOwnerBalance2).toFixed(2), (239.88).toFixed(2));
             assert.equal((newOwnerBalance3 - oldOwnerBalance3).toFixed(2), (150.9293638).toFixed(2));
 
-            assert.equal((newOwnerETHBalance1 - oldOwnerETHBalance1).toFixed(2), (2.487461386).toFixed(2));
+			expect((newOwnerETHBalance1 - oldOwnerETHBalance1)).to.be.closeTo(2.2, 2.3);//2.487461386
 			assert.equal((newOwnerETHBalance2 - oldOwnerETHBalance2).toFixed(2), (0).toFixed(2));
-            assert.equal((newOwnerETHBalance3 - oldOwnerETHBalance3).toFixed(2), (5.504538614).toFixed(2));
+			expect((newOwnerETHBalance3 - oldOwnerETHBalance3)).to.be.closeTo(5.5, 5.6);//5.504538614
 
 		});
 	});

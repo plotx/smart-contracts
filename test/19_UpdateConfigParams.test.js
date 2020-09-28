@@ -123,25 +123,25 @@ contract('Configure Global Parameters', accounts => {
 
       it('Should update STAKE WEIGHTAGE', async function() {
         await updateParameter(20, 2, 'SW', pl, 'configUint', 60);
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
         assert.equal(configData[0], 60, 'Not updated');
       });
 
       it('Should not update STAKE WEIGHTAGE if passed value > 100', async function() {
         await updateParameter(20, 2, 'SW', pl, 'configUint', 200);
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
         assert.notEqual(configData[0], 200, 'updated');
       });
 
       it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
         await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
         assert.equal(configData[1], toWei(100), 'Not updated');
       });
 
       it('Should update Min Time Elapsed Divisor', async function() {
         await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address, true);
+        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
         assert.equal(configData[3], toWei(10), 'Not updated');
       });
 

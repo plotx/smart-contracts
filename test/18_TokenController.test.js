@@ -1,5 +1,5 @@
 const Master = artifacts.require("Master");
-const TokenController = artifacts.require("TokenController");
+const TokenController = artifacts.require("MockTokenController");
 const PlotusToken = artifacts.require("MockPLOT.sol");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');

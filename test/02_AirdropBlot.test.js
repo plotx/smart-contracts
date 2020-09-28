@@ -248,12 +248,12 @@ contract("Airdrop", async function([user1, user2, user3, user4, user5, user6, us
 		await increaseTime(36001);
 		await marketInstance.calculatePredictionResult(1);
 		await increaseTime(36001);
-		console.log((await web3.eth.getBalance(marketInstance.address))/1)
+		// console.log((await web3.eth.getBalance(marketInstance.address))/1)
 		// plotus contract balance eth balance
 		plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceBefore), "89920000000000000");
+		assert.equal(parseFloat(plotusBalanceBefore), "10000000000000000");
 		lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (820.05).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (832.5835).toFixed(2));
 
 		// lot supply , lot balance of market
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
@@ -261,9 +261,9 @@ contract("Airdrop", async function([user1, user2, user3, user4, user5, user6, us
 
 
 		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceAfter), 89920000000000000);
+		assert.equal(parseFloat(plotusBalanceAfter), 10000000000000000);
 		lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(Math.round(parseFloat(web3.utils.fromWei(lotBalanceAfter))), (820));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (832.5835).toFixed(2));
 		// assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
 		// commented by Parv (as asserts already added above)
 		// lotBalanceBefore = lotBalanceBefore / 1;
@@ -285,7 +285,7 @@ contract("Airdrop", async function([user1, user2, user3, user4, user5, user6, us
 			return returnAmountInEth;
 		};
 
-		const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
+		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
 		// calulate  rewards for every user in eth
 
 		// console.log("Rewards in Eth");
@@ -299,20 +299,8 @@ contract("Airdrop", async function([user1, user2, user3, user4, user5, user6, us
 	});
 	it("3.Check User Recived The appropriate amount", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
-		const totalReturnLotExpexted = [
-			79.96186348,
-			0,
-			125.937,
-			0,
-			130.97,
-			483.182,
-			0,
-			0,
-			0,
-			0,
-		];
-		const returnInEthExpected = [0, 0, 0, 0, 1.834118129, 5.078961871, 0.5994, 1.1988, 0.7992, 0.3996];
-
+		const totalReturnLotExpexted = [79.96, 0, 125.937, 0, 133.6431475, 493.0463525, 0, 0, 0, 0];
+		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
 		for (let account of accounts) {
 			beforeClaim = await web3.eth.getBalance(account);
 			beforeClaimToken = await plotusToken.balanceOf(account);
