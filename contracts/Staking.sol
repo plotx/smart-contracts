@@ -114,7 +114,7 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "TransferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "Can not stake after staking block limit passed");
+        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "Can not stake after staking period passed");
         uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(stakingPeriod);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
