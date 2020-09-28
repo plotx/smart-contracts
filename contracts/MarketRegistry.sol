@@ -81,6 +81,7 @@ contract MarketRegistry is Governed, Iupgradable {
     mapping(uint64 => address) disputeProposalId;
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal marketInitiater;
     address public tokenController;
 
     address[] marketCurrencies;
@@ -116,10 +117,11 @@ contract MarketRegistry is Governed, Iupgradable {
 
     /**
     * @dev Initialize the PlotX MarketRegistry.
+    * @param _defaultAddress Address authorized to start initial markets
     * @param _marketUtility The address of market config.
     * @param _plotToken The instance of PlotX token.
     */
-    function initiate(address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
+    function initiate(address _defaultAddress, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
       marketCreationFallbackTime = 15 minutes;
       marketCreationIncentive = 10 ether;
@@ -128,13 +130,15 @@ contract MarketRegistry is Governed, Iupgradable {
       tokenController = tcAddress;
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
+      marketInitiater = _defaultAddress;
       plotToken.approve(address(governance), ~uint256(0));
     }
 
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external payable {
+    function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external {
+      require(marketInitiater == msg.sender);
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
       _addNewMarketCurrency(_btcMarketImplementation);

@@ -56,11 +56,6 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
-		//To cover functions in govblocks interface, which are not implemented by NexusMutual
-		await gv.addSolution(0, "", "0x");
-		await gv.openProposalForVoting(0);
-		await gv.pauseProposal(0);
-		await gv.resumeProposal(0);
 		await assertRevert(pl.setMasterAddress());
 		// try {
 		// 	await (gv.setMasterAddress());
@@ -69,7 +64,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1,1));
 		await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now() / 1000), mem1, plotusToken.address));
-		await assertRevert(pl.initiate(mem1, mem1, [mem1, mem1, mem1, mem1]));
+		await assertRevert(pl.initiate(mem1, mem1, mem1, [mem1, mem1, mem1, mem1]));
 		await plotusToken.transfer(mem1, toWei(100));
 		await plotusToken.transfer(mem2, toWei(100));
 		await plotusToken.transfer(mem3, toWei(100));
@@ -98,7 +93,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
 		await gv.closeProposal(pId);
 		let openMarketsBefore = await pl.getOpenMarkets();
-		await increaseTime(604810);
+		await increaseTime(604850);
 		await gv.triggerAction(pId);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
@@ -127,8 +122,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.claimReturn(ab1);
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
-		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000000", 1, 1);
-		await marketInstance.placePrediction(plotusToken.address, "8000000000000000000000000", 1, 1);
+		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
+		await marketInstance.placePrediction(plotusToken.address, "8000000000000000000000", 1, 1);
 		await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "10000000000000000000", 1, 1, { value: 1000 }));
 		await assertRevert(marketInstance.calculatePredictionResult(1));
 		await assertRevert(marketInstance.calculatePredictionResult(0));
@@ -266,17 +261,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
-		//To cover functions in govblocks interface, which are not implemented by NexusMutual
-		await gv.addSolution(0, "", "0x");
-		await gv.openProposalForVoting(0);
-		await gv.pauseProposal(0);
-		await gv.resumeProposal(0);
 		await assertRevert(pl.setMasterAddress());
-		// try {
-		// 	await (gv.setMasterAddress());
-		// } catch (e) {
-		// 	console.log(e);
-		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1,1));
 
 		await plotusToken.transfer(mem1, toWei(100));

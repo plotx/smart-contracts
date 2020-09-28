@@ -26,7 +26,7 @@ contract IMarketRegistry {
     * @param _marketConfig The address of market config.
     * @param _plotToken The address of PLOT token.
     */
-    function initiate(address _marketConfig, address _plotToken, address payable[] memory _configParams) public;
+    function initiate(address _defaultAddress, address _marketConfig, address _plotToken, address payable[] memory _configParams) public;
 
     /**
     * @dev Create proposal if user wants to raise the dispute.

@@ -49,7 +49,7 @@ contract Master is Governed {
     function initiateMaster(
         address[] calldata _implementations,
         address _token,
-        address _defaultbLOTMinter,
+        address _defaultAddress,
         address _marketUtiliy,
         address payable[] calldata _configParams,
         address _vesting
@@ -83,11 +83,12 @@ contract Master is Governed {
         _setMasterAddress();
 
         IMarketRegistry(contractAddress["PL"]).initiate(
+            _defaultAddress,
             _marketUtiliy,
             _token,
             _configParams
         );
-        IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
+        IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
     }
 
