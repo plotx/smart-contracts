@@ -365,7 +365,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 				diff = diff / conv;
 				diff = diff.toFixed(2);
 				expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
-				assert.equal(diff, expectedInEth);
+				assert.equal(diff*1, expectedInEth*1);
 
 				diffToken = afterClaimToken - beforeClaimToken;
 				diffToken = diffToken / conv;

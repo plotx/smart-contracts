@@ -101,7 +101,7 @@ contract('Master', function(accounts) {
     });
 
     it('Sending funds to funds to PL', async function() {
-      await pl.sendTransaction({from: owner, value: toWei(100)});
+      await pl.sendTransaction({from: owner, value: toWei(10)});
       await plotTok.transfer(pl.address, toWei(1));
       await plotTok.transfer(tc.address, toWei(1));
     });
