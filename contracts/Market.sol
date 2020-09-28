@@ -255,6 +255,8 @@ contract Market {
       }
       _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
       _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
+      delete ethCommissionAmount;
+      delete plotCommissionAmount;
       marketRegistry.callMarketResultEvent(rewardToDistribute, marketSettleData.WinningOption, _value, _roundId);
     }
 
