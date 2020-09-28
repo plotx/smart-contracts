@@ -1,6 +1,6 @@
 
 <h1><a id="PLOTX"></a>PlotX SMART CONTRACTS</h1>
-<p>Smart contracts for PlotX - Curated pprediction markets for crypto traders . https://plotx.io/.</p>
+<p>Smart contracts for PlotX - Curated prediction markets for crypto traders . https://plotx.io/.</p>
 
 
 ## Getting Started

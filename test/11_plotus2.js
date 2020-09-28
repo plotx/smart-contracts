@@ -15,7 +15,7 @@ const increaseTime = require("./utils/increaseTime.js").increaseTime;
 // swap ether with LOT
 
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
-	it("Place the bets with ether", async () => {
+	it("Place the prediction with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		plotusToken = await PlotusToken.deployed();
@@ -122,16 +122,16 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		});
 	});
 
-	it("1.0 Bet Points allocated properly in ether", async () => {
+	it("1.0 Prediction Points allocated properly in ether", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
-		getBetPoints = async (user, option, expected) => {
-			// return bet points of user
-			let betPoins = await marketInstance.getUserPredictionPoints(user, option);
-			betPoins = betPoins / 1;
-			return betPoins;
+		getpredictionPoints = async (user, option, expected) => {
+			// return Prediction points of user
+			let predictionPoints = await marketInstance.getUserPredictionPoints(user, option);
+			predictionPoints = predictionPoints / 1;
+			return predictionPoints;
 		};
-		betPointsExpected = [
+		predictionPointsExpected = [
 			1.755503471,
 			83.41726908,
 			11.21889102,
@@ -145,10 +145,10 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		];
 
 		for (let index = 0; index < 10; index++) {
-			let betPoints = await getBetPoints(accounts[index], options[index]);
-			betPoints = betPoints / 1000;
-			betPoints = betPoints.toFixed(1);
-			await assert.equal(betPoints, betPointsExpected[index].toFixed(1));
+			let PredictionPoints = await getpredictionPoints(accounts[index], options[index]);
+			PredictionPoints = PredictionPoints / 1000;
+			PredictionPoints = PredictionPoints.toFixed(1);
+			await assert.equal(PredictionPoints, predictionPointsExpected[index].toFixed(1));
 		}
 		await increaseTime(36001);
 		await marketInstance.calculatePredictionResult(1);
@@ -170,7 +170,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (494.9524).toFixed(2));
 		assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (0).toFixed(2));
 	});
-	it("2.check total return for each user bet values in eth", async () => {
+	it("2.check total return for each user Prediction values in eth", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 2, 3, 2, 3, 3, 2];
 		getReturnsInEth = async (user) => {

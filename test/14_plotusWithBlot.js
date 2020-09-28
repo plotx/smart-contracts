@@ -17,7 +17,7 @@ const assertRevert = require("./utils/assertRevert.js").assertRevert;
 // swap ether with LOT
 
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
-	it("Place the bets with ether", async () => {
+	it("Place the prediction with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		plotusToken = await PlotusToken.deployed();
@@ -124,7 +124,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 5, { from: user4 });
 
-		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "1000000000000000000", 3, 5, { from: user4 })); //should revert as once usr can only place bet with BLOT once in a market
+		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "1000000000000000000", 3, 5, { from: user4 })); //should revert as once usr can only place Prediction with BLOT once in a market
 
 		// await plotusToken.transfer(user4, "200000000000000000000");
 
@@ -195,36 +195,36 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		});
 	});
 
-	it("1.Bet Points allocated properly in ether", async () => {
+	it("1.Prediction Points allocated properly in ether", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
-		getBetPoints = async (user, option, expected) => {
-			// return bet points of user
-			let betPoins = await marketInstance.getUserPredictionPoints(user, option);
-			betPoins = betPoins / 1;
-			return betPoins;
+		getPredictionPoints = async (user, option, expected) => {
+			// return Prediction points of user
+			let PredictionPoins = await marketInstance.getUserPredictionPoints(user, option);
+			PredictionPoins = PredictionPoins / 1;
+			return PredictionPoins;
 		};
-		betPointsExpected = [1.755503471, 238.3350545, 11.21889102, 556.4885586, 510.3, 1882.8, 116.5, 634.1, 37.0, 721.7];
+		PredictionPointsExpected = [1.755503471, 238.3350545, 11.21889102, 556.4885586, 510.3, 1882.8, 116.5, 634.1, 37.0, 721.7];
 
-		// console.log("bet points for user 1");
-		// betPointsUser1 = await getBetPoints(accounts[0], options[0]);
-		// betPointsUser3 = await getBetPoints(accounts[2], options[2]);
+		// console.log("Prediction points for user 1");
+		// PredictionPointsUser1 = await getPredictionPoints(accounts[0], options[0]);
+		// PredictionPointsUser3 = await getPredictionPoints(accounts[2], options[2]);
 
 		// console.log(
-		//   `bet points : ${betPointsUser1} expected : ${betPointsExpected[0]} `
+		//   `Prediction points : ${PredictionPointsUser1} expected : ${PredictionPointsExpected[0]} `
 		// );
-		// console.log("bet points for user 3");
+		// console.log("Prediction points for user 3");
 		// console.log(
-		//   `bet points : ${betPointsUser3} expected : ${betPointsExpected[2]} `
+		//   `Prediction points : ${PredictionPointsUser3} expected : ${PredictionPointsExpected[2]} `
 		// );
 		for (let index = 0; index < 10; index++) {
-			let betPoints = await getBetPoints(accounts[index], options[index]);
-			betPoints = betPoints / 1000;
-			betPoints = betPoints.toFixed(1);
-			assert.equal(betPoints, betPointsExpected[index].toFixed(1));
+			let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
+			PredictionPoints = PredictionPoints / 1000;
+			PredictionPoints = PredictionPoints.toFixed(1);
+			assert.equal(PredictionPoints, PredictionPointsExpected[index].toFixed(1));
 			// commented by parv (as already added assert above)
 			// console.log(`user${index + 1} : option : ${options[index]}  `);
-			// console.log(`bet points : ${betPoints} expected : ${betPointsExpected[index].toFixed(1)} `);
+			// console.log(`Prediction points : ${PredictionPoints} expected : ${PredictionPointsExpected[index].toFixed(1)} `);
 		}
 		// console.log(await plotusToken.balanceOf(user1));
 
@@ -259,7 +259,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
 	});
 
-	it("2.check total return for each user bet values in eth", async () => {
+	it("2.check total return for each user Prediction values in eth", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
 		getReturnsInEth = async (user) => {

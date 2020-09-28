@@ -348,7 +348,7 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 	});
 });
 
-describe("3. Multiple Option bets", () => {
+describe("3. Multiple Option predictions", () => {
 	contract("Market", async function([user1, user2, user3, user4, user5]) {
 		let masterInstance, marketConfig, plotusToken, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance;
 		before(async () => {
