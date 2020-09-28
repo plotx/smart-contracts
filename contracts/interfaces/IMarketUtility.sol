@@ -46,6 +46,7 @@ contract IMarketUtility {
         returns (
             uint256,
             uint256,
+            uint256,
             uint256
         );
 

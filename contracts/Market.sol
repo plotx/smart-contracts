@@ -218,7 +218,7 @@ contract Market {
       require(now >= marketSettleTime(),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint riskPercentage;
-      ( , riskPercentage, ) = marketUtility.getBasicMarketDetails();
+      ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
       predictionStatus = PredictionStatus.Settled;
       if(marketStatus() != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
@@ -532,7 +532,7 @@ contract Market {
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
     function _calculateUserReturn(address _user) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      ( , uint riskPercentage, ) = marketUtility.getBasicMarketDetails();
+      ( , uint riskPercentage, , ) = marketUtility.getBasicMarketDetails();
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].predictionPoints[i]);

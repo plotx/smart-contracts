@@ -35,7 +35,8 @@ contract MarketUtility {
     uint256 internal STAKE_WEIGHTAGE;
     uint256 internal STAKE_WEIGHTAGE_MIN_AMOUNT;
     uint256 internal minTimeElapsedDivisor;
-    uint256 internal minBet;
+    uint256 internal minPredictionAmount;
+    uint256 internal maxPredictionAmount;
     uint256 internal positionDecimals;
     uint256 internal multiplier;
     uint256 internal minStakeForMultiplier;
@@ -96,7 +97,8 @@ contract MarketUtility {
         STAKE_WEIGHTAGE = 40; //
         STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
         minTimeElapsedDivisor = 6;
-        minBet = 1e15;
+        minPredictionAmount = 1e15;
+        maxPredictionAmount = 28 ether;
         positionDecimals = 1e2;
         multiplier = 10;
         minStakeForMultiplier = 5e17;
@@ -142,8 +144,10 @@ contract MarketUtility {
             STAKE_WEIGHTAGE_MIN_AMOUNT = value;
         } else if (code == "MTED") { // Minimum time elapsed divisor
             minTimeElapsedDivisor = value;
-        } else if (code == "MINBET") { // Minimum predictionamount
-            minBet = value;
+        } else if (code == "MINPRD") { // Minimum predictionamount
+            minPredictionAmount = value;
+        } else if (code == "MAXPRD") { // Minimum predictionamount
+            maxPredictionAmount = value;
         } else if (code == "PDEC") { // Position's Decimals
             positionDecimals = value;
         } else if (code == "MINSTM") { // Min stake required for applying multiplier
@@ -222,6 +226,7 @@ contract MarketUtility {
      * @return Minimum amount required to predict in market
      * @return Percentage of users leveraged amount to deduct when placed in wrong prediction
      * @return Decimal points for prediction positions
+     * @return Maximum prediction amount
      **/
     function getBasicMarketDetails()
         public
@@ -229,10 +234,11 @@ contract MarketUtility {
         returns (
             uint256,
             uint256,
+            uint256,
             uint256
         )
     {
-        return (minBet, riskPercentage, positionDecimals);
+        return (minPredictionAmount, riskPercentage, positionDecimals, maxPredictionAmount);
     }
 
     /**
@@ -419,7 +425,7 @@ contract MarketUtility {
     */
     function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
       uint _stakeValue = getAssetValueETH(asset, params[9]);
-      if(_stakeValue < minBet) {
+      if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (_predictionValue, _multiplierApplied);
       }
       uint optionPrice;

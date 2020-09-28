@@ -145,10 +145,16 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(configData[3], toWei(10), 'Not updated');
       });
 
-      it('Should update Min Bet', async function() {
-        await updateParameter(20, 2, 'MINBET', pl, 'configUint', toWei(120));
+      it('Should update Min PredictionAmount', async function() {
+        await updateParameter(20, 2, 'MINPRD', pl, 'configUint', toWei(120));
         let configData = await marketConfig.getBasicMarketDetails();
         assert.equal(configData[0], toWei(120), 'Not updated');
+      });
+
+      it('Should update Max PredictionAmount', async function() {
+        await updateParameter(20, 2, 'MAXPRD', pl, 'configUint', toWei(120));
+        let configData = await marketConfig.getBasicMarketDetails();
+        assert.equal(configData[3], toWei(120), 'Not updated');
       });
 
       it('Should update Position Decimals', async function() {

@@ -12,6 +12,7 @@ const BigNumber = require("bignumber.js");
 const { increaseTimeTo } = require("./utils/increaseTime.js");
 
 const web3 = Market.web3;
+const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const latestTime = require("./utils/latestTime.js").latestTime;
 // get etherum accounts
@@ -229,7 +230,14 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			});
 		});
 
-		it("0.5 Assert values from getData() _assetStaked", async () => {
+		it("0.5 Cannot place prediction more than max prediction amount", async ()=> {
+			await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "29000000000000000000", 2, 4, {
+				value: "29000000000000000000",
+				from: user10
+			}));
+		});
+
+		it("0.6 Assert values from getData() _assetStaked", async () => {
 			marketData = await marketInstance.getData();
 			assert.equal(parseFloat(web3.utils.fromWei(marketData._ethStaked[0])).toFixed(1), (3).toFixed(1));
 			assert.equal(parseFloat(web3.utils.fromWei(marketData._ethStaked[1])).toFixed(1), (3).toFixed(1));
