@@ -516,14 +516,14 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.12);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.13);
-		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.1);
+		assert.equal((optionPriceETH3 / 1000).toFixed(2), (0.109).toFixed(2));
 		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(10.5));
-		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(10.83));
-		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(9.08));
+		expect(optionPriceLOT2 / 1000).to.be.closeTo(10.8, 11.2);//10.83
+		expect(optionPriceLOT3 / 1000).to.be.closeTo(9, 9.4);//9.08
 	});
 });
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
-	it("7.Scenario 7 STEP PRICING - Stake in LOT+ETH> minstake and time passed > min time passed", async () => {
+	it("7.Scenario 7 - Stake in LOT+ETH> minstake and time passed > min time passed", async () => {
 		let tokenPrice = 0.012;
 		let masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -605,10 +605,10 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.13);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
-		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.07);
+		assert.equal((optionPriceETH3 / 1000).toFixed(2), (0.078).toFixed(2));
 		assert.equal(parseInt(optionPriceLOT1 / 1000), parseInt(11));
-		assert.equal(parseInt(optionPriceLOT2 / 1000), parseInt(12.91));
-		assert.equal(parseInt(optionPriceLOT3 / 1000), parseInt(6.5));
+		expect(optionPriceLOT2 / 1000).to.be.closeTo(12.9, 13.3);//12.917
+		expect(optionPriceLOT3 / 1000).to.be.closeTo(6.5, 6.7);//6.5
 	});
 });
 contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
@@ -694,7 +694,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.16);
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.13);
-		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.06);
+		assert.equal((optionPriceETH3 / 1000).toFixed(2), (0.068).toFixed(2));
 		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(13.41));
 		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(11.33));
 		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(5.66));
