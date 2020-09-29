@@ -15,6 +15,7 @@ contract Airdrop {
   PlotXToken public plotToken;
   address public owner;
   uint public endDate;
+  uint public remainingbudget;
 
   /// @dev mapping to maintain allocated tokens to each user
   mapping(address => uint) public userAllocated;
@@ -46,6 +47,7 @@ contract Airdrop {
     bLotToken = IbLOTToken(_bLotToken);
     owner = msg.sender;
     endDate = _endDate;
+    remainingbudget = _budget;
     plotToken.approve(address(bLotToken), _budget);
   }
 
@@ -58,13 +60,17 @@ contract Airdrop {
 
     require(_userList.length == _amount.length,"Should have same length");
     require(endDate > now, "Callable only before end date");
+    uint totalAmount=0;
 
     for(uint i = 0; i < _userList.length; i++) {
+      totalAmount = totalAmount.add(_amount[i]);
       require(_userList[i] != address(0), "Can not be null address");
       require(_amount[i] > 0, "Can not allocate 0");
       require(userAllocated[_userList[i]] == 0,"Can allocate only once"); 
       userAllocated[_userList[i]] = _amount[i];
-    }    
+    }  
+    require(remainingbudget >= totalAmount, "Limit exceeds");
+    remainingbudget = remainingbudget.sub(totalAmount);
   }
 
   /**

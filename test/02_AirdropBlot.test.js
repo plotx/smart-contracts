@@ -431,4 +431,10 @@ contract("More cases for airdrop", async function([user1, user2]) {
 		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
 		await assertRevert(_airdrop.tranferOwnership(nullAddress));
 	});
+	it("Should revert if tries to allocate more than budget", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
+		await _airdrop.airdropBLot([user1],[toWei(50)]);
+		await assertRevert(_airdrop.airdropBLot([user2],[toWei(51)]));
+	});
 });
