@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.5.7;
 
 import "./PlotXToken.sol";
@@ -19,11 +34,11 @@ contract Vesting {
   event TokensClaimed(address recipient, uint256 amountClaimed);
 
   struct Allocation {
-    uint16 vestingDuration; // considering vesting duration will not be more than 2^16 = 65536 let me know if it is not the case
-    uint16 vestingCliff;  //considering vesting cliff  will not be more than 2^16 = 65536 let me know if it is not the case
-    uint16 periodInDays; //considering period in days  will not be more than 2^16 = 65536 let me know if it is not the case
+    uint16 vestingDuration; 
+    uint16 vestingCliff;  
+    uint16 periodInDays; 
     uint16 periodClaimed;
-    uint32 startTime; // considering start time  will not be more than 2^32 = 4294967296 let me know if it is not the case
+    uint32 startTime; 
     uint256 amount;
     uint256 totalClaimed;
   }
@@ -111,7 +126,7 @@ contract Vesting {
     emit TokensClaimed(msg.sender, amountVested);
   }
 
-  /// @dev Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
+  /// @dev Calculate the vested and unclaimed period and tokens available for `_recepient` to claim
   /// Due to rounding errors once grant duration is reached, returns the entire left grant amount
   /// Returns (0, 0) if cliff has not been reached
   function calculateVestingClaim(address _recipient) public view returns (uint16, uint256) {
