@@ -149,14 +149,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Checks if msg.sender had any pending rewards to be claimed
-     */
-    modifier checkPendingRewards {
-        require(getPendingReward(msg.sender) == 0, "Claim reward");
-        _;
-    }
-
-    /**
      * @dev Event emitted whenever a proposal is categorized
      */
     event ProposalCategorized(
@@ -200,7 +192,13 @@ contract Governance is IGovernance, Iupgradable {
         uint256 _categoryId,
         uint256 _incentive
     ) external voteNotStarted(_proposalId) isAllowedToCategorize {
-        _categorizeProposal(_proposalId, _categoryId, _incentive);
+        uint256 incentive = _incentive;
+        bytes memory _functionHash = proposalCategory
+            .categoryActionHashes(_categoryId);
+        if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))) {
+            incentive = 0;
+        }
+        _categorizeProposal(_proposalId, _categoryId, incentive);
     }
 
     /**
@@ -733,6 +731,9 @@ contract Governance is IGovernance, Iupgradable {
                  keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) ||
                 keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
             );
+            if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))) {
+                defaultIncentive = 0;
+            }
             _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
         }
     }
