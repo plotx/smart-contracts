@@ -74,6 +74,31 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
+	it("Should create a proposal to whitelist sponsor", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 22, 0);
+		let startTime = (await latestTime()) / 1 + 2 * 604800;
+		let market= await Market.new();
+		let actionHash = encode("whitelistSponsor(address)", ab1);
+		await gv.submitProposalWithSolution(pId, "whitelistSponsor", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await gv.submitVote(pId, 1, { from: mem1 });
+		await gv.submitVote(pId, 1, { from: mem2 });
+		await gv.submitVote(pId, 1, { from: mem3 });
+		await gv.submitVote(pId, 1, { from: mem4 });
+		await gv.submitVote(pId, 1, { from: mem5 });
+		await increaseTime(604810);
+		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
+		await gv.closeProposal(pId);
+		let openMarketsBefore = await pl.getOpenMarkets();
+		await increaseTime(604850);
+		await gv.triggerAction(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 3);
+	});
+
 	it("Should create a proposal to add new market curreny", async function() {
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
@@ -122,7 +147,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await marketInstance.claimReturn(ab1);
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
+		await plotusToken.approve(marketInstance.address, "18000000000000000000000000", {from:mem1});
+		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000", {from:mem1}));
+		await marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
+		let totalStaked = await pl.getTotalAssetStakedByUser(ab1);
+		assert.equal(totalStaked[0]/1, "1000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "8000000000000000000000", 1, 1);
 		await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "10000000000000000000", 1, 1, { value: 1000 }));
 		await assertRevert(marketInstance.calculatePredictionResult(1));
@@ -320,5 +350,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604810);
 		actionStatus = await gv.proposal(pId);
 		assert.equal(parseFloat(actionStatus[2]), 5);
+	});
+
+	it("Should claim market creation rewards", async function() {
+		let oldBalance = parseFloat(await plotusToken.balanceOf(ab1));
+		await pl.claimCreationReward();
+		let newBalance = parseFloat(await plotusToken.balanceOf(ab1));
+		assert.isAbove(newBalance/1,oldBalance/1);
 	});
 });

@@ -121,6 +121,12 @@ contract('Configure Global Parameters', accounts => {
 
     describe('Update Market Config Params', function() {
 
+      it('Should update market creation incentive', async function() {
+        await updateParameter(20, 2, 'MCRINC', pl, 'configUint', 100);
+        let configData = await pl.getUintParameters(toHex('MCRINC'));
+        assert.equal(configData[1], 100, 'Not updated');
+      });
+
       it('Should update STAKE WEIGHTAGE', async function() {
         await updateParameter(20, 2, 'SW', pl, 'configUint', 60);
         let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
