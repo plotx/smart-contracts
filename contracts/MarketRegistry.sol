@@ -131,7 +131,6 @@ contract MarketRegistry is Governed, Iupgradable {
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams);
       marketInitiater = _defaultAddress;
-      plotToken.approve(address(governance), ~uint256(0));
     }
 
     /**

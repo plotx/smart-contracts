@@ -21,6 +21,8 @@ contract IMarketRegistry {
 
     function isWhitelistedSponsor(address _address) public view returns(bool);
 
+    function transferAssets(address _asset, address _to, uint _amount) external;
+
     /**
     * @dev Initialize the PlotX.
     * @param _marketConfig The address of market config.

@@ -759,8 +759,8 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         if (_incentive > 0) {
-            tokenInstance.transferFrom(
-                address(marketRegistry),
+            marketRegistry.transferAssets(
+                address(tokenInstance),
                 address(this),
                 _incentive
             );
