@@ -72,7 +72,6 @@ contract MarketRegistry is Governed, Iupgradable {
       mapping(address => bool) marketsParticipatedFlag;
     }
 
-    uint internal marketCreationFallbackTime;
     uint internal marketCreationIncentive;
     
     mapping(address => MarketData) marketData;
@@ -123,7 +122,6 @@ contract MarketRegistry is Governed, Iupgradable {
     */
     function initiate(address _defaultAddress, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
-      marketCreationFallbackTime = 15 minutes;
       marketCreationIncentive = 10 ether;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
@@ -386,6 +384,10 @@ contract MarketRegistry is Governed, Iupgradable {
     function () external payable {
     }
 
+
+    /**
+    * @dev Transfer `_amount` number of market registry assets contract to `_to` address
+    */
     function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
       _transferAsset(_asset, _to, _amount);
     }
@@ -407,9 +409,7 @@ contract MarketRegistry is Governed, Iupgradable {
     }
 
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      if(code == "FBTIME") { // Fallback creation time for market
-        marketCreationFallbackTime = value;
-      } else if(code == "MCRINC") { // Incentive to be distributed to user for market creation
+      if(code == "MCRINC") { // Incentive to be distributed to user for market creation
         marketCreationIncentive = value;
       } else {
         marketUtility.updateUintParameters(code, value);
@@ -476,10 +476,12 @@ contract MarketRegistry is Governed, Iupgradable {
       emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveToken);
     }
 
-    function getUintParameters(bytes8 code) external view returns(uint256 value) {
-      if(code == "FBTIME") {
-        value = marketCreationFallbackTime;
-      } else if(code == "MCRINC") {
+    /**
+    * @dev Get uint config parameters
+    */
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
+      if(code == "MCRINC") {
+        codeVal = code;
         value = marketCreationIncentive;
       }
     }
