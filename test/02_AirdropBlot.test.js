@@ -35,7 +35,7 @@ contract("Airdrop", async function([user1, user2, user3, user4, user5, user6, us
 		// console.log(await plotusNewInstance.getOpenMarkets());
 		openMarkets = await plotusNewInstance.getOpenMarkets();
 		let  endDate = (await latestTime())/1+(24*3600);
-		airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei("1000"));
 
 		await BLOTInstance.addMinter(airdrop.address);
 
@@ -371,22 +371,22 @@ contract("Market", async function([user1, user2]) {
 contract("More cases for airdrop", async function([user1, user2]) {
 	it("Should Revert if deployed with null address as plot token, blot token", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		await assertRevert(Airdrop.new(nullAddress, user1, endDate));
-		await assertRevert(Airdrop.new(user1, nullAddress, endDate));
+		await assertRevert(Airdrop.new(nullAddress, user1, endDate, toWei(10)));
+		await assertRevert(Airdrop.new(user1, nullAddress, endDate, toWei(10)));
 	});
 	it("Should Revert if deployed with past time as end date", async () => {
 		let  endDate = (await latestTime())/1-(24);
-		await assertRevert(Airdrop.new(user1, user1, endDate));
+		await assertRevert(Airdrop.new(user1, user1, endDate, toWei(10)));
 	});
 	it("Should Revert if non owner calls airdropBLot, user array have different length than amount array", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
 		await assertRevert(_airdrop.airdropBLot([],[],{from:user2}));
 		await assertRevert(_airdrop.airdropBLot([user1,user2],[toWei(10)]));
 	});
 	it("Should Revert if tries to allocate after end date, null address in user list, 0 amount in amount list", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(10));
 		await assertRevert(_airdrop.airdropBLot([nullAddress],[toWei(10)]));
 		await assertRevert(_airdrop.airdropBLot([user1],[0]));
 		await increaseTime(24*3600);
@@ -394,7 +394,7 @@ contract("More cases for airdrop", async function([user1, user2]) {
 	});
 	it("Should Revert if tries to allocate multiple times to same user, non owner tries to call takeLeftOverPlot, tries to call takeLeftOverPlot before end date", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
 		await assertRevert(_airdrop.takeLeftOverPlot());
 		await assertRevert(_airdrop.takeLeftOverPlot({from:user2}));
 		await _airdrop.airdropBLot([user1],[toWei(10)]);
@@ -402,7 +402,7 @@ contract("More cases for airdrop", async function([user1, user2]) {
 	});
 	it("Should Revert if tries to claim after end date, user can not claim multiple time", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
 		await _airdrop.airdropBLot([user1],[toWei(10)]);
 		await plotusToken.transfer(_airdrop.address, toWei(30));
 		await BLOTInstance.addMinter(_airdrop.address);
@@ -413,10 +413,22 @@ contract("More cases for airdrop", async function([user1, user2]) {
 	});
 	it("Should be able to take back plot toekens after end date", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
 		await plotusToken.transfer(_airdrop.address, toWei(30));
 		await increaseTime(24*3600);
 		await _airdrop.takeLeftOverPlot();
 		assert.equal(await plotusToken.balanceOf(_airdrop.address), 0);
+	});
+	it("Owner should be able to transfer ownership to other address", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
+		assert.equal(await _airdrop.owner(), user1);
+		await _airdrop.tranferOwnership(user2);
+		assert.equal(await _airdrop.owner(), user2);
+	});
+	it("Should revert if tries to transfer ownership to null address", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _airdrop = await Airdrop.new(plotusToken.address, BLOTInstance.address, endDate, toWei(100));
+		await assertRevert(_airdrop.tranferOwnership(nullAddress));
 	});
 });
