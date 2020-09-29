@@ -3,7 +3,7 @@ const Governance = artifacts.require("Governance");
 const MemberRoles = artifacts.require("MemberRoles");
 const ProposalCategory = artifacts.require("ProposalCategory");
 const TokenController = artifacts.require("TokenController");
-const NXMaster = artifacts.require("Master");
+const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
@@ -26,15 +26,15 @@ let nxms;
 let proposalId;
 let pId;
 let mr;
-let nxmToken;
+let plotusToken;
 let tc;
 let td;
 
 contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, notMember, dr1, dr2, dr3]) => {
   before(async function () {
     nxms = await OwnedUpgradeabilityProxy.deployed();
-    nxms = await NXMaster.at(nxms.address);
-    nxmToken = await PlotusToken.deployed();
+    nxms = await Master.at(nxms.address);
+    plotusToken = await PlotusToken.deployed();
     let address = await nxms.getLatestAddress(toHex("GV"));
     gv = await Governance.at(address);
     address = await nxms.getLatestAddress(toHex("PC"));
@@ -140,9 +140,10 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await assertRevert(gv.submitVote(proposalId, 1));
   });
 
-  // it('15.17 Should not claim reward for an open proposal', async function() {
-  //   await assertRevert(cr.claimAllPendingReward(20));
-  // });
+  it('15.17 Should not transfer tokens if voted on governance', async function() {
+    await assertRevert(plotusToken.transfer(mem1, toWei(100)));
+    await assertRevert(plotusToken.transferFrom(ab1, mem1, toWei(100), {from: mem1}));
+  });
 
   it("15.18 Should close proposal", async function () {
     let canClose = await gv.canCloseProposal(proposalId);
