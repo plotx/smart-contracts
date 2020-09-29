@@ -104,23 +104,26 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(await proxyCon.implementation(), newMarketConfig.address);
       });
 
-      // it('Should Update Market Implementation', async function() {
-      //   let newMaketImpl = await Market.new();
-      //   let actionHash = encode1(
-      //     ['uint256[]','address[]'],[
-      //       [0, 1]
-      //       [newMaketImpl.address, newMaketImpl.address]
-      //     ]
-      //   );
-      //   await gvProposal(
-      //     5,
-      //     actionHash,
-      //     await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-      //     gv,
-      //     2,
-      //     0
-      //   );
-      // });
+      it('Should Update Market Implementation', async function() {
+        let newMaketImpl = await Market.new();
+        console.log(newMaketImpl.address);
+        let actionHash
+        actionHash = encode1(
+          ['uint256[]', 'address[]'],
+          [
+            [0,1],
+            [newMaketImpl.address, newMaketImpl.address]
+          ]
+        );
+        await gvProposal(
+          5,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+      });
 
       it('Should Update Existing Markets Implementation', async function() {
         let newMarket = await DummyMockMarket.new();

@@ -63,6 +63,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// 	console.log(e);
 		// }
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1,1));
+		await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now() / 1000), mem1, plotusToken.address, {from:mem2}));
 		await assertRevert(pl.addInitialMarketTypesAndStart(Math.round(Date.now() / 1000), mem1, plotusToken.address));
 		await assertRevert(pl.initiate(mem1, mem1, mem1, [mem1, mem1, mem1, mem1]));
 		await plotusToken.transfer(mem1, toWei(100));
@@ -357,5 +358,13 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await pl.claimCreationReward();
 		let newBalance = parseFloat(await plotusToken.balanceOf(ab1));
 		assert.isAbove(newBalance/1,oldBalance/1);
+		await pl.getUintParameters("0x12");
 	});
+
+	it("Should revert if unauthorized member call Registry functions", async function() {
+		await assertRevert(pl.claimCreationReward());
+		await assertRevert(pl.createGovernanceProposal("","","","0x12",0,ab1, 0,0,0));
+		await assertRevert(pl.setUserGlobalPredictionData(ab1, 0,0,ab1,0,0));
+		await assertRevert(pl.callClaimedEvent(ab1, [0,0],[ab1],0,ab1));
+	})
 });
