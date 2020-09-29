@@ -33,6 +33,12 @@ contract MockConfig is MarketUtility {
         return (minStakeForMultiplier, _value);
     }
 
+    /**
+     * @dev Internal function to update pair cummulative price
+     **/
+    function _setCummulativePrice() internal {
+    }
+
     function update() external {
     
     }

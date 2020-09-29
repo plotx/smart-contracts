@@ -55,6 +55,7 @@ contract MarketUtility {
         FixedPoint.uq112x112 price1Average;
         uint256 price1CumulativeLast;
         uint32 blockTimestampLast;
+        bool initialized;
     }
 
     mapping(address => UniswapPriceData) internal uniswapPairData;
@@ -87,6 +88,8 @@ contract MarketUtility {
         plotETHpair = uniswapFactory.getPair(plotToken, weth);
 
         chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
+
+        _setCummulativePrice();
     }
 
     /**
@@ -182,22 +185,15 @@ contract MarketUtility {
      * @dev Update cumulative price of token in uniswap
      **/
     function update() external onlyAuthorized {
-        _update(plotETHpair);
-    }
-
-    /**
-     * @dev Internal function to update pair cummulative price
-     **/
-    function _update(address pair) internal {
-        UniswapPriceData storage _priceData = uniswapPairData[pair];
+        UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
         (
             uint256 price0Cumulative,
             uint256 price1Cumulative,
             uint32 blockTimestamp
-        ) = UniswapV2OracleLibrary.currentCumulativePrices(pair);
+        ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
         uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
 
-        if (timeElapsed >= updatePeriod) {
+        if (timeElapsed >= updatePeriod || !_priceData.initialized) {
             // overflow is desired, casting never truncates
             // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
             _priceData.price0Average = FixedPoint.uq112x112(
@@ -216,7 +212,25 @@ contract MarketUtility {
             _priceData.price0CumulativeLast = price0Cumulative;
             _priceData.price1CumulativeLast = price1Cumulative;
             _priceData.blockTimestampLast = blockTimestamp;
+            if(!_priceData.initialized) {
+              _priceData.initialized = true;
+            }
         }
+    }
+
+    /**
+     * @dev Internal function to update pair cummulative price
+     **/
+    function _setCummulativePrice() internal {
+      UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
+      (
+          uint256 price0Cumulative,
+          uint256 price1Cumulative,
+          uint32 blockTimestamp
+      ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
+      _priceData.price0CumulativeLast = price0Cumulative;
+      _priceData.price1CumulativeLast = price1Cumulative;
+      _priceData.blockTimestampLast = blockTimestamp;
     }
 
     /**

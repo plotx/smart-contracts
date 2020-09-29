@@ -241,7 +241,6 @@ contract MarketRegistry is Governed, Iupgradable {
       marketData[_market].isMarket = true;
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
       emit MarketQuestion(_market, _currencyName, _marketType, _marketStartTime);
-      marketUtility.update();
       (marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress) =
        (marketCreationData[_marketType][_marketCurrencyIndex].marketAddress, _market);
     }
@@ -261,6 +260,7 @@ contract MarketRegistry is Governed, Iupgradable {
         require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       }
       (bytes32 _currencyName, address _priceFeed) = IMarket(marketCurrencies[_marketCurrencyIndex]).getMarketFeedData();
+      marketUtility.update();
       uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
       uint currentPrice = marketUtility.getAssetPriceUSD(_priceFeed);
