@@ -141,13 +141,10 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Checks if msg.sender is allowed categorize proposal under given category
+     * @dev Checks if msg.sender is allowed categorize proposal
      */
     modifier isAllowedToCategorize() {
-        require(
-            memberRole.checkRole(msg.sender, roleIdAllowedToCatgorize),
-            "Not allowed"
-        );
+        require(allowedToCategorize());
         _;
     }
 
@@ -604,6 +601,17 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
+     * @dev Checks if msg.sender is allowed to categorize proposals
+     */
+    function allowedToCategorize()
+        public
+        view
+        returns (bool check)
+    {
+        return memberRole.checkRole(msg.sender, roleIdAllowedToCatgorize);
+    }
+
+    /**
      * @dev Checks If the proposal voting time is up and it's ready to close
      *      i.e. Closevalue is 1 if proposal is ready to be closed, 2 if already closed, 0 otherwise!
      * @param _proposalId Proposal id to which closing value is being checked
@@ -720,10 +728,9 @@ contract Governance is IGovernance, Iupgradable {
             );
             (, , , uint defaultIncentive, bytes memory _functionHash) = proposalCategory
             .categoryActionDetails(_categoryId);
-            require(roleAuthorizedToVote ==
-                uint256(IMemberRoles.Role.AdvisoryBoard) ||
-                roleAuthorizedToVote ==
-                uint256(IMemberRoles.Role.DisputeResolution) ||
+            require(allowedToCategorize() ||
+                keccak256(_functionHash) ==
+                 keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) ||
                 keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
             );
             _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
