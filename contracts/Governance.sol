@@ -371,11 +371,6 @@ contract Governance is IGovernance, Iupgradable {
 
         require(!isActionRejected[_proposalId][msg.sender]);
 
-        require(
-            keccak256(proposalCategory.categoryActionHashes(allProposalData[_proposalId].category))
-            != keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
-        );
-
         isActionRejected[_proposalId][msg.sender] = true;
         actionRejectedCount[_proposalId]++;
         emit ActionRejected(_proposalId, msg.sender);
@@ -971,7 +966,16 @@ contract Governance is IGovernance, Iupgradable {
                 proposalActionStatus[_proposalId] = uint256(
                     ActionStatus.Accepted
                 );
-                proposalExecutionTime[_proposalId] = actionWaitingTime.add(now);
+                bytes memory functionHash = proposalCategory.categoryActionHashes(category);
+                if(keccak256(functionHash)
+                    == keccak256(abi.encodeWithSignature("swapABMember(address,address)")) ||
+                    keccak256(functionHash)
+                    == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) 
+                ) {
+                    proposalExecutionTime[_proposalId] = now;    
+                } else {
+                    proposalExecutionTime[_proposalId] = actionWaitingTime.add(now);
+                }
             }
         }
     }
