@@ -344,14 +344,6 @@ contract Market {
       }
     }
 
-
-    /**
-    * @dev Calculate the given asset value in eth 
-    */
-    function _calculateAssetValueInEth(uint _amount, uint _price, uint _decimals)internal pure returns(uint) {
-      return _amount.mul(_price).div(10**_decimals);
-    }
-
     /**
     * @dev Get market settle time
     * @return the time at which the market result will be declared
