@@ -257,6 +257,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             tokenHolder,
             tokenHolder
         );
+        _addInitialCategories(
+            "Any other item",
+            "",
+            "EX",
+            "",
+            60,
+            tokenHolder,
+            tokenHolder
+        );
     }
 
     /**
