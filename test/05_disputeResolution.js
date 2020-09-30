@@ -96,7 +96,6 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.submitVote(proposalId, 1, {from:dr3});
     await gv.closeProposal(proposalId);
     await increaseTime(86401);
-    await gv.triggerAction(proposalId);
     // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
     // assert.equal(data[0], proposalId,"dispute proposal mismatch");
     // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);

@@ -233,7 +233,6 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        console.log(await gv.proposal(pId));
         let plbalPlotAfter = await plotTok.balanceOf(pl.address);
         let userbalPlotAfter = await plotTok.balanceOf(newAB);
         assert.equal(plbalPlot/1 - plbalPlotAfter/1, 1000000000000);
@@ -296,7 +295,7 @@ contract('Configure Global Parameters', accounts => {
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
           2,
-          0
+          0, true
         );
         assert.equal(await mr.checkRole(ab1, 1), false);
         assert.equal(await mr.checkRole(newAB, 1), true);

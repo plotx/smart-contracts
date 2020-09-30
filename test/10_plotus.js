@@ -6,6 +6,7 @@ const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
+const Governance = artifacts.require("Governance");
 const BLOT = artifacts.require("BLOT");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const BigNumber = require("bignumber.js");

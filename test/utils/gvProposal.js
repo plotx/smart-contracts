@@ -62,6 +62,7 @@ async function gvProposalWithIncentiveViaTokenHolder(...args) {
   let gv = args[3];
   let seq = args[4];
   let incentive = args[5];
+  let skipTrigger = args[6];
   let p = await gv.getProposalLength();
   await gv.createProposal("proposal", "proposal", "proposal", 0);
   let canClose = await gv.canCloseProposal(p);
@@ -78,7 +79,8 @@ async function gvProposalWithIncentiveViaTokenHolder(...args) {
   let proposal = await gv.proposal(p);
   assert.equal(proposal[2].toNumber(), 3);
   await increaseTime(3601);
-  await gv.triggerAction(p);
+  if(!skipTrigger)
+    await gv.triggerAction(p);
 }
 
 async function gvProposalWithoutTrigger(...args) {
