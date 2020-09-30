@@ -29,9 +29,10 @@ let timeNow,
 	option2RangeMAX,
 	option3RangeMIX,
 	marketStatus,
-	option3RangeMAX;
+	option3RangeMAX, governance,
+	marketETHBalanceBeforeDispute;
 
-contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11]) {
 	describe("Place the predictions with ether", async () => {
 		it("0.0", async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -40,6 +41,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			BLOTInstance = await BLOT.deployed();
 			MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 			plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+			governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+			governance = await Governance.at(governance);
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
 			marketConfig = await plotusNewInstance.marketUtility();
 			marketConfig = await MarketConfig.at(marketConfig);
@@ -298,8 +301,23 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			// close market
 			await increaseTime(36001);
 			await marketInstance.calculatePredictionResult(1);
-			await increaseTime(36001);
 		});
+
+		it("Raise dispute and reject", async() => {
+			await plotusToken.transfer(user11, "200000000000000000000");
+			await plotusToken.approve(marketInstance.address, "100000000000000000000", {
+				from: user11,
+			});
+			let proposalId = await governance.getProposalLength();
+			let marketETHBalanceBeforeDispute = await web3.eth.getBalance(marketInstance.address);
+			let registryBalanceBeforeDispute = await web3.eth.getBalance(plotusNewInstance.address);
+			await marketInstance.raiseDispute("100000000000000000000","","","", {from: user11});
+			await increaseTime(604810);
+			await governance.closeProposal(proposalId/1);
+			let balanceAfterClosingDispute = await web3.eth.getBalance(marketInstance.address);
+			assert.equal(marketETHBalanceBeforeDispute/1, balanceAfterClosingDispute/1);
+		});
+
 		it("1.3 Assert values from getData() prediction status after", async () => {
 			marketData = await marketInstance.getData();
 			assert.equal(parseFloat(marketData._predictionStatus), 4);
