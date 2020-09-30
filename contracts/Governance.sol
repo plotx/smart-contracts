@@ -919,15 +919,6 @@ contract Governance is IGovernance, Iupgradable {
     }
 
     /**
-     * @dev Check the time since last update has exceeded token holding time or not
-     * @param _lastUpd is last update time
-     * @return the bool which tells if the time since last update has exceeded token holding time or not
-     */
-    function _checkLastUpd(uint256 _lastUpd) internal view returns (bool) {
-        return ((now).sub(_lastUpd)) > tokenHoldingTime;
-    }
-
-    /**
      * @dev Checks if the vote count against any solution passes the threshold value or not.
      */
     function _checkForThreshold(uint256 _proposalId, uint256 _category)
