@@ -972,7 +972,7 @@ contract Governance is IGovernance, Iupgradable {
                     keccak256(functionHash)
                     == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) 
                 ) {
-                    proposalExecutionTime[_proposalId] = now;    
+                    _triggerAction(_proposalId, category);
                 } else {
                     proposalExecutionTime[_proposalId] = actionWaitingTime.add(now);
                 }
