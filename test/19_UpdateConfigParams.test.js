@@ -240,6 +240,9 @@ contract('Configure Global Parameters', accounts => {
       it('Should update Vote Perc Reject Action', async function() {
         await updateParameter(13, 2, 'REJCOUNT', gv, 'uint', '123');
       });
+      it('Should update max vote weigthage percent', async function() {
+        await updateParameter(13, 2, 'MAXVW', gv, 'uint', '43');
+      });  
       it('Should not update if parameter code is incorrect', async function() {
         await updateInvalidParameter(13, 2, 'EPTIM', gv, 'uint', '86400');
       });

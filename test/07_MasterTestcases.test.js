@@ -51,21 +51,7 @@ contract('Master', function(accounts) {
   });
 
   describe('Update master address', function() {
-    it.skip('Update master address after posting data in governance implementation', async function() {
-      let proxy = await OwnedUpgradeabilityProxy.at(gov.address);
-      let implementation = await Governance.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      proxy = await OwnedUpgradeabilityProxy.at(
-        await ms.getLatestAddress(toHex('PC'))
-      );
-      implementation = await ProposalCategory.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      proxy = await OwnedUpgradeabilityProxy.at(
-        await ms.getLatestAddress(toHex('MR'))
-      );
-      implementation = await MemberRoles.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      assert.equal(await implementation.ms(), owner);
+    it('Update master address', async function() {
       let newMaster = await Master.new();
       let actionHash = encode1(['address'], [newMaster.address]);
       await gvProp(

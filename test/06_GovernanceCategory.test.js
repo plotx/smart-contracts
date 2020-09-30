@@ -51,6 +51,7 @@ contract('Configure Global Parameters', accounts => {
       await pl.sendTransaction({from: ab1, value: toWei(5)});
       await pl.sendTransaction({from: newAB, value: toWei(10)});
       await plotTok.transfer(pl.address, toWei(20));
+      await plotTok.transfer(newAB, toWei(20));
 
     });
 
@@ -106,7 +107,6 @@ contract('Configure Global Parameters', accounts => {
 
       it('Should Update Market Implementation', async function() {
         let newMaketImpl = await Market.new();
-        console.log(newMaketImpl.address);
         let actionHash
         actionHash = encode1(
           ['uint256[]', 'address[]'],
@@ -281,26 +281,26 @@ contract('Configure Global Parameters', accounts => {
       });
 
 
-      // it('Should Swap AB Member', async function() {
+      it('Should Swap AB Member', async function() {
 
-      //   assert.equal(await mr.checkRole(newAB, 1), false);
-      //   assert.equal(await mr.checkRole(ab1, 1), true);
-      //   let actionHash = encode(
-      //     'swapABMember(address,address)',
-      //     newAB,
-      //     ab1
-      //   );
-      //   await gvProposal(
-      //     12,
-      //     actionHash,
-      //     await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-      //     gv,
-      //     2,
-      //     0
-      //   );
-      //   assert.equal(await mr.checkRole(ab1, 1), false);
-      //   assert.equal(await mr.checkRole(newAB, 1), true);
-      // });
+        assert.equal(await mr.checkRole(newAB, 1), false);
+        assert.equal(await mr.checkRole(ab1, 1), true);
+        let actionHash = encode(
+          'swapABMember(address,address)',
+          newAB,
+          ab1
+        );
+        await gvProposal(
+          12,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+        assert.equal(await mr.checkRole(ab1, 1), false);
+        assert.equal(await mr.checkRole(newAB, 1), true);
+      });
     });
 
     after(async function () {
