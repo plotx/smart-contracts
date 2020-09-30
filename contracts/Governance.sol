@@ -71,6 +71,9 @@ contract Governance is IGovernance, Iupgradable {
     mapping(uint256 => VoteTally) public proposalVoteTally;
     mapping(address => uint256) public lastRewardClaimed;
 
+    bytes32 constant swapABMemberHash = keccak256(abi.encodeWithSignature("swapABMember(address,address)"));
+    bytes32 constant resolveDisputeHash = keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"));
+
     bool internal constructorCheck;
     uint256 public tokenHoldingTime;
     uint256 internal roleIdAllowedToCatgorize;
@@ -195,7 +198,7 @@ contract Governance is IGovernance, Iupgradable {
         uint256 incentive = _incentive;
         bytes memory _functionHash = proposalCategory
             .categoryActionHashes(_categoryId);
-        if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))) {
+        if(keccak256(_functionHash) == swapABMemberHash) {
             incentive = 0;
         }
         _categorizeProposal(_proposalId, _categoryId, incentive);
@@ -723,10 +726,10 @@ contract Governance is IGovernance, Iupgradable {
             .categoryActionDetails(_categoryId);
             require(allowedToCategorize() ||
                 keccak256(_functionHash) ==
-                 keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) ||
-                keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))
+                 resolveDisputeHash ||
+                keccak256(_functionHash) == swapABMemberHash
             );
-            if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("swapABMember(address,address)"))) {
+            if(keccak256(_functionHash) == swapABMemberHash) {
                 defaultIncentive = 0;
             }
             _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
@@ -968,9 +971,9 @@ contract Governance is IGovernance, Iupgradable {
                 );
                 bytes memory functionHash = proposalCategory.categoryActionHashes(category);
                 if(keccak256(functionHash)
-                    == keccak256(abi.encodeWithSignature("swapABMember(address,address)")) ||
+                    == swapABMemberHash ||
                     keccak256(functionHash)
-                    == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)")) 
+                    == resolveDisputeHash 
                 ) {
                     _triggerAction(_proposalId, category);
                 } else {
@@ -1079,7 +1082,7 @@ contract Governance is IGovernance, Iupgradable {
         }
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
             bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
-            if(keccak256(_functionHash) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
+            if(keccak256(_functionHash) == resolveDisputeHash) {
                 marketRegistry.burnDisputedProposalTokens(_proposalId);
             }
         }
