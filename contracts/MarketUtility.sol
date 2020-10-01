@@ -311,7 +311,7 @@ contract MarketUtility {
         while(currentRoundTime > _settleTime) {
             currentRoundId--;
             (currentRoundId, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(currentRoundId);
-            if(currentRoundTime < _settleTime) {
+            if(currentRoundTime <= _settleTime) {
                 break;
             }
         }
