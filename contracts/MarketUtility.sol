@@ -292,9 +292,6 @@ contract MarketUtility {
     function getAssetPriceUSD(
         address _currencyFeedAddress
     ) public view returns (uint256 latestAnswer) {
-        if(_currencyFeedAddress == ETH_ADDRESS) {
-            return (uint256(chainLinkOracle.latestAnswer()))/1e8;
-        }
         return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
     }
 
