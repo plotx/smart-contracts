@@ -1,13 +1,16 @@
 pragma solidity 0.5.7;
 
-import "../config/MarketUtility.sol";
+import "../MarketUtility.sol";
 
 contract MockConfig is MarketUtility {
 
 	uint public priceOfToken;
+    bool public mockFlag;
+    mapping(uint => uint) optionPrices;
 
 	function initialize(address payable[] memory _addressParams) public {
 		priceOfToken = 1e16;
+        mockFlag = true;
 		super.initialize(_addressParams);
 	}
 
@@ -30,11 +33,28 @@ contract MockConfig is MarketUtility {
         return (minStakeForMultiplier, _value);
     }
 
-    function update(address pair) external {
+    /**
+     * @dev Internal function to update pair cummulative price
+     **/
+    function _setCummulativePrice() internal {
+    }
+
+    function update() external {
     
     }
 
-    function setPLOTCommissionPerc(uint _value) external {
-    	commissionPerc[plotToken] = _value;
+    function setOptionPrice(uint _option, uint _price) public {
+        optionPrices[_option] = _price;
+    }
+
+    function setMockPriceFlag(bool _flag) public {
+        mockFlag = _flag;
+    }
+
+    function calculateOptionPrice(uint[] memory params, address marketFeedAddress) public view returns(uint _optionPrice) {
+        if(mockFlag) {
+            return optionPrices[params[0]];
+          }
+        return super.calculateOptionPrice(params, marketFeedAddress);
     }
 }

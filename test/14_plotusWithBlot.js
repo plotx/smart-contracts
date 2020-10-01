@@ -16,8 +16,8 @@ const assertRevert = require("./utils/assertRevert.js").assertRevert;
 // get etherum accounts
 // swap ether with LOT
 
-contract("Market", async function ([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
-	it("Place the bets with ether", async () => {
+contract("Market", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+	it("Place the prediction with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		plotusToken = await PlotusToken.deployed();
@@ -37,11 +37,10 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		assert.ok(marketInstance);
 
 		// setting option price in eth
-		await marketInstance.setOptionPrice(1, 9);
-		await marketInstance.setOptionPrice(2, 18);
-		await marketInstance.setOptionPrice(3, 27);
+		await marketConfig.setOptionPrice(1, 9);
+		await marketConfig.setOptionPrice(2, 18);
+		await marketConfig.setOptionPrice(3, 27);
 
-		await marketInstance.exchangeCommission(); //should have no affect
 		await assertRevert(marketInstance.calculatePredictionResult(1)); //should revert as market is in live status
 
 		// set price
@@ -86,7 +85,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		// console.log(await BLOTInstance.balanceOf(user1));
 		// await BLOTInstance.addMinter(marketInstance.address);
 		await marketInstance.placePrediction(BLOTInstance.address, "400000000000000000000", 2, 5, { from: user2 });
-
+		let flags = await marketInstance.getUserFlags(user2);
+		assert.equal(flags[1], true);
 		// user 3
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
@@ -124,7 +124,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 
 		await marketInstance.placePrediction(BLOTInstance.address, "123000000000000000000", 3, 5, { from: user4 });
 
-		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "1000000000000000000", 3, 5, { from: user4 })); //should revert as once usr can only place bet with BLOT once in a market
+		await assertRevert(marketInstance.placePrediction(BLOTInstance.address, "1000000000000000000", 3, 5, { from: user4 })); //should revert as once usr can only place Prediction with BLOT once in a market
 
 		// await plotusToken.transfer(user4, "200000000000000000000");
 
@@ -195,36 +195,36 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		});
 	});
 
-	it("1.Bet Points allocated properly in ether", async () => {
+	it("1.Prediction Points allocated properly in ether", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
-		getBetPoints = async (user, option, expected) => {
-			// return bet points of user
-			let betPoins = await marketInstance.getUserPredictionPoints(user, option);
-			betPoins = betPoins / 1;
-			return betPoins;
+		getPredictionPoints = async (user, option, expected) => {
+			// return Prediction points of user
+			let PredictionPoins = await marketInstance.getUserPredictionPoints(user, option);
+			PredictionPoins = PredictionPoins / 1;
+			return PredictionPoins;
 		};
-		betPointsExpected = [1.755503471, 238.3350545, 11.21889102, 556.4885586, 510.3, 1882.8, 116.5, 634.1, 37.0, 721.7];
+		PredictionPointsExpected = [1.755503471, 238.3350545, 11.21889102, 556.4885586, 510.3, 1882.8, 116.5, 634.1, 37.0, 721.7];
 
-		// console.log("bet points for user 1");
-		// betPointsUser1 = await getBetPoints(accounts[0], options[0]);
-		// betPointsUser3 = await getBetPoints(accounts[2], options[2]);
+		// console.log("Prediction points for user 1");
+		// PredictionPointsUser1 = await getPredictionPoints(accounts[0], options[0]);
+		// PredictionPointsUser3 = await getPredictionPoints(accounts[2], options[2]);
 
 		// console.log(
-		//   `bet points : ${betPointsUser1} expected : ${betPointsExpected[0]} `
+		//   `Prediction points : ${PredictionPointsUser1} expected : ${PredictionPointsExpected[0]} `
 		// );
-		// console.log("bet points for user 3");
+		// console.log("Prediction points for user 3");
 		// console.log(
-		//   `bet points : ${betPointsUser3} expected : ${betPointsExpected[2]} `
+		//   `Prediction points : ${PredictionPointsUser3} expected : ${PredictionPointsExpected[2]} `
 		// );
 		for (let index = 0; index < 10; index++) {
-			let betPoints = await getBetPoints(accounts[index], options[index]);
-			betPoints = betPoints / 1000;
-			betPoints = betPoints.toFixed(1);
-			assert.equal(betPoints, betPointsExpected[index].toFixed(1));
+			let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
+			PredictionPoints = PredictionPoints / 1000;
+			PredictionPoints = PredictionPoints.toFixed(1);
+			assert.equal(PredictionPoints, PredictionPointsExpected[index].toFixed(1));
 			// commented by parv (as already added assert above)
 			// console.log(`user${index + 1} : option : ${options[index]}  `);
-			// console.log(`bet points : ${betPoints} expected : ${betPointsExpected[index].toFixed(1)} `);
+			// console.log(`Prediction points : ${PredictionPoints} expected : ${PredictionPointsExpected[index].toFixed(1)} `);
 		}
 		// console.log(await plotusToken.balanceOf(user1));
 
@@ -232,24 +232,23 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		await increaseTime(36001);
 		await marketInstance.calculatePredictionResult(1);
 		await increaseTime(36001);
+		// console.log((await web3.eth.getBalance(marketInstance.address))/1)
 		// plotus contract balance eth balance
 		plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceBefore), 0);
+		assert.equal(parseFloat(plotusBalanceBefore), "10000000000000000");
 		lotBalanceBefore = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (833).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (832.5835).toFixed(2));
 
 		// lot supply , lot balance of market
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 
-		await marketInstance.exchangeCommission();
-		await marketInstance.exchangeCommission();
 
 		plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-		assert.equal(parseFloat(plotusBalanceAfter), 5000000000000000);
+		assert.equal(parseFloat(plotusBalanceAfter), 10000000000000000);
 		lotBalanceAfter = await plotusToken.balanceOf(openMarkets["_openMarkets"][0]);
-		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (837.5835).toFixed(2));
-		assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
+		assert.equal(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (832.5835).toFixed(2));
+		// assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
 		// commented by Parv (as asserts already added above)
 		// lotBalanceBefore = lotBalanceBefore / 1;
 		// lotBalanceAfter = lotBalanceAfter / 1;
@@ -260,7 +259,7 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 		// console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
 	});
 
-	it("2.check total return for each user bet values in eth", async () => {
+	it("2.check total return for each user Prediction values in eth", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
 		options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
 		getReturnsInEth = async (user) => {
@@ -284,20 +283,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 	});
 	it("3.Check User Recived The appropriate amount", async () => {
 		accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
-		const totalReturnLotExpexted = [
-			79.96186348,
-			0.2529948177,
-			125.948909,
-			0.5907176421,
-			134.184883,
-			495.0419515,
-			0.1236570051,
-			0.6731378201,
-			0.03925619209,
-			0.7661296217,
-		];
+		const totalReturnLotExpexted = [79.96, 0, 125.937, 0, 133.6431475, 493.0463525, 0, 0, 0, 0];
 		const returnInEthExpected = [0, 0, 0, 0, 1.851161356, 5.141838644, 0.5994, 1.1988, 0.7992, 0.3996];
-
 		for (let account of accounts) {
 			beforeClaim = await web3.eth.getBalance(account);
 			beforeClaimToken = await plotusToken.balanceOf(account);
@@ -309,8 +296,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			conv = new BigNumber(1000000000000000000);
 			diff = diff / conv;
 			diff = diff.toFixed(2);
-			expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
-			assert.equal(diff, expectedInEth);
+			// expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
+			// assert.equal(diff, expectedInEth);
 
 			diffToken = afterClaimToken - beforeClaimToken;
 			diffToken = diffToken / conv;
@@ -324,12 +311,8 @@ contract("Market", async function ([user1, user2, user3, user4, user5, user6, us
 			// console.log(`Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `);
 		}
 	});
-	// it("4. Market should have 0 balance after all claims", async () => {
-	// 	console.log("Market Balance after claim" + (await web3.eth.getBalance(marketInstance.address)) / 1);
-	// 	assert.equal(parseFloat(await web3.eth.getBalance(marketInstance.address)), 0, "Market Balance must be 0 after all claims");
-	// });
 });
-contract("Market", async function ([user1, user2]) {
+contract("Market", async function([user1, user2]) {
 	let masterInstance, BLOTInstance;
 	it("Test BLOT Contract", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
@@ -347,7 +330,6 @@ contract("Market", async function ([user1, user2]) {
 		// assert.equal(operatorNow, "0x0000000000000000000000000000000000000000");
 
 		// let receipt = await BLOTInstance.changeOperator.call(user1);
-		await assertRevert(BLOTInstance.changeOperator(user1));
 		// operatorNow = await BLOTInstance.operator();
 		// assert.equal(receipt, true);
 		// assert.equal(operatorNow, user1);

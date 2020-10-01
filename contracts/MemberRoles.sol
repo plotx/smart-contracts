@@ -1,12 +1,15 @@
-/* Copyright (C) 2017 GovBlocks.io
+/* Copyright (C) 2020 PlotX.io
+
   This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
+
   This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
+
   You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
@@ -14,7 +17,6 @@ pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
-import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/Iupgradable.sol";
@@ -22,7 +24,6 @@ import "./interfaces/ITokenController.sol";
 
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     ITokenController internal tokenController;
-    IGovernance internal governance;
     struct MemberRoleDetails {
         uint256 memberCounter;
         mapping(address => uint256) memberIndex;
@@ -71,7 +72,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         tokenController = ITokenController(
             masterInstance.getLatestAddress("TC")
         );
-        governance = IGovernance(masterInstance.getLatestAddress("GV"));
     }
 
     /**

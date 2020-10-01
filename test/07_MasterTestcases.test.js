@@ -51,21 +51,7 @@ contract('Master', function(accounts) {
   });
 
   describe('Update master address', function() {
-    it.skip('Update master address after posting data in governance implementation', async function() {
-      let proxy = await OwnedUpgradeabilityProxy.at(gov.address);
-      let implementation = await Governance.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      proxy = await OwnedUpgradeabilityProxy.at(
-        await ms.getLatestAddress(toHex('PC'))
-      );
-      implementation = await ProposalCategory.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      proxy = await OwnedUpgradeabilityProxy.at(
-        await ms.getLatestAddress(toHex('MR'))
-      );
-      implementation = await MemberRoles.at(await proxy.implementation());
-      await implementation.setMasterAddress();
-      assert.equal(await implementation.ms(), owner);
+    it('Update master address', async function() {
       let newMaster = await Master.new();
       let actionHash = encode1(['address'], [newMaster.address]);
       await gvProp(
@@ -83,7 +69,7 @@ contract('Master', function(accounts) {
     it('Create a sample proposal after updating master', async function() {
       let actionHash = encode(
         'updateUintParameters(bytes8,uint256)',
-        toHex('MAXFOL'),
+        toHex('MAXDRFT'),
         7
       );
       await gvProp(
@@ -95,13 +81,13 @@ contract('Master', function(accounts) {
         0
       );
       assert.equal(
-        (await gov.getUintParameters(toHex('MAXFOL')))[1].toNumber(),
+        (await gov.getUintParameters(toHex('MAXDRFT')))[1].toNumber(),
         7
       );
     });
 
     it('Sending funds to funds to PL', async function() {
-      await pl.sendTransaction({from: owner, value: toWei(100)});
+      await pl.sendTransaction({from: owner, value: toWei(10)});
       await plotTok.transfer(pl.address, toWei(1));
       await plotTok.transfer(tc.address, toWei(1));
     });
@@ -376,17 +362,17 @@ contract('Master', function(accounts) {
       mas = await OwnedUpgradeabilityProxy.new(mas.address);
       mas = await Master.at(mas.address);
       await assertRevert(
-        mas.initiateMaster([], mas.address, mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address, {from: newOwner})
+        mas.initiateMaster([], mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address, {from: newOwner})
       );
     });
     it('Should revert if length of implementation array and contract array are not same', async function() {
       await assertRevert(
-        mas.initiateMaster([], mas.address, mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address)
+        mas.initiateMaster([], mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address)
       );
     });
     it('Should revert if master already initiated', async function() {
       await assertRevert(
-        ms.initiateMaster([], mas.address, mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address)
+        ms.initiateMaster([], mas.address, mas.address, mas.address, [mas.address, mas.address, mas.address], mas.address)
       );
     });
   });

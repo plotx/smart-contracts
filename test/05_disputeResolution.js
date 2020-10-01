@@ -95,8 +95,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.submitVote(proposalId, 1, {from:dr2});
     await gv.submitVote(proposalId, 1, {from:dr3});
     await gv.closeProposal(proposalId);
-    await increaseTime(86401);
-    await gv.triggerAction(proposalId);
+    // await increaseTime(86401);
     // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
     // assert.equal(data[0], proposalId,"dispute proposal mismatch");
     // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);
@@ -174,7 +173,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let plotusContractBalanceAfter = await plotusToken.balanceOf(plotusNewInstance.address);
     // assert.isAbove(plotusContractBalanceBefore/1, plotusContractBalanceAfter/1);
     //InIncentives will be transferred to governance 100 tokens i.e 100000000000000000000
-    assert.equal((plotusContractBalanceAfter/1) + proposal[4]/1, plotusContractBalanceBefore/1 - 100000000000000000000, "Tokens staked for dispute not burned");
+    assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 100000000000000000000, "Tokens staked for dispute not burned");
 
     let winningOption_afterVote = await marketInstance.getMarketResults();
     assert.equal(winningOption_before[0]/1, winningOption_afterVote[0]/1);

@@ -42,16 +42,14 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let nowTime = await latestTime();
       await vesting.addTokenVesting(user1, nowTime, toWei(5000000), 20, 30, 90, 0);
       let vestingData = await vesting.tokenAllocations(user1); 
-      assert.equal(vestingData[0], nowTime);
-      assert.equal(vestingData[1]/1e18, 5000000);
-      assert.equal(vestingData[2], 20);
-      assert.equal(vestingData[3], 90);
-      assert.equal(vestingData[4], 0);
-      assert.equal(vestingData[5], 30);
+      assert.equal(vestingData[0], 20);
+      assert.equal(vestingData[1], 0);
+      assert.equal(vestingData[2], 90);
+      assert.equal(vestingData[3], 30);
+      assert.equal(vestingData[4], nowTime);
+      assert.equal(vestingData[5]/1e18, 5000000);
       assert.equal(vestingData[6], 0);
-      assert.equal(vestingData[7], 0);
     });
-
     it('Vesting 5M tokens with no cliff, 10% upfront and 15% of monthly release.', async function () {
       let nowTime = await latestTime();
       let userBalBefore = await plotusToken.balanceOf(user2);
@@ -64,14 +62,13 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData = await vesting.tokenAllocations(user2); 
       assert.equal(Math.floor((vestingBalBefore - vestingBalAfter/1 + toWei(5000000)/1)/1e18), 500000);
       assert.equal(Math.floor((userBalAfter - userBalBefore)/1e18), 500000);
-      assert.equal(vestingData[0], nowTime);
-      assert.equal(vestingData[1]/1e18, 4500000);
-      assert.equal(vestingData[2], 6);
-      assert.equal(vestingData[3], 0);
-      assert.equal(vestingData[4]/1e18, 500000);
-      assert.equal(vestingData[5], 30);
+      assert.equal(vestingData[0], 6);
+      assert.equal(vestingData[1], 0);
+      assert.equal(vestingData[2], 0);
+      assert.equal(vestingData[3], 30);
+      assert.equal(vestingData[4], nowTime);
+      assert.equal(vestingData[5]/1e18, 4500000);
       assert.equal(vestingData[6], 0);
-      assert.equal(vestingData[7], 0);
     });
 
     it('Vesting 5M tokens with no cliff, 20% upfront and 13% of monthly release.', async function () {
@@ -86,14 +83,13 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData = await vesting.tokenAllocations(user3); 
       assert.equal(Math.floor((vestingBalBefore - vestingBalAfter/1 + toWei(5000000)/1)/1e18), 1000000);
       assert.equal(Math.floor((userBalAfter - userBalBefore)/1e18), 1000000);
-      assert.equal(vestingData[0], nowTime);
-      assert.equal(vestingData[1]/1e18, 4000000);
-      assert.equal(vestingData[2], 6);
-      assert.equal(vestingData[3], 0);
-      assert.equal(vestingData[4]/1e18, 1000000);
-      assert.equal(vestingData[5], 30);
+      assert.equal(vestingData[0], 6);
+      assert.equal(vestingData[1], 0);
+      assert.equal(vestingData[2], 0);
+      assert.equal(vestingData[3], 30);
+      assert.equal(vestingData[4], nowTime);
+      assert.equal(vestingData[5]/1e18, 4000000);
       assert.equal(vestingData[6], 0);
-      assert.equal(vestingData[7], 0);
     });
 
     it('Vesting 5M tokens with 3 months of cliff, no upfront and 20% of quaterly release.', async function () {
@@ -101,14 +97,13 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       await vesting.addTokenVesting(user4, nowTime, toWei(5000000), 5, 90, 90, 0);
 
       let vestingData = await vesting.tokenAllocations(user4); 
-      assert.equal(vestingData[0], nowTime);
-      assert.equal(vestingData[1]/1e18, 5000000);
-      assert.equal(vestingData[2], 5);
+      assert.equal(vestingData[0], 5);
+      assert.equal(vestingData[1], 0);
+      assert.equal(vestingData[2], 90);
       assert.equal(vestingData[3], 90);
-      assert.equal(vestingData[4], 0);
-      assert.equal(vestingData[5], 90);
+      assert.equal(vestingData[4], nowTime);
+      assert.equal(vestingData[5]/1e18, 5000000);
       assert.equal(vestingData[6], 0);
-      assert.equal(vestingData[7], 0);
     });
 
     it('Vesting 5M tokens with 12 months of cliff, no upfront and 10% of monthly release.', async function () {
@@ -116,14 +111,13 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       await vesting.addTokenVesting(user5, nowTime, toWei(5000000), 10, 30, 360, 0);
 
       let vestingData = await vesting.tokenAllocations(user5); 
-      assert.equal(vestingData[0], nowTime);
-      assert.equal(vestingData[1]/1e18, 5000000);
-      assert.equal(vestingData[2], 10);
-      assert.equal(vestingData[3], 360);
-      assert.equal(vestingData[4], 0);
-      assert.equal(vestingData[5], 30);
+      assert.equal(vestingData[0], 10);
+      assert.equal(vestingData[1], 0);
+      assert.equal(vestingData[2], 360);
+      assert.equal(vestingData[3], 30);
+      assert.equal(vestingData[4], nowTime);
+      assert.equal(vestingData[5]/1e18, 5000000);
       assert.equal(vestingData[6], 0);
-      assert.equal(vestingData[7], 0);
     });
 
     it('After 1 month.', async function () {
@@ -139,10 +133,10 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let user3BAlAfter = await plotusToken.balanceOf(user3);
       let vestingData2 = await vesting.tokenAllocations(user2); 
       let vestingData3 = await vesting.tokenAllocations(user3); 
-      assert.equal(vestingData2[6], 1);
-      assert.equal(vestingData2[7]/1e18, 750000);
-      assert.equal(vestingData3[6], 1);
-      assert.equal(Math.floor(vestingData3[7]/1e18), 666666);
+      assert.equal(vestingData2[1], 1);
+      assert.equal(vestingData2[6]/1e18, 750000);
+      assert.equal(vestingData3[1], 1);
+      assert.equal(Math.floor(vestingData3[6]/1e18), 666666);
       assert.equal(Math.floor((user2BAlAfter - user2BAlBefore)/1e18), 750000);
       assert.equal(Math.floor((user3BAlAfter - user3BAlBefore)/1e18), 666666);
     });
@@ -160,10 +154,10 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let user3BAlAfter = await plotusToken.balanceOf(user3);
       let vestingData2 = await vesting.tokenAllocations(user2); 
       let vestingData3 = await vesting.tokenAllocations(user3); 
-      assert.equal(vestingData2[6], 2);
-      assert.equal(vestingData2[7]/1e18, 1500000);
-      assert.equal(vestingData3[6], 2);
-      assert.equal(Math.floor(vestingData3[7]/1e18), 1333333);
+      assert.equal(vestingData2[1], 2);
+      assert.equal(vestingData2[6]/1e18, 1500000);
+      assert.equal(vestingData3[1], 2);
+      assert.equal(Math.floor(vestingData3[6]/1e18), 1333333);
       assert.equal(Math.floor((user2BAlAfter/1e18 - user2BAlBefore/1e18)), 750000);
       assert.equal(Math.floor((user3BAlAfter - user3BAlBefore)/1e18), 666666);
     });
@@ -187,14 +181,14 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData2 = await vesting.tokenAllocations(user2); 
       let vestingData3 = await vesting.tokenAllocations(user3); 
       let vestingData4 = await vesting.tokenAllocations(user4); 
-      assert.equal(vestingData1[6], 1);
-      assert.equal(vestingData1[7]/1e18, 250000);
-      assert.equal(vestingData2[6], 3);
-      assert.equal(vestingData2[7]/1e18, 2250000);
-      assert.equal(vestingData3[6], 3);
-      assert.equal(Math.floor(vestingData3[7])/1e18, 2000000);
-      assert.equal(vestingData4[6], 1);
-      assert.equal(Math.floor(vestingData4[7])/1e18, 1000000);
+      assert.equal(vestingData1[1], 1);
+      assert.equal(vestingData1[6]/1e18, 250000);
+      assert.equal(vestingData2[1], 3);
+      assert.equal(vestingData2[6]/1e18, 2250000);
+      assert.equal(vestingData3[1], 3);
+      assert.equal(Math.floor(vestingData3[6])/1e18, 2000000);
+      assert.equal(vestingData4[1], 1);
+      assert.equal(Math.floor(vestingData4[6])/1e18, 1000000);
       assert.equal(Math.floor((user1BAlAfter - user1BAlBefore)/1e18), 250000);
       assert.equal(Math.floor((user2BAlAfter - user2BAlBefore)/1e18), 750000);
       assert.equal(Math.floor((user3BAlAfter - user3BAlBefore)/1e18), 666666);
@@ -220,14 +214,14 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData2 = await vesting.tokenAllocations(user2); 
       let vestingData3 = await vesting.tokenAllocations(user3); 
       let vestingData4 = await vesting.tokenAllocations(user4); 
-      assert.equal(vestingData1[6], 4);
-      assert.equal(vestingData1[7]/1e18, 1000000);
-      assert.equal(vestingData2[6], 6);
-      assert.equal(vestingData2[7]/1e18, 4500000);
-      assert.equal(vestingData3[6], 6);
-      assert.equal(Math.floor(vestingData3[7])/1e18, 4000000);
-      assert.equal(vestingData4[6], 2);
-      assert.equal(Math.floor(vestingData4[7])/1e18, 2000000);
+      assert.equal(vestingData1[1], 4);
+      assert.equal(vestingData1[6]/1e18, 1000000);
+      assert.equal(vestingData2[1], 6);
+      assert.equal(vestingData2[6]/1e18, 4500000);
+      assert.equal(vestingData3[1], 6);
+      assert.equal(Math.floor(vestingData3[6])/1e18, 4000000);
+      assert.equal(vestingData4[1], 2);
+      assert.equal(Math.floor(vestingData4[6])/1e18, 2000000);
       assert.equal(Math.floor((user1BAlAfter - user1BAlBefore)/1e18), 750000);
       assert.equal(Math.floor((user2BAlAfter - user2BAlBefore)/1e18), 2250000);
       assert.equal(Math.floor((user3BAlAfter - user3BAlBefore)/1e18), 2000000);
@@ -247,10 +241,10 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let user4BAlAfter = await plotusToken.balanceOf(user4);
       let vestingData1 = await vesting.tokenAllocations(user1); 
       let vestingData4 = await vesting.tokenAllocations(user4); 
-      assert.equal(vestingData1[6], 9);
-      assert.equal(vestingData1[7]/1e18, 2250000);
-      assert.equal(vestingData4[6], 3);
-      assert.equal(Math.floor(vestingData4[7])/1e18, 3000000);
+      assert.equal(vestingData1[1], 9);
+      assert.equal(vestingData1[6]/1e18, 2250000);
+      assert.equal(vestingData4[1], 3);
+      assert.equal(Math.floor(vestingData4[6])/1e18, 3000000);
       assert.equal(Math.floor((user1BAlAfter - user1BAlBefore)/1e18), 1250000);
       assert.equal(Math.floor((user4BAlAfter - user4BAlBefore)/1e18), 1000000);
     });
@@ -271,12 +265,12 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData1 = await vesting.tokenAllocations(user1); 
       let vestingData4 = await vesting.tokenAllocations(user4); 
       let vestingData5 = await vesting.tokenAllocations(user5); 
-      assert.equal(vestingData1[6], 10);
-      assert.equal(vestingData1[7]/1e18, 2500000);
-      assert.equal(vestingData4[6], 4);
-      assert.equal(Math.floor(vestingData4[7])/1e18, 4000000);
-      assert.equal(vestingData5[6], 1);
-      assert.equal(Math.floor(vestingData5[7])/1e18, 500000);
+      assert.equal(vestingData1[1], 10);
+      assert.equal(vestingData1[6]/1e18, 2500000);
+      assert.equal(vestingData4[1], 4);
+      assert.equal(Math.floor(vestingData4[6])/1e18, 4000000);
+      assert.equal(vestingData5[1], 1);
+      assert.equal(Math.floor(vestingData5[6])/1e18, 500000);
       assert.equal(Math.floor((user1BAlAfter - user1BAlBefore)/1e18), 250000);
       assert.equal(Math.floor((user4BAlAfter - user4BAlBefore)/1e18), 1000000);
       assert.equal(Math.floor((user5BAlAfter - user5BAlBefore)/1e18), 500000);
@@ -298,12 +292,12 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       let vestingData1 = await vesting.tokenAllocations(user1); 
       let vestingData4 = await vesting.tokenAllocations(user4); 
       let vestingData5 = await vesting.tokenAllocations(user5); 
-      assert.equal(vestingData1[6], 20);
-      assert.equal(vestingData1[7]/1e18, 5000000);
-      assert.equal(vestingData4[6], 5);
-      assert.equal(Math.floor(vestingData4[7])/1e18, 5000000);
-      assert.equal(vestingData5[6], 10);
-      assert.equal(Math.floor(vestingData5[7])/1e18, 5000000);
+      assert.equal(vestingData1[1], 20);
+      assert.equal(vestingData1[6]/1e18, 5000000);
+      assert.equal(vestingData4[1], 5);
+      assert.equal(Math.floor(vestingData4[6])/1e18, 5000000);
+      assert.equal(vestingData5[1], 10);
+      assert.equal(Math.floor(vestingData5[6])/1e18, 5000000);
       assert.equal(Math.floor((user1BAlAfter - user1BAlBefore)/1e18), 2500000);
       assert.equal(Math.floor((user4BAlAfter - user4BAlBefore)/1e18), 1000000);
       assert.equal(Math.floor((user5BAlAfter - user5BAlBefore)/1e18), 4500000);
@@ -325,6 +319,10 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
         it('should revert if amountVestedPerPeriod is 0', async function () {
           let nowTime = await latestTime();
           await assertRevert(vesting.addTokenVesting(owner, nowTime, 5, 6, 30, 0, 10));
+        });
+        it('should revert if start time is 0', async function () {
+          
+          await assertRevert(vesting.addTokenVesting(owner, 0, 5, 6, 30, 0, 10));
         });
         it('should not deploy with nullAddress', async function () {
           const nullAddress = "0x0000000000000000000000000000000000000000";

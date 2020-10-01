@@ -1,0 +1,21 @@
+dist: trusty
+sudo: required
+language: node_js
+
+node_js:
+  - "12"
+
+matrix:
+  fast_finish: true
+  allow_failures:
+    - env: 'TASK=test'
+  
+jobs:
+  include:
+    - stage: compile
+      install: npm install -g truffle@5.1.27
+      script: truffle compile
+    - stage: test
+      install: npm install -g truffle@5.1.27
+      before_script: npm install solidity-coverage ethereumjs-abi
+      script: npm run test

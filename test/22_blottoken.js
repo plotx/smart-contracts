@@ -73,5 +73,14 @@ contract('bLOTToken', function([user1,user2]){
         await BLOTInstance.mint(user1,"1000000000000000000000");
         await assertRevert(BLOTInstance.convertToPLOT(BLOTInstance.address, BLOTInstance.address, "10000000000000000000000"))
         })
+
+    it('7. Should not allow to mint to zero address',async function(){
+        await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
+        await assertRevert(BLOTInstance.mint(ZERO_ADDRESS,"1000000000000000000000"));
+        })
+
+    it('8. Should not allow to re-initiate bLOT instance', async function() {
+        await assertRevert(BLOTInstance.initiatebLOT(user1));
+    });
 })
  

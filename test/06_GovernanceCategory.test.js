@@ -10,7 +10,10 @@ const Market = artifacts.require('MockMarket');
 const DummyMockMarket = artifacts.require('DummyMockMarket');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
+const assertRevert = require("./utils/assertRevert.js").assertRevert;
+const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const encode = require('./utils/encoder.js').encode;
+const encode1 = require('./utils/encoder.js').encode1;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { takeSnapshot, revertSnapshot } = require('./utils/snapshot');
 
@@ -47,8 +50,10 @@ contract('Configure Global Parameters', accounts => {
       pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
       marketConfig = await MarketConfig.at(await pl.marketUtility());
       plotTok = await PlotusToken.deployed();
-      await pl.sendTransaction({from: ab1, value: toWei(100)});
+      await pl.sendTransaction({from: ab1, value: toWei(5)});
+      await pl.sendTransaction({from: newAB, value: toWei(10)});
       await plotTok.transfer(pl.address, toWei(20));
+      await plotTok.transfer(newAB, toWei(20));
 
     });
 
@@ -57,9 +62,8 @@ contract('Configure Global Parameters', accounts => {
       it('Should Not Update Market Config if zero address passed', async function() {
         let params = [];
         params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
+        params.push((await marketConfig.getFeedAddresses())[0]);
         params.push(plotTok.address);
-        params.push((await marketConfig.getFeedAddresses())[1]);
         let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         oldImplementation = await oldImplementation.implementation();
         let actionHash = encode(
@@ -82,7 +86,7 @@ contract('Configure Global Parameters', accounts => {
       it('Should Update Market Config', async function() {
         let params = [];
         params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getETHtoTokenRouterAndPath())[0]);
+        params.push((await marketConfig.getFeedAddresses())[0]);
         params.push(plotTok.address);
         params.push((await marketConfig.getFeedAddresses())[1]);
         let newMarketConfig = await MarketConfig.new(params);
@@ -105,9 +109,13 @@ contract('Configure Global Parameters', accounts => {
 
       it('Should Update Market Implementation', async function() {
         let newMaketImpl = await Market.new();
-        let actionHash = encode(
-          'updateMarketImplementation(address)',
-          newMaketImpl.address
+        let actionHash
+        actionHash = encode1(
+          ['uint256[]', 'address[]'],
+          [
+            [0,1],
+            [newMaketImpl.address, newMaketImpl.address]
+          ]
         );
         await gvProposal(
           5,
@@ -117,7 +125,26 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        assert.equal(await pl.marketImplementation(), newMaketImpl.address);
+      });
+
+      it('Should Not Update Market Implementation of invalid paramters are passed', async function() {
+        let newMaketImpl = await Market.new();
+        let actionHash
+        actionHash = encode1(
+          ['uint256[]', 'address[]'],
+          [
+            [0],
+            [newMaketImpl.address, newMaketImpl.address]
+          ]
+        );
+        await gvProposal(
+          5,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
       });
 
       it('Should Update Existing Markets Implementation', async function() {
@@ -228,7 +255,6 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        console.log(await gv.proposal(pId));
         let plbalPlotAfter = await plotTok.balanceOf(pl.address);
         let userbalPlotAfter = await plotTok.balanceOf(newAB);
         assert.equal(plbalPlot/1 - plbalPlotAfter/1, 1000000000000);
@@ -257,28 +283,11 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(plbalEth - plbalEthAfter, toWei(10));
         assert.equal(userbalEthAfter/1e18 - userbalEth/1e18, 10);
       });
-
-      it('Should not Change token operator if null address', async function() {
-
-        let actionHash = encode(
-          'changeOperator(address)',
-          ZERO_ADDRESS
-        );
-        await gvProposal(
-          22,
-          actionHash,
-          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-          gv,
-          2,
-          0
-        );
-        assert.notEqual(await plotTok.operator(), ZERO_ADDRESS);
-      });
-
-      it('Should Change token operator', async function() {
+      
+      it('Should Whitelist sponsor', async function() {
 
         let actionHash = encode(
-          'changeOperator(address)',
+          'whitelistSponsor(address)',
           newAB
         );
         await gvProposal(
@@ -289,29 +298,66 @@ contract('Configure Global Parameters', accounts => {
           2,
           0
         );
-        assert.equal(await plotTok.operator(), newAB);
+        assert.equal(await ms.whitelistedSponsor(newAB), true);
       });
 
-      // it('Should Swap AB Member', async function() {
+      it('Should create a proposal with category of no action', async function() {
 
-      //   assert.equal(await mr.checkRole(newAB, 1), false);
-      //   assert.equal(await mr.checkRole(ab1, 1), true);
-      //   let actionHash = encode(
-      //     'swapABMember(address,address)',
-      //     newAB,
-      //     ab1
-      //   );
-      //   await gvProposal(
-      //     12,
-      //     actionHash,
-      //     await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
-      //     gv,
-      //     2,
-      //     0
-      //   );
-      //   assert.equal(await mr.checkRole(ab1, 1), false);
-      //   assert.equal(await mr.checkRole(newAB, 1), true);
-      // });
+        let actionHash = encode(
+          null
+        );
+        let p = await gv.getProposalLength();
+        await gv.createProposal("proposal", "proposal", "proposal", 0);
+        let canClose = await gv.canCloseProposal(p);
+        assert.equal(parseFloat(canClose),0);
+        await gv.categorizeProposal(p, 23, 0);
+        await assertRevert(gv.submitProposalWithSolution(p, "proposal", "0x1234"));
+        await gv.submitProposalWithSolution(p, "proposal", actionHash);
+        await gv.submitVote(p, 1);
+        await increaseTime(604800);
+        await gv.closeProposal(p);
+        let proposal = await gv.proposal(p);
+        assert.equal(proposal[2].toNumber(), 3);
+      });
+
+      it('Should Swap AB Member', async function() {
+
+        assert.equal(await mr.checkRole(newAB, 1), false);
+        assert.equal(await mr.checkRole(ab1, 1), true);
+        let actionHash = encode(
+          'swapABMember(address,address)',
+          newAB,
+          ab1
+        );
+        await gvProposal(
+          12,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0, true
+        );
+        assert.equal(await mr.checkRole(ab1, 1), false);
+        assert.equal(await mr.checkRole(newAB, 1), true);
+      });
+
+      it('Should Swap AB Member without whitelisting proposal', async function() {
+
+        assert.equal(await mr.checkRole(newAB, 1), true);
+        assert.equal(await mr.checkRole(ab1, 1), false);
+        let actionHash = encode(
+          'swapABMember(address,address)',
+          ab1,
+          newAB
+        );
+        let proposalId = await gv.getProposalLength();
+        await gv.createProposalwithSolution("Add new member", "Add new member", "hash", 12, "", actionHash)
+        await gv.submitVote(proposalId/1, 1);
+        await increaseTime(604810);
+        await gv.closeProposal(proposalId/1);
+        assert.equal(await mr.checkRole(ab1, 1), true);
+        assert.equal(await mr.checkRole(newAB, 1), false);
+      });
     });
 
     after(async function () {

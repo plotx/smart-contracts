@@ -44,7 +44,7 @@ contract("Proposal Category", function ([owner, other]) {
 		const g5 = await pc.categoryAction(1);
 		assert.equal(g5[2].toString(), "0x4d52");
 		const g6 = await pc.totalCategories();
-		assert.equal(g6.toNumber(), 23);
+		assert.equal(g6.toNumber(), 24);
 	});
 
 	it("14.2 should not allow unauthorized to change master address", async function () {
@@ -106,7 +106,7 @@ contract("Proposal Category", function ([owner, other]) {
 		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to update category
 		let actionHash = encode(
-			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
+			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[],string)",
 			c1,
 			"YoYo",
 			2,
@@ -117,7 +117,8 @@ contract("Proposal Category", function ([owner, other]) {
 			"",
 			nullAddress,
 			toHex("EX"),
-			[0, 0, 0]
+			[0, 0, 0],
+			""
 		);
 		let p1 = await gv.getProposalLength();
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
@@ -311,7 +312,7 @@ contract("Proposal Category", function ([owner, other]) {
 				gv.address,
 				toHex("EX"),
 				[0, 0, 0, 1],
-				"changeDependentContractAddress()",
+				"claimReward()",
 			]
 		);
 		pId = (await gv.getProposalLength()).toNumber();
@@ -322,33 +323,21 @@ contract("Proposal Category", function ([owner, other]) {
 		assert.equal(proposalActionStatus.toNumber(), 3, "Action not executed");
 	});
 
-	// it('Create proposal in category with no action, submit action, should revert', async function() {
-	//   let categoryId = (await pc.totalCategories())/1 - 1;
-	//   actionHash = encode(
-	//     'upgradeContractImplementation(bytes2,address)',
-	//     toHex('GV'),
-	//     gv.address
-	//   );
-	//   pId = (await gv.getProposalLength()).toNumber();
-	//   await gv.createProposal('Proposal2', 'Proposal2', 'Proposal2', 0);
-	//   await gv.categorizeProposal(pId, categoryId, 0);
-	//   await assertRevert(
-	//     gv.submitProposalWithSolution(pId, 'Upgrade', actionHash)
-	//   );
-	//   await gv.submitProposalWithSolution(pId, 'Upgrade', '0x');
-	//   let members = await mr.members(2);
-	//   let iteration = 0;
-	//   for (iteration = 0; iteration < members[1].length; iteration++)
-	//     await gv.submitVote(pId, 1, {
-	//       from: members[1][iteration]
-	//     });
-
-	//   await increaseTime(604800);
-	//   await gv.closeProposal(pId);
-	//   await assertRevert(gv.rejectAction(pId));
-	//   await increaseTime(86500);
-	//   await assertRevert(gv.triggerAction(pId));
-	// });
+	it('Create proposal in category with external action, should execute', async function() {
+	  let categoryId = (await pc.totalCategories())/1 - 1;
+	  actionHash = encode(
+	    null
+	  );
+	  pId = (await gv.getProposalLength()).toNumber();
+	  await gv.createProposal('Proposal2', 'Proposal2', 'Proposal2', 0);
+	  await gv.categorizeProposal(pId, categoryId, 0);
+	  await gv.submitProposalWithSolution(pId, 'Upgrade', actionHash);
+      await gv.submitVote(pId, 1);
+	  await increaseTime(604800);
+	  await gv.closeProposal(pId);
+	  await increaseTime(86500);
+	  await gv.triggerAction(pId);
+	});
 
 	it("14.13 Add category with no action hash and valid data, category should be added", async function () {
 		let categoryId = await pc.totalCategories();

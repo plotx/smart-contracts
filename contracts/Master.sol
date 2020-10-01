@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
@@ -14,6 +29,7 @@ contract Master is Governed {
     bool public masterInitialised;
 
     mapping(address => bool) public contractsActive;
+    mapping(address => bool) public whitelistedSponsor;
     mapping(bytes2 => address payable) public contractAddress;
 
     /**
@@ -32,9 +48,8 @@ contract Master is Governed {
      */
     function initiateMaster(
         address[] calldata _implementations,
-        address _marketImplementation,
         address _token,
-        address _defaultbLOTMinter,
+        address _defaultAddress,
         address _marketUtiliy,
         address payable[] calldata _configParams,
         address _vesting
@@ -68,12 +83,12 @@ contract Master is Governed {
         _setMasterAddress();
 
         IMarketRegistry(contractAddress["PL"]).initiate(
-            _marketImplementation,
+            _defaultAddress,
             _marketUtiliy,
             _token,
             _configParams
         );
-        IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultbLOTMinter);
+        IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
     }
 
@@ -114,6 +129,10 @@ contract Master is Governed {
             );
             _replaceImplementation(_contractNames[i], _contractAddresses[i]);
         }
+    }
+
+    function whitelistSponsor(address _address) external onlyAuthorizedToGovern {
+        whitelistedSponsor[_address] = true;
     }
 
     

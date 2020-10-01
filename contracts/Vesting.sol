@@ -1,19 +1,17 @@
-/*
-  This file is part of The Colony Network.
+/* Copyright (C) 2020 PlotX.io
 
-  The Colony Network is free software: you can redistribute it and/or modify
-  it under the terms of the GNU General Public License as published by
-  the Free Software Foundation, either version 3 of the License, or
-  (at your option) any later version.
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
 
-  The Colony Network is distributed in the hope that it will be useful,
-  but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-  GNU General Public License for more details.
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with The Colony Network. If not, see <http://www.gnu.org/licenses/>.
-*/
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
 
 pragma solidity 0.5.7;
 
@@ -25,22 +23,23 @@ import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 contract Vesting {
 
   using SafeMath for uint256;
+  using SafeMath for uint32;
+  using SafeMath for uint64;
   PlotXToken public token;
   address public owner;
 
   uint constant internal SECONDS_PER_DAY = 1 days;
 
-  event Allocated(address recipient, uint256 startTime, uint256 amount, uint256 vestingDuration, uint256 vestingPeriodInDays, uint256 vestingCliff);
+  event Allocated(address recipient, uint64 startTime, uint256 amount, uint32 vestingDuration, uint64 vestingPeriodInDays, uint64 vestingCliff, uint _upfront);
   event TokensClaimed(address recipient, uint256 amountClaimed);
 
   struct Allocation {
-    uint256 startTime;
+    uint32 vestingDuration; 
+    uint32 periodClaimed;
+    uint64 vestingCliff;  
+    uint64 periodInDays; 
+    uint64 startTime; 
     uint256 amount;
-    uint256 vestingDuration;
-    uint256 vestingCliff;
-    uint256 upFront;
-    uint256 periodInDays;
-    uint256 periodClaimed;
     uint256 totalClaimed;
   }
   mapping (address => Allocation) public tokenAllocations;
@@ -73,14 +72,15 @@ contract Vesting {
   /// @param _recipient Address of the token recipient entitled to claim the vested funds
   /// @param _startTime Vesting start time as seconds since unix epoch 
   /// @param _amount Total number of tokens in vested
-  /// @param _vestingDuration Number of Periods of the Periods
+  /// @param _vestingDuration Number of Periods 
   /// @param _vestingPeriodInDays Number of days in each Period
   /// @param _vestingCliff Number of days of the vesting cliff
   /// @param _upFront Amount of tokens `_recipient` will get  right away
-  function addTokenVesting(address _recipient, uint256 _startTime, uint256 _amount, uint256 _vestingDuration, uint256 _vestingPeriodInDays, uint256 _vestingCliff, uint256 _upFront) public 
+  function addTokenVesting(address _recipient, uint64 _startTime, uint256 _amount, uint32 _vestingDuration, uint64 _vestingPeriodInDays, uint64 _vestingCliff, uint256 _upFront) public 
   onlyOwner
   noGrantExistsForUser(_recipient)
   {
+    require(_startTime != 0, "should be positive");
     if(_vestingCliff > 0){
       require(_upFront == 0, "Upfront is non zero");
     }
@@ -96,7 +96,6 @@ contract Vesting {
       vestingDuration: _vestingDuration,
       periodInDays: _vestingPeriodInDays,
       vestingCliff: _vestingCliff,
-      upFront: _upFront,
       periodClaimed: 0,
       totalClaimed: 0
     });
@@ -106,7 +105,7 @@ contract Vesting {
       token.transfer(_recipient, _upFront);
     }
 
-    emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff);
+    emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff, _upFront);
   }
 
   /// @dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested
@@ -114,23 +113,23 @@ contract Vesting {
   function claimVestedTokens() public {
 
     require(!token.isLockedForGV(msg.sender),"Locked for GV vote");
-    uint256 periodVested;
+    uint32 periodVested;
     uint256 amountVested;
     (periodVested, amountVested) = calculateVestingClaim(msg.sender);
     require(amountVested > 0, "token-zero-amount-vested");
 
     Allocation storage _tokenAllocated = tokenAllocations[msg.sender];
-    _tokenAllocated.periodClaimed = _tokenAllocated.periodClaimed.add(periodVested);
+    _tokenAllocated.periodClaimed = uint32(_tokenAllocated.periodClaimed.add(periodVested));
     _tokenAllocated.totalClaimed = _tokenAllocated.totalClaimed.add(amountVested);
     
     require(token.transfer(msg.sender, amountVested), "token-sender-transfer-failed");
     emit TokensClaimed(msg.sender, amountVested);
   }
 
-  /// @dev Calculate the vested and unclaimed months and tokens available for `_recepient` to claim
+  /// @dev Calculate the vested and unclaimed period and tokens available for `_recepient` to claim
   /// Due to rounding errors once grant duration is reached, returns the entire left grant amount
   /// Returns (0, 0) if cliff has not been reached
-  function calculateVestingClaim(address _recipient) public view returns (uint256, uint256) {
+  function calculateVestingClaim(address _recipient) public view returns (uint32, uint256) {
     Allocation storage _tokenAllocations = tokenAllocations[_recipient];
 
     // For vesting created with a future start date, that hasn't been reached, return 0, 0
@@ -149,13 +148,13 @@ contract Vesting {
     // If over vesting duration, all tokens vested
     if (elapsedDaysAfterCliffPeriod >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
       uint256 remainingTokens = _tokenAllocations.amount.sub(_tokenAllocations.totalClaimed);
-      return (_tokenAllocations.vestingDuration.sub(_tokenAllocations.periodClaimed), remainingTokens);
+      return (uint32(_tokenAllocations.vestingDuration.sub(_tokenAllocations.periodClaimed)), remainingTokens);
     } else {
-      uint256 elapsedPeriod = elapsedDaysAfterCliffPeriod.div(_tokenAllocations.periodInDays);
+      uint32 elapsedPeriod = uint32(elapsedDaysAfterCliffPeriod.div(_tokenAllocations.periodInDays));
       if(_tokenAllocations.vestingCliff > 0) {
-        elapsedPeriod = elapsedPeriod.add(1);
+        elapsedPeriod = uint16(elapsedPeriod.add(1));
       }
-      uint256 periodVested = elapsedPeriod.sub(_tokenAllocations.periodClaimed);
+      uint32 periodVested = uint32(elapsedPeriod.sub(_tokenAllocations.periodClaimed));
       uint256 amountVestedPerPeriod = _tokenAllocations.amount.div(_tokenAllocations.vestingDuration);
       uint256 amountVested = periodVested.mul(amountVestedPerPeriod);
       return (periodVested, amountVested);

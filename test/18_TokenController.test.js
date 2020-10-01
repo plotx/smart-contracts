@@ -1,5 +1,5 @@
 const Master = artifacts.require("Master");
-const TokenController = artifacts.require("TokenController");
+const TokenController = artifacts.require("MockTokenController");
 const PlotusToken = artifacts.require("MockPLOT.sol");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
@@ -45,6 +45,12 @@ contract("TokenController", ([owner, account2, account3]) => {
 
 			assert.equal(tokenInstance, plotusToken.address);
 		});
+
+		it("1.3 Should not allow to call unauthorized functions", async() => {
+			await assertRevert(tokenController.swapBLOT(owner, owner, 100));
+			await assertRevert(tokenController.initiateVesting(owner));
+			await assertRevert(tokenController.setMasterAddress());
+		})
 	});
 
 	// describe("Swap BLOT functionality", () => {
@@ -81,6 +87,7 @@ contract("TokenController", ([owner, account2, account3]) => {
 			await plotusToken.mint(owner, 2000, { from: owner });
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), 2000);
 			assert.equal(parseInt(web3.utils.fromWei(await tokenController.totalSupply())), 1e4);
+			await assertRevert(plotusToken.changeOperator(nullAddress));
 			await plotusToken.changeOperator(tokenController.address);
 			assert.equal(await plotusToken.operator(), tokenController.address);
 		});

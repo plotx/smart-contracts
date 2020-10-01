@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "../Market.sol";
+import "../marketImplementations/MarketBTC.sol";
 
-contract MockMarket is Market {
+contract MockBTCMarket is MarketBTC {
 
 	mapping(uint => uint) optionPrices;
 

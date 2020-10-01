@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
@@ -23,7 +38,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     string internal constant AMOUNT_ZERO = "Amount can not be 0";
 
     uint internal smLockPeriod;
-    uint internal burnUptoLimit;
 
     bool internal constructorCheck;
 
@@ -45,7 +59,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!constructorCheck, "Already ");
         smLockPeriod = 30 days;
-        burnUptoLimit = 20000000 * 1 ether;
         constructorCheck = true;
         masterAddress = msg.sender;
         IMaster ms = IMaster(msg.sender);
@@ -61,14 +74,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
 
     }
 
-    /**
-     * @dev to change the operator address
-     * @param _newOperator is the new address of operator
-     */
-    function changeOperator(address _newOperator) public onlyAuthorizedToGovern {
-        token.changeOperator(_newOperator);
-    }
-
     function swapBLOT(address _of, address _to, uint256 amount) public onlyAuthorized {
         bLOTToken.convertToPLOT(_of, _to, amount);
     }
@@ -79,10 +84,8 @@ contract TokenController is IERC1132, Governed, Iupgradable {
      * @param val value to set
      */
     function updateUintParameters(bytes8 code, uint val) public onlyAuthorizedToGovern {
-        if(code == "SMLP") {
+        if(code == "SMLP") { //Stake multiplier default lock period
             smLockPeriod = val.mul(1 days);
-        } else if(code == "BRLIM") {
-            burnUptoLimit = val.mul(1 ether);
         }
     }
 
@@ -90,8 +93,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         codeVal = code;
         if(code == "SMLP") {
             val= smLockPeriod.div(1 days);
-        } else if(code == "BRLIM") {
-            val = burnUptoLimit.div(1 ether);
         }
     }
 
@@ -277,30 +278,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
             unlockableTokens = unlockableTokens.add(tokensUnlockable(_of, lockReason[_of][i]));
         }  
-    }
-
-
-    /**
-    * @dev Mints new token for an address
-    * @param _member address to reward the minted tokens
-    * @param _amount number of tokens to mint
-    */
-    function mint(address _member, uint _amount) public onlyAuthorizedToGovern {
-        token.mint(_member, _amount);
-    }
-
-    /**
-    * @dev burns an amount of the tokens of the message sender
-    * account.
-    * @param amount The amount that will be burnt.
-    */
-    function burnCommissionTokens(uint256 amount) public onlyAuthorized returns (bool) {
-        if((token.totalSupply()).sub(amount) <= burnUptoLimit) {
-            return false;
-        }
-        token.operatorTransfer(msg.sender, amount);
-        token.burn(amount);
-        return true;
     }
 
     /**

@@ -77,17 +77,6 @@ contract IGovernance {
     ) 
         external;
 
-    /// @dev Edits the details of an existing proposal and creates new version
-    /// @param _proposalId Proposal id that details needs to be updated
-    /// @param _proposalDescHash Proposal description hash having long and short description of proposal.
-    function updateProposal(
-        uint _proposalId, 
-        string calldata _proposalTitle, 
-        string calldata _proposalSD, 
-        string calldata _proposalDescHash
-    ) 
-        external;
-
     /// @dev Categorizes proposal to proceed further. Categories shows the proposal objective.
     function categorizeProposal(
         uint _proposalId, 
@@ -95,18 +84,6 @@ contract IGovernance {
         uint _incentives
     ) 
         external;
-
-    /// @dev Initiates add solution 
-    /// @param _solutionHash Solution hash having required data against adding solution
-    function addSolution(
-        uint _proposalId,
-        string calldata _solutionHash, 
-        bytes calldata _action
-    ) 
-        external; 
-
-    /// @dev Opens proposal for voting
-    function openProposalForVoting(uint _proposalId) external;
 
     /// @dev Submit proposal with solution
     /// @param _proposalId Proposal id
@@ -153,10 +130,6 @@ contract IGovernance {
         );
 
     function canCloseProposal(uint _proposalId) public view returns(uint closeValue);
-
-    function pauseProposal(uint _proposalId) public;
-    
-    function resumeProposal(uint _proposalId) public;
 
     function allowedToCatgorize() public view returns(uint roleId);
 
