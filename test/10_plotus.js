@@ -298,10 +298,27 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			assert.equal(parseFloat(marketData._predictionStatus), 0);
 		});
 
-		it("1.2", async () => {
-			// close market
+		it("1.2 Should not close market if time is not reached", async() => {
+			await marketInstance.settleMarket();
+			marketData = await marketInstance.getData();
+			assert.equal(parseFloat(marketData._predictionStatus), 0);
+		});
+
+		it("1.3 Should not close market if closing value is zero", async () => {
+			await increaseTime(36001);
+			await assertRevert(marketInstance.calculatePredictionResult(0));
+		});
+
+		it("1.3", async () => {
 			await increaseTime(36001);
 			await marketInstance.calculatePredictionResult(1);
+		});
+
+		it("Cannot place prediction after prediction time", async ()=> {
+			await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "1000000000", 2, 4, {
+				value: "1000000000",
+				from: user10
+			}));
 		});
 
 		it("Raise dispute and reject", async() => {
