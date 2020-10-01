@@ -280,16 +280,6 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         }  
     }
 
-
-    /**
-    * @dev Mints new token for an address
-    * @param _member address to reward the minted tokens
-    * @param _amount number of tokens to mint
-    */
-    function mint(address _member, uint _amount) public onlyAuthorizedToGovern {
-        token.mint(_member, _amount);
-    }
-
     /**
      * @dev Lock the user's tokens
      * @param _of user's address.
