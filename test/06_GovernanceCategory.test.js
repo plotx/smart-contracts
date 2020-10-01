@@ -10,6 +10,8 @@ const Market = artifacts.require('MockMarket');
 const DummyMockMarket = artifacts.require('DummyMockMarket');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
+const assertRevert = require("./utils/assertRevert.js").assertRevert;
+const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const encode = require('./utils/encoder.js').encode;
 const encode1 = require('./utils/encoder.js').encode1;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
@@ -279,6 +281,24 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(await ms.whitelistedSponsor(newAB), true);
       });
 
+      it('Should create a proposal with category of no action', async function() {
+
+        let actionHash = encode(
+          null
+        );
+        let p = await gv.getProposalLength();
+        await gv.createProposal("proposal", "proposal", "proposal", 0);
+        let canClose = await gv.canCloseProposal(p);
+        assert.equal(parseFloat(canClose),0);
+        await gv.categorizeProposal(p, 23, 0);
+        await assertRevert(gv.submitProposalWithSolution(p, "proposal", "0x1234"));
+        await gv.submitProposalWithSolution(p, "proposal", actionHash);
+        await gv.submitVote(p, 1);
+        await increaseTime(604800);
+        await gv.closeProposal(p);
+        let proposal = await gv.proposal(p);
+        assert.equal(proposal[2].toNumber(), 3);
+      });
 
       it('Should Swap AB Member', async function() {
 
@@ -299,6 +319,24 @@ contract('Configure Global Parameters', accounts => {
         );
         assert.equal(await mr.checkRole(ab1, 1), false);
         assert.equal(await mr.checkRole(newAB, 1), true);
+      });
+
+      it('Should Swap AB Member without whitelisting proposal', async function() {
+
+        assert.equal(await mr.checkRole(newAB, 1), true);
+        assert.equal(await mr.checkRole(ab1, 1), false);
+        let actionHash = encode(
+          'swapABMember(address,address)',
+          ab1,
+          newAB
+        );
+        let proposalId = await gv.getProposalLength();
+        await gv.createProposalwithSolution("Add new member", "Add new member", "hash", 12, "", actionHash)
+        await gv.submitVote(proposalId/1, 1);
+        await increaseTime(604810);
+        await gv.closeProposal(proposalId/1);
+        assert.equal(await mr.checkRole(ab1, 1), true);
+        assert.equal(await mr.checkRole(newAB, 1), false);
       });
     });
 

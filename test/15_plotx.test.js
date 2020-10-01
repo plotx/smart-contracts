@@ -90,6 +90,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.submitVote(pId, 1, { from: mem3 });
 		await gv.submitVote(pId, 1, { from: mem4 });
 		await gv.submitVote(pId, 1, { from: mem5 });
+		let canClose = await gv.canCloseProposal(pId);
+    	assert.equal(canClose.toNumber(), 0);
 		await increaseTime(604810);
 		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
 		await gv.closeProposal(pId);

@@ -180,24 +180,24 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     let proposedValue = 50;
     let lastClaimed = await gv.lastRewardClaimed(ab1);
     let actionHash = encode(action, code, proposedValue);
-    pId = await gv.getProposalLength();
     lastClaimed = await gv.lastRewardClaimed(ab1);
+    proposalId = await gv.getProposalLength();
     for (let i = 0; i < 3; i++) {
-      //   await gv.createProposal("Proposal1", "Proposal1", "Proposal1", 0); //Pid 1
-      // await gv.categorizeProposal(proposalId, 2, toWei(1));
-      // await gv.submitProposalWithSolution(
-      //   proposalId,
-      //   "Addnewmember",
-      //   "0xffa3992900000000000000000000000000000000000000000000000000000000000000004344000000000000000000000000000000000000000000000000000000000000"
-      // );
+      pId = await gv.getProposalLength();
+      await gv.createProposal("Proposal1", "Proposal1", "Proposal1", 0); //Pid 1
+      await gv.categorizeProposal(pId, 2, toWei(1));
+      await gv.submitProposalWithSolution(
+        pId,
+        "Addnewmember",
+        "0xffa3992900000000000000000000000000000000000000000000000000000000000000004344000000000000000000000000000000000000000000000000000000000000"
+      );
+      await gv.submitVote(pId,1);
 
-      await gvProposalWithIncentiveViaTokenHolder(12, actionHash, mr, gv, 2, 10);
+      // await gvProposalWithIncentiveViaTokenHolder(12, actionHash, mr, gv, 2, 10);
     }
-    // let members = await mr.members(2);
-    // let iteration = 0;
-    // for (iteration = 0; iteration < members[1].length; iteration++) {
-    //   await cr.claimAllPendingReward(20);
-    // }
+    let pendingRewards = await gv.getPendingReward(ab1);
+    await gv.claimReward(ab1, 20);
+    pendingRewards = await gv.getPendingReward(ab1);
     pId = await gv.getProposalLength();
     lastClaimed = await gv.lastRewardClaimed(ab1);
   });
@@ -216,30 +216,28 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await gv.createProposal("proposal", "proposal", "proposal", 0);
     await gv.categorizeProposal(p, 12, 10);
     await gv.submitProposalWithSolution(p, "proposal", actionHash);
-    // let members = await mr.members(2);
-    // let iteration = 0;
-    // for (iteration = 0; iteration < members[1].length; iteration++) {
-    //   await gv.submitVote(p, 1, {
-    //     from: members[1][iteration],
-    //   });
-    // }
     await gv.submitVote(p, 1);
     for (let i = 0; i < 3; i++) {
       await gvProposalWithIncentiveViaTokenHolder(12, actionHash, mr, gv, 2, 10);
     }
+    let pendingRewards = await gv.getPendingReward(ab1);
     await gv.claimReward(ab1, 20);
+    pendingRewards = await gv.getPendingReward(ab1);
 
     let p1 = await gv.getProposalLength();
     let lastClaimed = await gv.lastRewardClaimed(ab1);
-    assert.equal(lastClaimed.toNumber(), p.toNumber() - 1);
+    assert.equal(lastClaimed.toNumber(), proposalId.toNumber() - 1);
     await gv.closeProposal(p);
+    pendingRewards = await gv.getPendingReward(ab1);
     await gv.claimReward(ab1, 20);
+    pendingRewards = await gv.getPendingReward(ab1);
 
     lastClaimed = await gv.lastRewardClaimed(ab1);
-    assert.equal(lastClaimed.toNumber(), p1.toNumber() - 1);
+    assert.equal(lastClaimed.toNumber(), proposalId.toNumber() - 1);
   });
 
   it("Claim Rewards for maximum of 20 proposals", async function () {
+    pendingRewards = await gv.getPendingReward(ab1);
     await gv.claimReward(ab1, 20);
     let actionHash = encode("updateUintParameters(bytes8,uint)", "MAXFOL", 50);
     let p1 = await gv.getProposalLength();
@@ -247,12 +245,16 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     for (let i = 0; i < 7; i++) {
       await gvProposalWithIncentiveViaTokenHolder(12, actionHash, mr, gv, 2, 10);
     }
-    await gv.claimReward(ab1, 5);
+    await assertRevert(gv.rejectAction(lastClaimed/1 + 1, {from: ab1}));
+    await gv.closeProposal(lastClaimed/1 + 1);
+    await gv.closeProposal(lastClaimed/1 + 2);
+    await gv.closeProposal(lastClaimed/1 + 3);
+    await gv.claimReward(ab1, 20);
+    pendingRewards = await gv.getPendingReward(ab1);
     p1 = await gv.getProposalLength();
     let lastProposal = p1.toNumber() - 1;
     lastClaimed = await gv.lastRewardClaimed(ab1);
-    //Two proposal are still pending to be claimed since 5 had been passed as max records to claim
-    assert.equal(lastClaimed.toNumber(), lastProposal - 2);
+    assert.equal(lastClaimed.toNumber(), lastProposal);
   });
 
   it("Proposal should be closed if not categorized for more than 14 days", async function () {
@@ -269,4 +271,64 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await increaseTime(604810 * 2);
     await gv.closeProposal(pId);
   });
+
+  it("Should add initial AB members and create a proposal", async function() {
+    await increaseTime(604800*2);
+    await plotusToken.transfer(ab2, toWei(100));
+    await plotusToken.transfer(ab3, toWei(100));
+    await plotusToken.transfer(ab4, toWei(100));
+    await mr.addInitialABandDRMembers([ab2, ab3, ab4], []);
+    let actionHash = encode("updateUintParameters(bytes8,uint)", "ACWT", 1);
+    pId = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(pId, 13, 10);
+    await gv.submitProposalWithSolution(pId, "proposal", actionHash);
+    await gv.submitVote(pId, 1);
+    await gv.submitVote(pId, 1, {from:ab2});
+    await gv.submitVote(pId, 1, {from:ab3});
+    await gv.submitVote(pId, 1, {from:ab4});
+    await increaseTime(604810);
+    await gv.closeProposal(pId);
+  });
+
+  it("Should reject action with AB", async function() {
+    await gv.rejectAction(pId);
+  });
+
+  it("Should not allow same AB reject action twice", async function() {
+    await assertRevert(gv.rejectAction(pId, {from: ab1}));
+  });
+
+  it("Should reject action if 60% of ab rejects proposal", async function() {
+    await gv.rejectAction(pId, {from: ab2});
+    await gv.rejectAction(pId, {from: ab3});
+    assert.equal(await gv.proposalActionStatus(pId), 2);
+  });
+
+  it("Should not reject action if already rejected", async function() {
+    await assertRevert(gv.rejectAction(pId, {from: ab3}));
+  });
+
+  it("Should not trigger action if already rejected", async function() {
+    await assertRevert(gv.triggerAction(pId));
+  });
+
+  it("Should consider AB vote if quorum is not reached", async function() {
+    await increaseTime(604800*2);
+    let actionHash = encode("updateUintParameters(bytes8,uint)", "ACWT", 50);
+    pId = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(pId, 13, 10);
+    await gv.submitProposalWithSolution(pId, "proposal", actionHash);
+    await gv.submitVote(pId, 1, {from:ab2});
+    await gv.submitVote(pId, 1, {from:ab3});
+    await gv.submitVote(pId, 1, {from:ab4});
+    await increaseTime(604810);
+    await gv.closeProposal(pId);
+    let proposalData = await gv.proposal(pId);
+    assert.equal(proposalData[2]/1,3);
+    await increaseTime(604800);
+    await gv.triggerAction(pId);
+  });
+
 });
