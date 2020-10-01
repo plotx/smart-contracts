@@ -288,9 +288,8 @@ contract Market {
     * @param finalResult The final correct value of market currency.
     */
     function resolveDispute(bool accepted, uint256 finalResult) external payable {
-      require(msg.sender == address(marketRegistry));
+      require(msg.sender == address(marketRegistry) && marketStatus() == PredictionStatus.InDispute);
       if(accepted) {
-        require(marketStatus() == PredictionStatus.InDispute);
         _postResult(finalResult, 0);
       }
       lockedForDispute = false;
