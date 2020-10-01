@@ -299,6 +299,7 @@ contract Market {
     function sponsorIncentives(address _token, uint256 _value) external {
       require(marketRegistry.isWhitelistedSponsor(msg.sender));
       require(marketStatus() <= PredictionStatus.InSettlement);
+      require(incentiveToken == address(0), "Already sponsored");
       incentiveToken = _token;
       incentiveToDistribute = _value;
       require(IToken(_token).transferFrom(msg.sender, address(this), _value));
