@@ -176,7 +176,7 @@ contract Market {
       
     }
 
-    function getTotalAssetsStaked() internal view returns(uint256 ethStaked, uint256 plotStaked) {
+    function getTotalAssetsStaked() public view returns(uint256 ethStaked, uint256 plotStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
         ethStaked = ethStaked.add(optionsAvailable[i].assetStaked[ETH_ADDRESS]);
         plotStaked = plotStaked.add(optionsAvailable[i].assetStaked[plotToken]);
