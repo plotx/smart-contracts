@@ -127,6 +127,26 @@ contract('Configure Global Parameters', accounts => {
         );
       });
 
+      it('Should Not Update Market Implementation of invalid paramters are passed', async function() {
+        let newMaketImpl = await Market.new();
+        let actionHash
+        actionHash = encode1(
+          ['uint256[]', 'address[]'],
+          [
+            [0],
+            [newMaketImpl.address, newMaketImpl.address]
+          ]
+        );
+        await gvProposal(
+          5,
+          actionHash,
+          await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
+          gv,
+          2,
+          0
+        );
+      });
+
       it('Should Update Existing Markets Implementation', async function() {
         let newMarket = await DummyMockMarket.new();
         let existingMarkets = await pl.getOpenMarkets();

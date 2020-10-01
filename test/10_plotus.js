@@ -7,6 +7,7 @@ const Master = artifacts.require("Master");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
 const Governance = artifacts.require("Governance");
+const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const BLOT = artifacts.require("BLOT");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const BigNumber = require("bignumber.js");
@@ -68,6 +69,10 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			option3RangeMIX = parseFloat(marketData[1][2]);
 			option3RangeMAX = parseFloat(marketData[2][2]);
 		});
+
+		it("Should not allow to initiate market from unauthorized address", async() => {
+			await assertRevert(marketInstance.initiate(1,1,1,1));
+		})
 
 		it("0.1 Assert values from getData()", async () => {
 			assert.equal(option1RangeMIN, 0);
@@ -305,13 +310,16 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		});
 
 		it("1.3 Should not close market if closing value is zero", async () => {
+			let MockchainLinkInstance = await MockchainLinkBTC.deployed();
+			await MockchainLinkInstance.setLatestAnswer(1);
 			await increaseTime(36001);
 			await assertRevert(marketInstance.calculatePredictionResult(0));
+			await MockchainLinkInstance.setLatestAnswer("10000000000000000000");
+			await MockchainLinkInstance.setLatestAnswer("10000000000000000000");
 		});
 
 		it("1.3", async () => {
-			await increaseTime(36001);
-			await marketInstance.calculatePredictionResult(1);
+			await marketInstance.settleMarket();
 		});
 
 		it("Cannot place prediction after prediction time", async ()=> {
