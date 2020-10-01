@@ -311,25 +311,21 @@ contract Governance is IGovernance, Iupgradable {
             voteId = allVotesByMember[_memberAddress][i];
             proposalId = allVotes[voteId].proposalId;
             if (
-                proposalVoteTally[proposalId].voters > 0
-            ) {
-                if (
-                    allProposalData[proposalId].propStatus >
+                proposalVoteTally[proposalId].voters > 0 && allProposalData[proposalId].propStatus >
                     uint256(ProposalStatus.VotingStarted)
-                ) {
-                    if (!rewardClaimed[voteId][_memberAddress]) {
-                        pendingDAppReward = pendingDAppReward.add(
-                            allProposalData[proposalId].commonIncentive.div(
-                                proposalVoteTally[proposalId].voters
-                            )
-                        );
-                        rewardClaimed[voteId][_memberAddress] = true;
-                        j++;
-                    }
-                } else {
-                    if (lastClaimed == totalVotes) {
-                        lastClaimed = i;
-                    }
+            ) {                    
+                if (!rewardClaimed[voteId][_memberAddress]) {
+                    pendingDAppReward = pendingDAppReward.add(
+                        allProposalData[proposalId].commonIncentive.div(
+                            proposalVoteTally[proposalId].voters
+                        )
+                    );
+                    rewardClaimed[voteId][_memberAddress] = true;
+                    j++;
+                }
+            } else {
+                if (lastClaimed == totalVotes) {
+                    lastClaimed = i;
                 }
             }
         }
