@@ -234,6 +234,13 @@ contract MarketUtility {
     }
 
     /**
+    * @dev Get decimals of given price feed address 
+    */
+    function getPriceFeedDecimals(address _priceFeed) public view returns(uint8) {
+      return IChainLinkOracle(_priceFeed).decimals();
+    }
+
+    /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
      * @return Percentage of users leveraged amount to deduct when placed in wrong prediction

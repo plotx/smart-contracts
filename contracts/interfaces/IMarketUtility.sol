@@ -30,6 +30,8 @@ contract IMarketUtility {
 
     function getAssetPriceUSD(address _currencyAddress) external view returns(uint latestAnswer);
     
+    function getPriceFeedDecimals(address _priceFeed) public view returns(uint8);
+
     function update() external;
     
     function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied);
