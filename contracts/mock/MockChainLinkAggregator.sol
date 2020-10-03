@@ -22,6 +22,9 @@ contract MockChainLinkAggregator is IChainLinkOracle{
       roundData[0] = RoundData(uint80(0),latestAns, updatedAt, updatedAt, uint80(0));
    }
 
+  function decimals() external view returns (uint8) {
+    return uint8(8);
+  }
 	/**
     * @dev Gets the latest answer of chainLink oracle.
     * @return int256 representing the latest answer of chainLink oracle.
