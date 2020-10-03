@@ -139,9 +139,9 @@ contract MarketRegistry is Governed, Iupgradable {
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
       _addNewMarketCurrency(_btcMarketImplementation);
-      _addMarket(1 hours, 20);
-      _addMarket(24 hours, 50);
-      _addMarket(7 days, 100);
+      _addMarket(1 hours, 50);
+      _addMarket(24 hours, 200);
+      _addMarket(7 days, 500);
 
       for(uint256 i = 0;i < marketTypes.length; i++) {
           marketCreationData[i][0].initialStartTime = _marketStartTime;
@@ -155,6 +155,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev Add new market type.
     * @param _predictionTime The time duration of market.
     * @param _marketStartTime The time at which market will create.
+    * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
     */
     function addNewMarketType(uint64 _predictionTime, uint64 _marketStartTime, uint64 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
@@ -166,6 +167,11 @@ contract MarketRegistry is Governed, Iupgradable {
       }
     }
 
+    /**
+    * @dev Internal function to add market type
+    * @param _predictionTime The time duration of market.
+    * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
+    */
     function _addMarket(uint64 _predictionTime, uint64 _optionRangePerc) internal {
       uint256 _marketType = marketTypes.length;
       marketTypes.push(MarketTypeData(_predictionTime, _optionRangePerc));
@@ -261,7 +267,7 @@ contract MarketRegistry is Governed, Iupgradable {
       uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
       uint currentPrice = marketUtility.getAssetPriceUSD(_priceFeed);
-      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
+      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(10000));
       uint64 _minValue = uint64(currentPrice.sub(_optionRangePerc));
       uint64 _maxValue = uint64(currentPrice.add(_optionRangePerc));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
