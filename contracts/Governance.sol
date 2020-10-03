@@ -280,6 +280,10 @@ contract Governance is IGovernance, Iupgradable {
             uint256(ProposalStatus.VotingStarted)
         ) {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
+            _transferPLOT(
+                address(marketRegistry),
+                allProposalData[_proposalId].commonIncentive
+            );
         } else {
             require(canCloseProposal(_proposalId) == 1);
             _closeVote(_proposalId, category);
@@ -337,7 +341,10 @@ contract Governance is IGovernance, Iupgradable {
         }
 
         if (j > 0) {
-            tokenInstance.transfer(_memberAddress, pendingDAppReward);
+            _transferPLOT(
+                _memberAddress,
+                pendingDAppReward
+            );
             emit RewardClaimed(_memberAddress, pendingDAppReward);
         }
     }
@@ -1088,9 +1095,18 @@ contract Governance is IGovernance, Iupgradable {
         }
 
         if (proposalVoteTally[_proposalId].voters == 0 && allProposalData[_proposalId].commonIncentive > 0) {
-            tokenInstance.transfer(
+            _transferPLOT(
                 address(marketRegistry),
                 allProposalData[_proposalId].commonIncentive
+            );
+        }
+    }
+
+    function _transferPLOT(address _recipient, uint256 _amount) internal {
+        if(_amount > 0) {
+            tokenInstance.transfer(
+                _recipient,
+                _amount
             );
         }
     }
