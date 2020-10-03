@@ -201,7 +201,7 @@ contract Governance is IGovernance, Iupgradable {
         if(keccak256(_functionHash) == swapABMemberHash) {
             incentive = 0;
         }
-        _categorizeProposal(_proposalId, _categoryId, incentive);
+        _categorizeProposal(_proposalId, _categoryId, incentive, _functionHash);
     }
 
     /**
@@ -728,7 +728,7 @@ contract Governance is IGovernance, Iupgradable {
             if(keccak256(_functionHash) == swapABMemberHash) {
                 defaultIncentive = 0;
             }
-            _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
+            _categorizeProposal(_proposalId, _categoryId, defaultIncentive, _functionHash);
         }
     }
 
@@ -741,12 +741,16 @@ contract Governance is IGovernance, Iupgradable {
     function _categorizeProposal(
         uint256 _proposalId,
         uint256 _categoryId,
-        uint256 _incentive
+        uint256 _incentive,
+        bytes memory _functionHash
     ) internal {
         require(
             _categoryId > 0 && _categoryId < proposalCategory.totalCategories(),
             "Invalid category"
         );
+        if(keccak256(_functionHash) == resolveDisputeHash) {
+            require(msg.sender == address(marketRegistry));
+        }
         allProposalData[_proposalId].category = _categoryId;
         allProposalData[_proposalId].commonIncentive = _incentive;
         allProposalData[_proposalId].propStatus = uint256(

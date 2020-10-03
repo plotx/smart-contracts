@@ -283,6 +283,12 @@ contract('Configure Global Parameters', accounts => {
         assert.equal(plbalEth - plbalEthAfter, toWei(10));
         assert.equal(userbalEthAfter/1e18 - userbalEth/1e18, 10);
       });
+
+      it('Should not allow create a proposal in category raiseDispute directly', async function() {
+        let p = await gv.getProposalLength();
+        await gv.createProposal("proposal", "proposal", "proposal", 0);
+        await assertRevert(gv.categorizeProposal(p, 10, 0));
+      });
       
       it('Should Whitelist sponsor', async function() {
 
