@@ -293,7 +293,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         returns (bool)
     {
         require(_reason == "DR","Reason must be DR");
-        uint256 amount = tokensLocked(_of, _reason);
+        uint256 amount = tokensLockedAtTime(_of, _reason, now);
         require(amount >= _amount, "Tokens locked must be greater than amount");
 
         locked[_of][_reason].amount = locked[_of][_reason].amount.sub(_amount);
