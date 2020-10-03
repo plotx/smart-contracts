@@ -76,10 +76,10 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		it("0.1 Assert values from getData()", async () => {
 			assert.equal(option1RangeMIN, 0);
-			assert.equal(option1RangeMAX, 925649804322);
-			assert.equal(option2RangeMIN, 925649804323);
-			assert.equal(option2RangeMAX, 944349800369);
-			assert.equal(option3RangeMIX, 944349800370);
+			assert.equal(option1RangeMAX, 932699999999);
+			assert.equal(option2RangeMIN, 932700000000);
+			assert.equal(option2RangeMAX, 937400000000);
+			assert.equal(option3RangeMIX, 937400000001);
 			assert.equal(option3RangeMAX, 1.157920892373162e77);
 			assert.equal(parseFloat(marketData._optionPrice[0]), priceOption1);
 			assert.equal(parseFloat(marketData._optionPrice[1]), priceOption2);
