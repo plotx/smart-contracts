@@ -153,7 +153,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await plotusToken.approve(marketInstance.address, "18000000000000000000000000", {from:mem1});
 		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000", {from:mem1}));
 		await marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000");
-		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000", {from:mem1}));
+		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000"));
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
 		let totalStaked = await pl.getTotalAssetStakedByUser(ab1);
 		assert.equal(totalStaked[0]/1, "1000000000000000000000");
@@ -164,7 +164,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604810);
 		await marketInstance.claimReturn(ab1);
 		await marketInstance.calculatePredictionResult(1);
-		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000", {from:mem1}));
+		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000"));
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1));
 		await assertRevert(marketInstance.calculatePredictionResult(0));
 		await marketInstance.claimReturn(ab1);

@@ -69,8 +69,12 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     );
   });
 
-  it("Should not allow to add in AB if not member", async function () {
+  it("Should not allow to add in AB if not token holder", async function () {
     await assertRevert(mr.addInitialABandDRMembers([ab2, ab3, ab4], []));
+  });
+
+  it("Should not allow to add in DR if not token holder", async function () {
+    await assertRevert(mr.addInitialABandDRMembers([], [ab2, ab3, ab4]));
   });
 
   it("15.5 Should create a proposal", async function () {
@@ -289,6 +293,10 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await gv.submitVote(pId, 1, {from:ab4});
     await increaseTime(604810);
     await gv.closeProposal(pId);
+  });
+
+  it("Should not allow to add in AB twice", async function () {
+    await assertRevert(mr.addInitialABandDRMembers([ab2, ab3, ab4], []));
   });
 
   it("Should reject action with AB", async function() {

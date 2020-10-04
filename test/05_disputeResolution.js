@@ -69,11 +69,6 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    await increaseTime(901);
-     // cannot raise dispute if market cool time is over
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    
     await assertRevert(marketInstance.resolveDispute(true, 100));
     let winningOption_af = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_af[0]/1)
@@ -148,6 +143,11 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     //can raise dispute in cooling period and stake
     await plotusToken.approve(marketInstance.address, "10000000000000000000000");
     await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    await increaseTime(901);
+     // cannot raise dispute if market cool time is over
+    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    
     let plotusContractBalanceBefore = await plotusToken.balanceOf(plotusNewInstance.address);
     let winningOption_before = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_before[0]/1)
