@@ -205,7 +205,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.closeProposal(p);
     let proposal = await gv.proposal(p);
     assert.equal(proposal[2].toNumber(), 3);
-    await increaseTime(3601);
+    await increaseTime(86400);
     await gv.triggerAction(p);
     let proposalActionStatus = await gv.proposalActionStatus(p);
     assert.equal(proposalActionStatus/1, 3, "Not executed");
@@ -237,7 +237,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.closeProposal(p);
     let proposal = await gv.proposal(p);
     assert.equal(proposal[2].toNumber(), 3);
-    await increaseTime(3601);
+    await increaseTime(86400);
     await gv.triggerAction(p);
     let proposalActionStatus = await gv.proposalActionStatus(p);
     assert.equal(proposalActionStatus/1, 3, "Not executed");
@@ -271,7 +271,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.closeProposal(p);
     let proposal = await gv.proposal(p);
     assert.equal(proposal[2].toNumber(), 3);
-    await increaseTime(3601);
+    await increaseTime(86400);
     await gv.triggerAction(p);
     let proposalActionStatus = await gv.proposalActionStatus(p);
     assert.equal(proposalActionStatus/1, 1, "Not executed");

@@ -1122,7 +1122,7 @@ contract Governance is IGovernance, Iupgradable {
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         minTokenLockedForDR = 1000 ether;
         lockTimeForDR = 15 days;
-        actionWaitingTime = 1 hours;
+        actionWaitingTime = 1 days;
         actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
         maxVoteWeigthPer = 5;

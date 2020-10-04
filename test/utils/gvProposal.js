@@ -24,7 +24,7 @@ async function gvProposal(...args) {
   let proposal = await gv.proposal(p);
   assert.equal(proposal[2].toNumber(), 3);
   if (seq != 1) {
-    await increaseTime(3601);
+    await increaseTime(86401);
     await gv.triggerAction(p);
   }
 }
@@ -51,7 +51,7 @@ async function gvProposalWithIncentive(...args) {
   if (seq != 3) await gv.closeProposal(p);
   let proposal = await gv.proposal(p);
   assert.equal(proposal[2].toNumber(), 3);
-  await increaseTime(3601);
+  await increaseTime(86401);
   await gv.triggerAction(p);
 }
 
@@ -79,7 +79,7 @@ async function gvProposalWithIncentiveViaTokenHolder(...args) {
   let proposal = await gv.proposal(p);
   assert.equal(proposal[2].toNumber(), 3);
   if(!skipTrigger) {
-    await increaseTime(3601);
+    await increaseTime(86401);
     await gv.triggerAction(p);
   }
 }
