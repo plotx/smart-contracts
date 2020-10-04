@@ -106,7 +106,7 @@ contract("Proposal Category", function ([owner, other]) {
 		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to update category
 		let actionHash = encode(
-			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[],string)",
+			"edit(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[],string)",
 			c1,
 			"YoYo",
 			2,

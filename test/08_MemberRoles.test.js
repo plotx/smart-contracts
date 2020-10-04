@@ -39,6 +39,8 @@ contract('MemberRoles', function([
     nxms = await Master.at(nxms.address);
     address = await nxms.getLatestAddress(toHex('MR'));
     mr = await MemberRoles.at(address);
+    address = await nxms.getLatestAddress(toHex('PC'));
+    pc = await ProposalCategory.at(address);
     address = await nxms.getLatestAddress(toHex('GV'));
     gv = await Governance.at(address);
     tk = await PLOTToken.deployed();
@@ -107,6 +109,34 @@ contract('MemberRoles', function([
     assert.isAbove(mrLength1.toNumber(), mrLength.toNumber(), 'Role not added');
   });
 
+  it("Should update a proposal category and set allowed role to new role", async function () {
+    let c1 = await pc.totalCategories();
+    c1 = c1.toNumber() - 1;
+    const cat1 = await pc.category(c1);
+    //proposal to update category
+    let mrLength = await mr.totalRoles();
+    let actionHash = encode(
+      "edit(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[],string)",
+      c1,
+      "YoYo",
+      4,
+      1,
+      20,
+      [2],
+      3600,
+      "",
+      ZERO_ADDRESS,
+      toHex("EX"),
+      [0, 0, 0],
+      ""
+    );
+    let p1 = await gv.getProposalLength();
+    await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+    await gv.submitVote(p1.toNumber(), 1);
+    await gv.closeProposal(p1.toNumber());
+    assert.equal((await gv.proposalActionStatus(p1.toNumber()))/1, 3);
+  });
+
   it('Should add a member to a role', async function() {
     var transaction = await mr.updateRole(member, 4, true);
     await assertRevert(mr.updateRole(member, 2, true));
@@ -114,6 +144,23 @@ contract('MemberRoles', function([
     await assertRevert(mr.updateRole(member, 2, false, { from: other }));
     assert.equal(await mr.checkRole(member, 4), true, 'user not added to AB');
   });
+
+  it("Should create a proposal with new role as authorized", async function() {
+    let c1 = await pc.totalCategories();
+    c1 = c1.toNumber() - 1;
+    let pId = await gv.getProposalLength();
+    await gv.createProposal("","","",0);
+    await gv.categorizeProposal(pId, c1, 0);
+    let actionHash = encode(
+      null
+    );
+    await gv.submitProposalWithSolution(pId, "", actionHash);
+    assert.equal((await gv.canCloseProposal(pId))/1,0);
+    await gv.submitVote(pId,1, {from:member});
+    assert.equal((await gv.canCloseProposal(pId))/1,1);
+    await gv.closeProposal(pId);
+    assert.equal((await gv.canCloseProposal(pId))/1,2);
+  })
 
   it('Should fetch all address by role id', async function() {
     const g3 = await mr.members(1);
