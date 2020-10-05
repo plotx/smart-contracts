@@ -131,7 +131,7 @@ contract Market {
       } else {
         require(msg.value == 0);
         if (_asset == plotToken){
-          require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+          tokenController.transferFrom(plotToken, msg.sender, address(this), _predictionStake);
         } else {
           require(_asset == tokenController.bLOTToken());
           require(_leverage == MAX_LEVERAGE);
@@ -274,7 +274,7 @@ contract Market {
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      require(IToken(plotToken).transferFrom(msg.sender, address(marketRegistry), _stakeForDispute));
+      tokenController.transferFrom(plotToken, msg.sender, address(marketRegistry), _stakeForDispute);
       lockedForDispute = true;
       marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       delete ethAmountToPool;
@@ -302,7 +302,7 @@ contract Market {
       require(incentiveToken == address(0), "Already sponsored");
       incentiveToken = _token;
       incentiveToDistribute = _value;
-      require(IToken(_token).transferFrom(msg.sender, address(this), _value));
+      tokenController.transferFrom(_token, msg.sender, address(this), _value);
     }
 
 

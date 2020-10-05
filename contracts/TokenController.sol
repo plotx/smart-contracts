@@ -67,6 +67,10 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
     }
 
+    /**
+     * @dev Initiate vesting contract
+     * @param _vesting Address of vesting contract implementation
+     */
     function initiateVesting(address _vesting) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
         require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -74,8 +78,25 @@ contract TokenController is IERC1132, Governed, Iupgradable {
 
     }
 
-    function swapBLOT(address _of, address _to, uint256 amount) public onlyAuthorized {
-        bLOTToken.convertToPLOT(_of, _to, amount);
+    /**
+     * @dev Swap `_amount` of BPLOT belonging to `_of` to PLOT and transfer to `_to` address
+     * @param _of Address from whose BPLOT to be transferred
+     * @param _to Recipient address, who recieves PLOT
+     * @param _amount Amount of tokens to swap
+     */
+    function swapBLOT(address _of, address _to, uint256 _amount) public onlyAuthorized {
+        bLOTToken.convertToPLOT(_of, _to, _amount);
+    }
+
+    /**
+     * @dev Transfers `_amount` of `_token` token from `_of` to `_to`
+     * @param _token Token address
+     * @param _of Address from whose PLOT to be transferred
+     * @param _to Recipient address
+     * @param _amount Amount of tokens to transfer
+     */
+    function transferFrom(address _token, address _of, address _to, uint256 _amount) public onlyAuthorized {
+        require(IToken(_token).transferFrom(_of, _to, _amount));
     }
 
     /**

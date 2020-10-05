@@ -16,6 +16,8 @@ contract ITokenController {
         view
         returns (uint256 amount);
 
+    function transferFrom(address _token, address _of, address _to, uint256 amount) public;
+
     /**
      * @dev Returns tokens locked for a specified address for a
      *      specified reason at a specific time
