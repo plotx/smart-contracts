@@ -5,6 +5,7 @@ const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
 const MarketConfig = artifacts.require("MockConfig");
+const TokenController = artifacts.require("TokenController");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const BLOT = artifacts.require("BLOT");
 const web3 = Market.web3;
@@ -19,6 +20,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -84,6 +86,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -115,7 +118,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// await marketConfig.setKYCComplianceStatus(user4, true);
 		// await marketConfig.setKYCComplianceStatus(user5, true);
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -158,6 +161,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -189,7 +193,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// await marketConfig.setKYCComplianceStatus(user4, true);
 		// await marketConfig.setKYCComplianceStatus(user5, true);
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -247,6 +251,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -278,7 +283,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// await marketConfig.setKYCComplianceStatus(user4, true);
 		// await marketConfig.setKYCComplianceStatus(user5, true);
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -336,6 +341,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -367,7 +373,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// await marketConfig.setKYCComplianceStatus(user4, true);
 		// await marketConfig.setKYCComplianceStatus(user5, true);
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -425,6 +431,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -456,7 +463,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// await marketConfig.setKYCComplianceStatus(user4, true);
 		// await marketConfig.setKYCComplianceStatus(user5, true);
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});

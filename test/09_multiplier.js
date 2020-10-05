@@ -40,8 +40,8 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setOptionPrice(1, 9);
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user2 });
 
 			// await marketConfig.setAMLComplianceStatus(user1, true);
 			// await marketConfig.setKYCComplianceStatus(user1, true);
@@ -62,15 +62,15 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, {
 				from: user2,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user3 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user3 });
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 3, {
 				from: user3,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user4 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user4 });
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 4, {
 				from: user4,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user5 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user5 });
 			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 3, 4, {
 				from: user5,
 			});
@@ -128,23 +128,23 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000");
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, {
 				from: user1,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user2 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user2 });
 			await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, {
 				from: user2,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user3 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user3 });
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 3, {
 				from: user3,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user4 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user4 });
 			await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 4, {
 				from: user4,
 			});
-			await plotusToken.approve(marketInstance.address, "10000000000000000000000", { from: user5 });
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user5 });
 			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 3, 4, {
 				from: user5,
 			});
@@ -382,9 +382,9 @@ describe("3. Multiple Option predictions", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("3.1. Scenario 1 ", async () => {
@@ -453,9 +453,9 @@ describe("3. Multiple Option predictions", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("3.2. Scenario 2", async () => {
@@ -523,9 +523,9 @@ describe("3. Multiple Option predictions", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("3.3. Scenario 3 ", async () => {
@@ -595,9 +595,9 @@ describe("3. Multiple Option predictions", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("3.4. Scenario 4", async () => {
@@ -710,9 +710,9 @@ describe("3. Multiple Option predictions", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("3.5. Scenario 5", async () => {
@@ -819,9 +819,9 @@ describe("4. New cases", () => {
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);
 
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 		});
 
 		it("Multiple Market claim, scenario 6,7,8", async () => {
@@ -863,9 +863,9 @@ describe("4. New cases", () => {
 			// let marketStartTime = parseFloat((await marketInstance.marketData())[0]);
             // console.log("marketStartTime", marketStartTime)
 			// console.log(await latestTime());
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
 			await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,
@@ -903,9 +903,9 @@ describe("4. New cases", () => {
 			await marketConfig.setOptionPrice(1, 9);
 			await marketConfig.setOptionPrice(2, 18);
 			await marketConfig.setOptionPrice(3, 27);            
-            await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"));
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user2 });
-			await plotusToken.approve(marketInstance.address, web3.utils.toWei("500"), { from: user3 });
+            await plotusToken.approve(tokenController.address, web3.utils.toWei("500"));
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user2 });
+			await plotusToken.approve(tokenController.address, web3.utils.toWei("500"), { from: user3 });
             await marketInstance.placePrediction(plotusToken.address, web3.utils.toWei("100"), 1, 1, { from: user1 });
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("4"), 2, 2, {
 				from: user1,

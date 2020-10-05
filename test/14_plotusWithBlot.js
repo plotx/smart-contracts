@@ -7,6 +7,7 @@ const Master = artifacts.require("Master");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
 const BLOT = artifacts.require("BLOT");
+const TokenController = artifacts.require("TokenController");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const BigNumber = require("bignumber.js");
 
@@ -24,6 +25,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		plotusNewInstance = await Plotus.at(plotusNewAddress);
 		marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -48,7 +50,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "100000000000000000000", {
+		await plotusToken.approve(tokenController.address, "100000000000000000000", {
 			from: user1,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, { from: user1 });
@@ -91,7 +93,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 		await plotusToken.transfer(user3, "500000000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "210000000000000000000", {
+		await plotusToken.approve(tokenController.address, "210000000000000000000", {
 			from: user3,
 		});
 

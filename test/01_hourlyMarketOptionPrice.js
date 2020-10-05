@@ -3,6 +3,7 @@ const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
+const TokenController = artifacts.require("TokenController");
 const PlotusToken = artifacts.require("MockPLOT");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const MarketConfig = artifacts.require("MockConfig");
@@ -20,6 +21,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -97,6 +99,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -122,7 +125,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -172,6 +175,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -197,7 +201,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -262,6 +266,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -287,7 +292,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -352,6 +357,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -377,7 +383,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -442,6 +448,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -467,7 +474,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -531,6 +538,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -556,7 +564,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});
@@ -620,6 +628,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		let BLOTInstance = await BLOT.deployed();
 		let MockchainLinkInstance = await MockchainLinkBTC.deployed();
 		let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		let MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		let plotusNewInstance = await Plotus.at(plotusNewAddress);
 		let marketConfig = await plotusNewInstance.marketUtility();
@@ -645,7 +654,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("12000000000000000");
 		await marketConfig.setPrice("12000000000000000");
 
-		await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+		await plotusToken.approve(tokenController.address, "10000000000000000000000");
 		await marketInstance.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1, {
 			from: user1,
 		});

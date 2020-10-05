@@ -55,7 +55,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		marketConfig = await pl.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
-		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
+		tc = await TokenController.at(await nxms.getLatestAddress(toHex("TC")));
 		await assertRevert(pl.setMasterAddress());
 		// try {
 		// 	await (gv.setMasterAddress());
@@ -146,11 +146,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][2], "18000000000000000000000000");
+		await plotusToken.approve(tc.address, "18000000000000000000000000");
 		await marketInstance.claimReturn(ab1);
 		await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 9, 1));
 		await assertRevert(marketInstance.placePrediction(ab1, "10000000000000000000", 9, 1));
-		await plotusToken.approve(marketInstance.address, "18000000000000000000000000", {from:mem1});
+		await plotusToken.approve(tc.address, "18000000000000000000000000", {from:mem1});
+		await plotusToken.approve(tc.address, "18000000000000000000000000");
 		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000", {from:mem1}));
 		await marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000");
 		await assertRevert(marketInstance.sponsorIncentives(plotusToken.address, "1000000000000000000"));
@@ -233,7 +234,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][9], "100000000000000000000");
+		await plotusToken.approve(tc.address, "100000000000000000000");
 		await marketInstance.estimatePredictionValue(1, "10000000000000000000", 1);
 		await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
 		let reward = await marketInstance.getReturn(ab1);

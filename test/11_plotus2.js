@@ -25,6 +25,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		BLOTInstance = await BLOT.deployed();
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+		tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
 		plotusNewInstance = await Plotus.at(plotusNewAddress);
 		marketConfig = await plotusNewInstance.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
@@ -47,7 +48,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "100000000000000000000", {
+		await plotusToken.approve(tokenController.address, "100000000000000000000", {
 			from: user1,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, { from: user1 });
@@ -57,7 +58,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await marketConfig.setPrice("2000000000000000");
 		await plotusToken.transfer(user2, "500000000000000000000");
 
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "400000000000000000000", {
+		await plotusToken.approve(tokenController.address, "400000000000000000000", {
 			from: user2,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, { from: user2 });
@@ -65,7 +66,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 		await plotusToken.transfer(user3, "500000000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "210000000000000000000", {
+		await plotusToken.approve(tokenController.address, "210000000000000000000", {
 			from: user3,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "210000000000000000000", 2, 2, { from: user3 });
@@ -74,7 +75,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 
 		await plotusToken.transfer(user4, "200000000000000000000");
 
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "123000000000000000000", {
+		await plotusToken.approve(tokenController.address, "123000000000000000000", {
 			from: user4,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "123000000000000000000", 3, 3, { from: user4 });
@@ -281,7 +282,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 		// set price lot
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "100000000000000000000", {
+		await plotusToken.approve(tokenController.address, "100000000000000000000", {
 			from: user1,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 2, 1, { from: user1 });
@@ -291,7 +292,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 		await marketConfig.setPrice("2000000000000000");
 		await plotusToken.transfer(user2, "500000000000000000000");
 
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "400000000000000000000", {
+		await plotusToken.approve(tokenController.address, "400000000000000000000", {
 			from: user2,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "400000000000000000000", 2, 2, { from: user2 });
@@ -299,7 +300,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 		await MockUniswapRouterInstance.setPrice("1000000000000000");
 		await marketConfig.setPrice("1000000000000000");
 		await plotusToken.transfer(user3, "500000000000000000000");
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "210000000000000000000", {
+		await plotusToken.approve(tokenController.address, "210000000000000000000", {
 			from: user3,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "210000000000000000000", 2, 2, { from: user3 });
@@ -308,7 +309,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 
 		await plotusToken.transfer(user4, "200000000000000000000");
 
-		await plotusToken.approve(openMarkets["_openMarkets"][0], "123000000000000000000", {
+		await plotusToken.approve(tokenController.address, "123000000000000000000", {
 			from: user4,
 		});
 		await marketInstance.placePrediction(plotusToken.address, "123000000000000000000", 3, 3, { from: user4 });
@@ -408,7 +409,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 
 	it("Raise dispute, accept, change the winninOption to 3", async() => {
 			await plotusToken.transfer(user11, "200000000000000000000");
-			await plotusToken.approve(marketInstance.address, "100000000000000000000", {
+			await plotusToken.approve(tokenController.address, "100000000000000000000", {
 				from: user11,
 			});
 			let proposalId = await governance.getProposalLength();
