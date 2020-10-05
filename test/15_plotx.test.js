@@ -296,7 +296,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		marketConfig = await pl.marketUtility();
 		marketConfig = await MarketConfig.at(marketConfig);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
-		tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
+		tc = await TokenController.at(await nxms.getLatestAddress(toHex("TC")));
 		await assertRevert(pl.setMasterAddress());
 		await assertRevert(pl.callMarketResultEvent([1, 2], 1, 1,1));
 
@@ -309,67 +309,119 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
-	it("Should create a proposal to add new market curreny", async function() {
-		await increaseTime(604810);
-		pId = (await gv.getProposalLength()).toNumber();
-		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
-		await gv.categorizeProposal(pId, 16, 100);
-		let startTime = (await latestTime()) / 1 + 2 * 604800;
-		let market= await Market.new();
-		let actionHash = encode("addNewMarketCurrency(address,uint64)", market.address, startTime);
-		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
+	describe("Add new market currency",async function() {
 
-		await gv.submitVote(pId, 1, { from: ab1 });
-		await gv.submitVote(pId, 1, { from: mem1 });
-		await gv.submitVote(pId, 1, { from: mem2 });
-		await gv.submitVote(pId, 1, { from: mem3 });
-		await gv.submitVote(pId, 1, { from: mem4 });
-		await gv.submitVote(pId, 1, { from: mem5 });
+		it("Should create a proposal to add new market curreny", async function() {
+			await increaseTime(604810);
+			pId = (await gv.getProposalLength()).toNumber();
+			await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+			await gv.categorizeProposal(pId, 16, 100);
+			let startTime = (await latestTime()) / 1 + 2 * 604800;
+			let market= await Market.new();
+			let actionHash = encode("addNewMarketCurrency(address,uint64)", market.address, startTime);
+			await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
 
-		await increaseTime(604810);
-		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
-		await gv.closeProposal(pId);
+			await gv.submitVote(pId, 1, { from: ab1 });
+			await gv.submitVote(pId, 1, { from: mem1 });
+			await gv.submitVote(pId, 1, { from: mem2 });
+			await gv.submitVote(pId, 1, { from: mem3 });
+			await gv.submitVote(pId, 1, { from: mem4 });
+			await gv.submitVote(pId, 1, { from: mem5 });
 
-		let openMarketsBefore = await pl.getOpenMarkets();
-		await increaseTime(604810);
-		await gv.triggerAction(pId);
-		let actionStatus = await gv.proposalActionStatus(pId);
-		assert.equal(actionStatus / 1, 3);
-		let openMarkets = await pl.getOpenMarkets();
-		assert.isAbove(openMarkets[2].length, openMarketsBefore[2].length, "Currency not added");
+			await increaseTime(604810);
+			await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
+			await gv.closeProposal(pId);
+
+			let openMarketsBefore = await pl.getOpenMarkets();
+			await increaseTime(604810);
+			await gv.triggerAction(pId);
+			let actionStatus = await gv.proposalActionStatus(pId);
+			assert.equal(actionStatus / 1, 3);
+			let openMarkets = await pl.getOpenMarkets();
+			assert.isAbove(openMarkets[2].length, openMarketsBefore[2].length, "Currency not added");
+		});
+
+		it("2. Should create a proposal to add new market currency", async function() {
+			await increaseTime(604810);
+			pId = (await gv.getProposalLength()).toNumber();
+			await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+			await gv.categorizeProposal(pId, 16, 0);
+			let startTime = (await latestTime()) / 1 + 2 * 604800;
+			let market= await Market.new();
+			let actionHash = encode("addNewMarketCurrency(address,uint64)", market.address, "0x12", "A", true, startTime);
+			await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
+			oldGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
+			await increaseTime(604810);
+			await gv.closeProposal(pId);
+			newGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
+			assert.equal(oldGVBalance, newGVBalance);
+			await increaseTime(604810);
+			actionStatus = await gv.proposal(pId);
+			assert.equal(parseFloat(actionStatus[2]), 5);
+		});
+
+		it("Should revert claim market creation rewards if there is no balance at Registry", async function() {
+			let plBalance = await plotusToken.balanceOf(pl.address);
+			await pl.transferPlot(ab1, plBalance);
+			await assertRevert(pl.claimCreationReward());
+			await plotusToken.transfer(pl.address, plBalance)
+		});
+
+		it("Should claim market creation rewards", async function() {
+			let oldBalance = parseFloat(await plotusToken.balanceOf(ab1));
+			await pl.claimCreationReward();
+			let newBalance = parseFloat(await plotusToken.balanceOf(ab1));
+			assert.isAbove(newBalance/1,oldBalance/1);
+			await pl.getUintParameters("0x12");
+		});
+
+		it("Should revert if unauthorized member call Registry functions", async function() {
+			await assertRevert(pl.claimCreationReward());
+			await assertRevert(pl.createGovernanceProposal("","","","0x12",0,ab1, 0,0,0));
+			await assertRevert(pl.setUserGlobalPredictionData(ab1, 0,0,ab1,0,0));
+			await assertRevert(pl.callClaimedEvent(ab1, [0,0],[ab1],0,ab1));
+		});
+
 	});
 
-	it("2. Should create a proposal to add new market currency", async function() {
-		await increaseTime(604810);
-		pId = (await gv.getProposalLength()).toNumber();
-		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
-		await gv.categorizeProposal(pId, 16, 0);
-		let startTime = (await latestTime()) / 1 + 2 * 604800;
-		let market= await Market.new();
-		let actionHash = encode("addNewMarketCurrency(address,uint64)", market.address, "0x12", "A", true, startTime);
-		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
-		oldGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
-		await increaseTime(604810);
-		await gv.closeProposal(pId);
-		newGVBalance = parseFloat(await plotusToken.balanceOf(gv.address));
-		assert.equal(oldGVBalance, newGVBalance);
-		await increaseTime(604810);
-		actionStatus = await gv.proposal(pId);
-		assert.equal(parseFloat(actionStatus[2]), 5);
+	describe("Check Reward claim for multiple markets", async function() {
+		it("Should place prediction in multiple markets", async function() {
+			await increaseTime(604810);
+			await pl.createMarket(0, 0);
+			await pl.createMarket(2, 0);
+			let openMarkets = await pl.getOpenMarkets();
+			marketInstance = await Market.at(openMarkets[0][0]);
+			marketInstance2 = await Market.at(openMarkets[0][6]);
+
+			assert.ok(marketInstance);
+			await marketConfig.setOptionPrice(1, 9);
+			await marketConfig.setOptionPrice(2, 18);
+			await marketConfig.setOptionPrice(3, 27);
+			await MockUniswapRouterInstance.setPrice("1000000000000000");
+			await marketConfig.setPrice("1000000000000000");
+			await plotusToken.approve(tc.address, "180000000000000000000000000");
+			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+			await marketInstance2.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+			await increaseTime(3650);
+			await pl.createMarket(0, 0);
+			openMarkets = await pl.getOpenMarkets();
+			marketInstance = await Market.at(openMarkets[0][0]);
+			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+			await increaseTime(604810);
+			await pl.createMarket(2, 1);
+			openMarkets = await pl.getOpenMarkets();
+			marketInstance2 = await Market.at(openMarkets[0][7]);
+			await marketInstance2.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+			await pl.createMarket(0, 0);
+			openMarkets = await pl.getOpenMarkets();
+			marketInstance = await Market.at(openMarkets[0][0]);
+			await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1);
+			await increaseTime(604800);
+		});
+
+		it("Claim Rewards", async function() {
+			await pl.claimPendingReturn(20);
+		});
 	});
 
-	it("Should claim market creation rewards", async function() {
-		let oldBalance = parseFloat(await plotusToken.balanceOf(ab1));
-		await pl.claimCreationReward();
-		let newBalance = parseFloat(await plotusToken.balanceOf(ab1));
-		assert.isAbove(newBalance/1,oldBalance/1);
-		await pl.getUintParameters("0x12");
-	});
-
-	it("Should revert if unauthorized member call Registry functions", async function() {
-		await assertRevert(pl.claimCreationReward());
-		await assertRevert(pl.createGovernanceProposal("","","","0x12",0,ab1, 0,0,0));
-		await assertRevert(pl.setUserGlobalPredictionData(ab1, 0,0,ab1,0,0));
-		await assertRevert(pl.callClaimedEvent(ab1, [0,0],[ab1],0,ab1));
-	})
 });
