@@ -63,7 +63,6 @@ contract("PlotusToken", ([owner, account2, account3]) => {
 			await assertRevert(plotusToken.changeOperator(account3, { from: account2 }));
 			await assertRevert(plotusToken.mint(account2, 1000, { from: account2 }));
 			await plotusToken.transfer(account2, web3.utils.toWei("5"), { from: owner }); //ownerBalance - 5
-			await assertRevert(plotusToken.operatorTransfer(account2, web3.utils.toWei("5"), { from: account3 }));
 			await assertRevert(plotusToken.lockForGovernanceVote(account2, 10, { from: account2 }));
 		});
 	});
