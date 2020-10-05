@@ -219,12 +219,12 @@ contract Market {
       require(_value > 0,"value should be greater than 0");
       uint riskPercentage;
       ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
-      predictionStatus = PredictionStatus.Settled;
-      if(marketStatus() != PredictionStatus.InDispute) {
+      if(predictionStatus != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
       } else {
         delete marketSettleData.settleTime;
       }
+      predictionStatus = PredictionStatus.Settled;
       if(_value < marketData.neutralMinValue) {
         marketSettleData.WinningOption = 1;
       } else if(_value > marketData.neutralMaxValue) {

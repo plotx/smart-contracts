@@ -181,6 +181,33 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     console.log("winningOption After reject proposal",winningOption_afterVote[0]/1);
   });
 
+  it("Should not burn DR member's tokens if invalid code is passed in proposal", async function() {
+    let tokensLockedOfDR1Before = await tokenController.tokensLocked(dr1, toHex("DR"));
+    action = "burnLockedTokens(address,bytes32,uint256)"
+    let actionHash = encode(action, dr1, toHex("PR"), "2000000000000000000000");
+    let p = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(p, 11, 0);
+    await gv.submitProposalWithSolution(p, "proposal", actionHash);
+    let members = await mr.members(2);
+    let iteration = 0;
+    await gv.submitVote(p, 1);
+    await gv.submitVote(p, 1, {from:ab2});
+    await gv.submitVote(p, 1, {from:ab3});
+    await gv.submitVote(p, 1, {from:ab4});
+
+    await increaseTime(604800);
+    await gv.closeProposal(p);
+    let proposal = await gv.proposal(p);
+    assert.equal(proposal[2].toNumber(), 3);
+    await increaseTime(86400);
+    await gv.triggerAction(p);
+    let proposalActionStatus = await gv.proposalActionStatus(p);
+    assert.equal(proposalActionStatus/1, 1, "Not executed");
+    let tokensLockedOfDR1after = await tokenController.tokensLocked(dr1, web3.utils.toHex("DR"));
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1, "burned");
+  });
+
   it("Should burn partial DR member's tokens if lock period is not completed", async function() {
 
     assert.equal((await tokenController.tokensLockedAtTime(dr3,toHex("DR"),await latestTime())),"5000000000000000000000");
