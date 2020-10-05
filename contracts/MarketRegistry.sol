@@ -18,7 +18,6 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
@@ -27,7 +26,6 @@ import "./interfaces/IMarketUtility.sol";
 contract MarketRegistry is Governed, Iupgradable {
 
     using SafeMath for *; 
-    using strings for *; 
 
     enum MarketType {
       HourlyMarket,
