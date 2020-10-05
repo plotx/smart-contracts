@@ -109,15 +109,19 @@ describe("1. Players are incentivized to stake DAO tokens to earn a multiplier o
 			// await marketInstance.setMockPriceFlag(false);
 			await increaseTime(10001);
 			assert.ok(marketInstance);
-			await plotusToken.approve(tokenController.address, "10000000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user1 });
 			await tokenController.lock("0x534d", "1100000000000000000000", 86400 * 30, { from: user1 });
 			await plotusToken.transfer(user2, "2500000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user2 });
 			await tokenController.lock("0x534d", "1600000000000000000000", 86400 * 30, { from: user2 });
 			await plotusToken.transfer(user3, "2500000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user3 });
 			await tokenController.lock("0x534d", "1100000000000000000000", 86400 * 30, { from: user3 });
 			await plotusToken.transfer(user4, "2500000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user4 });
 			await tokenController.lock("0x534d", "1100000000000000000000", 86400 * 30, { from: user4 });
 			await plotusToken.transfer(user5, "2500000000000000000000");
+			await plotusToken.approve(tokenController.address, "10000000000000000000000", { from: user5 });
 			await tokenController.lock("0x534d", "1100", 86400 * 30, { from: user5 });
 
 			await marketConfig.setOptionPrice(1, 9);
@@ -283,18 +287,23 @@ describe("2. Place prediction with ETH and check multiplier ", () => {
 			await marketConfig.setOptionPrice(3, 27);
 		});
 		it("2.2", async () => {
+			await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user1 });
 			await tokenController.lock("0x534d", web3.utils.toWei("110000"), 86400 * 30, { from: user1 });
 
 			await plotusToken.transfer(user2, web3.utils.toWei("1000"));
+			await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user2 });
 			await tokenController.lock("0x534d", web3.utils.toWei("1000"), 86400 * 30, { from: user2 });
 
 			await plotusToken.transfer(user3, web3.utils.toWei("100000"));
+			await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user3 });
 			await tokenController.lock("0x534d", web3.utils.toWei("100000"), 86400 * 30, { from: user3 });
 
 			await plotusToken.transfer(user4, web3.utils.toWei("200000"));
+			await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user4 });
 			await tokenController.lock("0x534d", web3.utils.toWei("200000"), 86400 * 30, { from: user4 });
 
 			await plotusToken.transfer(user5, web3.utils.toWei("11000"));
+			await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user5 });
 			await tokenController.lock("0x534d", web3.utils.toWei("11000"), 86400 * 30, { from: user5 });
 
 			await marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", web3.utils.toWei("10"), 1, 4, {

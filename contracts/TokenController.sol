@@ -116,7 +116,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
 
         lockReason[msg.sender].push(_reason);
 
-        token.operatorTransfer(msg.sender, _amount);
+        require(token.transferFrom(msg.sender, address(this), _amount));
 
         locked[msg.sender][_reason] = LockToken(_amount, validUntil, false);
 
@@ -191,7 +191,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
         require(_reason == "SM" || _reason == "DR","Unspecified reason");
         require(_amount != 0, AMOUNT_ZERO);
         require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-        token.operatorTransfer(msg.sender, _amount);
+        require(token.transferFrom(msg.sender, address(this), _amount));
 
         locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
         if(_reason == "SM") {

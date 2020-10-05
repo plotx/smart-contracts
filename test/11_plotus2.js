@@ -252,14 +252,14 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 		await plotusToken.transfer(dr2, "20000000000000000000000");
 		await plotusToken.transfer(dr3, "20000000000000000000000");
 		await mr.addInitialABandDRMembers([dr1], [dr1, dr2, dr3]);
-		await plotusToken.approve(tokenController.address, "20000000000000000000000");
+		await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : dr1});
 	    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
 	    
-	    await plotusToken.approve(tokenController.address, "20000000000000000000000");
+	    await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : dr2});
 	    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
 
 	  
-	    await plotusToken.approve(tokenController.address, "20000000000000000000000");
+	    await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : dr3});
 	    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
 	    
 		// console.log(await plotusNewInstance.getOpenMarkets());

@@ -77,15 +77,15 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let userBalBefore = await plotusToken.balanceOf(ab1);
     console.log("balance before accept proposal",userBalBefore/1)
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
 
     await assertRevert(gv.submitVote(proposalId, 1, {from:dr3})) //reverts as tokens not locked
   
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
     await gv.submitVote(proposalId, 1, {from:dr1});
     await gv.submitVote(proposalId, 1, {from:dr2});
@@ -155,13 +155,13 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     console.log("proposalId",proposalId/1)
     let userBalBefore = await plotusToken.balanceOf(ab1);
     console.log("balance before reject proposal",userBalBefore/1)
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","5000000000000000000000",(86400*20),{from : dr1});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
     await tokenController.lock("0x4452","5000000000000000000000",(86400*20),{from : dr2});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
     await tokenController.lock("0x4452","5000000000000000000000",(86400*100),{from : dr3});
     await gv.submitVote(proposalId, 0, {from:dr1});
     await gv.submitVote(proposalId, 0, {from:dr2});

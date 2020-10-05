@@ -97,20 +97,6 @@ contract PlotXToken is ERC20 {
     }
 
     /**
-     * @dev Transfer tokens to the operator from the specified address
-     * @param from The address to transfer from.
-     * @param value The amount to be transferred.
-     */
-    function operatorTransfer(address from, uint256 value)
-        public
-        onlyOperator
-        returns (bool)
-    {
-        _transfer(from, operator, value);
-        return true;
-    }
-
-    /**
      * @dev Transfer tokens from one address to another
      * @param from address The address which you want to send tokens from
      * @param to address The address which you want to transfer to
