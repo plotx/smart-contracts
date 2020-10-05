@@ -53,6 +53,7 @@ contract Market {
     ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
     IMarketUtility constant marketUtility = IMarketUtility(0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2);
 
+    uint8 constant roundOfToNearest = 25;
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
     uint constant ethCommissionPerc = 10; //with 2 decimals
@@ -376,8 +377,8 @@ contract Market {
     * @return market currency name
     * @return market currency feed address
     */
-    function getMarketFeedData() public view returns(bytes32, address) {
-      return (marketCurrency, marketFeedAddress);
+    function getMarketFeedData() public view returns(uint8, bytes32, address) {
+      return (roundOfToNearest, marketCurrency, marketFeedAddress);
     }
 
    /**

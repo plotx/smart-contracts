@@ -30,7 +30,7 @@ contract IMarket {
 
     function marketCurrency() public view returns(bytes32);
 
-    function getMarketFeedData() public view returns(bytes32, address);
+    function getMarketFeedData() public view returns(uint8, bytes32, address);
 
     function settleMarket() external;
 
