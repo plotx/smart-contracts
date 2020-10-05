@@ -283,10 +283,9 @@ contract MarketRegistry is Governed, Iupgradable {
     function claimCreationReward() external {
       require(userData[msg.sender].marketsCreated > 0);
       uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
-      if(plotToken.balanceOf(address(this)) > pendingReward) {
-        delete userData[msg.sender].marketsCreated;
-        _transferAsset(address(plotToken), msg.sender, pendingReward);
-      }
+      require(plotToken.balanceOf(address(this)) > pendingReward);
+      delete userData[msg.sender].marketsCreated;
+      _transferAsset(address(plotToken), msg.sender, pendingReward);
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
