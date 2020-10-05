@@ -30,13 +30,12 @@ contract Vesting {
 
   uint constant internal SECONDS_PER_DAY = 1 days;
 
-  event Allocated(address recipient, uint64 startTime, uint256 amount, uint32 vestingDuration, uint64 vestingPeriodInDays, uint64 vestingCliff, uint _upfront);
+  event Allocated(address recipient, uint64 startTime, uint256 amount, uint32 vestingDuration, uint64 vestingPeriodInDays, uint _upfront);
   event TokensClaimed(address recipient, uint256 amountClaimed);
 
   struct Allocation {
     uint32 vestingDuration; 
-    uint32 periodClaimed;
-    uint64 vestingCliff;  
+    uint32 periodClaimed;  
     uint64 periodInDays; 
     uint64 startTime; 
     uint256 amount;
@@ -74,16 +73,12 @@ contract Vesting {
   /// @param _amount Total number of tokens in vested
   /// @param _vestingDuration Number of Periods 
   /// @param _vestingPeriodInDays Number of days in each Period
-  /// @param _vestingCliff Number of days of the vesting cliff
   /// @param _upFront Amount of tokens `_recipient` will get  right away
-  function addTokenVesting(address _recipient, uint64 _startTime, uint256 _amount, uint32 _vestingDuration, uint64 _vestingPeriodInDays, uint64 _vestingCliff, uint256 _upFront) public 
+  function addTokenVesting(address _recipient, uint64 _startTime, uint256 _amount, uint32 _vestingDuration, uint64 _vestingPeriodInDays, uint256 _upFront) public 
   onlyOwner
   noGrantExistsForUser(_recipient)
   {
     require(_startTime != 0, "should be positive");
-    if(_vestingCliff > 0){
-      require(_upFront == 0, "Upfront is non zero");
-    }
     uint256 amountVestedPerPeriod = _amount.div(_vestingDuration);
     require(amountVestedPerPeriod > 0, "0-amount-vested-per-period");
 
@@ -95,7 +90,6 @@ contract Vesting {
       amount: _amount,
       vestingDuration: _vestingDuration,
       periodInDays: _vestingPeriodInDays,
-      vestingCliff: _vestingCliff,
       periodClaimed: 0,
       totalClaimed: 0
     });
@@ -105,7 +99,7 @@ contract Vesting {
       token.transfer(_recipient, _upFront);
     }
 
-    emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _vestingCliff, _upFront);
+    emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _upFront);
   }
 
   /// @dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested
@@ -128,7 +122,6 @@ contract Vesting {
 
   /// @dev Calculate the vested and unclaimed period and tokens available for `_recepient` to claim
   /// Due to rounding errors once grant duration is reached, returns the entire left grant amount
-  /// Returns (0, 0) if cliff has not been reached
   function calculateVestingClaim(address _recipient) public view returns (uint32, uint256) {
     Allocation storage _tokenAllocations = tokenAllocations[_recipient];
 
@@ -137,23 +130,16 @@ contract Vesting {
       return (0, 0);
     }
 
-    // Check cliff was reached
     uint256 elapsedTime = uint(now).sub(_tokenAllocations.startTime);
     uint256 elapsedDays = elapsedTime / SECONDS_PER_DAY;
     
-    if (elapsedDays < _tokenAllocations.vestingCliff) {
-      return (0, 0);
-    }
-    uint256 elapsedDaysAfterCliffPeriod = elapsedDays.sub(_tokenAllocations.vestingCliff);
+    
     // If over vesting duration, all tokens vested
-    if (elapsedDaysAfterCliffPeriod >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
+    if (elapsedDays >= _tokenAllocations.vestingDuration.mul(_tokenAllocations.periodInDays)) {
       uint256 remainingTokens = _tokenAllocations.amount.sub(_tokenAllocations.totalClaimed);
       return (uint32(_tokenAllocations.vestingDuration.sub(_tokenAllocations.periodClaimed)), remainingTokens);
     } else {
-      uint32 elapsedPeriod = uint32(elapsedDaysAfterCliffPeriod.div(_tokenAllocations.periodInDays));
-      if(_tokenAllocations.vestingCliff > 0) {
-        elapsedPeriod = uint16(elapsedPeriod.add(1));
-      }
+      uint32 elapsedPeriod = uint32(elapsedDays.div(_tokenAllocations.periodInDays));
       uint32 periodVested = uint32(elapsedPeriod.sub(_tokenAllocations.periodClaimed));
       uint256 amountVestedPerPeriod = _tokenAllocations.amount.div(_tokenAllocations.vestingDuration);
       uint256 amountVested = periodVested.mul(amountVestedPerPeriod);
