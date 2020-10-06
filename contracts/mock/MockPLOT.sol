@@ -3,7 +3,7 @@ import "../PlotXToken.sol";
 
 contract MockPLOT is PlotXToken {
 
-	constructor(uint256 initialSupply) public PlotXToken(initialSupply) {
+	constructor(uint256 initialSupply, address owner) public PlotXToken(initialSupply, owner) {
     }
 
 	function burnTokens(address _of, uint _amount) external {
