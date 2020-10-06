@@ -23,7 +23,7 @@ let dummyToken;
 
 contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
   before(async function () {
-    plotusToken = await PlotusToken.new(toWei(30000000));
+    plotusToken = await PlotusToken.new(toWei(30000000), owner);
     vesting = await Vesting.new(plotusToken.address, owner);
     dummyToken = await DummyTokenMock.new("dummy","dummy");
     dummyVesting = await Vesting.new(dummyToken.address, owner);

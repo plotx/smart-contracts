@@ -23,7 +23,7 @@ contract("InterestDistribution - Scenario based calculations for staking model",
     before(async () => {
       
       stakeTok = await UniswapETH_Plot.new("UEP","UEP");
-      plotusToken = await PlotusToken.new(toWei(30000000));
+      plotusToken = await PlotusToken.new(toWei(30000000), S1);
       dummystakeTok = await DummyTokenMock.new("UEP","UEP");
       dummyRewardTok = await DummyTokenMock.new("PLT","PLT");
       let nowTime = await latestTime();
@@ -889,7 +889,7 @@ contract("InterestDistribution - Scenario5 All staker unstakes before stake peri
     before(async () => {
       
       stakeTok = await UniswapETH_Plot.new("UEP","UEP");
-      plotusToken = await PlotusToken.new(toWei(30000000));
+      plotusToken = await PlotusToken.new(toWei(30000000), S1);
       staking = await Staking.new(stakeTok.address, plotusToken.address, 3600*24*365, toWei(500000), (await latestTime())/1 + 1, vaultAdd);
 
       await plotusToken.transfer(staking.address, toWei(500000));
