@@ -19,6 +19,7 @@
     "@openzeppelin/contracts": "^2.5.0",
     "@openzeppelin/test-helpers": "^0.5.6",
     "bignumber.js": "^9.0.0",
+    "coveralls": "^3.0.2",
     "ethereumjs-abi": "^0.6.8",
     "ganache-cli": "^6.9.0",
     "pify": "^5.0.0",
