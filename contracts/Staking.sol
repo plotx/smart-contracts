@@ -32,10 +32,10 @@ contract Staking {
 
 
     // Token address
-    ERC20 stakeToken;
+    ERC20 private stakeToken;
 
     // Reward token
-    PlotXToken rewardToken;
+    PlotXToken private rewardToken;
 
     // Interest and staker data
     InterestData public interestData;
@@ -48,7 +48,7 @@ contract Staking {
     address public vaultAddress; 
 
     // 10^18
-    uint256 constant DECIMAL1e18 = 10**18;
+    uint256 private constant DECIMAL1e18 = 10**18;
 
     //Total time (in sec) over which reward will be distributed
     uint256 public stakingPeriod;
@@ -68,7 +68,7 @@ contract Staking {
      * @dev Emitted when `staker` collects interest `_value`.
      */
     event InterestCollected(
-        address staker,
+        address indexed staker,
         uint256 _value,
         uint256 _globalYieldPerToken
     );
@@ -114,8 +114,8 @@ contract Staking {
             stakeToken.transferFrom(msg.sender, address(this), _amount),
             "TransferFrom failed, make sure you approved token transfer"
         );
-        require(uint(now).sub(stakingStartTime) <= stakingPeriod, "Can not stake after staking period passed");
-        uint newlyInterestGenerated = uint(now).sub(interestData.lastUpdated).mul(totalReward).div(stakingPeriod);
+        require(now.sub(stakingStartTime) <= stakingPeriod, "Can not stake after staking period passed");
+        uint newlyInterestGenerated = now.sub(interestData.lastUpdated).mul(totalReward).div(stakingPeriod);
         interestData.lastUpdated = now;
         updateGlobalYieldPerToken(newlyInterestGenerated);
         updateStakeData(msg.sender, _amount);
@@ -235,12 +235,13 @@ contract Staking {
     }
 
     function _timeSinceLastUpdate() internal returns(uint256) {
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) > stakingPeriod)
+        uint timeSinceLastUpdate;
+        if(now.sub(stakingStartTime) > stakingPeriod)
         {
             timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
             interestData.lastUpdated = stakingStartTime.add(stakingPeriod);
         } else {
+            timeSinceLastUpdate = now.sub(interestData.lastUpdated);
             interestData.lastUpdated = now;
         }
         return timeSinceLastUpdate;
@@ -254,12 +255,12 @@ contract Staking {
      *
      * @param _staker                     Staker's address
      *
-     * @return _earnedInterest The amount of tokens credit for the staker.
+     * @return The amount of tokens credit for the staker.
      */
     function calculateInterest(address _staker)
         public
         view
-        returns (uint256 _earnedInterest)
+        returns (uint256)
     {
         Staker storage stakerData = interestData.stakers[_staker];
 
@@ -279,7 +280,7 @@ contract Staking {
             return 0;
         }
 
-        _earnedInterest = (intermediateInterest.sub(intermediateVal));
+        uint _earnedInterest = (intermediateInterest.sub(intermediateVal));
 
         return _earnedInterest;
     }
@@ -330,7 +331,7 @@ contract Staking {
         uint estimatedReward = 0;
         uint unlockedReward = 0;
         uint accruedReward = 0;
-        uint timeElapsed = uint(now).sub(stakingStartTime);
+        uint timeElapsed = now.sub(stakingStartTime);
 
         if(timeElapsed > stakingPeriod)
         {
@@ -339,10 +340,12 @@ contract Staking {
 
         unlockedReward = timeElapsed.mul(totalReward).div(stakingPeriod);
 
-        uint timeSinceLastUpdate = uint(now).sub(interestData.lastUpdated);
-        if(uint(now).sub(stakingStartTime) >= stakingPeriod)
+        uint timeSinceLastUpdate;
+        if(timeElapsed == stakingPeriod)
         {
             timeSinceLastUpdate = stakingStartTime.add(stakingPeriod).sub(interestData.lastUpdated);
+        } else {
+            timeSinceLastUpdate = now.sub(interestData.lastUpdated);
         }
         uint newlyInterestGenerated = timeSinceLastUpdate.mul(totalReward).div(stakingPeriod);
         uint updatedGlobalYield;
@@ -352,10 +355,7 @@ contract Staking {
         }
         uint interestGeneratedEnd = stakingTimeLeft.mul(totalReward).div(stakingPeriod);
         uint globalYieldEnd;
-        if (interestData.globalTotalStaked == 0) {
-            updatedGlobalYield = 0;
-            globalYieldEnd = 0;
-        } else {
+        if (interestData.globalTotalStaked != 0) {
             updatedGlobalYield = interestData.globalYieldPerToken.add(
             newlyInterestGenerated
                 .mul(DECIMAL1e18)
