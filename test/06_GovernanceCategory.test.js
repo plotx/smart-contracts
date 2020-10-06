@@ -61,8 +61,8 @@ contract('Configure Global Parameters', accounts => {
       
       it('Should Not Update Market Config if zero address passed', async function() {
         let params = [];
-        params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getFeedAddresses())[0]);
+        params.push((await marketConfig.getFeedAddresses()));
+        params.push((await marketConfig.getFeedAddresses()));
         params.push(plotTok.address);
         let oldImplementation = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         oldImplementation = await oldImplementation.implementation();
@@ -85,10 +85,10 @@ contract('Configure Global Parameters', accounts => {
 
       it('Should Update Market Config', async function() {
         let params = [];
-        params.push((await marketConfig.getFeedAddresses())[0]);
-        params.push((await marketConfig.getFeedAddresses())[0]);
+        params.push((await marketConfig.getFeedAddresses()));
+        params.push((await marketConfig.getFeedAddresses()));
         params.push(plotTok.address);
-        params.push((await marketConfig.getFeedAddresses())[1]);
+        params.push((await marketConfig.getFeedAddresses()));
         let newMarketConfig = await MarketConfig.new(params);
         let actionHash = encode(
           'upgradeContractImplementation(address,address)',

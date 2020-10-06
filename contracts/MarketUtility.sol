@@ -47,7 +47,6 @@ contract MarketUtility {
     address public authorizedAddress;
     bool public initialized;
 
-    address payable chainLinkPriceOracle;
 
     struct UniswapPriceData {
         FixedPoint.uq112x112 price0Average;
@@ -61,7 +60,6 @@ contract MarketUtility {
     mapping(address => UniswapPriceData) internal uniswapPairData;
     IUniswapV2Factory uniswapFactory;
 
-    IChainLinkOracle internal chainLinkOracle;
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
         require(msg.sender == authorizedAddress, "Not authorized");
@@ -81,13 +79,11 @@ contract MarketUtility {
         _setInitialParameters();
         authorizedAddress = msg.sender;
         tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
-        chainLinkPriceOracle = _addressParams[0];
-        plotToken = _addressParams[2];
-        weth = IUniswapV2Router02(_addressParams[1]).WETH();
-        uniswapFactory = IUniswapV2Factory(_addressParams[3]);
+        plotToken = _addressParams[1];
+        weth = IUniswapV2Router02(_addressParams[0]).WETH();
+        uniswapFactory = IUniswapV2Factory(_addressParams[2]);
         plotETHpair = uniswapFactory.getPair(plotToken, weth);
 
-        chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
 
         _setCummulativePrice();
     }
@@ -170,10 +166,7 @@ contract MarketUtility {
         onlyAuthorized
     {
         require(value != address(0), "Value cannot be address(0)");
-        if (code == "CLORCLE") { // Chainlink Eth oracle address
-            chainLinkPriceOracle = value;
-            chainLinkOracle = IChainLinkOracle(chainLinkPriceOracle);
-        } else if (code == "UNIFAC") { // Uniswap factory address
+        if (code == "UNIFAC") { // Uniswap factory address
             uniswapFactory = IUniswapV2Factory(value);
             plotETHpair = uniswapFactory.getPair(plotToken, weth);
         } else {
@@ -392,11 +385,10 @@ contract MarketUtility {
 
     /**
      * @dev Get Market feed address
-     * @return Eth Chainlink feed address
      * @return Uniswap factory address
      **/
-    function getFeedAddresses() public view returns (address, address) {
-        return (address(chainLinkOracle), address(uniswapFactory));
+    function getFeedAddresses() public view returns (address) {
+        return (address(uniswapFactory));
     }
 
     /**

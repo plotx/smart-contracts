@@ -192,20 +192,15 @@ contract('Configure Global Parameters', accounts => {
         await updateParameter(20, 2, 'CDTIM1', pl, 'configUint', 28);
       });
 
-      it('Should update Chain Link Price Oracle', async function() {
-        await updateParameter(21, 2, 'CLORCLE', pl, 'configAddress', pl.address);
-        let configData = await marketConfig.getFeedAddresses();
-        assert.equal(configData[0], pl.address, 'Not updated');
-      });
       it('Should not allow to update if unauthorized call', async function() {
-        await assertRevert(marketConfig.updateAddressParameters(toHex("CLORCLE"),pl.address));
+        await assertRevert(marketConfig.updateAddressParameters(toHex("UNIFAC"),pl.address));
       });
 
       it('Should update Uniswap Factory', async function() {
         let uniswapFactory = await MockUniswapFactory.new();
         await updateParameter(21, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
         let configData = await marketConfig.getFeedAddresses();
-        assert.equal(configData[1], uniswapFactory.address, 'Not updated');
+        assert.equal(configData, uniswapFactory.address, 'Not updated');
       });
 
       it('Should not update if invalid code is passed', async function() {
