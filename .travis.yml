@@ -4,22 +4,16 @@ language: node_js
 
 node_js:
   - "12"
-script:
-  - npm install
-  
+
 jobs:
   fast_finish: true
   allow_failures:
     - env: SOLIDITY_COVERAGE=true
   include:
-    include:
     - stage: tests
       name: "unit tests"
-      install: npm install -g truffle@5.1.27
       script: npm run test
     - stage: tests
       name: "unit tests with coverage"
-      install: npm install -g truffle@5.1.27
-      before_script: npm install solidity-coverage ethereumjs-abi
       script: travis_wait 90 npm run test
       env: SOLIDITY_COVERAGE=true
