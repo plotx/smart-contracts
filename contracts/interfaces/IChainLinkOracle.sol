@@ -7,7 +7,7 @@ interface IChainLinkOracle
     * @return int256 representing the latest answer of chainLink oracle.
     */
 	function latestAnswer() external view returns (int256);
-	
+	function decimals() external view returns (uint8);
 	function getRoundData(uint80 _roundId)
     external
     view

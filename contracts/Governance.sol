@@ -201,7 +201,7 @@ contract Governance is IGovernance, Iupgradable {
         if(keccak256(_functionHash) == swapABMemberHash) {
             incentive = 0;
         }
-        _categorizeProposal(_proposalId, _categoryId, incentive);
+        _categorizeProposal(_proposalId, _categoryId, incentive, _functionHash);
     }
 
     /**
@@ -280,6 +280,10 @@ contract Governance is IGovernance, Iupgradable {
             uint256(ProposalStatus.VotingStarted)
         ) {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
+            _transferPLOT(
+                address(marketRegistry),
+                allProposalData[_proposalId].commonIncentive
+            );
         } else {
             require(canCloseProposal(_proposalId) == 1);
             _closeVote(_proposalId, category);
@@ -337,7 +341,10 @@ contract Governance is IGovernance, Iupgradable {
         }
 
         if (j > 0) {
-            tokenInstance.transfer(_memberAddress, pendingDAppReward);
+            _transferPLOT(
+                _memberAddress,
+                pendingDAppReward
+            );
             emit RewardClaimed(_memberAddress, pendingDAppReward);
         }
     }
@@ -728,7 +735,7 @@ contract Governance is IGovernance, Iupgradable {
             if(keccak256(_functionHash) == swapABMemberHash) {
                 defaultIncentive = 0;
             }
-            _categorizeProposal(_proposalId, _categoryId, defaultIncentive);
+            _categorizeProposal(_proposalId, _categoryId, defaultIncentive, _functionHash);
         }
     }
 
@@ -741,12 +748,16 @@ contract Governance is IGovernance, Iupgradable {
     function _categorizeProposal(
         uint256 _proposalId,
         uint256 _categoryId,
-        uint256 _incentive
+        uint256 _incentive,
+        bytes memory _functionHash
     ) internal {
         require(
             _categoryId > 0 && _categoryId < proposalCategory.totalCategories(),
             "Invalid category"
         );
+        if(keccak256(_functionHash) == resolveDisputeHash) {
+            require(msg.sender == address(marketRegistry));
+        }
         allProposalData[_proposalId].category = _categoryId;
         allProposalData[_proposalId].commonIncentive = _incentive;
         allProposalData[_proposalId].propStatus = uint256(
@@ -1084,9 +1095,18 @@ contract Governance is IGovernance, Iupgradable {
         }
 
         if (proposalVoteTally[_proposalId].voters == 0 && allProposalData[_proposalId].commonIncentive > 0) {
-            tokenInstance.transfer(
+            _transferPLOT(
                 address(marketRegistry),
                 allProposalData[_proposalId].commonIncentive
+            );
+        }
+    }
+
+    function _transferPLOT(address _recipient, uint256 _amount) internal {
+        if(_amount > 0) {
+            tokenInstance.transfer(
+                _recipient,
+                _amount
             );
         }
     }
@@ -1102,7 +1122,7 @@ contract Governance is IGovernance, Iupgradable {
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         minTokenLockedForDR = 1000 ether;
         lockTimeForDR = 15 days;
-        actionWaitingTime = 1 hours;
+        actionWaitingTime = 1 days;
         actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
         maxVoteWeigthPer = 5;

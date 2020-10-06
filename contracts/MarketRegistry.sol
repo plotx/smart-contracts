@@ -18,7 +18,6 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/string-utils/strings.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
@@ -27,7 +26,6 @@ import "./interfaces/IMarketUtility.sol";
 contract MarketRegistry is Governed, Iupgradable {
 
     using SafeMath for *; 
-    using strings for *; 
 
     enum MarketType {
       HourlyMarket,
@@ -42,6 +40,7 @@ contract MarketRegistry is Governed, Iupgradable {
 
     struct MarketCurrency {
       address marketImplementation;
+      uint8 decimals;
     }
 
     struct MarketCreationData {
@@ -83,7 +82,7 @@ contract MarketRegistry is Governed, Iupgradable {
     address internal marketInitiater;
     address public tokenController;
 
-    address[] marketCurrencies;
+    MarketCurrency[] marketCurrencies;
     MarketTypeData[] marketTypes;
 
     bool public marketCreationPaused;
@@ -139,9 +138,9 @@ contract MarketRegistry is Governed, Iupgradable {
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
       _addNewMarketCurrency(_btcMarketImplementation);
-      _addMarket(1 hours, 20);
-      _addMarket(24 hours, 50);
-      _addMarket(7 days, 100);
+      _addMarket(1 hours, 50);
+      _addMarket(24 hours, 200);
+      _addMarket(7 days, 500);
 
       for(uint256 i = 0;i < marketTypes.length; i++) {
           marketCreationData[i][0].initialStartTime = _marketStartTime;
@@ -155,6 +154,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev Add new market type.
     * @param _predictionTime The time duration of market.
     * @param _marketStartTime The time at which market will create.
+    * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
     */
     function addNewMarketType(uint64 _predictionTime, uint64 _marketStartTime, uint64 _optionRangePerc) external onlyAuthorizedToGovern {
       require(_marketStartTime > now);
@@ -166,6 +166,11 @@ contract MarketRegistry is Governed, Iupgradable {
       }
     }
 
+    /**
+    * @dev Internal function to add market type
+    * @param _predictionTime The time duration of market.
+    * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
+    */
     function _addMarket(uint64 _predictionTime, uint64 _optionRangePerc) internal {
       uint256 _marketType = marketTypes.length;
       marketTypes.push(MarketTypeData(_predictionTime, _optionRangePerc));
@@ -186,8 +191,9 @@ contract MarketRegistry is Governed, Iupgradable {
 
     function _addNewMarketCurrency(address _marketImplementation) internal {
       uint256 _marketCurrencyIndex = marketCurrencies.length;
-      (bytes32 _currencyName, address _priceFeed) = IMarket(_marketImplementation).getMarketFeedData();
-      marketCurrencies.push( _marketImplementation);
+      (, bytes32 _currencyName, address _priceFeed) = IMarket(_marketImplementation).getMarketFeedData();
+      uint8 _decimals = marketUtility.getPriceFeedDecimals(_priceFeed);
+      marketCurrencies.push(MarketCurrency(_marketImplementation, _decimals));
       emit MarketCurrencies(_marketCurrencyIndex, _marketImplementation, _priceFeed, _currencyName);
     }
 
@@ -197,7 +203,9 @@ contract MarketRegistry is Governed, Iupgradable {
     function updateMarketImplementations(uint256[] calldata _currencyIndexes, address[] calldata _marketImplementations) external onlyAuthorizedToGovern {
       require(_currencyIndexes.length == _marketImplementations.length);
       for(uint256 i = 0;i< _currencyIndexes.length; i++) {
-        marketCurrencies[_currencyIndexes[i]] = _marketImplementations[i];
+        (, , address _priceFeed) = IMarket(_marketImplementations[i]).getMarketFeedData();
+        uint8 _decimals = marketUtility.getPriceFeedDecimals(_priceFeed);
+        marketCurrencies[_currencyIndexes[i]] = MarketCurrency(_marketImplementations[i], _decimals);
       }
     }
 
@@ -234,7 +242,7 @@ contract MarketRegistry is Governed, Iupgradable {
     function _createMarket(uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _minValue, uint64 _maxValue, uint64 _marketStartTime, bytes32 _currencyName) internal {
       require(!marketCreationPaused);
       MarketTypeData memory _marketTypeData = marketTypes[_marketType];
-      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex]);
+      address payable _market = _generateProxy(marketCurrencies[_marketCurrencyIndex].marketImplementation);
       marketData[_market].isMarket = true;
       IMarket(_market).initiate(_marketStartTime, _marketTypeData.predictionTime, _minValue, _maxValue);
       emit MarketQuestion(_market, _currencyName, _marketType, _marketStartTime);
@@ -256,14 +264,15 @@ contract MarketRegistry is Governed, Iupgradable {
         (,,,,,,,, uint _status) = getMarketDetails(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
         require(_status >= uint(IMarket.PredictionStatus.InSettlement));
       }
-      (bytes32 _currencyName, address _priceFeed) = IMarket(marketCurrencies[_marketCurrencyIndex]).getMarketFeedData();
+      (uint8 _roundOfToNearest, bytes32 _currencyName, address _priceFeed) = IMarket(marketCurrencies[_marketCurrencyIndex].marketImplementation).getMarketFeedData();
       marketUtility.update();
       uint64 _marketStartTime = calculateStartTimeForMarket(_marketType, _marketCurrencyIndex);
       uint64 _optionRangePerc = marketTypes[_marketType].optionRangePerc;
       uint currentPrice = marketUtility.getAssetPriceUSD(_priceFeed);
-      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(1000));
-      uint64 _minValue = uint64(currentPrice.sub(_optionRangePerc));
-      uint64 _maxValue = uint64(currentPrice.add(_optionRangePerc));
+      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(10000));
+      uint64 _decimals = marketCurrencies[_marketCurrencyIndex].decimals;
+      uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+      uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       userData[msg.sender].marketsCreated++;
     }
@@ -274,10 +283,9 @@ contract MarketRegistry is Governed, Iupgradable {
     function claimCreationReward() external {
       require(userData[msg.sender].marketsCreated > 0);
       uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
-      if(plotToken.balanceOf(address(this)) > pendingReward) {
-        delete userData[msg.sender].marketsCreated;
-        _transferAsset(address(plotToken), msg.sender, pendingReward);
-      }
+      require(plotToken.balanceOf(address(this)) > pendingReward);
+      delete userData[msg.sender].marketsCreated;
+      _transferAsset(address(plotToken), msg.sender, pendingReward);
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
@@ -555,10 +563,14 @@ contract MarketRegistry is Governed, Iupgradable {
         for(uint256 j = 0; j< marketCurrencyLength; j++) {
           _openMarkets[count] = marketCreationData[i][j].marketAddress;
           _marketTypes[count] = i;
-          _marketCurrencies[count] = IMarket(marketCurrencies[j]).marketCurrency();
+          _marketCurrencies[count] = IMarket(marketCurrencies[j].marketImplementation).marketCurrency();
           count++;
         }
       }
+    }
+
+    function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
+        return ((a + m - 1) / m) * m;
     }
 
     // /**

@@ -5,6 +5,7 @@ module.exports = {
     network_id: 5777,
     mnemonic:
       'grocery obvious wire insane limit weather parade parrot patrol stock blast ivory',
-    total_accounts: 47
+    total_accounts: 47,
+    hardfork: 'constantinople'
   }
 };

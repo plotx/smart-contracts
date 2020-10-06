@@ -13,6 +13,7 @@ const BLOT = artifacts.require("BLOT");
 const web3 = Market.web3;
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
+const latestTime = require("./utils/latestTime.js").latestTime;
 const encode = require("./utils/encoder.js").encode;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { assertRevert } = require('./utils/assertRevert');
@@ -50,29 +51,24 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
     
     // cannot raise dispute if market is open
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
     
     await increaseTime(3601);
     // cannot raise dispute if market is closed but result is not out
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
    
     await increaseTime(3600);
     await marketInstance.calculatePredictionResult(100000000000);
      // cannot raise dispute with less than minimum stake
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
     //can raise dispute in cooling period and stake
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    await increaseTime(901);
-     // cannot raise dispute if market cool time is over
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    
     await assertRevert(marketInstance.resolveDispute(true, 100));
     let winningOption_af = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_af[0]/1)
@@ -81,15 +77,15 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let userBalBefore = await plotusToken.balanceOf(ab1);
     console.log("balance before accept proposal",userBalBefore/1)
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
 
     await assertRevert(gv.submitVote(proposalId, 1, {from:dr3})) //reverts as tokens not locked
   
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
     await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
     await gv.submitVote(proposalId, 1, {from:dr1});
     await gv.submitVote(proposalId, 1, {from:dr2});
@@ -145,8 +141,13 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await increaseTime(7201);
     await marketInstance.calculatePredictionResult(100000000000);
     //can raise dispute in cooling period and stake
-    await plotusToken.approve(marketInstance.address, "10000000000000000000000");
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    await increaseTime(901);
+     // cannot raise dispute if market cool time is over
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    
     let plotusContractBalanceBefore = await plotusToken.balanceOf(plotusNewInstance.address);
     let winningOption_before = await marketInstance.getMarketResults()
     console.log("winningOption",winningOption_before[0]/1)
@@ -154,14 +155,14 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     console.log("proposalId",proposalId/1)
     let userBalBefore = await plotusToken.balanceOf(ab1);
     console.log("balance before reject proposal",userBalBefore/1)
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
+    await tokenController.lock("0x4452","5000000000000000000000",(86400*20),{from : dr1});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
+    await tokenController.lock("0x4452","5000000000000000000000",(86400*20),{from : dr2});
     
-    await plotusToken.approve(tokenController.address, "100000000000000000000000");
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*100),{from : dr3});
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
+    await tokenController.lock("0x4452","5000000000000000000000",(86400*100),{from : dr3});
     await gv.submitVote(proposalId, 0, {from:dr1});
     await gv.submitVote(proposalId, 0, {from:dr2});
     await gv.submitVote(proposalId, 0, {from:dr3});
@@ -180,11 +181,39 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     console.log("winningOption After reject proposal",winningOption_afterVote[0]/1);
   });
 
-  it("Brun DR member's tokens", async function() {
-
-    let tokensLockedOfDR1Before = await tokenController.tokensLocked(dr3, web3.utils.toHex("DR"));
+  it("Should not burn DR member's tokens if invalid code is passed in proposal", async function() {
+    let tokensLockedOfDR1Before = await tokenController.tokensLocked(dr1, toHex("DR"));
     action = "burnLockedTokens(address,bytes32,uint256)"
-    let actionHash = encode(action, dr3, toHex("DR"), "10000000000000000000000");
+    let actionHash = encode(action, dr1, toHex("PR"), "2000000000000000000000");
+    let p = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(p, 11, 0);
+    await gv.submitProposalWithSolution(p, "proposal", actionHash);
+    let members = await mr.members(2);
+    let iteration = 0;
+    await gv.submitVote(p, 1);
+    await gv.submitVote(p, 1, {from:ab2});
+    await gv.submitVote(p, 1, {from:ab3});
+    await gv.submitVote(p, 1, {from:ab4});
+
+    await increaseTime(604800);
+    await gv.closeProposal(p);
+    let proposal = await gv.proposal(p);
+    assert.equal(proposal[2].toNumber(), 3);
+    await increaseTime(86400);
+    await gv.triggerAction(p);
+    let proposalActionStatus = await gv.proposalActionStatus(p);
+    assert.equal(proposalActionStatus/1, 1, "Not executed");
+    let tokensLockedOfDR1after = await tokenController.tokensLocked(dr1, web3.utils.toHex("DR"));
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1, "burned");
+  });
+
+  it("Should burn partial DR member's tokens if lock period is not completed", async function() {
+
+    assert.equal((await tokenController.tokensLockedAtTime(dr3,toHex("DR"),await latestTime())),"5000000000000000000000");
+    let tokensLockedOfDR1Before = await tokenController.tokensLockedAtTime(dr3, web3.utils.toHex("DR"), await latestTime());
+    action = "burnLockedTokens(address,bytes32,uint256)"
+    let actionHash = encode(action, dr3, toHex("DR"), "2000000000000000000000");
     let p = await gv.getProposalLength();
     await gv.createProposal("proposal", "proposal", "proposal", 0);
     await gv.categorizeProposal(p, 11, 0);
@@ -203,11 +232,78 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await gv.closeProposal(p);
     let proposal = await gv.proposal(p);
     assert.equal(proposal[2].toNumber(), 3);
-    await increaseTime(3601);
+    await increaseTime(86400);
     await gv.triggerAction(p);
     let proposalActionStatus = await gv.proposalActionStatus(p);
     assert.equal(proposalActionStatus/1, 3, "Not executed");
-    let tokensLockedOfDR1after = await tokenController.tokensLocked(dr3, web3.utils.toHex("DR"));
-    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1 - 10000000000000000000000, "Not burned");
+    let tokensLockedOfDR1after = await tokenController.tokensLockedAtTime(dr3, web3.utils.toHex("DR"),await latestTime());
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1 - 2000000000000000000000, "Not burned");
   });
+
+  it("Should burn all DR member's tokens if lock period is not completed", async function() {
+
+    assert.equal((await tokenController.tokensLockedAtTime(dr3,toHex("DR"),await latestTime())),"3000000000000000000000");
+    let tokensLockedOfDR1Before = await tokenController.tokensLockedAtTime(dr3, web3.utils.toHex("DR"), await latestTime());
+    action = "burnLockedTokens(address,bytes32,uint256)"
+    let actionHash = encode(action, dr3, toHex("DR"), "3000000000000000000000");
+    let p = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(p, 11, 0);
+    await gv.submitProposalWithSolution(p, "proposal", actionHash);
+    let members = await mr.members(2);
+    let iteration = 0;
+    await gv.submitVote(p, 1);
+    await gv.submitVote(p, 1, {from:ab2});
+    await gv.submitVote(p, 1, {from:ab3});
+    await gv.submitVote(p, 1, {from:ab4});
+    await gv.submitVote(p, 1, {from:dr1});
+    await gv.submitVote(p, 1, {from:dr2});
+    await gv.submitVote(p, 1, {from:dr3});
+
+    await increaseTime(604800);
+    await gv.closeProposal(p);
+    let proposal = await gv.proposal(p);
+    assert.equal(proposal[2].toNumber(), 3);
+    await increaseTime(86400);
+    await gv.triggerAction(p);
+    let proposalActionStatus = await gv.proposalActionStatus(p);
+    assert.equal(proposalActionStatus/1, 3, "Not executed");
+    let tokensLockedOfDR1after = await tokenController.tokensLockedAtTime(dr3, web3.utils.toHex("DR"),await latestTime());
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1 - 3000000000000000000000, "Not burned");
+  });
+    
+  it("Increase time to complete lock period", async function() {
+    await increaseTime(8640000);
+    // await tokenController.unlock(dr3);
+  });
+
+  it("Should not burn DR member's tokens if lock period is completed", async function() {
+
+    assert.equal((await tokenController.tokensLockedAtTime(dr1,toHex("DR"),await latestTime())),0);
+    let tokensLockedOfDR1Before = await tokenController.tokensLocked(dr1, toHex("DR"));
+    action = "burnLockedTokens(address,bytes32,uint256)"
+    let actionHash = encode(action, dr1, toHex("DR"), "2000000000000000000000");
+    let p = await gv.getProposalLength();
+    await gv.createProposal("proposal", "proposal", "proposal", 0);
+    await gv.categorizeProposal(p, 11, 0);
+    await gv.submitProposalWithSolution(p, "proposal", actionHash);
+    let members = await mr.members(2);
+    let iteration = 0;
+    await gv.submitVote(p, 1);
+    await gv.submitVote(p, 1, {from:ab2});
+    await gv.submitVote(p, 1, {from:ab3});
+    await gv.submitVote(p, 1, {from:ab4});
+
+    await increaseTime(604800);
+    await gv.closeProposal(p);
+    let proposal = await gv.proposal(p);
+    assert.equal(proposal[2].toNumber(), 3);
+    await increaseTime(86400);
+    await gv.triggerAction(p);
+    let proposalActionStatus = await gv.proposalActionStatus(p);
+    assert.equal(proposalActionStatus/1, 1, "Not executed");
+    let tokensLockedOfDR1after = await tokenController.tokensLocked(dr1, web3.utils.toHex("DR"));
+    assert.equal(tokensLockedOfDR1after/1, tokensLockedOfDR1Before/1, "burned");
+  });
+
 });

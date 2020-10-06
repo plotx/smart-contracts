@@ -4,6 +4,7 @@ const Governance = artifacts.require('MockGovernance');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const PlotusToken = artifacts.require('MockPLOT');
+const MockWeth = artifacts.require('MockWeth');
 const TokenController = artifacts.require('MockTokenController');
 const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MockConfig');
@@ -38,6 +39,7 @@ module.exports = function(deployer, network, accounts){
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
       await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [mockchainLinkAggregaror.address, uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
+      let mockWeth = await deployer.deploy(MockWeth);
       let deployMarketBTC = await deployer.deploy(MarketBTC);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       console.log(`Config: ${marketConfig.address}`);

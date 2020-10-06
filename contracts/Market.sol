@@ -53,6 +53,7 @@ contract Market {
     ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
     IMarketUtility constant marketUtility = IMarketUtility(0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2);
 
+    uint8 constant roundOfToNearest = 25;
     uint constant totalOptions = 3;
     uint constant MAX_LEVERAGE = 5;
     uint constant ethCommissionPerc = 10; //with 2 decimals
@@ -131,7 +132,7 @@ contract Market {
       } else {
         require(msg.value == 0);
         if (_asset == plotToken){
-          require(IToken(_asset).transferFrom(msg.sender, address(this), _predictionStake));
+          tokenController.transferFrom(plotToken, msg.sender, address(this), _predictionStake);
         } else {
           require(_asset == tokenController.bLOTToken());
           require(_leverage == MAX_LEVERAGE);
@@ -219,12 +220,12 @@ contract Market {
       require(_value > 0,"value should be greater than 0");
       uint riskPercentage;
       ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
-      predictionStatus = PredictionStatus.Settled;
-      if(marketStatus() != PredictionStatus.InDispute) {
+      if(predictionStatus != PredictionStatus.InDispute) {
         marketSettleData.settleTime = uint64(now);
       } else {
         delete marketSettleData.settleTime;
       }
+      predictionStatus = PredictionStatus.Settled;
       if(_value < marketData.neutralMinValue) {
         marketSettleData.WinningOption = 1;
       } else if(_value > marketData.neutralMaxValue) {
@@ -274,7 +275,7 @@ contract Market {
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      require(IToken(plotToken).transferFrom(msg.sender, address(marketRegistry), _stakeForDispute));
+      tokenController.transferFrom(plotToken, msg.sender, address(marketRegistry), _stakeForDispute);
       lockedForDispute = true;
       marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       delete ethAmountToPool;
@@ -302,7 +303,7 @@ contract Market {
       require(incentiveToken == address(0), "Already sponsored");
       incentiveToken = _token;
       incentiveToDistribute = _value;
-      require(IToken(_token).transferFrom(msg.sender, address(this), _value));
+      tokenController.transferFrom(_token, msg.sender, address(this), _value);
     }
 
 
@@ -376,8 +377,8 @@ contract Market {
     * @return market currency name
     * @return market currency feed address
     */
-    function getMarketFeedData() public view returns(bytes32, address) {
-      return (marketCurrency, marketFeedAddress);
+    function getMarketFeedData() public view returns(uint8, bytes32, address) {
+      return (roundOfToNearest, marketCurrency, marketFeedAddress);
     }
 
    /**

@@ -11,6 +11,7 @@ const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
 const encode = require('./utils/encoder.js').encode;
+const assertRevert = require("./utils/assertRevert").assertRevert;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { takeSnapshot, revertSnapshot } = require('./utils/snapshot');
 
@@ -195,6 +196,9 @@ contract('Configure Global Parameters', accounts => {
         await updateParameter(21, 2, 'CLORCLE', pl, 'configAddress', pl.address);
         let configData = await marketConfig.getFeedAddresses();
         assert.equal(configData[0], pl.address, 'Not updated');
+      });
+      it('Should not allow to update if unauthorized call', async function() {
+        await assertRevert(marketConfig.updateAddressParameters(toHex("CLORCLE"),pl.address));
       });
 
       it('Should update Uniswap Factory', async function() {
