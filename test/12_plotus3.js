@@ -146,32 +146,13 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			1443.472612,
 		];
 
-		// console.log("Prediction points for user 1");
-		// PredictionPointsUser1 = await getPredictionPoints(accounts[0], options[0]);
-		// PredictionPointsUser3 = await getPredictionPoints(accounts[2], options[2]);
-
-		// console.log(
-		//   `Prediction points : ${PredictionPointsUser1} expected : ${PredictionPointsExpected[0]} `
-		// );
-		// console.log("Prediction points for user 3");
-		// console.log(
-		//   `Prediction points : ${PredictionPointsUser3} expected : ${PredictionPointsExpected[2]} `
-		// );
-
 		for (let index = 0; index < 10; index++) {
 			let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
 			PredictionPoints = PredictionPoints / 1000;
 			PredictionPoints = PredictionPoints.toFixed(1);
 			await assert.equal(PredictionPoints, PredictionPointsExpected[index].toFixed(1));
 
-			// await assert.isTrue(
-			//    === PredictionPointsExpected[index]
-			// );
 		}
-		// console.log(await plotusToken.balanceOf(user1));
-
-		// pool balance
-		// console.log(parseFloat(web3.utils.fromWei(await plotusToken.balanceOf(plotusNewInstance.address))));
 
 		// close market
 		await increaseTime(36001);
@@ -212,9 +193,6 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			// check eth returns
 			let returns = await getReturnsInEth(accounts[index]);
 			assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
-			// commented by parv as already added assert
-			// console.log("Rewards in Eth");
-			// console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
 		}
 	});
 	it("3.Check User Recived The appropriate amount", async () => {
