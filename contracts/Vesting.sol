@@ -101,7 +101,7 @@ contract Vesting {
         token.transfer(_recipient[i], _upFront[i]);
       }
 
-      emit Allocated(_recipient[i], _allocation.startTime, _amount[i], _vestingDuration[i], _vestingPeriodInDays[i], _upFront[i]);
+      emit Allocated(_recipient[i], _startTime[i], _amount[i], _vestingDuration[i], _vestingPeriodInDays[i], _upFront[i]);
     }
   }
 
