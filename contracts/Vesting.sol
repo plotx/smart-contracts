@@ -52,11 +52,6 @@ contract Vesting {
     _;
   }
 
-  modifier noGrantExistsForUser(address _user) {
-    require(tokenAllocations[_user].startTime == 0, "token-user-grant-exists");
-    _;
-  }
-
   constructor(address _token, address _owner) public
   nonZeroAddress(_token)
   nonZeroAddress(_owner)
@@ -67,38 +62,47 @@ contract Vesting {
 
   /// @dev Add a new token vesting for user `_recipient`. Only one vesting per user is allowed
   /// The amount of PlotX tokens here need to be preapproved for transfer by this `Vesting` contract before this call
-  /// @param _recipient Address of the token recipient entitled to claim the vested funds
-  /// @param _startTime Vesting start time as seconds since unix epoch 
-  /// @param _amount Total number of tokens in vested
-  /// @param _vestingDuration Number of Periods 
-  /// @param _vestingPeriodInDays Number of days in each Period
-  /// @param _upFront Amount of tokens `_recipient` will get  right away
-  function addTokenVesting(address _recipient, uint64 _startTime, uint256 _amount, uint64 _vestingDuration, uint64 _vestingPeriodInDays, uint256 _upFront) public 
+  /// @param _recipient Address array of the token recipient entitled to claim the vested funds
+  /// @param _startTime Vesting start time array as seconds since unix epoch 
+  /// @param _amount Total number of tokens array in vested
+  /// @param _vestingDuration Number of Periods in array.
+  /// @param _vestingPeriodInDays Array of Number of days in each Period
+  /// @param _upFront array of Amount of tokens `_recipient[i]` will get  right away
+  function addTokenVesting(address[] memory _recipient, uint64[] memory _startTime, uint256[] memory _amount, uint64[] memory _vestingDuration, uint64[] memory _vestingPeriodInDays, uint256[] memory _upFront) public 
   onlyOwner
-  noGrantExistsForUser(_recipient)
   {
-    require(_startTime != 0, "should be positive");
-    uint256 amountVestedPerPeriod = _amount.div(_vestingDuration);
-    require(amountVestedPerPeriod > 0, "0-amount-vested-per-period");
 
-    // Transfer the vesting tokens under the control of the vesting contract
-    token.transferFrom(owner, address(this), _amount.add(_upFront));
+    require(_recipient.length == _startTime.length, "Different array length");
+    require(_recipient.length == _amount.length, "Different array length");
+    require(_recipient.length == _vestingDuration.length, "Different array length");
+    require(_recipient.length == _vestingPeriodInDays.length, "Different array length");
+    require(_recipient.length == _upFront.length, "Different array length");
 
-    Allocation memory _allocation = Allocation({
-      startTime: _startTime, 
-      amount: _amount,
-      vestingDuration: _vestingDuration,
-      periodInDays: _vestingPeriodInDays,
-      periodClaimed: 0,
-      totalClaimed: 0
-    });
-    tokenAllocations[_recipient] = _allocation;
+    for(uint i=0;i<_recipient.length;i++) {
+      require(tokenAllocations[_recipient[i]].startTime == 0, "token-user-grant-exists");
+      require(_startTime[i] != 0, "should be positive");
+      uint256 amountVestedPerPeriod = _amount[i].div(_vestingDuration[i]);
+      require(amountVestedPerPeriod > 0, "0-amount-vested-per-period");
 
-    if(_upFront > 0) {
-      token.transfer(_recipient, _upFront);
+      // Transfer the vesting tokens under the control of the vesting contract
+      token.transferFrom(owner, address(this), _amount[i].add(_upFront[i]));
+
+      Allocation memory _allocation = Allocation({
+        startTime: _startTime[i], 
+        amount: _amount[i],
+        vestingDuration: _vestingDuration[i],
+        periodInDays: _vestingPeriodInDays[i],
+        periodClaimed: 0,
+        totalClaimed: 0
+      });
+      tokenAllocations[_recipient[i]] = _allocation;
+
+      if(_upFront[i] > 0) {
+        token.transfer(_recipient[i], _upFront[i]);
+      }
+
+      emit Allocated(_recipient[i], _startTime[i], _amount[i], _vestingDuration[i], _vestingPeriodInDays[i], _upFront[i]);
     }
-
-    emit Allocated(_recipient, _allocation.startTime, _amount, _vestingDuration, _vestingPeriodInDays, _upFront);
   }
 
   /// @dev Allows a vesting recipient to claim their vested tokens. Errors if no tokens have vested

@@ -38,81 +38,64 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
       assert.equal(await vesting.owner(), owner);
     });
 
-    it('Vesting 5M tokens with 3 months of cliff, no upfront and 5% of monthly release.', async function () {
-      let _startTime = (await latestTime())/1 + 24*3600*30*2;
-      await vesting.addTokenVesting(user1, _startTime, toWei(5000000), 20, 30, 0);
+    it('Allocate vesting to all user in single Tx', async function () {
+      let _startTime1 = (await latestTime())/1 + 24*3600*30*2;
+      let _startTime2 = await latestTime();
+      let _startTime3 = await latestTime();
+      let _startTime4 = await latestTime();
+      let _startTime5 = (await latestTime())/1 + 24*3600*30*11;
+
+      let user2BalBefore = await plotusToken.balanceOf(user2);
+      let user3BalBefore = await plotusToken.balanceOf(user3);
+      await vesting.addTokenVesting([user1,user2,user3,user4,user5], [_startTime1,_startTime2,_startTime3,_startTime4,_startTime5], [toWei(5000000),toWei(4500000),toWei(4000000),toWei(5000000),toWei(5000000)], [20,6,6,5,10], [30,30,30,90,30], [0,toWei(500000),toWei(1000000),0,0]);
+
+      let user2BalAfter = await plotusToken.balanceOf(user2);
+      let user3BalAfter = await plotusToken.balanceOf(user3);
+
+      assert.equal(Math.floor((user2BalAfter - user2BalBefore)/1e18), 500000);
+      assert.equal(Math.floor((user3BalAfter - user3BalBefore)/1e18), 1000000);
+
       let vestingData = await vesting.tokenAllocations(user1); 
       assert.equal(vestingData[0], 20);
       assert.equal(vestingData[1], 0);
       assert.equal(vestingData[2], 30);
-      assert.equal(vestingData[3], _startTime);
+      assert.equal(vestingData[3], _startTime1);
       assert.equal(vestingData[4]/1e18, 5000000);
       assert.equal(vestingData[5], 0);
-    });
-    it('Vesting 5M tokens with no cliff, 10% upfront and 15% of monthly release.', async function () {
-      let nowTime = await latestTime();
-      let userBalBefore = await plotusToken.balanceOf(user2);
-      let vestingBalBefore = await plotusToken.balanceOf(vesting.address);
-      await vesting.addTokenVesting(user2, nowTime, toWei(4500000), 6, 30, toWei(500000));
 
-      let userBalAfter = await plotusToken.balanceOf(user2);
-      let vestingBalAfter = await plotusToken.balanceOf(vesting.address);
-
-      let vestingData = await vesting.tokenAllocations(user2); 
-      assert.equal(Math.floor((vestingBalBefore - vestingBalAfter/1 + toWei(5000000)/1)/1e18), 500000);
-      assert.equal(Math.floor((userBalAfter - userBalBefore)/1e18), 500000);
+      vestingData = await vesting.tokenAllocations(user2); 
       assert.equal(vestingData[0], 6);
       assert.equal(vestingData[1], 0);
       assert.equal(vestingData[2], 30);
-      assert.equal(vestingData[3], nowTime);
+      assert.equal(vestingData[3], _startTime2);
       assert.equal(vestingData[4]/1e18, 4500000);
       assert.equal(vestingData[5], 0);
-    });
 
-    it('Vesting 5M tokens with no cliff, 20% upfront and 13% of monthly release.', async function () {
-      let nowTime = await latestTime();
-      let userBalBefore = await plotusToken.balanceOf(user3);
-      let vestingBalBefore = await plotusToken.balanceOf(vesting.address);
-      await vesting.addTokenVesting(user3, nowTime, toWei(4000000), 6, 30, toWei(1000000));
-
-      let userBalAfter = await plotusToken.balanceOf(user3);
-      let vestingBalAfter = await plotusToken.balanceOf(vesting.address);
-
-      let vestingData = await vesting.tokenAllocations(user3); 
-      assert.equal(Math.floor((vestingBalBefore - vestingBalAfter/1 + toWei(5000000)/1)/1e18), 1000000);
-      assert.equal(Math.floor((userBalAfter - userBalBefore)/1e18), 1000000);
+      vestingData = await vesting.tokenAllocations(user3); 
       assert.equal(vestingData[0], 6);
       assert.equal(vestingData[1], 0);
       assert.equal(vestingData[2], 30);
-      assert.equal(vestingData[3], nowTime);
+      assert.equal(vestingData[3], _startTime3);
       assert.equal(vestingData[4]/1e18, 4000000);
       assert.equal(vestingData[5], 0);
-    });
 
-    it('Vesting 5M tokens with 3 months of cliff, no upfront and 20% of quaterly release.', async function () {
-      let _startTime = (await latestTime());
-      await vesting.addTokenVesting(user4, _startTime, toWei(5000000), 5, 90, 0);
-
-      let vestingData = await vesting.tokenAllocations(user4); 
+      vestingData = await vesting.tokenAllocations(user4); 
       assert.equal(vestingData[0], 5);
       assert.equal(vestingData[1], 0);
       assert.equal(vestingData[2], 90);
-      assert.equal(vestingData[3], _startTime);
+      assert.equal(vestingData[3], _startTime4);
       assert.equal(vestingData[4]/1e18, 5000000);
       assert.equal(vestingData[5], 0);
-    });
 
-    it('Vesting 5M tokens with 12 months of cliff, no upfront and 10% of monthly release.', async function () {
-      let _startTime = (await latestTime())/1 + 24*3600*30*11;
-      await vesting.addTokenVesting(user5, _startTime, toWei(5000000), 10, 30, 0);
-
-      let vestingData = await vesting.tokenAllocations(user5); 
+      vestingData = await vesting.tokenAllocations(user5); 
       assert.equal(vestingData[0], 10);
       assert.equal(vestingData[1], 0);
       assert.equal(vestingData[2], 30);
-      assert.equal(vestingData[3], _startTime);
+      assert.equal(vestingData[3], _startTime5);
       assert.equal(vestingData[4]/1e18, 5000000);
       assert.equal(vestingData[5], 0);
+
+
     });
 
     it('After 1 month.', async function () {
@@ -301,19 +284,19 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
     describe('Reverts', function () {
         it('should revert if non-owner tries to add vesting', async function () {
           let nowTime = await latestTime();
-          await assertRevert(vesting.addTokenVesting(owner, nowTime, toWei(4500000), 6, 30, toWei(500000), {from:user3}));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [toWei(4500000)], [6], [30], [toWei(500000)], {from:user3}));
         });
         it('should revert if tries to add vesting for user more than 1 time', async function () {
           let nowTime = await latestTime();
-          await assertRevert(vesting.addTokenVesting(user2, nowTime, toWei(4500000), 6, 30, toWei(500000)));
+          await assertRevert(vesting.addTokenVesting([user2], [nowTime], [toWei(4500000)], [6], [30], [toWei(500000)]));
         });
         it('should revert if amountVestedPerPeriod is 0', async function () {
           let nowTime = await latestTime();
-          await assertRevert(vesting.addTokenVesting(owner, nowTime, 5, 6, 30, 10));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [5], [6], [30], [10]));
         });
         it('should revert if start time is 0', async function () {
           
-          await assertRevert(vesting.addTokenVesting(owner, 0, 5, 6, 30, 10));
+          await assertRevert(vesting.addTokenVesting([owner], [0], [5], [6], [30], [10]));
         });
         it('should not deploy with nullAddress', async function () {
           const nullAddress = "0x0000000000000000000000000000000000000000";
@@ -322,7 +305,7 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
         });
         it('should revert if tries to claim before start time', async function () {
           let nowTime = (await latestTime())/1 + 100000;
-          await dummyVesting.addTokenVesting(user1, nowTime, toWei(5000000), 20, 30, 0);
+          await dummyVesting.addTokenVesting([user1], [nowTime], [toWei(5000000)], [20], [30], [0]);
 
           await assertRevert(dummyVesting.claimVestedTokens({from:user1}));
         });
@@ -336,6 +319,14 @@ contract("Vesting", ([owner, user1, user2, user3, user4, user5]) => {
           await increaseTime(3600 * 24 * 30 * 4);
           await dummyToken.setDummyBit(user1, false);
           await assertRevert(dummyVesting.claimVestedTokens({from:user1}));
+        });
+        it('should revert if different array length passed', async function () {
+          let nowTime = await latestTime();
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime,nowTime], [5], [6], [30], [10]));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [5,1], [6], [30], [10]));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [5], [6,10], [30], [10]));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [5], [6], [30,30], [10]));
+          await assertRevert(vesting.addTokenVesting([owner], [nowTime], [5], [6], [30], [10,20]));
         });
     });
   });
