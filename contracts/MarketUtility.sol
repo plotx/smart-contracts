@@ -82,10 +82,6 @@ contract MarketUtility {
         plotToken = _addressParams[1];
         weth = IUniswapV2Router02(_addressParams[0]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[2]);
-        plotETHpair = uniswapFactory.getPair(plotToken, weth);
-
-
-        _setCummulativePrice();
     }
 
     /**
@@ -178,6 +174,7 @@ contract MarketUtility {
      * @dev Update cumulative price of token in uniswap
      **/
     function update() external onlyAuthorized {
+        require(plotETHpair != address(0), "Uniswap pair not set");
         UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
         (
             uint256 price0Cumulative,
@@ -212,9 +209,11 @@ contract MarketUtility {
     }
 
     /**
-     * @dev Internal function to update pair cummulative price
+     * @dev Set initial PLOT/ETH pair cummulative price
      **/
-    function _setCummulativePrice() internal {
+    function setInitialCummulativePrice() public {
+      require(plotETHpair == address(0),"Already initialised");
+      plotETHpair = uniswapFactory.getPair(plotToken, weth);
       UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
       (
           uint256 price0Cumulative,
@@ -375,8 +374,7 @@ contract MarketUtility {
     {
         uint256 _value = _amount;
         if (_asset == ETH_ADDRESS) {
-            address pair = uniswapFactory.getPair(plotToken, weth);
-            _value = (uniswapPairData[pair].price1Average)
+            _value = (uniswapPairData[plotETHpair].price1Average)
                 .mul(_amount)
                 .decode144();
         }
