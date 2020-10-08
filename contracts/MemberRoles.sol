@@ -84,19 +84,14 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     /**
      * @dev to initiate the member roles and add initial AB, DR board members
      * @param _abArray is array of addresses of the Initial AB members
-     * @param _drArray is array of addresses of the Initial DR members
      */
     function memberRolesInitiate(
-        address[] calldata _abArray,
-        address[] calldata _drArray
+        address[] calldata _abArray
     ) external {
         require(!constructorCheck, "Already constructed");
         _addInitialMemberRoles();
         for (uint256 i = 0; i < _abArray.length; i++) {
             _updateRole(_abArray[i], uint256(Role.AdvisoryBoard), true);
-        }
-        for (uint256 i = 0; i < _drArray.length; i++) {
-            _updateRole(_drArray[i], uint256(Role.DisputeResolution), true);
         }
         constructorCheck = true;
     }
