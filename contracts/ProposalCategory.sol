@@ -58,14 +58,13 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         uint256 tokenHolder = uint256(IMemberRoles.Role.TokenHolder);
         uint256 disputeResolutionBoard = uint256(IMemberRoles.Role.DisputeResolution);
 
-        _addInitialCategories("Uncategorized", "", "EX", "", 0, 0, 0);
+        _addInitialCategories("Uncategorized", "", "EX", "", 0, 0);
         _addInitialCategories(
             "Add new member role",
             "QmQFnBep7AyMYU3LJDuHSpTYatnw65XjHzzirrghtZoR8U",
             "MR",
             "addRole(bytes32,string,address)",
             50,
-            advisoryBoardRole,
             advisoryBoardRole
         ); //1
         _addInitialCategories(
@@ -74,7 +73,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MR",
             "updateRole(address,uint256,bool)",
             50,
-            advisoryBoardRole,
             advisoryBoardRole
         ); // 2
         _addInitialCategories(
@@ -83,7 +81,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PC",
             "newCategory(string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
             50,
-            advisoryBoardRole,
             advisoryBoardRole
         ); // 3
         _addInitialCategories(
@@ -92,7 +89,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PC",
             "editCategory(uint256,string,uint256,uint256,uint256,uint256[],uint256,string,address,bytes2,uint256[],string)",
             50,
-            advisoryBoardRole,
             advisoryBoardRole
         ); //4
         _addInitialCategories(
@@ -101,7 +97,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "updateMarketImplementations(uint256[],address[])",
             60,
-            tokenHolder,
             tokenHolder
         ); // 5
         _addInitialCategories(
@@ -110,7 +105,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "upgradeContractImplementation(address,address)",
             60,
-            tokenHolder,
             tokenHolder
         ); // 6
         _addInitialCategories(
@@ -119,7 +113,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeMultipleImplementations(bytes2[],address[])",
             50,
-            tokenHolder,
             tokenHolder
         ); // 7
         _addInitialCategories(
@@ -128,7 +121,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeTo(address)",
             50,
-            tokenHolder,
             tokenHolder
         ); // 8
         _addInitialCategories(
@@ -137,7 +129,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "addNewContract(bytes2,address)",
             50,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -146,8 +137,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "resolveDispute(address,uint256)",
             60,
-            disputeResolutionBoard,
-            tokenHolder
+            disputeResolutionBoard
         );
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",
@@ -155,7 +145,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "TC",
             "burnLockedTokens(address,bytes32,uint256)",
             60,
-            tokenHolder,
             tokenHolder
         ); //11
         _addInitialCategories(
@@ -164,7 +153,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MR",
             "swapABMember(address,address)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -173,7 +161,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "GV",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -182,7 +169,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "TC",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -191,7 +177,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "addNewMarketType(uint64,uint64,uint64)",
             60,
-            tokenHolder,
             tokenHolder
         ); //15
         _addInitialCategories(
@@ -200,7 +185,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "addNewMarketCurrency(address,uint64)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -209,7 +193,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "pauseMarketCreation()",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -218,7 +201,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "resumeMarketCreation()",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -227,7 +209,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "transferAssets(address,address,uint256)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -236,7 +217,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder,
             tokenHolder
         ); //20
         _addInitialCategories(
@@ -245,7 +225,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "PL",
             "updateConfigAddressParameters(bytes8,address)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -254,7 +233,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "whitelistSponsor(address)",
             60,
-            tokenHolder,
             tokenHolder
         );
         _addInitialCategories(
@@ -263,7 +241,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "EX",
             "",
             60,
-            tokenHolder,
             tokenHolder
         );
     }
@@ -579,16 +556,18 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         bytes2 _contractName,
         string memory _actionHash,
         uint256 _majorityVotePerc,
-        uint256 _memberRoleToVote,
-        uint256 _allowedToCreate
+        uint256 _memberRoleToVote
     ) internal {
         uint256[] memory allowedToCreateProposal = new uint256[](1);
         uint256[] memory stakeIncentive = new uint256[](2);
-        allowedToCreateProposal[0] = _allowedToCreate;
+        uint256 quorumPerc = 10;
+        allowedToCreateProposal[0] = _memberRoleToVote;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
         if (_memberRoleToVote == 3) {
             stakeIncentive[1] = 100 ether;
+            allowedToCreateProposal[0] = uint256(IMemberRoles.Role.TokenHolder);
+            quorumPerc = 50;
         }
         if (bytes(_actionHash).length > 0) {
             categoryActionHashes[allCategory.length] = abi.encodeWithSignature(
