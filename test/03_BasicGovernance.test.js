@@ -273,7 +273,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     await plotusToken.transfer(ab2, toWei(100));
     await plotusToken.transfer(ab3, toWei(100));
     await plotusToken.transfer(ab4, toWei(100));
-    await mr.addInitialABandDRMembers([ab2, ab3, ab4], []);
+    await mr.addInitialABMembers([ab2, ab3, ab4]);
     let actionHash = encode("updateUintParameters(bytes8,uint)", "ACWT", 1);
     pId = await gv.getProposalLength();
     await gv.createProposal("proposal", "proposal", "proposal", 0);
