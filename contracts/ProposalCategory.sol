@@ -399,12 +399,15 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             _incentives
         );
 
+        bytes memory _encodedHash = abi.encodeWithSignature(_functionHash);
         if (
             bytes(_functionHash).length > 0 &&
-            abi.encodeWithSignature(_functionHash).length == 4
+            _encodedHash.length == 4
         ) {
-            categoryActionHashes[allCategory.length - 1] = abi
-                .encodeWithSignature(_functionHash);
+            if(keccak256(_encodedHash) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
+                require(_memberRoleToVote == uint256(IMemberRoles.Role.DisputeResolution));
+            }
+            categoryActionHashes[allCategory.length - 1] = _encodedHash;
         }
     }
 

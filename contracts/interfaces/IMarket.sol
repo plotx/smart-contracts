@@ -33,6 +33,8 @@ contract IMarket {
     function getMarketFeedData() public view returns(uint8, bytes32, address);
 
     function settleMarket() external;
+    
+    function getTotalStakedValueInPLOT() external view returns(uint256);
 
     /**
     * @dev Initialize the market.

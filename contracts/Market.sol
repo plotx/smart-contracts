@@ -184,6 +184,12 @@ contract Market {
       }
     }
 
+    function getTotalStakedValueInPLOT() external view returns(uint256) {
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked();
+      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
+      return plotStaked.add(ethStaked);
+    }
+
     /**
     * @dev Stores the prediction data.
     * @param _prediction The option on which user place prediction.
