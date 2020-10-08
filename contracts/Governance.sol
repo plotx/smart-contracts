@@ -630,8 +630,7 @@ contract Governance is IGovernance, Iupgradable {
         if (pStatus == uint256(ProposalStatus.VotingStarted)) {
             uint256 numberOfMembers = memberRole.numberOfMembers(_roleId);
             if (
-                _roleId == uint256(IMemberRoles.Role.AdvisoryBoard) ||
-                _roleId == uint256(IMemberRoles.Role.DisputeResolution)
+                _roleId == uint256(IMemberRoles.Role.AdvisoryBoard)
             ) {
                 if (
                     proposalVoteTally[_proposalId].voteValue[1].mul(100).div(
@@ -647,7 +646,8 @@ contract Governance is IGovernance, Iupgradable {
                     return 1;
                 }
             } else {
-                if(_roleId == uint256(IMemberRoles.Role.TokenHolder)) {
+                if(_roleId == uint256(IMemberRoles.Role.TokenHolder) ||
+                _roleId == uint256(IMemberRoles.Role.DisputeResolution)) {
                     if(dateUpdate.add(_closingTime) <= now)
                         return 1;
                 } else if (
