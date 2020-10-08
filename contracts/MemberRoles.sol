@@ -187,6 +187,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         }
         if (tokenController.totalBalanceOf(_memberAddress) > 0) {
             assignedRoles[counter] = uint256(Role.TokenHolder);
+            counter++;
         }
         if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) > minLockAmountForDR) {
             assignedRoles[counter] = uint256(Role.DisputeResolution);
