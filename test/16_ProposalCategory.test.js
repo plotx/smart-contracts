@@ -352,7 +352,113 @@ contract("Proposal Category", function ([owner, other]) {
 		assert.equal(proposalActionStatus.toNumber(), 3, "Action not executed");
 	});
 
-	it("14.14 Should not be able to create a proposal with category ID less than one", async () => {
+	it("14.14 Should not update category if member role is other than DR and action hash is resolveDispute", async function () {
+		let c1 = await pc.totalCategories();
+		c1 = c1.toNumber() - 1;
+		const cat1 = await pc.category(c1);
+		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
+		//proposal to update category
+		let actionHash = encode(
+			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
+			c1,
+			"YoYo",
+			2,
+			1,
+			20,
+			[2],
+			1,
+			"resolveDispute(address,uint256)",
+			nullAddress,
+			toHex("PL"),
+			[0, 0]
+		);
+		let p1 = await gv.getProposalLength();
+		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+		await gv.submitVote(p1.toNumber(), 1);
+		await gv.closeProposal(p1.toNumber());
+		let cat2 = await pc.category(c1);
+		assert.notEqual(cat1[1], cat2[1], "category not updated");
+	});
+
+	it("14.15 Should not add a proposal category if member roles are invalid", async function () {
+		let c1 = await pc.totalCategories();
+		await assertRevert(pc.newCategory("Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
+		//proposal to add category
+		let actionHash = encode(
+			"addCategory(string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
+			"Description",
+			1,
+			1,
+			0,
+			[2],
+			1,
+			"resolveDispute(address,uint256)",
+			nullAddress,
+			toHex("PL"),
+			[0, 0, 0, 1]
+		);
+		let p1 = await gv.getProposalLength();
+		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
+		await gv.submitVote(p1.toNumber(), 1);
+		await gv.closeProposal(p1.toNumber());
+		const c2 = await pc.totalCategories();
+		assert.equal(c2.toNumber(), c1.toNumber(), "category added");
+	});
+
+	it("14.16 Should be able to update category if member role is DR and action hash is resolveDispute", async function () {
+		let c1 = await pc.totalCategories();
+		c1 = c1.toNumber() - 1;
+		const cat1 = await pc.category(c1);
+		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
+		//proposal to update category
+		let actionHash = encode(
+			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
+			c1,
+			"YoYo",
+			3,
+			1,
+			20,
+			[3],
+			1,
+			"resolveDispute(address,uint256)",
+			nullAddress,
+			toHex("PL"),
+			[0, 0]
+		);
+		let p1 = await gv.getProposalLength();
+		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+		await gv.submitVote(p1.toNumber(), 1);
+		await gv.closeProposal(p1.toNumber());
+		let cat2 = await pc.category(c1);
+		assert.notEqual(cat1[1], cat2[1], "category not updated");
+	});
+
+	it("14.17 Should be able to add a proposal category if member roles are valid for DR", async function () {
+		let c1 = await pc.totalCategories();
+		await assertRevert(pc.newCategory("Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
+		//proposal to add category
+		let actionHash = encode(
+			"addCategory(string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
+			"Description",
+			3,
+			1,
+			0,
+			[3],
+			1,
+			"resolveDispute(address,uint256)",
+			nullAddress,
+			toHex("PL"),
+			[0, 0, 0, 1]
+		);
+		let p1 = await gv.getProposalLength();
+		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
+		await gv.submitVote(p1.toNumber(), 1);
+		await gv.closeProposal(p1.toNumber());
+		const c2 = await pc.totalCategories();
+		assert.equal(c2.toNumber(), c1.toNumber(), "category added");
+	});
+
+	it("14.18 Should not be able to create a proposal with category ID less than one", async () => {
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 1, "Add new member", actionHash);
 		await assertRevert(gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 0, "Add new member", actionHash));
 	});

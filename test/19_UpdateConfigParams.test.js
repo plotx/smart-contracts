@@ -215,7 +215,19 @@ contract('Configure Global Parameters', accounts => {
       it('Should not update if parameter code is incorrect', async function() {
         await updateInvalidParameter(14, 2, 'EPTIM', tc, 'uint', '86400');
       });
-    });  
+    });
+
+    describe('Update Governance Parameters', function() {
+      it('Should update Min Token Locked For DR', async function() {
+        await updateParameter(22, 2, 'MNLOCKDR', mr, 'uint', '123');
+      });
+      it('Should update Lock Time For DR', async function() {
+        await updateParameter(22, 2, 'TLOCDR', mr, 'uint', '123');
+      });  
+      it('Should not update if parameter code is incorrect', async function() {
+        await updateInvalidParameter(13, 2, 'EPTIM', mr, 'uint', '86400');
+      });
+    }); 
 
     describe('Update Governance Parameters', function() {
       it('Should update Governance Token Holding Time', async function() {
@@ -227,14 +239,11 @@ contract('Configure Global Parameters', accounts => {
       it('Should update Max Draft time limit', async function() {
         await updateParameter(13, 2, 'MAXDRFT', gv, 'uint', '86400');
       });
-      it('Should update Min Token Locked For DR', async function() {
-        await updateParameter(22, 2, 'MNLOCKDR', mr, 'uint', '123');
-      });
-      it('Should update Lock Time For DR', async function() {
-        await updateParameter(22, 2, 'TLOCDR', mr, 'uint', '123');
-      });
       it('Should update Action Reject Auth Role', async function() {
         await updateParameter(13, 2, 'REJAUTH', gv, 'uint', '123');
+      });
+      it('Should update Action Reject Auth Role', async function() {
+        await updateParameter(13, 2, 'DRQUMR', gv, 'uint', '123');
       });
       it('Should update Vote Perc Reject Action', async function() {
         await updateParameter(13, 2, 'REJCOUNT', gv, 'uint', '123');

@@ -86,6 +86,9 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
     await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr3});
+    let roles = await mr.roles(dr3);
+    assert.equal(roles[0]/1, 2, "Not added to Token holder");
+    assert.equal(roles[1]/1, 3, "Not added to DR");
     await gv.submitVote(proposalId, 1, {from:dr1});
     await gv.submitVote(proposalId, 1, {from:dr2});
     await gv.submitVote(proposalId, 1, {from:dr3});
