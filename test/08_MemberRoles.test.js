@@ -47,7 +47,7 @@ contract('MemberRoles', function([
   });
 
   it('Should not be able to initiate member roles twice', async function() {
-    await assertRevert(mr.memberRolesInitiate(owner));
+    await assertRevert(mr.memberRolesInitiate([owner], [owner]));
   });
 
   it('Should not allow unauthorized to change master address', async function() {
