@@ -72,7 +72,6 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await plotusToken.transfer(mem4, toWei(100));
 		await plotusToken.transfer(mem5, toWei(100));
 
-		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
 	it("Should create a proposal to whitelist sponsor", async function() {
@@ -306,7 +305,6 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await plotusToken.transfer(mem4, toWei(100));
 		await plotusToken.transfer(mem5, toWei(100));
 
-		// await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
 	});
 
 	describe("Add new market currency",async function() {

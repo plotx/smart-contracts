@@ -2,7 +2,7 @@ const Master = artifacts.require('Master');
 const Plotus = artifacts.require('MockMarketRegistry');
 const Governance = artifacts.require('MockGovernance');
 const ProposalCategory = artifacts.require('ProposalCategory');
-const MemberRoles = artifacts.require('MemberRoles');
+const MemberRoles = artifacts.require('MockMemberRoles');
 const PlotusToken = artifacts.require('MockPLOT');
 const MockWeth = artifacts.require('MockWeth');
 const TokenController = artifacts.require('MockTokenController');
@@ -60,7 +60,7 @@ module.exports = function(deployer, network, accounts){
       console.log(hash.receipt.gasUsed);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
-      await mr.memberRolesInitiate(accounts[0]);
+      await mr.memberRolesInitiate([accounts[0]],[accounts[0]]);
       console.log(await mr.checkRole(accounts[0], 1));
       await pc.proposalCategoryInitiate();
       // console.log(await plotus.getOpenMarkets());

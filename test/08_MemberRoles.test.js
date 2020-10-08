@@ -67,12 +67,6 @@ contract('MemberRoles', function([
     );
   });
 
-  it('Should not add initial AB members more than defined max AB count', async function() {
-    let memberArray = [member, other, user1, user2, user3, member2];
-    let memberArray2 = [member, other, user1, user2, user3, member2];
-    await assertRevert(mr.addInitialABandDRMembers(memberArray, memberArray2));
-  });
-
   it('Should have added owner to AB', async function() {
     const roles = await mr.roles(owner);
     assert.equal(await mr.checkRole(owner, 1), true, 'Owner not added to AB');

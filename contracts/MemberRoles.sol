@@ -75,12 +75,22 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     }
 
     /**
-     * @dev to initiate the member roles
-     * @param _firstAB is the address of the first AB member
+     * @dev to initiate the member roles and add initial AB, DR board members
+     * @param _abArray is array of addresses of the Initial AB members
+     * @param _drArray is array of addresses of the Initial DR members
      */
-    function memberRolesInitiate(address _firstAB) public {
+    function memberRolesInitiate(
+        address[] calldata _abArray,
+        address[] calldata _drArray
+    ) external {
         require(!constructorCheck, "Already constructed");
-        _addInitialMemberRoles(_firstAB);
+        _addInitialMemberRoles();
+        for (uint256 i = 0; i < _abArray.length; i++) {
+            _updateRole(_abArray[i], uint256(Role.AdvisoryBoard), true);
+        }
+        for (uint256 i = 0; i < _drArray.length; i++) {
+            _updateRole(_drArray[i], uint256(Role.DisputeResolution), true);
+        }
         constructorCheck = true;
     }
 
@@ -108,37 +118,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         bool _active
     ) public checkRoleAuthority(_roleId) {
         _updateRole(_memberAddress, _roleId, _active);
-    }
-
-    /**
-     * @dev is used to add initial advisory board members
-     * @param abArray is the list of initial advisory board members
-     */
-    function addInitialABandDRMembers(
-        address[] calldata abArray,
-        address[] calldata drArray
-    ) external {
-        require(
-            numberOfMembers(uint256(Role.AdvisoryBoard)) == 1,
-            "Already initialized!"
-        );
-
-        for (uint256 i = 0; i < abArray.length; i++) {
-            require(
-                checkRole(abArray[i], uint256(Role.TokenHolder)),
-                "not a token holder"
-            );
-
-            _updateRole(abArray[i], uint256(Role.AdvisoryBoard), true);
-        }
-        for (uint256 i = 0; i < drArray.length; i++) {
-            require(
-                checkRole(drArray[i], uint256(Role.TokenHolder)),
-                "not a token holder"
-            );
-
-            _updateRole(drArray[i], uint256(Role.DisputeResolution), true);
-        }
     }
 
     /// @dev Return number of member roles
@@ -315,9 +294,8 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     /**
      * @dev to add initial member roles
-     * @param _firstAB is the member address to be added
      */
-    function _addInitialMemberRoles(address _firstAB) internal {
+    function _addInitialMemberRoles() internal {
         _addRole("Unassigned", "Unassigned", address(0));
         _addRole(
             "Advisory Board",
@@ -334,7 +312,5 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             "Represents members who are assigned to vote on resolving disputes", //solhint-disable-line
             address(0)
         );
-        _updateRole(_firstAB, uint256(Role.AdvisoryBoard), true);
-        _updateRole(_firstAB, uint256(Role.DisputeResolution), true);
     }
 }

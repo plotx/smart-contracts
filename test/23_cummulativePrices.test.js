@@ -116,7 +116,9 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("Check price of plot", async function() {
     	await increaseTime(3610);
+    	await assertRevert(plotusNewInstance.createMarket(0,0));
     	await marketConfig.setInitialCummulativePrice();
+    	await assertRevert(marketConfig.setInitialCummulativePrice());
     	await mockUniswapV2Pair.sync();
     	await increaseTime(3610);
     	await plotusNewInstance.createMarket(0,0);
