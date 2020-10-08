@@ -74,6 +74,7 @@ contract Governance is IGovernance, Iupgradable {
 
     bytes32 constant swapABMemberHash = keccak256(abi.encodeWithSignature("swapABMember(address,address)"));
     bytes32 constant resolveDisputeHash = keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"));
+    uint256 constant totalSupplyCapForDRQrm = 50;
 
     bool internal constructorCheck;
     uint256 public tokenHoldingTime;
@@ -936,7 +937,7 @@ contract Governance is IGovernance, Iupgradable {
             uint256 totalStakeValueInPlot = IMarket(marketAddress).getTotalStakedValueInPLOT();
             check =
                 (allProposalData[_proposalId].totalVoteValue) >=
-                (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), tokenController.totalSupply()));
+                (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), (tokenController.totalSupply()).mul(100).div(totalSupplyCapForDRQrm)));
         } else {
             check =
                 (proposalVoteTally[_proposalId].voters).mul(100).div(
@@ -1044,6 +1045,7 @@ contract Governance is IGovernance, Iupgradable {
         (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
             category
         );
+        bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
         if (_checkForThreshold(_proposalId, category)) {
             if (
                 (
@@ -1068,9 +1070,10 @@ contract Governance is IGovernance, Iupgradable {
                 );
             }
         } else {
-            if ((mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
+            if ((keccak256(_functionHash) != resolveDisputeHash) &&
+             (mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
              proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
-            .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
+                .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
             ) {
                 _callIfMajReached(
                     _proposalId,
@@ -1084,7 +1087,6 @@ contract Governance is IGovernance, Iupgradable {
             }
         }
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
-            bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
             if(keccak256(_functionHash) == resolveDisputeHash) {
                 marketRegistry.burnDisputedProposalTokens(_proposalId);
             }

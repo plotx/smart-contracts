@@ -461,6 +461,9 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             bytes(_functionHash).length > 0 &&
             abi.encodeWithSignature(_functionHash).length == 4
         ) {
+            if(keccak256(abi.encodeWithSignature(_functionHash)) == keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"))) {
+                require(_memberRoleToVote == uint256(IMemberRoles.Role.DisputeResolution));
+            }
             categoryActionHashes[_categoryId] = abi.encodeWithSignature(
                 _functionHash
             );
