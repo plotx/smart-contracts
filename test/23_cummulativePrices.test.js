@@ -78,7 +78,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Should not allow to re initialize Utility after updating Implementation", async function() {
-    	await assertRevert(marketConfig.initialize([user1, MockUniswapRouterInstance.address, plotusToken.address, mockUniswapFactory.address]))
+    	await assertRevert(marketConfig.initialize([user1, MockUniswapRouterInstance.address, plotusToken.address, mockUniswapFactory.address], user1))
     });
 
     it("Deploy uniswap v2 pair and add liquidity", async function() {

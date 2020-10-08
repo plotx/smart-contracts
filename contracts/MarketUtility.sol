@@ -44,6 +44,7 @@ contract MarketUtility {
     address internal plotToken;
     address internal plotETHpair;
     address internal weth;
+    address internal initiater;
     address public authorizedAddress;
     bool public initialized;
 
@@ -69,7 +70,7 @@ contract MarketUtility {
     /**
      * @dev Initiates the config contact with initial values
      **/
-    function initialize(address payable[] memory _addressParams) public {
+    function initialize(address payable[] memory _addressParams, address _initiater) public {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
             address(uint160(address(this)))
         );
@@ -80,6 +81,7 @@ contract MarketUtility {
         authorizedAddress = msg.sender;
         tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
         plotToken = _addressParams[1];
+        initiater = _initiater;
         weth = IUniswapV2Router02(_addressParams[0]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[2]);
     }
@@ -212,6 +214,7 @@ contract MarketUtility {
      * @dev Set initial PLOT/ETH pair cummulative price
      **/
     function setInitialCummulativePrice() public {
+      require(msg.sender == initiater);
       require(plotETHpair == address(0),"Already initialised");
       plotETHpair = uniswapFactory.getPair(plotToken, weth);
       UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];

@@ -126,7 +126,7 @@ contract MarketRegistry is Governed, Iupgradable {
       address tcAddress = ms.getLatestAddress("TC");
       tokenController = tcAddress;
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
-      marketUtility.initialize(_configParams);
+      marketUtility.initialize(_configParams, _defaultAddress);
       marketInitiater = _defaultAddress;
     }
 
