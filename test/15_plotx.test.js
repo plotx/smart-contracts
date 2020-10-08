@@ -78,7 +78,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604810);
 		pId = (await gv.getProposalLength()).toNumber();
 		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
-		await gv.categorizeProposal(pId, 22, 0);
+		await gv.categorizeProposal(pId, 23, 0);
 		let startTime = (await latestTime()) / 1 + 2 * 604800;
 		let market= await Market.new();
 		let actionHash = encode("whitelistSponsor(address)", ab1);

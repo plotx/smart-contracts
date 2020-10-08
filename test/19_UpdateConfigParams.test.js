@@ -228,10 +228,10 @@ contract('Configure Global Parameters', accounts => {
         await updateParameter(13, 2, 'MAXDRFT', gv, 'uint', '86400');
       });
       it('Should update Min Token Locked For DR', async function() {
-        await updateParameter(13, 2, 'MINLOCDR', gv, 'uint', '123');
+        await updateParameter(22, 2, 'MNLOCKDR', mr, 'uint', '123');
       });
       it('Should update Lock Time For DR', async function() {
-        await updateParameter(13, 2, 'TLOCDR', gv, 'uint', '123');
+        await updateParameter(22, 2, 'TLOCDR', mr, 'uint', '123');
       });
       it('Should update Action Reject Auth Role', async function() {
         await updateParameter(13, 2, 'REJAUTH', gv, 'uint', '123');

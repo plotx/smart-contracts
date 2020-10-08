@@ -228,6 +228,14 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             tokenHolder
         );
         _addInitialCategories(
+            "Update Member roles parameters",
+            "",
+            "MR",
+            "updateUintParameters(bytes8,uint256)",
+            60,
+            tokenHolder
+        ); //22
+        _addInitialCategories(
             "Whitelist Sponsor",
             "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
             "MS",
