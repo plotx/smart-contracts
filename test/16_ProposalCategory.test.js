@@ -358,19 +358,22 @@ contract("Proposal Category", function ([owner, other]) {
 		const cat1 = await pc.category(c1);
 		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to update category
-		let actionHash = encode(
-			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
-			c1,
-			"YoYo",
-			2,
-			1,
-			20,
-			[2],
-			1,
-			"resolveDispute(address,uint256)",
-			nullAddress,
-			toHex("PL"),
-			[0, 0]
+		actionHash = encode1(
+			["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+			[
+				c1,
+				"external Liquidity Trade",
+				2,
+				68,
+				75,
+				[2],
+				604800,
+				"QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+				gv.address,
+				toHex("PL"),
+				[0, 0, 0, 1],
+				"resolveDispute(address,uint256)",
+			]
 		);
 		let p1 = await gv.getProposalLength();
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
@@ -384,18 +387,21 @@ contract("Proposal Category", function ([owner, other]) {
 		let c1 = await pc.totalCategories();
 		await assertRevert(pc.newCategory("Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to add category
-		let actionHash = encode(
-			"addCategory(string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
-			"Description",
-			1,
-			1,
-			0,
-			[2],
-			1,
-			"resolveDispute(address,uint256)",
-			nullAddress,
-			toHex("PL"),
-			[0, 0, 0, 1]
+		actionHash = encode1(
+			["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+			[
+				"external Liquidity Trade",
+				2,
+				68,
+				75,
+				[2],
+				604800,
+				"QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+				gv.address,
+				toHex("PL"),
+				[0, 0, 0, 1],
+				"resolveDispute(address,uint256)",
+			]
 		);
 		let p1 = await gv.getProposalLength();
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
@@ -411,19 +417,22 @@ contract("Proposal Category", function ([owner, other]) {
 		const cat1 = await pc.category(c1);
 		await assertRevert(pc.editCategory(c1, "Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to update category
-		let actionHash = encode(
-			"updateCategory(uint,string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
-			c1,
-			"YoYo",
-			3,
-			1,
-			20,
-			[3],
-			1,
-			"resolveDispute(address,uint256)",
-			nullAddress,
-			toHex("PL"),
-			[0, 0]
+		actionHash = encode1(
+			["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+			[
+				c1,
+				"external Liquidity Trade",
+				3,
+				68,
+				75,
+				[3],
+				604800,
+				"QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+				gv.address,
+				toHex("PL"),
+				[0, 0, 0, 1],
+				"resolveDispute(address,uint256)",
+			]
 		);
 		let p1 = await gv.getProposalLength();
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
@@ -437,25 +446,28 @@ contract("Proposal Category", function ([owner, other]) {
 		let c1 = await pc.totalCategories();
 		await assertRevert(pc.newCategory("Yo", 1, 1, 0, [1], 1, "", nullAddress, toHex("EX"), [0, 0, 0], ""));
 		//proposal to add category
-		let actionHash = encode(
-			"addCategory(string,uint,uint,uint,uint[],uint,string,address,bytes2,uint[])",
-			"Description",
-			3,
-			1,
-			0,
-			[3],
-			1,
-			"resolveDispute(address,uint256)",
-			nullAddress,
-			toHex("PL"),
-			[0, 0, 0, 1]
+		actionHash = encode1(
+			["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+			[
+				"external Liquidity Trade",
+				3,
+				68,
+				75,
+				[3],
+				604800,
+				"QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+				gv.address,
+				toHex("PL"),
+				[0, 0, 0, 1],
+				"resolveDispute(address,uint256)",
+			]
 		);
 		let p1 = await gv.getProposalLength();
 		await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
 		await gv.submitVote(p1.toNumber(), 1);
 		await gv.closeProposal(p1.toNumber());
 		const c2 = await pc.totalCategories();
-		assert.equal(c2.toNumber(), c1.toNumber(), "category added");
+		assert.equal(c2.toNumber(), c1.toNumber() + 1, "category not added");
 	});
 
 	it("14.18 Should not be able to create a proposal with category ID less than one", async () => {
