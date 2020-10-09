@@ -935,9 +935,13 @@ contract Governance is IGovernance, Iupgradable {
         } else if (roleAuthorized == uint256(IMemberRoles.Role.DisputeResolution)) {
             (address marketAddress, ) = abi.decode(allProposalSolutions[_proposalId][1], (address, uint256));
             uint256 totalStakeValueInPlot = IMarket(marketAddress).getTotalStakedValueInPLOT();
-            check =
-                (allProposalData[_proposalId].totalVoteValue) >=
-                (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), (tokenController.totalSupply()).mul(100).div(totalSupplyCapForDRQrm)));
+            if(allProposalData[_proposalId].totalVoteValue > 0) {
+                check =
+                    (allProposalData[_proposalId].totalVoteValue) >=
+                    (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), (tokenController.totalSupply()).mul(100).div(totalSupplyCapForDRQrm)));
+            } else {
+                check = false;
+            }
         } else {
             check =
                 (proposalVoteTally[_proposalId].voters).mul(100).div(
