@@ -229,7 +229,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Update Member roles parameters",
-            "",
+            "QmcG8KXLMTDL5CtiKed12bJxE4ioL7Wn7oXLdW1zYWpf62",
             "MR",
             "updateUintParameters(bytes8,uint256)",
             60,
