@@ -719,9 +719,6 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         if (_categoryId > 0) {
-            (, uint256 roleAuthorizedToVote, , , , , ) = proposalCategory.category(
-                _categoryId
-            );
             (, , , uint defaultIncentive, bytes memory _functionHash) = proposalCategory
             .categoryActionDetails(_categoryId);
             require(allowedToCategorize() ||
