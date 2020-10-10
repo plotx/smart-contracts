@@ -189,7 +189,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             assignedRoles[counter] = uint256(Role.TokenHolder);
             counter++;
         }
-        if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) > minLockAmountForDR) {
+        if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) >= minLockAmountForDR) {
             assignedRoles[counter] = uint256(Role.DisputeResolution);
         }
         return assignedRoles;
@@ -235,7 +235,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
                 return true;
             }
         } else if (_roleId == uint256(Role.DisputeResolution)) {
-            if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) > minLockAmountForDR) {
+            if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) >= minLockAmountForDR) {
                 return true;
             }
         } else if (memberRoleData[_roleId].memberIndex[_memberAddress] > 0) {
