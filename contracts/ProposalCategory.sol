@@ -574,12 +574,14 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     ) internal {
         uint256[] memory allowedToCreateProposal = new uint256[](1);
         uint256[] memory stakeIncentive = new uint256[](2);
+        uint256 closingTime = 604800;
         allowedToCreateProposal[0] = _memberRoleToVote;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;
         if (_memberRoleToVote == uint256(IMemberRoles.Role.DisputeResolution)) {
             stakeIncentive[1] = 100 ether;
             allowedToCreateProposal[0] = uint256(IMemberRoles.Role.TokenHolder);
+            closingTime = 2 days;
         }
         if (bytes(_actionHash).length > 0) {
             categoryActionHashes[allCategory.length] = abi.encodeWithSignature(
@@ -592,7 +594,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             _majorityVotePerc,
             10,
             allowedToCreateProposal,
-            604800,
+            closingTime,
             _solutionHash,
             address(0),
             _contractName,
