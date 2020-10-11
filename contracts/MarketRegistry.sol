@@ -121,7 +121,7 @@ contract MarketRegistry is Governed, Iupgradable {
     */
     function initiate(address _defaultAddress, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
       require(address(ms) == msg.sender);
-      marketCreationIncentive = 10 ether;
+      marketCreationIncentive = 50 ether;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
       tokenController = tcAddress;

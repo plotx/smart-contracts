@@ -77,7 +77,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         tokenController = ITokenController(
             masterInstance.getLatestAddress("TC")
         );
-        minLockAmountForDR = 1000 ether;
+        minLockAmountForDR = 500 ether;
         lockTimeForDR = 15 days;
     }
 

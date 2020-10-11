@@ -98,7 +98,7 @@ contract MarketUtility {
         positionDecimals = 1e2;
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
-        tokenStakeForDispute = 100 ether;
+        tokenStakeForDispute = 500 ether;
     }
 
     /**

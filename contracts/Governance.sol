@@ -1116,7 +1116,7 @@ contract Governance is IGovernance, Iupgradable {
     function _initiateGovernance() internal {
         allVotes.push(ProposalVote(address(0), 0, 0, 0, 0));
         totalProposals = 1;
-        tokenHoldingTime = 1 * 7 days;
+        tokenHoldingTime = 1 * 3 days;
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         actionWaitingTime = 1 days;
