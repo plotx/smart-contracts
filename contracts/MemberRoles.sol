@@ -23,6 +23,9 @@ import "./interfaces/Iupgradable.sol";
 import "./interfaces/ITokenController.sol";
 
 contract MemberRoles is IMemberRoles, Governed, Iupgradable {
+
+    using SafeMath for uint256;
+
     ITokenController internal tokenController;
     struct MemberRoleDetails {
         uint256 memberCounter;
@@ -33,6 +36,8 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     MemberRoleDetails[] internal memberRoleData;
     bool internal constructorCheck;
+    uint256 internal minLockAmountForDR;
+    uint256 internal lockTimeForDR;
 
     modifier checkRoleAuthority(uint256 _memberRoleId) {
         if (memberRoleData[_memberRoleId].authorized != address(0))
@@ -72,15 +77,22 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         tokenController = ITokenController(
             masterInstance.getLatestAddress("TC")
         );
+        minLockAmountForDR = 1000 ether;
+        lockTimeForDR = 15 days;
     }
 
     /**
-     * @dev to initiate the member roles
-     * @param _firstAB is the address of the first AB member
+     * @dev to initiate the member roles and add initial AB, DR board members
+     * @param _abArray is array of addresses of the Initial AB members
      */
-    function memberRolesInitiate(address _firstAB) public {
+    function memberRolesInitiate(
+        address[] calldata _abArray
+    ) external {
         require(!constructorCheck, "Already constructed");
-        _addInitialMemberRoles(_firstAB);
+        _addInitialMemberRoles();
+        for (uint256 i = 0; i < _abArray.length; i++) {
+            _updateRole(_abArray[i], uint256(Role.AdvisoryBoard), true);
+        }
         constructorCheck = true;
     }
 
@@ -108,37 +120,6 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         bool _active
     ) public checkRoleAuthority(_roleId) {
         _updateRole(_memberAddress, _roleId, _active);
-    }
-
-    /**
-     * @dev is used to add initial advisory board members
-     * @param abArray is the list of initial advisory board members
-     */
-    function addInitialABandDRMembers(
-        address[] calldata abArray,
-        address[] calldata drArray
-    ) external {
-        require(
-            numberOfMembers(uint256(Role.AdvisoryBoard)) == 1,
-            "Already initialized!"
-        );
-
-        for (uint256 i = 0; i < abArray.length; i++) {
-            require(
-                checkRole(abArray[i], uint256(Role.TokenHolder)),
-                "not a token holder"
-            );
-
-            _updateRole(abArray[i], uint256(Role.AdvisoryBoard), true);
-        }
-        for (uint256 i = 0; i < drArray.length; i++) {
-            require(
-                checkRole(drArray[i], uint256(Role.TokenHolder)),
-                "not a token holder"
-            );
-
-            _updateRole(drArray[i], uint256(Role.DisputeResolution), true);
-        }
     }
 
     /// @dev Return number of member roles
@@ -206,9 +187,36 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         }
         if (tokenController.totalBalanceOf(_memberAddress) > 0) {
             assignedRoles[counter] = uint256(Role.TokenHolder);
+            counter++;
+        }
+        if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) >= minLockAmountForDR) {
+            assignedRoles[counter] = uint256(Role.DisputeResolution);
         }
         return assignedRoles;
     }
+
+    /**
+     * @dev Updates Uint Parameters of a code
+     * @param code whose details we want to update
+     * @param val value to set
+     */
+    function updateUintParameters(bytes8 code, uint val) public onlyAuthorizedToGovern {
+        if(code == "MNLOCKDR") { //Minimum lock amount to consider user as DR member
+            minLockAmountForDR = val;
+        } else if (code == "TLOCDR") { // Lock period required for DR
+            lockTimeForDR = val * (1 days);
+        } 
+    }
+
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint val) {
+        codeVal = code;
+        if(code == "MNLOCKDR") {
+            val = minLockAmountForDR;
+        } else if (code == "TLOCDR") { // Lock period required for DR
+            val = lockTimeForDR / (1 days);
+        } 
+    }
+
 
     /// @dev Returns true if the given role id is assigned to a member.
     /// @param _memberAddress Address of member
@@ -224,6 +232,10 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             return true;
         } else if (_roleId == uint256(Role.TokenHolder)) {
             if (tokenController.totalBalanceOf(_memberAddress) > 0) {
+                return true;
+            }
+        } else if (_roleId == uint256(Role.DisputeResolution)) {
+            if (tokenController.tokensLockedAtTime(_memberAddress, "DR", (lockTimeForDR).add(now)) >= minLockAmountForDR) {
                 return true;
             }
         } else if (memberRoleData[_roleId].memberIndex[_memberAddress] > 0) {
@@ -259,8 +271,8 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         bool _active
     ) internal {
         require(
-            _roleId != uint256(Role.TokenHolder),
-            "Membership to Token holder is detected automatically"
+            _roleId != uint256(Role.TokenHolder) && _roleId != uint256(Role.DisputeResolution),
+            "Membership to this role is detected automatically"
         );
         if (_active) {
             require(
@@ -315,9 +327,8 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     /**
      * @dev to add initial member roles
-     * @param _firstAB is the member address to be added
      */
-    function _addInitialMemberRoles(address _firstAB) internal {
+    function _addInitialMemberRoles() internal {
         _addRole("Unassigned", "Unassigned", address(0));
         _addRole(
             "Advisory Board",
@@ -334,7 +345,5 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
             "Represents members who are assigned to vote on resolving disputes", //solhint-disable-line
             address(0)
         );
-        _updateRole(_firstAB, uint256(Role.AdvisoryBoard), true);
-        _updateRole(_firstAB, uint256(Role.DisputeResolution), true);
     }
 }

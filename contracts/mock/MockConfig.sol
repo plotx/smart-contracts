@@ -8,10 +8,10 @@ contract MockConfig is MarketUtility {
     bool public mockFlag;
     mapping(uint => uint) optionPrices;
 
-	function initialize(address payable[] memory _addressParams) public {
+	function initialize(address payable[] memory _addressParams, address _intiater) public {
 		priceOfToken = 1e16;
         mockFlag = true;
-		super.initialize(_addressParams);
+		super.initialize(_addressParams, _intiater);
 	}
 
     function setWeth(address _weth) external {

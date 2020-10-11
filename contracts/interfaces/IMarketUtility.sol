@@ -1,7 +1,7 @@
 pragma solidity 0.5.7;
 contract IMarketUtility {
 
-    function initialize(address payable[] calldata _addressParams) external;
+    function initialize(address payable[] calldata _addressParams, address _initiater) external;
 
 	/**
      * @dev to Set authorized address to update parameters 
@@ -31,6 +31,11 @@ contract IMarketUtility {
     function getAssetPriceUSD(address _currencyAddress) external view returns(uint latestAnswer);
     
     function getPriceFeedDecimals(address _priceFeed) public view returns(uint8);
+
+    function getValueAndMultiplierParameters(address _asset, uint256 _amount)
+        public
+        view
+        returns (uint256, uint256);
 
     function update() external;
     

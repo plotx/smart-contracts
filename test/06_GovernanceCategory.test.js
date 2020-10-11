@@ -297,7 +297,7 @@ contract('Configure Global Parameters', accounts => {
           newAB
         );
         await gvProposal(
-          22,
+          23,
           actionHash,
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
@@ -316,7 +316,7 @@ contract('Configure Global Parameters', accounts => {
         await gv.createProposal("proposal", "proposal", "proposal", 0);
         let canClose = await gv.canCloseProposal(p);
         assert.equal(parseFloat(canClose),0);
-        await gv.categorizeProposal(p, 23, 0);
+        await gv.categorizeProposal(p, 24, 0);
         await assertRevert(gv.submitProposalWithSolution(p, "proposal", "0x1234"));
         await gv.submitProposalWithSolution(p, "proposal", actionHash);
         await gv.submitVote(p, 1);

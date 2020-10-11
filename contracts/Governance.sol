@@ -25,6 +25,7 @@ import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IMaster.sol";
+import "./interfaces/IMarket.sol";
 
 contract Governance is IGovernance, Iupgradable {
     using SafeMath for uint256;
@@ -73,6 +74,7 @@ contract Governance is IGovernance, Iupgradable {
 
     bytes32 constant swapABMemberHash = keccak256(abi.encodeWithSignature("swapABMember(address,address)"));
     bytes32 constant resolveDisputeHash = keccak256(abi.encodeWithSignature("resolveDispute(address,uint256)"));
+    uint256 constant totalSupplyCapForDRQrm = 50;
 
     bool internal constructorCheck;
     uint256 public tokenHoldingTime;
@@ -81,10 +83,9 @@ contract Governance is IGovernance, Iupgradable {
     uint256 internal advisoryBoardMajority;
     uint256 internal totalProposals;
     uint256 internal maxDraftTime;
-    uint256 internal minTokenLockedForDR;
-    uint256 internal lockTimeForDR;
     uint256 internal votePercRejectAction;
     uint256 internal actionRejectAuthRole;
+    uint256 internal drQuorumMulitplier;
 
     IMaster public ms;
     IMemberRoles internal memberRole;
@@ -408,10 +409,6 @@ contract Governance is IGovernance, Iupgradable {
             val = maxDraftTime / (1 days);
         } else if (code == "ACWT") { //Action wait time
             val = actionWaitingTime / (1 hours);
-        } else if (code == "MINLOCDR") { // Minimum locked tokens for DR voting
-            val = minTokenLockedForDR;
-        } else if (code == "TLOCDR") { // Lock period required for DR voting
-            val = lockTimeForDR / (1 days);
         } else if (code == "REJAUTH") { // Authorized role to stop executing actions
             val = actionRejectAuthRole;
         } else if (code == "REJCOUNT") { // Majorty percentage for action rejection
@@ -420,6 +417,8 @@ contract Governance is IGovernance, Iupgradable {
             val = maxVoteWeigthPer;
         } else if (code == "ABMAJ") { // Advisory board majority percentage
             val = advisoryBoardMajority;
+        } else if (code == "DRQUMR") { // Dispute Resolution Quorum multiplier
+            val = drQuorumMulitplier;
         }
     }
 
@@ -546,10 +545,6 @@ contract Governance is IGovernance, Iupgradable {
             maxDraftTime = val * 1 days;
         } else if (code == "ACWT") {
             actionWaitingTime = val * 1 hours;
-        } else if (code == "MINLOCDR") {
-            minTokenLockedForDR = val;
-        } else if (code == "TLOCDR") {
-            lockTimeForDR = val * 1 days;
         } else if (code == "REJAUTH") {
             actionRejectAuthRole = val;
         } else if (code == "REJCOUNT") {
@@ -558,6 +553,8 @@ contract Governance is IGovernance, Iupgradable {
             maxVoteWeigthPer = val;
         } else if (code == "ABMAJ") {
             advisoryBoardMajority = val;
+        } else if (code == "DRQUMR") {
+            drQuorumMulitplier = val;
         } else {
             revert("Invalid code");
         }
@@ -633,8 +630,7 @@ contract Governance is IGovernance, Iupgradable {
         if (pStatus == uint256(ProposalStatus.VotingStarted)) {
             uint256 numberOfMembers = memberRole.numberOfMembers(_roleId);
             if (
-                _roleId == uint256(IMemberRoles.Role.AdvisoryBoard) ||
-                _roleId == uint256(IMemberRoles.Role.DisputeResolution)
+                _roleId == uint256(IMemberRoles.Role.AdvisoryBoard)
             ) {
                 if (
                     proposalVoteTally[_proposalId].voteValue[1].mul(100).div(
@@ -650,7 +646,8 @@ contract Governance is IGovernance, Iupgradable {
                     return 1;
                 }
             } else {
-                if(_roleId == uint256(IMemberRoles.Role.TokenHolder)) {
+                if(_roleId == uint256(IMemberRoles.Role.TokenHolder) ||
+                _roleId == uint256(IMemberRoles.Role.DisputeResolution)) {
                     if(dateUpdate.add(_closingTime) <= now)
                         return 1;
                 } else if (
@@ -722,9 +719,6 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         if (_categoryId > 0) {
-            (, uint256 roleAuthorizedToVote, , , , , ) = proposalCategory.category(
-                _categoryId
-            );
             (, , , uint defaultIncentive, bytes memory _functionHash) = proposalCategory
             .categoryActionDetails(_categoryId);
             require(allowedToCategorize() ||
@@ -846,16 +840,6 @@ contract Governance is IGovernance, Iupgradable {
         );
 
         require(memberRole.checkRole(msg.sender, mrSequence), "Not Authorized");
-        if (mrSequence == uint256(IMemberRoles.Role.DisputeResolution)) {
-            require(
-                minTokenLockedForDR <=
-                    tokenController.tokensLockedAtTime(
-                        msg.sender,
-                        "DR",
-                        lockTimeForDR.add(now)
-                    ), "Not locked"
-            );
-        }
         uint256 totalVotes = allVotes.length;
 
         allVotesByMember[msg.sender].push(totalVotes);
@@ -893,6 +877,10 @@ contract Governance is IGovernance, Iupgradable {
             mrSequence == uint256(IMemberRoles.Role.TokenHolder)
         ) {
             voteWeight = _minOf(tokenBalance, maxVoteWeigthPer.mul(totalSupply).div(100));
+        } else if (
+            mrSequence == uint256(IMemberRoles.Role.DisputeResolution)
+        ) {
+            voteWeight = tokenController.tokensLockedAtTime(msg.sender, "DR", now);
         } else {
             voteWeight = 1;
         }
@@ -941,6 +929,16 @@ contract Governance is IGovernance, Iupgradable {
                     tokenController.totalSupply()
                 ) >=
                 categoryQuorumPerc;
+        } else if (roleAuthorized == uint256(IMemberRoles.Role.DisputeResolution)) {
+            (address marketAddress, ) = abi.decode(allProposalSolutions[_proposalId][1], (address, uint256));
+            uint256 totalStakeValueInPlot = IMarket(marketAddress).getTotalStakedValueInPLOT();
+            if(allProposalData[_proposalId].totalVoteValue > 0) {
+                check =
+                    (allProposalData[_proposalId].totalVoteValue) >=
+                    (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), (tokenController.totalSupply()).mul(100).div(totalSupplyCapForDRQrm)));
+            } else {
+                check = false;
+            }
         } else {
             check =
                 (proposalVoteTally[_proposalId].voters).mul(100).div(
@@ -1048,6 +1046,7 @@ contract Governance is IGovernance, Iupgradable {
         (, mrSequence, majorityVote, , , , ) = proposalCategory.category(
             category
         );
+        bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
         if (_checkForThreshold(_proposalId, category)) {
             if (
                 (
@@ -1072,9 +1071,10 @@ contract Governance is IGovernance, Iupgradable {
                 );
             }
         } else {
-            if ((mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
+            if ((keccak256(_functionHash) != resolveDisputeHash) &&
+             (mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
              proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
-            .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
+                .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
             ) {
                 _callIfMajReached(
                     _proposalId,
@@ -1088,7 +1088,6 @@ contract Governance is IGovernance, Iupgradable {
             }
         }
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
-            bytes memory _functionHash = proposalCategory.categoryActionHashes(category);
             if(keccak256(_functionHash) == resolveDisputeHash) {
                 marketRegistry.burnDisputedProposalTokens(_proposalId);
             }
@@ -1120,13 +1119,12 @@ contract Governance is IGovernance, Iupgradable {
         tokenHoldingTime = 1 * 7 days;
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
-        minTokenLockedForDR = 1000 ether;
-        lockTimeForDR = 15 days;
         actionWaitingTime = 1 days;
         actionRejectAuthRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         votePercRejectAction = 60;
         maxVoteWeigthPer = 5;
         advisoryBoardMajority = 60;
+        drQuorumMulitplier = 5;
     }
 
 }

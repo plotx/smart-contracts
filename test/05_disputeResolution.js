@@ -7,8 +7,10 @@ const PlotusToken = artifacts.require("MockPLOT");
 const TokenController = artifacts.require("MockTokenController");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const Governance = artifacts.require("Governance");
+const MarketConfig = artifacts.require("MockConfig");
+const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const ProposalCategory = artifacts.require('ProposalCategory');
-const MemberRoles = artifacts.require('MemberRoles');
+const MemberRoles = artifacts.require('MockMemberRoles');
 const BLOT = artifacts.require("BLOT");
 const web3 = Market.web3;
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
@@ -26,8 +28,14 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
+    MockUniswapRouterInstance = await MockUniswapRouter.deployed();
     const openMarkets = await plotusNewInstance.getOpenMarkets();
+    marketConfig = await plotusNewInstance.marketUtility();
+    marketConfig = await MarketConfig.at(marketConfig);
     marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
+    await marketConfig.setOptionPrice(1, 9);
+    await marketConfig.setOptionPrice(2, 18);
+    await marketConfig.setOptionPrice(3, 27);
     await increaseTime(10001);
     assert.ok(marketInstance);
     let nxmToken = await PlotusToken.deployed();
@@ -47,9 +55,12 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await plotusToken.transfer(dr1, "50000000000000000000000");
     await plotusToken.transfer(dr2, "50000000000000000000000");
     await plotusToken.transfer(dr3, "50000000000000000000000");
-   
-    await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
-    
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
+    await marketConfig.setPrice("1000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000");
+    // Cannot raise dispute if there is no participation
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
     // cannot raise dispute if market is open
     await plotusToken.approve(tokenController.address, "10000000000000000000000");
     await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
@@ -78,20 +89,23 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     console.log("balance before accept proposal",userBalBefore/1)
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr1});
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr2});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr2});
 
     await assertRevert(gv.submitVote(proposalId, 1, {from:dr3})) //reverts as tokens not locked
   
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
-    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr3});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr3});
+    let roles = await mr.roles(dr3);
+    assert.equal(roles[0]/1, 2, "Not added to Token holder");
+    assert.equal(roles[1]/1, 3, "Not added to DR");
     await gv.submitVote(proposalId, 1, {from:dr1});
     await gv.submitVote(proposalId, 1, {from:dr2});
     await gv.submitVote(proposalId, 1, {from:dr3});
+    await increaseTime(604800);
     await gv.closeProposal(proposalId);
-    // await increaseTime(86401);
     // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
     // assert.equal(data[0], proposalId,"dispute proposal mismatch");
     // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);
@@ -106,6 +120,99 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   });
 });
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
+  it("1.if quorum not reached proposal should be rejected", async () => {
+    masterInstance = await OwnedUpgradeabilityProxy.deployed();
+    masterInstance = await Master.at(masterInstance.address);
+    let tokenControllerAdd  = await masterInstance.getLatestAddress(web3.utils.toHex("TC"));
+    tokenController = await TokenController.at(tokenControllerAdd);
+    let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
+    let plotusNewInstance = await Plotus.at(plotusNewAddress);
+    MockUniswapRouterInstance = await MockUniswapRouter.deployed();
+    const openMarkets = await plotusNewInstance.getOpenMarkets();
+    marketConfig = await plotusNewInstance.marketUtility();
+    marketConfig = await MarketConfig.at(marketConfig);
+    marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
+    await marketConfig.setOptionPrice(1, 9);
+    await marketConfig.setOptionPrice(2, 18);
+    await marketConfig.setOptionPrice(3, 27);
+    await increaseTime(10001);
+    assert.ok(marketInstance);
+    let nxmToken = await PlotusToken.deployed();
+    let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+    let plotusToken = await PlotusToken.deployed();
+    gv = await Governance.at(address);
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+    let pc = await ProposalCategory.at(address);
+    address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
+    mr = await MemberRoles.at(address);
+    let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
+    await plotusToken.approve(mr.address, "10000000000000000000000");
+   
+    await plotusToken.transfer(ab2, "50000000000000000000000");
+    await plotusToken.transfer(ab3, "50000000000000000000000");
+    await plotusToken.transfer(ab4, "50000000000000000000000");
+    await plotusToken.transfer(dr1, "50000000000000000000000");
+    await plotusToken.transfer(dr2, "50000000000000000000000");
+    await plotusToken.transfer(dr3, "50000000000000000000000");
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
+    await marketConfig.setPrice("1000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000");
+    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
+    // cannot raise dispute if market is open
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    
+    await increaseTime(3601);
+    // cannot raise dispute if market is closed but result is not out
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+   
+    await increaseTime(3600);
+    await marketInstance.calculatePredictionResult(100000000000);
+     // cannot raise dispute with less than minimum stake
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
+    //can raise dispute in cooling period and stake
+    await plotusToken.approve(tokenController.address, "10000000000000000000000");
+    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    // cannot raise dispute multiple times
+    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await assertRevert(marketInstance.resolveDispute(true, 100));
+    let winningOption_af = await marketInstance.getMarketResults()
+    console.log("winningOption",winningOption_af[0]/1)
+    let proposalId = await gv.getProposalLength()-1;
+    console.log("proposalId",proposalId/1)
+    let userBalBefore = await plotusToken.balanceOf(ab1);
+    console.log("balance before accept proposal",userBalBefore/1)
+    
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr1});
+    
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr2});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr2});
+
+    await assertRevert(gv.submitVote(proposalId, 1, {from:dr3})) //reverts as tokens not locked
+  
+    await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr3});
+    await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr3});
+    let roles = await mr.roles(dr3);
+    assert.equal(roles[0]/1, 2, "Not added to Token holder");
+    assert.equal(roles[1]/1, 3, "Not added to DR");
+    await increaseTime(604800);
+    await gv.closeProposal(proposalId);
+    // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
+    // assert.equal(data[0], proposalId,"dispute proposal mismatch");
+    // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);
+    // assert.equal(marketDetails[7]/1, 3, "status not updated");
+
+    let userBalAfter = await plotusToken.balanceOf(ab1);
+    console.log("balance before accept proposal",userBalAfter/1)
+    let winningOption_afterVote = await marketInstance.getMarketResults()
+    assert.equal(winningOption_af[0]/1, winningOption_afterVote[0]/1);
+    console.log("winningOption After accept proposal",winningOption_afterVote[0]/1);
+  });
+});
+contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
   it("2.if DR panel rejects", async () => {
     masterInstance = await OwnedUpgradeabilityProxy.deployed();
     masterInstance = await Master.at(masterInstance.address);
@@ -113,8 +220,14 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     tokenController = await TokenController.at(tokenControllerAdd);
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
+    MockUniswapRouterInstance = await MockUniswapRouter.deployed();
     const openMarkets = await plotusNewInstance.getOpenMarkets();
+    marketConfig = await plotusNewInstance.marketUtility();
+    marketConfig = await MarketConfig.at(marketConfig);
     marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
+    await marketConfig.setOptionPrice(1, 9);
+    await marketConfig.setOptionPrice(2, 18);
+    await marketConfig.setOptionPrice(3, 27);
     await increaseTime(10001);
     assert.ok(marketInstance);
     let nxmToken = await PlotusToken.deployed();
@@ -135,8 +248,10 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await plotusToken.transfer(dr1, "50000000000000000000000");
     await plotusToken.transfer(dr2, "50000000000000000000000");
     await plotusToken.transfer(dr3, "50000000000000000000000");
-     
-    await mr.addInitialABandDRMembers([ab2, ab3, ab4], [dr1, dr2, dr3], { from: ab1 });
+    await MockUniswapRouterInstance.setPrice("1000000000000000");
+    await marketConfig.setPrice("1000000000000000");
+    await plotusToken.approve(tokenController.address, "100000000000000000000");
+    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
     
     await increaseTime(7201);
     await marketInstance.calculatePredictionResult(100000000000);

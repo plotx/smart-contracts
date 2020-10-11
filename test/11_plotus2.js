@@ -4,7 +4,7 @@ const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
 const Governance = artifacts.require("Governance");
-const MemberRoles = artifacts.require("MemberRoles");
+const MemberRoles = artifacts.require("MockMemberRoles");
 const TokenController = artifacts.require("TokenController");
 const PlotusToken = artifacts.require("MockPLOT");
 const MarketConfig = artifacts.require("MockConfig");
@@ -252,7 +252,6 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 		await plotusToken.transfer(dr1, "20000000000000000000000");
 		await plotusToken.transfer(dr2, "20000000000000000000000");
 		await plotusToken.transfer(dr3, "20000000000000000000000");
-		await mr.addInitialABandDRMembers([dr1], [dr1, dr2, dr3]);
 		await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : dr1});
 	    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : dr1});
 	    
@@ -420,6 +419,7 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 			await governance.submitVote(proposalId, 1, {from:dr1});
 		    await governance.submitVote(proposalId, 1, {from:dr2});
 		    await governance.submitVote(proposalId, 1, {from:dr3});
+		    await increaseTime(604800);
 		    await governance.closeProposal(proposalId);
 		    await increaseTime(86401);
 		    assert.equal((await marketInstance.getMarketResults())[0]/1, 3);

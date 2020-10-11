@@ -6,7 +6,7 @@ const Master = artifacts.require("Master");
 const MemberRoles = artifacts.require("MemberRoles");
 const PlotusToken = artifacts.require("MockPLOT");
 const MockWeth = artifacts.require("MockWeth");
-const MarketUtility = artifacts.require("MockMarketUtility");
+const MarketUtility = artifacts.require("MarketUtility");
 const MockConfig = artifacts.require("MockConfig");
 const Governance = artifacts.require("Governance");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
@@ -78,7 +78,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Should not allow to re initialize Utility after updating Implementation", async function() {
-    	await assertRevert(marketConfig.initialize([user1, MockUniswapRouterInstance.address, plotusToken.address, mockUniswapFactory.address]))
+    	await assertRevert(marketConfig.initialize([user1, MockUniswapRouterInstance.address, plotusToken.address, mockUniswapFactory.address], user1))
     });
 
     it("Deploy uniswap v2 pair and add liquidity", async function() {
@@ -114,40 +114,23 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
         await increaseTime(604800);
     });
 
-    it('Should Update market config address parameters', async function() {
-        let newUtility = await MarketUtility.new();
-        let existingMarkets = await plotusNewInstance.getOpenMarkets();
-        let actionHash = encode(
-          'updateConfigAddressParameters(bytes8,address)',
-          toHex("UNIFAC"),
-          mockUniswapFactory.address
-        );
-        let proposalId = await governance.getProposalLength();
-        await gvProposal(
-          21,
-          actionHash,
-          await MemberRoles.at(await masterInstance.getLatestAddress(toHex('MR'))),
-          governance,
-          2,
-          0
-        );
-        assert.equal(3, (await governance.proposalActionStatus(proposalId))/1);
-        await increaseTime(604800);
-    });
-
     it("Check price of plot", async function() {
     	await increaseTime(3610);
+    	await assertRevert(plotusNewInstance.createMarket(0,0));
     	await marketConfig.setInitialCummulativePrice();
+    	await assertRevert(marketConfig.setInitialCummulativePrice());
     	await mockUniswapV2Pair.sync();
     	await increaseTime(3610);
     	await plotusNewInstance.createMarket(0,0);
+    	let currentPrice = (await marketConfig.getPrice(mockUniswapV2Pair.address, toWei(1)))/1;
+    	assert.equal(initialEthPrice, currentPrice/1e18);
     	await plotusNewInstance.createMarket(0,1);
     	await increaseTime(3610);
     	await mockUniswapV2Pair.sync();
     	await plotusNewInstance.createMarket(0,0);
     	await increaseTime(3610);
     	await mockUniswapV2Pair.sync();
-    	let currentPrice = (await marketConfig.getPrice(mockUniswapV2Pair.address, toWei(1)))/1;
+    	currentPrice = (await marketConfig.getPrice(mockUniswapV2Pair.address, toWei(1)))/1;
     	assert.equal(initialEthPrice, currentPrice/1e18);
     	let plotPriceInEth = ((await marketConfig.getAssetPriceInETH(plotusToken.address))[0])/1;
     	assert.equal(initialEthPrice, plotPriceInEth/1e18);

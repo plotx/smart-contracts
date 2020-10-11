@@ -184,6 +184,12 @@ contract Market {
       }
     }
 
+    function getTotalStakedValueInPLOT() public view returns(uint256) {
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked();
+      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
+      return plotStaked.add(ethStaked);
+    }
+
     /**
     * @dev Stores the prediction data.
     * @param _prediction The option on which user place prediction.
@@ -273,6 +279,7 @@ contract Market {
     * @param solutionHash The ipfs solution hash.
     */
     function raiseDispute(uint256 proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
+      require(getTotalStakedValueInPLOT() > 0, "No participation");
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       tokenController.transferFrom(plotToken, msg.sender, address(marketRegistry), _stakeForDispute);

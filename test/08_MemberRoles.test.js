@@ -47,7 +47,7 @@ contract('MemberRoles', function([
   });
 
   it('Should not be able to initiate member roles twice', async function() {
-    await assertRevert(mr.memberRolesInitiate(owner));
+    await assertRevert(mr.memberRolesInitiate([owner]));
   });
 
   it('Should not allow unauthorized to change master address', async function() {
@@ -65,12 +65,6 @@ contract('MemberRoles', function([
       true,
       'Owner not added to role Owner'
     );
-  });
-
-  it('Should not add initial AB members more than defined max AB count', async function() {
-    let memberArray = [member, other, user1, user2, user3, member2];
-    let memberArray2 = [member, other, user1, user2, user3, member2];
-    await assertRevert(mr.addInitialABandDRMembers(memberArray, memberArray2));
   });
 
   it('Should have added owner to AB', async function() {
@@ -177,7 +171,8 @@ contract('MemberRoles', function([
     assert.equal(g6.length, 5);
     assert.equal(g6[0].toNumber(), 0);
     assert.equal(g6[1].toNumber(), 1);
-    assert.equal(g6[3].toNumber(), 1);
+    assert.equal(g6[2].toNumber(), 0);
+    assert.equal(g6[3].toNumber(), 0);
     assert.equal(g6[4].toNumber(), 1);
   });
 

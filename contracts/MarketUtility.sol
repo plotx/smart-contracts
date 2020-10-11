@@ -44,6 +44,7 @@ contract MarketUtility {
     address internal plotToken;
     address internal plotETHpair;
     address internal weth;
+    address internal initiater;
     address public authorizedAddress;
     bool public initialized;
 
@@ -69,7 +70,7 @@ contract MarketUtility {
     /**
      * @dev Initiates the config contact with initial values
      **/
-    function initialize(address payable[] memory _addressParams) public {
+    function initialize(address payable[] memory _addressParams, address _initiater) public {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
             address(uint160(address(this)))
         );
@@ -80,12 +81,9 @@ contract MarketUtility {
         authorizedAddress = msg.sender;
         tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
         plotToken = _addressParams[1];
+        initiater = _initiater;
         weth = IUniswapV2Router02(_addressParams[0]).WETH();
         uniswapFactory = IUniswapV2Factory(_addressParams[2]);
-        plotETHpair = uniswapFactory.getPair(plotToken, weth);
-
-
-        _setCummulativePrice();
     }
 
     /**
@@ -178,6 +176,7 @@ contract MarketUtility {
      * @dev Update cumulative price of token in uniswap
      **/
     function update() external onlyAuthorized {
+        require(plotETHpair != address(0), "Uniswap pair not set");
         UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
         (
             uint256 price0Cumulative,
@@ -212,9 +211,12 @@ contract MarketUtility {
     }
 
     /**
-     * @dev Internal function to update pair cummulative price
+     * @dev Set initial PLOT/ETH pair cummulative price
      **/
-    function _setCummulativePrice() internal {
+    function setInitialCummulativePrice() public {
+      require(msg.sender == initiater);
+      require(plotETHpair == address(0),"Already initialised");
+      plotETHpair = uniswapFactory.getPair(plotToken, weth);
       UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
       (
           uint256 price0Cumulative,
@@ -375,8 +377,7 @@ contract MarketUtility {
     {
         uint256 _value = _amount;
         if (_asset == ETH_ADDRESS) {
-            address pair = uniswapFactory.getPair(plotToken, weth);
-            _value = (uniswapPairData[pair].price1Average)
+            _value = (uniswapPairData[plotETHpair].price1Average)
                 .mul(_amount)
                 .decode144();
         }
