@@ -1,6 +1,6 @@
-[![Build Status](https://travis-ci.org/plotx/smart-contracts.svg?branch=dev)](https://travis-ci.org/plotx/smart-contracts)
+[![Build Status](https://travis-ci.org/plotx/smart-contracts.svg?branch=master)](https://travis-ci.org/plotx/smart-contracts)
 
-[![Coverage Status](https://coveralls.io/repos/github/plotx/smart-contracts/badge.svg?branch=dev)](https://coveralls.io/github/plotx/smart-contracts)
+[![Coverage Status](https://coveralls.io/repos/github/plotx/smart-contracts/badge.svg?branch=master)](https://coveralls.io/github/plotx/smart-contracts)
 
 <h1><a id="PLOTX"></a>PlotX SMART CONTRACTS</h1>
 <p>Smart contracts for PlotX - Curated prediction markets for crypto traders . https://plotx.io/.</p>
