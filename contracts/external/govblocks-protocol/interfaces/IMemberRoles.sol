@@ -19,6 +19,8 @@ contract IMemberRoles {
     
     enum Role {UnAssigned, AdvisoryBoard, TokenHolder, DisputeResolution}
 
+    function setInititorAddress(address _initiator) external;
+
     /// @dev Adds new member role
     /// @param _roleName New role name
     /// @param _roleDescription New description hash

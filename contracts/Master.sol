@@ -17,6 +17,7 @@ pragma solidity 0.5.7;
 
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./interfaces/ITokenController.sol";
@@ -90,6 +91,7 @@ contract Master is Governed {
         );
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
+        IMemberRoles(contractAddress["MR"]).setInititorAddress(_defaultAddress);
     }
 
     /**

@@ -36,6 +36,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     MemberRoleDetails[] internal memberRoleData;
     bool internal constructorCheck;
+    address internal initiator;
     uint256 internal minLockAmountForDR;
     uint256 internal lockTimeForDR;
 
@@ -82,12 +83,26 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     }
 
     /**
+     * @dev Set the authorized address to add the initial roles and members
+     * @param _initiator is address of the initiator
+     */
+    function setInititorAddress(address _initiator) external {
+        OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
+            address(uint160(address(this)))
+        );
+        require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
+        require(initiator == address(0), "Already Set");
+        initiator = _initiator;
+    }
+
+    /**
      * @dev to initiate the member roles and add initial AB, DR board members
      * @param _abArray is array of addresses of the Initial AB members
      */
     function memberRolesInitiate(
         address[] calldata _abArray
     ) external {
+        require(msg.sender == initiator);
         require(!constructorCheck, "Already constructed");
         _addInitialMemberRoles();
         for (uint256 i = 0; i < _abArray.length; i++) {
