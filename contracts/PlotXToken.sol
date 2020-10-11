@@ -40,7 +40,7 @@ contract PlotXToken is ERC20 {
      */
     constructor(uint256 _initialSupply, address _initialTokenHolder) public {
         _mint(_initialTokenHolder, _initialSupply);
-        operator = msg.sender;
+        operator = _initialTokenHolder;
     }
 
     /**
