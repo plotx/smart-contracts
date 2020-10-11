@@ -280,14 +280,14 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		});
 
 		it("Raise dispute and reject", async() => {
-			await plotusToken.transfer(user11, "200000000000000000000");
-			await plotusToken.approve(tokenController.address, "100000000000000000000", {
+			await plotusToken.transfer(user11, "700000000000000000000");
+			await plotusToken.approve(tokenController.address, "500000000000000000000", {
 				from: user11,
 			});
 			let proposalId = await governance.getProposalLength();
 			let marketETHBalanceBeforeDispute = await web3.eth.getBalance(marketInstance.address);
 			let registryBalanceBeforeDispute = await web3.eth.getBalance(plotusNewInstance.address);
-			await marketInstance.raiseDispute("100000000000000000000","","","", {from: user11});
+			await marketInstance.raiseDispute("500000000000000000000","","","", {from: user11});
 			await increaseTime(604810);
 			await governance.closeProposal(proposalId/1);
 			let balanceAfterClosingDispute = await web3.eth.getBalance(marketInstance.address);
