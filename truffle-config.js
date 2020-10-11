@@ -83,7 +83,7 @@ module.exports = {
   mocha: {
     // timeout: 100000
   },
-
+ plugins: ['solidity-coverage'],
   // Configure your compilers
   compilers: {
     solc: {
@@ -93,8 +93,8 @@ module.exports = {
        optimizer: {
          enabled: true,
          runs: 200
-       }
-      //  evmVersion: "byzantium"
+       },
+       evmVersion: "constantinople"
       }
     }
   }

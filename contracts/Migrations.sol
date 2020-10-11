@@ -8,10 +8,17 @@ contract Migrations {
     owner = msg.sender;
   }
 
+    /**
+    * @dev Checks if msg.sender is not owner.
+    */
   modifier restricted() {
     if (msg.sender == owner) _;
   }
 
+    /**
+    * @dev Set the last completed migration.
+    * @param completed The last completed migration.
+    */
   function setCompleted(uint completed) public restricted {
     last_completed_migration = completed;
   }

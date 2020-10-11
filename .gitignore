@@ -1,8 +1,14 @@
 # build artifacts
 build
+coverage
 
 
 # dependencies
 /node_modules
 package-lock.json
 
+coverage.json
+todo.md
+tests
+.vscode/settings.json
+.solhint.json
