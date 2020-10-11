@@ -47,6 +47,8 @@ contract('MemberRoles', function([
   });
 
   it('Should not be able to initiate member roles twice', async function() {
+    await assertRevert(mr.setInititorAddress(owner));
+    await assertRevert(mr.memberRolesInitiate([owner], { from: other }));
     await assertRevert(mr.memberRolesInitiate([owner]));
   });
 

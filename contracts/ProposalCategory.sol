@@ -574,7 +574,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
     ) internal {
         uint256[] memory allowedToCreateProposal = new uint256[](1);
         uint256[] memory stakeIncentive = new uint256[](2);
-        uint256 closingTime = 604800;
+        uint256 closingTime = 3 days;
         allowedToCreateProposal[0] = _memberRoleToVote;
         stakeIncentive[0] = 0;
         stakeIncentive[1] = 0;

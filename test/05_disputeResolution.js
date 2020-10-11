@@ -289,7 +289,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let plotusContractBalanceAfter = await plotusToken.balanceOf(plotusNewInstance.address);
     // assert.isAbove(plotusContractBalanceBefore/1, plotusContractBalanceAfter/1);
     //InIncentives will be transferred to governance 100 tokens i.e 100000000000000000000
-    assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 100000000000000000000, "Tokens staked for dispute not burned");
+    assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 500000000000000000000, "Tokens staked for dispute not burned");
 
     let winningOption_afterVote = await marketInstance.getMarketResults();
     assert.equal(winningOption_before[0]/1, winningOption_afterVote[0]/1);

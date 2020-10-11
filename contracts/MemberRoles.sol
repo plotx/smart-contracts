@@ -36,6 +36,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
 
     MemberRoleDetails[] internal memberRoleData;
     bool internal constructorCheck;
+    address internal initiator;
     uint256 internal minLockAmountForDR;
     uint256 internal lockTimeForDR;
 
@@ -77,8 +78,21 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
         tokenController = ITokenController(
             masterInstance.getLatestAddress("TC")
         );
-        minLockAmountForDR = 1000 ether;
+        minLockAmountForDR = 500 ether;
         lockTimeForDR = 15 days;
+    }
+
+    /**
+     * @dev Set the authorized address to add the initial roles and members
+     * @param _initiator is address of the initiator
+     */
+    function setInititorAddress(address _initiator) external {
+        OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
+            address(uint160(address(this)))
+        );
+        require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
+        require(initiator == address(0), "Already Set");
+        initiator = _initiator;
     }
 
     /**
@@ -88,6 +102,7 @@ contract MemberRoles is IMemberRoles, Governed, Iupgradable {
     function memberRolesInitiate(
         address[] calldata _abArray
     ) external {
+        require(msg.sender == initiator);
         require(!constructorCheck, "Already constructed");
         _addInitialMemberRoles();
         for (uint256 i = 0; i < _abArray.length; i++) {

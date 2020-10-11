@@ -407,15 +407,15 @@ contract("Raise Dispute and accpet the dispute", async function([user1, user2, u
 	});
 
 	it("Raise dispute, accept, change the winninOption to 3", async() => {
-			await plotusToken.transfer(user11, "200000000000000000000");
-			await plotusToken.approve(tokenController.address, "100000000000000000000", {
+			await plotusToken.transfer(user11, "600000000000000000000");
+			await plotusToken.approve(tokenController.address, "500000000000000000000", {
 				from: user11,
 			});
 			let proposalId = await governance.getProposalLength();
 			let marketETHBalanceBeforeDispute = await web3.eth.getBalance(marketInstance.address);
 			let registryBalanceBeforeDispute = await web3.eth.getBalance(plotusNewInstance.address);
 		    assert.equal((await marketInstance.getMarketResults())[0]/1, 1);
-			await marketInstance.raiseDispute("100000000000000000000","","","", {from: user11});
+			await marketInstance.raiseDispute("500000000000000000000","","","", {from: user11});
 			await governance.submitVote(proposalId, 1, {from:dr1});
 		    await governance.submitVote(proposalId, 1, {from:dr2});
 		    await governance.submitVote(proposalId, 1, {from:dr3});
