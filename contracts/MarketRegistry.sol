@@ -145,7 +145,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev Set initial market creation incentive params.
     */
     function setInitialCreationIncentives() public {
-      require(address(ms) == msg.sender);
+      require(address(bPLOTToken) == address(0));
       timeForMaxBonus = 5 minutes;
       bPlotIncentive = 50 ether;
       address bPLOTAddress = ms.getLatestAddress("BL");
