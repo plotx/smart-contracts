@@ -72,7 +72,7 @@ contract MarketRegistry is Governed, Iupgradable {
     }
 
     uint internal marketCreationIncentive;
-    
+
     mapping(address => MarketData) marketData;
     mapping(address => UserData) userData;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) public marketCreationData;
@@ -92,6 +92,16 @@ contract MarketRegistry is Governed, Iupgradable {
     IGovernance internal governance;
     IMaster ms;
 
+    uint internal bPlotIncentive;
+    uint internal timeForMaxBonus;
+    IToken internal bPLOTToken;
+
+    struct MarketCreationIncentiveData {
+      uint256 plotIncentive;
+      uint256 bPlotIncentive;
+    }
+
+    mapping(address => MarketCreationIncentiveData) userIncentives;
 
     event MarketQuestion(address indexed marketAdd, bytes32 stockName, uint256 indexed predictionType, uint256 startTime);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,address indexed marketAdd,uint256 _leverage);
@@ -101,6 +111,7 @@ contract MarketRegistry is Governed, Iupgradable {
     event MarketCurrencies(uint256 indexed index, address marketImplementation,  address feedAddress, bytes32 currencyName);
     event DisputeRaised(address indexed marketAdd, address raisedBy, uint64 proposalId, uint256 proposedValue);
     event DisputeResolved(address indexed marketAdd, bool status);
+    event MarketCreationReward(address indexed createdBy, uint256 createdAfter, uint256 plotIncentive, uint256 bPlotIncentive, uint256 gasUsed, uint256 gasCost);
 
     /**
     * @dev Checks if given addres is valid market address.
@@ -128,6 +139,17 @@ contract MarketRegistry is Governed, Iupgradable {
       marketUtility = IMarketUtility(_generateProxy(_marketUtility));
       marketUtility.initialize(_configParams, _defaultAddress);
       marketInitiater = _defaultAddress;
+    }
+
+    /**
+    * @dev Set initial market creation incentive params.
+    */
+    function setInitialCreationIncentives() public {
+      require(address(ms) == msg.sender);
+      timeForMaxBonus = 5 minutes;
+      bPlotIncentive = 50 ether;
+      address bPLOTAddress = ms.getLatestAddress("BL");
+      bPLOTToken = IToken(bPLOTAddress);
     }
 
     /**
@@ -256,6 +278,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param _marketCurrencyIndex the index of market currency.
     */
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public payable{
+      uint256 gasProvided = gasleft();
       address penultimateMarket = marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket;
       if(penultimateMarket != address(0)) {
         IMarket(penultimateMarket).settleMarket();
@@ -275,6 +298,22 @@ contract MarketRegistry is Governed, Iupgradable {
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       userData[msg.sender].marketsCreated++;
+      uint256 gasUsed = gasleft();
+      _calculateIncentive(gasUsed, _marketStartTime);
+    }
+
+    function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
+      uint256 gasCost = gasUsed * tx.gasprice * 10**9;
+      uint256 incentive = marketUtility.getAssetValueETH(address(plotToken), gasCost);
+      uint256 bPlotBonus;
+      uint256 createdAfter = now - _marketStartTime;
+      if(createdAfter <= timeForMaxBonus) {
+        bPlotBonus = bPlotIncentive;
+      } else {
+        bPlotBonus = bPlotIncentive.div(2);
+      }
+      userIncentives[msg.sender] = MarketCreationIncentiveData(incentive, bPlotBonus);
+      emit MarketCreationReward(msg.sender, createdAfter, incentive, bPlotBonus, gasUsed, gasCost);
     }
 
     /**
@@ -286,6 +325,10 @@ contract MarketRegistry is Governed, Iupgradable {
       require(plotToken.balanceOf(address(this)) > pendingReward);
       delete userData[msg.sender].marketsCreated;
       _transferAsset(address(plotToken), msg.sender, pendingReward);
+
+      require(userIncentives[msg.sender].plotIncentive > 0);
+      _transferAsset(address(plotToken), msg.sender, userIncentives[msg.sender].plotIncentive);
+      _transferAsset(address(bPLOTToken), msg.sender, userIncentives[msg.sender].bPlotIncentive);
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
@@ -419,6 +462,10 @@ contract MarketRegistry is Governed, Iupgradable {
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
       if(code == "MCRINC") { // Incentive to be distributed to user for market creation
         marketCreationIncentive = value;
+      } else if(code == "BPLOTINC") { // bPLOT Incentive to be distributed to user for market creation
+        bPlotIncentive = value;
+      } else if(code == "MAXBTIME") { // Time before which if market is created, user granted maximum bPLOT bonus
+        timeForMaxBonus = value;
       } else {
         marketUtility.updateUintParameters(code, value);
       }
@@ -491,6 +538,12 @@ contract MarketRegistry is Governed, Iupgradable {
       if(code == "MCRINC") {
         codeVal = code;
         value = marketCreationIncentive;
+      } else if(code == "BPLOTINC") {
+        codeVal = code;
+        value = bPlotIncentive;
+      } else if(code == "MAXBTIME") {
+        codeVal = code;
+        value = timeForMaxBonus;
       }
     }
 
