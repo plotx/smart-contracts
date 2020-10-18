@@ -297,7 +297,7 @@ contract MarketRegistry is Governed, Iupgradable {
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
-      userData[msg.sender].marketsCreated++;
+      // userData[msg.sender].marketsCreated++;
       uint256 gasUsed = gasleft();
       _calculateIncentive(gasUsed, _marketStartTime);
     }
@@ -320,14 +320,16 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev function to reward user for initiating market creation calls
     */
     function claimCreationReward() external {
-      require(userData[msg.sender].marketsCreated > 0);
-      uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
-      require(plotToken.balanceOf(address(this)) > pendingReward);
-      delete userData[msg.sender].marketsCreated;
-      _transferAsset(address(plotToken), msg.sender, pendingReward);
+      uint256 pendingPLOTReward;
+      if(userData[msg.sender].marketsCreated > 0) {
+        pendingPLOTReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
+        delete userData[msg.sender].marketsCreated;
+      }
+      pendingPLOTReward = pendingPLOTReward.add(userIncentives[msg.sender].plotIncentive);
+      require(pendingPLOTReward > 0);
+      require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
 
-      require(userIncentives[msg.sender].plotIncentive > 0);
-      _transferAsset(address(plotToken), msg.sender, userIncentives[msg.sender].plotIncentive);
+      _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       _transferAsset(address(bPLOTToken), msg.sender, userIncentives[msg.sender].bPlotIncentive);
     }
 
