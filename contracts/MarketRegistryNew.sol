@@ -20,28 +20,21 @@ import "./external/openzeppelin-solidity/math/Math.sol";
 
 contract MarketRegistryNew is MarketRegistry {
 
-    uint internal bPlotIncentive;
-    uint internal timeForMaxBonus;
-    IToken internal bPLOTToken;
     IChainLinkOracle internal clGasPriceAggregator;
 
     struct MarketCreationIncentiveData {
       uint256 plotIncentive;
-      uint256 bPlotIncentive;
     }
 
     mapping(address => MarketCreationIncentiveData) userIncentives;
-    event MarketCreationReward(address indexed createdBy, uint256 createdAfter, uint256 plotIncentive, uint256 bPlotIncentive, uint256 gasUsed, uint256 gasCost);
+    event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost);
+    event ClaimedCreationReward(address indexed user, uint256 plotIncentive);
 
     /**
     * @dev Set initial market creation incentive params.
     */
-    function setInitialCreationIncentives(address _clGasPriceAggregator) public {
-      require(address(bPLOTToken) == address(0));
-      timeForMaxBonus = 5 minutes;
-      bPlotIncentive = 50 ether;
-      address bPLOTAddress = ms.getLatestAddress("BL");
-      bPLOTToken = IToken(bPLOTAddress);
+    function setChainLinkGasPriceAggregator(address _clGasPriceAggregator) public {
+      require(address(clGasPriceAggregator) == address(0));
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
     }
 
@@ -80,15 +73,8 @@ contract MarketRegistryNew is MarketRegistry {
       gasUsed = gasUsed + 32000;
       uint256 gasCost = gasUsed.mul(_checkGasPrice()).mul(10**9);
       uint256 incentive = marketUtility.getAssetValueETH(address(plotToken), gasCost);
-      uint256 bPlotBonus;
-      uint256 createdAfter = now - _marketStartTime;
-      if(createdAfter <= timeForMaxBonus) {
-        bPlotBonus = bPlotIncentive;
-      } else {
-        bPlotBonus = bPlotIncentive.div(2);
-      }
-      userIncentives[msg.sender] = MarketCreationIncentiveData(incentive, bPlotBonus);
-      emit MarketCreationReward(msg.sender, createdAfter, incentive, bPlotBonus, gasUsed, gasCost);
+      userIncentives[msg.sender] = MarketCreationIncentiveData(incentive);
+      emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost);
     }
 
     function _checkGasPrice() internal view returns(uint256) {
@@ -106,37 +92,8 @@ contract MarketRegistryNew is MarketRegistry {
       pendingPLOTReward = pendingPLOTReward.add(userIncentives[msg.sender].plotIncentive);
       require(pendingPLOTReward > 0);
       require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
-
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
-      _transferAsset(address(bPLOTToken), msg.sender, userIncentives[msg.sender].bPlotIncentive);
+      emit ClaimedCreationReward(msg.sender, pendingPLOTReward);
     }
 
-
-    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      if(code == "MCRINC") { // Incentive to be distributed to user for market creation
-        marketCreationIncentive = value;
-      } else if(code == "BPLOTINC") { // bPLOT Incentive to be distributed to user for market creation
-        bPlotIncentive = value;
-      } else if(code == "MAXBTIME") { // Time before which if market is created, user granted maximum bPLOT bonus
-        timeForMaxBonus = value;
-      } else {
-        marketUtility.updateUintParameters(code, value);
-      }
-    }
-
-        /**
-    * @dev Get uint config parameters
-    */
-    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
-      if(code == "MCRINC") {
-        codeVal = code;
-        value = marketCreationIncentive;
-      } else if(code == "BPLOTINC") {
-        codeVal = code;
-        value = bPlotIncentive;
-      } else if(code == "MAXBTIME") {
-        codeVal = code;
-        value = timeForMaxBonus;
-      }
-    }
 }
