@@ -66,6 +66,10 @@ module.exports = function(deployer, network, accounts){
       // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
       await plotusToken.transfer(plotus.address, "10000000000000000000000");
+      // await blotToken.addMinter(plotusAddress);
+      // await plotusToken.approve(blotToken.address, "1000000000000000000000000000");
+      // await blotToken.mint(plotus.address, "10000000000000000000000");
+      // await plotus.setInitialCreationIncentives();
   });
 };
 
