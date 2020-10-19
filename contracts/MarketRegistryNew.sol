@@ -22,11 +22,7 @@ contract MarketRegistryNew is MarketRegistry {
 
     IChainLinkOracle internal clGasPriceAggregator;
 
-    struct MarketCreationIncentiveData {
-      uint256 plotIncentive;
-    }
-
-    mapping(address => MarketCreationIncentiveData) userIncentives;
+    mapping(address => uint256) userIncentives;
     event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost);
     event ClaimedCreationReward(address indexed user, uint256 plotIncentive);
 
@@ -70,10 +66,10 @@ contract MarketRegistryNew is MarketRegistry {
 
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
       //Adding buffer gas for below calculations
-      gasUsed = gasUsed + 32000;
-      uint256 gasCost = gasUsed.mul(_checkGasPrice()).mul(10**9);
-      uint256 incentive = marketUtility.getAssetValueETH(address(plotToken), gasCost);
-      userIncentives[msg.sender] = MarketCreationIncentiveData(incentive);
+      gasUsed = gasUsed + 40000;
+      uint256 gasCost = gasUsed.mul(_checkGasPrice());
+      (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
+      userIncentives[msg.sender] = incentive;
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost);
     }
 
@@ -89,7 +85,7 @@ contract MarketRegistryNew is MarketRegistry {
     */
     function claimCreationRewardV2() external {
       uint256 pendingPLOTReward;
-      pendingPLOTReward = pendingPLOTReward.add(userIncentives[msg.sender].plotIncentive);
+      pendingPLOTReward = pendingPLOTReward.add(userIncentives[msg.sender]);
       require(pendingPLOTReward > 0);
       require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
