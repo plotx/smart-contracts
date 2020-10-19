@@ -15,12 +15,15 @@
 
 pragma solidity 0.5.7;
 import "./MarketRegistry.sol";
+import "./interfaces/IChainLinkOracle.sol";
+import "./external/openzeppelin-solidity/math/Math.sol";
 
 contract MarketRegistryNew is MarketRegistry {
 
     uint internal bPlotIncentive;
     uint internal timeForMaxBonus;
     IToken internal bPLOTToken;
+    IChainLinkOracle internal clGasPriceAggregator;
 
     struct MarketCreationIncentiveData {
       uint256 plotIncentive;
@@ -33,12 +36,13 @@ contract MarketRegistryNew is MarketRegistry {
     /**
     * @dev Set initial market creation incentive params.
     */
-    function setInitialCreationIncentives() public {
+    function setInitialCreationIncentives(address _clGasPriceAggregator) public {
       require(address(bPLOTToken) == address(0));
       timeForMaxBonus = 5 minutes;
       bPlotIncentive = 50 ether;
       address bPLOTAddress = ms.getLatestAddress("BL");
       bPLOTToken = IToken(bPLOTAddress);
+      clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
     }
 
     /**
@@ -74,7 +78,7 @@ contract MarketRegistryNew is MarketRegistry {
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 32000;
-      uint256 gasCost = gasUsed * tx.gasprice * 10**9;
+      uint256 gasCost = gasUsed.mul(_checkGasPrice()).mul(10**9);
       uint256 incentive = marketUtility.getAssetValueETH(address(plotToken), gasCost);
       uint256 bPlotBonus;
       uint256 createdAfter = now - _marketStartTime;
@@ -85,6 +89,12 @@ contract MarketRegistryNew is MarketRegistry {
       }
       userIncentives[msg.sender] = MarketCreationIncentiveData(incentive, bPlotBonus);
       emit MarketCreationReward(msg.sender, createdAfter, incentive, bPlotBonus, gasUsed, gasCost);
+    }
+
+    function _checkGasPrice() internal view returns(uint256) {
+      uint fastGas = uint(clGasPriceAggregator.latestAnswer());
+      uint fastGasWithMaxDeviation = fastGas.mul(125).div(100);
+      return Math.max(Math.min(tx.gasprice,fastGasWithMaxDeviation), fastGas);
     }
 
 
