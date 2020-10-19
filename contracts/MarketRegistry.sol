@@ -298,11 +298,13 @@ contract MarketRegistry is Governed, Iupgradable {
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       // userData[msg.sender].marketsCreated++;
-      uint256 gasUsed = gasleft() - gasProvided;
+      uint256 gasUsed = gasProvided - gasleft();
       _calculateIncentive(gasUsed, _marketStartTime);
     }
 
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
+      //Adding buffer gas for below calculations
+      gasUsed = gasUsed + 32000;
       uint256 gasCost = gasUsed * tx.gasprice * 10**9;
       uint256 incentive = marketUtility.getAssetValueETH(address(plotToken), gasCost);
       uint256 bPlotBonus;
