@@ -81,7 +81,7 @@ contract MarketRegistryNew is MarketRegistry {
     }
 
     /**
-    * @dev internal function to calculate gas price for market creation incetives
+    * @dev internal function to calculate gas price for market creation incentives
     */
     function _checkGasPrice() internal view returns(uint256) {
       uint fastGas = uint(clGasPriceAggregator.latestAnswer());
