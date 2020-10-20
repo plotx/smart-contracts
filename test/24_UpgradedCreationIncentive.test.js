@@ -27,6 +27,7 @@ const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTo
 var initialPLOTPrice;
 var initialEthPrice;
 var eventData;
+var incentivesGained = 0;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 var nullAddress = "0x0000000000000000000000000000000000000000";
 
@@ -131,15 +132,20 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     it("Should be able to claim market creation rewards of pre upgrade", async function() {
       let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
       await plotusNewInstance.claimCreationReward();
+      // await plotusNewInstance.claimCreationRewardV2();
       let newBalance = parseFloat(await plotusToken.balanceOf(user1));
       assert.isAbove(newBalance/1,oldBalance/1);
+    });
+
+    it("Should not be able to claim the market creation rewards if not created any market", async function() {
+      let tx = await assertRevert(plotusNewInstance.claimCreationRewardV2());
     });
 
     it("Should create Markets", async function() {
       await mockUniswapV2Pair.sync();
       await increaseTime(3610);
-      await plotusNewInstance.createMarket(0,0);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:45});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:30000000000});
+      // console.log(tx.receipt.gasUsed);
       eventData = tx.logs[2].args;
     });
 
@@ -148,36 +154,52 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let gasPrice = await chainlinkGasAgg.latestAnswer();
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
-      console.log(costInETH);
+      // console.log(gasUsed);
+      // console.log(costInETH);
       let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained += eventData.plotIncentive/1; 
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-      // await plotusNewInstance.claimCreationRewardV2();
     });
 
-    // it("If gas is provided upto 125% of fast gas, reward should be as per provided gas", async function() {
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:56.25});
-    //   eventData = tx.logs[2].args;
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let gasPrice = 56.25*10^9;
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   console.log(costInETH);
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
-    // });
+    it("If gas is provided upto 125% of fast gas, reward should be as per provided gas", async function() {
+      await increaseTime(3610);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:50000000000});
+      eventData = tx.logs[2].args;
+      let gasUsed = eventData.gasUsed.toNumber();
+      let gasPrice = 50000000000;
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      // console.log(gasUsed);
+      // console.log(tx.receipt.gasUsed);
+      // console.log(costInETH);
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained += eventData.plotIncentive/1; 
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
+    });
 
-    // it("If gas is provided more than 125% of fast gas, reward should be as per provided gas", async function() {
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:100});
-    //   eventData = tx.logs[2].args;
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let gasPrice = 56.25*10^9;
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   console.log(costInETH);
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
-    // });
+    it("If gas is provided more than 125% of fast gas, reward should be as per provided gas", async function() {
+      await increaseTime(3610);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:100000000000});
+      eventData = tx.logs[2].args;
+      let gasUsed = eventData.gasUsed.toNumber();
+      let gasPrice = 56250000000;
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      // console.log(gasUsed);
+      // console.log(tx.receipt.gasUsed);
+      // console.log(costInETH);
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained += eventData.plotIncentive/1; 
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
+    });
+
+    it("Should be able to claim the market creation rewards", async function() {
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
+      let tx = await plotusNewInstance.claimCreationRewardV2();
+      let newBalance = parseFloat(await plotusToken.balanceOf(user1));
+      // console.log(tx.logs[0].args);
+      // console.log(newBalance);
+      assert.equal(newBalance/1, oldBalance/1 + incentivesGained);
+    });
     
 });
