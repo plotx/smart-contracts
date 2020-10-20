@@ -67,6 +67,9 @@ contract MarketRegistryNew is MarketRegistry {
       _calculateIncentive(gasUsed, _marketStartTime);
     }
 
+    /**
+    * @dev internal function to calculate user incentive for market creation
+    */
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
@@ -77,6 +80,9 @@ contract MarketRegistryNew is MarketRegistry {
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
     }
 
+    /**
+    * @dev internal function to calculate gas price for market creation incetives
+    */
     function _checkGasPrice() internal view returns(uint256) {
       uint fastGas = uint(clGasPriceAggregator.latestAnswer());
       uint fastGasWithMaxDeviation = fastGas.mul(125).div(100);
@@ -96,6 +102,9 @@ contract MarketRegistryNew is MarketRegistry {
       delete userIncentives[msg.sender];
     }
 
+    /**
+    * @dev function to update address parameters of market
+    */
     function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
       if(code == "GASAGG") { // Incentive to be distributed to user for market creation
         clGasPriceAggregator = IChainLinkOracle(value);
@@ -104,6 +113,9 @@ contract MarketRegistryNew is MarketRegistry {
       }
     }
 
+    /**
+    * @dev function to update integer parameters of market
+    */
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
       if(code == "MCRINC") { // Incentive to be distributed to user for market creation
         marketCreationIncentive = value;
