@@ -20,18 +20,21 @@ import "./external/openzeppelin-solidity/math/Math.sol";
 
 contract MarketRegistryNew is MarketRegistry {
 
-    IChainLinkOracle internal clGasPriceAggregator;
+    uint256 internal maxGasPrice;
+    IChainLinkOracle public clGasPriceAggregator;
 
     mapping(address => uint256) userIncentives;
-    event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost);
-    event ClaimedCreationReward(address indexed user, uint256 plotIncentive);
+    event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap);
+    event ClaimedMarketCreationReward(address indexed user, uint256 plotIncentive);
 
     /**
     * @dev Set initial market creation incentive params.
     */
-    function setChainLinkGasPriceAggregator(address _clGasPriceAggregator) public {
+    function setGasPriceAggAndMaxGas(address _clGasPriceAggregator) external {
       require(address(clGasPriceAggregator) == address(0));
+      require(msg.sender == marketInitiater);
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
+      maxGasPrice = 100 * 10**9;
     }
 
     /**
@@ -67,16 +70,17 @@ contract MarketRegistryNew is MarketRegistry {
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
-      uint256 gasCost = gasUsed.mul(_checkGasPrice());
+      uint256 gasPrice = _checkGasPrice();
+      uint256 gasCost = gasUsed.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
       userIncentives[msg.sender] = userIncentives[msg.sender].add(incentive);
-      emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost);
+      emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
     }
 
     function _checkGasPrice() internal view returns(uint256) {
       uint fastGas = uint(clGasPriceAggregator.latestAnswer());
       uint fastGasWithMaxDeviation = fastGas.mul(125).div(100);
-      return Math.max(Math.min(tx.gasprice,fastGasWithMaxDeviation), fastGas);
+      return Math.min(Math.min(tx.gasprice,fastGasWithMaxDeviation), maxGasPrice);
     }
 
 
@@ -88,8 +92,38 @@ contract MarketRegistryNew is MarketRegistry {
       require(pendingPLOTReward > 0);
       require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
-      emit ClaimedCreationReward(msg.sender, pendingPLOTReward);
+      emit ClaimedMarketCreationReward(msg.sender, pendingPLOTReward);
       delete userIncentives[msg.sender];
+    }
+
+    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
+      if(code == "GASAGG") { // Incentive to be distributed to user for market creation
+        clGasPriceAggregator = IChainLinkOracle(value);
+      } else {
+        marketUtility.updateAddressParameters(code, value);
+      }
+    }
+
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      if(code == "MCRINC") { // Incentive to be distributed to user for market creation
+        marketCreationIncentive = value;
+      } else if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
+        maxGasPrice = value;
+      } else {
+        marketUtility.updateUintParameters(code, value);
+      }
+    }
+
+    /**
+    * @dev Get uint config parameters
+    */
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
+      codeVal = code;
+      if(code == "MCRINC") {
+        value = marketCreationIncentive;
+      } else if(code == "MAXGAS") {
+        value = maxGasPrice;
+      }
     }
 
 }
