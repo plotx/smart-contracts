@@ -66,10 +66,10 @@ contract MarketRegistryNew is MarketRegistry {
 
     function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
       //Adding buffer gas for below calculations
-      gasUsed = gasUsed + 40000;
+      gasUsed = gasUsed + 38500;
       uint256 gasCost = gasUsed.mul(_checkGasPrice());
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
-      userIncentives[msg.sender] = incentive;
+      userIncentives[msg.sender] = userIncentives[msg.sender].add(incentive);
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost);
     }
 
@@ -84,12 +84,12 @@ contract MarketRegistryNew is MarketRegistry {
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
     function claimCreationRewardV2() external {
-      uint256 pendingPLOTReward;
-      pendingPLOTReward = pendingPLOTReward.add(userIncentives[msg.sender]);
+      uint256 pendingPLOTReward = userIncentives[msg.sender];
       require(pendingPLOTReward > 0);
       require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       emit ClaimedCreationReward(msg.sender, pendingPLOTReward);
+      delete userIncentives[msg.sender];
     }
 
 }
