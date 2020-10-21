@@ -29,7 +29,7 @@ var initialEthPrice;
 var eventData;
 var incentivesGained = 0;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
-var nullAddress = "0x0000000000000000000000000000000000000000";
+var nullAddress = "0x0000000000000000000000000000";
 
 contract("MarketUtility", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12]) {
 	let masterInstance,
@@ -143,9 +143,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Should create Markets", async function() {
+      await chainlinkGasAgg.setLatestAnswer(45000000);
       await mockUniswapV2Pair.sync();
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:30000000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:30000000});
       // console.log(tx.receipt.gasUsed);
       eventData = tx.logs[2].args;
     });
@@ -153,7 +154,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     it("If gas is provided less than fastgas price from oracle, reward should be as per minimum of fast gas and provided gas", async function() {
       let gasUsed = eventData.gasUsed.toNumber();
       let gasPrice = await chainlinkGasAgg.latestAnswer();
-      gasPrice = Math.min(30000000000, gasPrice);
+      gasPrice = Math.min(30000000, gasPrice);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -165,10 +166,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided upto 125% of fast gas, reward should be as per provided gas", async function() {
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:50000000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:50000000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
-      let gasPrice = 50000000000;
+      let gasPrice = 50000000;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -181,10 +182,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided more than 125% of fast gas, reward should be as per 125% fast gas", async function() {
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:100000000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:100000000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
-      let gasPrice = 56250000000;
+      let gasPrice = 56250000;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -196,13 +197,13 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("If gas is provided more than 125% of fast gas and maxGas price, reward should be as per minimum of 125% of fast gas or max gasprice", async function() {
-      await chainlinkGasAgg.setLatestAnswer(125000000000);
+      await chainlinkGasAgg.setLatestAnswer(125000000);
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:150000000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:200000000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-      let gasPrice = maxGas[1].toNumber();
+      let gasPrice = Math.min(maxGas[1].toNumber(), 125000000*1.25);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -219,7 +220,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let newBalance = parseFloat(await plotusToken.balanceOf(user1));
       // console.log(tx.logs[0].args);
       // console.log(newBalance);
-      assert.equal(newBalance/1, oldBalance/1 + incentivesGained);
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18).toFixed(2));
     });
     
 });
