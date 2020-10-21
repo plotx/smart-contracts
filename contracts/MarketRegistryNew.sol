@@ -95,10 +95,9 @@ contract MarketRegistryNew is MarketRegistry {
     function claimCreationRewardV2() external {
       uint256 pendingPLOTReward = userIncentives[msg.sender];
       require(pendingPLOTReward > 0);
-      require(plotToken.balanceOf(address(this)) > pendingPLOTReward);
+      delete userIncentives[msg.sender];
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       emit ClaimedMarketCreationReward(msg.sender, pendingPLOTReward);
-      delete userIncentives[msg.sender];
     }
 
     /**
