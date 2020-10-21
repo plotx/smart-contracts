@@ -17,6 +17,7 @@ contract Refferal {
   address public signer;
   uint public endDate;
   uint public remainingbudget;
+  uint public refferalAmount;
 
   /// @dev mapping to maintain allocated tokens to each user
   mapping(address => uint) public userAllocated;
@@ -39,7 +40,7 @@ contract Refferal {
    * @param _endDate user can claim thier allocated amounts before this time.
    * @param _budget total amount of BLot to be minted
    */
-  constructor(address _plotToken, address _bLotToken, address _signer, uint _endDate, uint _budget) public
+  constructor(address _plotToken, address _bLotToken, address _signer, uint _endDate, uint _budget, uint _refferalAmount) public
   {
     require(_plotToken != address(0),"Can not be null address");
     require(_bLotToken != address(0),"Can not be null address");
@@ -50,6 +51,7 @@ contract Refferal {
     signer = _signer;
     endDate = _endDate;
     remainingbudget = _budget;
+    refferalAmount = _refferalAmount;
     plotToken.approve(address(bLotToken), _budget);
   }
 
@@ -70,7 +72,7 @@ contract Refferal {
     require(!userClaimed[msg.sender], "Already claimed");
     require(isValidSignature(hash, v, r, s));
     userClaimed[msg.sender] = true;
-    bLotToken.mint(msg.sender, userAllocated[msg.sender]);
+    bLotToken.mint(msg.sender, refferalAmount);
   } 
 
   /**
