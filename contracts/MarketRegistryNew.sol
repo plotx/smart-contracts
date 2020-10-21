@@ -63,13 +63,13 @@ contract MarketRegistryNew is MarketRegistry {
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       uint256 gasUsed = gasProvided - gasleft();
-      _calculateIncentive(gasUsed, _marketStartTime);
+      _calculateIncentive(gasUsed);
     }
 
     /**
     * @dev internal function to calculate user incentive for market creation
     */
-    function _calculateIncentive(uint256 gasUsed, uint256 _marketStartTime) internal{
+    function _calculateIncentive(uint256 gasUsed) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
       uint256 gasPrice = _checkGasPrice();
