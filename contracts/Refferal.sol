@@ -68,7 +68,7 @@ contract Refferal {
   function claim(bytes32 hash, uint8 v, bytes32 r, bytes32 s) external {
     require(endDate > now, "Callable only before end date");
     require(!userClaimed[msg.sender], "Already claimed");
-    require(isValidSignature())
+    require(isValidSignature(hash, v, r, s));
     userClaimed[msg.sender] = true;
     bLotToken.mint(msg.sender, userAllocated[msg.sender]);
   } 
