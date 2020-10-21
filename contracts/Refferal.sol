@@ -1,3 +1,18 @@
+/* Copyright (C) 2020 PlotX.io
+
+  This program is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+    along with this program.  If not, see http://www.gnu.org/licenses/ */
+
 pragma solidity 0.5.7;
 
 import "./PlotXToken.sol";
@@ -19,15 +34,13 @@ contract Refferal {
   uint public remainingbudget;
   uint public refferalAmount;
 
-  /// @dev mapping to maintain allocated tokens to each user
-  mapping(address => uint) public userAllocated;
 
   /// @dev mapping to maintain if user have claimed or not
   mapping(address => bool) public userClaimed;
 
   /**
-     * @dev modifier that allows only the owner to execute the function
-     */
+   * @dev modifier that allows only the owner to execute the function
+   */
   modifier onlyOwner() {
     require(owner == msg.sender, "Not owner");
         _;
