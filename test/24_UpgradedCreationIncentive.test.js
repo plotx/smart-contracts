@@ -167,12 +167,12 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       chainlinkGasAgg = await MockChainLinkGasPriceAgg.new();
       await assertRevert(plotusNewInstance.setGasPriceAggAndMaxGas(chainlinkGasAgg.address, {from:user2}));
       await plotusNewInstance.setGasPriceAggAndMaxGas(chainlinkGasAgg.address);
+      await assertRevert(plotusNewInstance.setGasPriceAggAndMaxGas(chainlinkGasAgg.address, {from:user2}));
     });
 
     it("Should be able to claim market creation rewards of pre upgrade", async function() {
       let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
       await plotusNewInstance.claimCreationReward();
-      // await plotusNewInstance.claimCreationRewardV2();
       let newBalance = parseFloat(await plotusToken.balanceOf(user1));
       assert.isAbove(newBalance/1,oldBalance/1);
     });
@@ -186,7 +186,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await mockUniswapV2Pair.sync();
       await increaseTime(3610);
       let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:300000});
-      // console.log(tx.receipt.gasUsed);
       eventData = tx.logs[2].args;
     });
 
@@ -196,8 +195,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       gasPrice = Math.min(300000, gasPrice);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
-      // console.log(gasUsed);
-      // console.log(costInETH);
       let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
       incentivesGained += eventData.plotIncentive/1; 
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
@@ -211,9 +208,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let gasPrice = 500000;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
-      // console.log(gasUsed);
-      // console.log(tx.receipt.gasUsed);
-      // console.log(costInETH);
       let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
       incentivesGained += eventData.plotIncentive/1; 
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
@@ -227,9 +221,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let gasPrice = 562500;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
-      // console.log(gasUsed);
-      // console.log(tx.receipt.gasUsed);
-      // console.log(costInETH);
       let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
       incentivesGained += eventData.plotIncentive/1; 
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
@@ -237,7 +228,9 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it('Should update MAXGAS variable', async function() {
       await updateParameter(20, 2, 'MAXGAS', plotusNewInstance, 'configUint', 5000);
-      let configData = await plotusNewInstance.getUintParameters(toHex('MAXGAS'));
+      let configData = await plotusNewInstance.getUintParameters(toHex('MAXGAS1'));
+      assert.equal(configData[1], 0, 'Not updated');
+      configData = await plotusNewInstance.getUintParameters(toHex('MAXGAS'));
       assert.equal(configData[1], 5000, 'Not updated');
     });
 
@@ -251,9 +244,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let gasPrice = Math.min(maxGas[1].toNumber(), 1250000*1.25);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
-      // console.log(gasUsed);
-      // console.log(tx.receipt.gasUsed);
-      // console.log(costInETH);
       let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
       incentivesGained += eventData.plotIncentive/1; 
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
@@ -263,8 +253,6 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
       let tx = await plotusNewInstance.claimCreationRewardV2();
       let newBalance = parseFloat(await plotusToken.balanceOf(user1));
-      // console.log(tx.logs[0].args);
-      // console.log(newBalance);
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18).toFixed(2));
     });
 
@@ -273,6 +261,19 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await updateParameter(21, 2, 'GASAGG', plotusNewInstance, 'configAddress', clAgg.address);
       let address = await plotusNewInstance.clGasPriceAggregator();
       assert.equal(address, clAgg.address, 'Not updated');
+    });
+
+    it('Should update Token Stake For Dispute', async function() {
+      await updateParameter(20, 2, 'TSDISP', plotusNewInstance, 'configUint', 26);
+      let configData = await marketConfig.getDisputeResolutionParams();
+      assert.equal(configData, 26, 'Not updated');
+    });
+
+    it('Should update Uniswap Factory', async function() {
+      let uniswapFactory = await MockUniswapFactory.new();
+      await updateParameter(21, 2, 'UNIFAC', plotusNewInstance, 'configAddress', uniswapFactory.address);
+      let configData = await marketConfig.getFeedAddresses();
+      assert.equal(configData, uniswapFactory.address, 'Not updated');
     });
     
 });
