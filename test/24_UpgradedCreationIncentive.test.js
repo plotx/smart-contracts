@@ -63,6 +63,45 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 		await marketConfig.setWeth(weth.address);
 	});
 
+  async function updateParameter(
+      cId,
+      mrSequence,
+      code,
+      contractInst,
+      type,
+      proposedValue
+    ) {
+      code = toHex(code);
+      let getterFunction;
+      if (type == 'uint') {
+        action = 'updateUintParameters(bytes8,uint)';
+        getterFunction = 'getUintParameters';
+      } else if (type == 'configAddress') {
+        action = 'updateConfigAddressParameters(bytes8,address)';
+        getterFunction = '';
+      } else if (type == 'configUint') {
+        action = 'updateConfigUintParameters(bytes8,uint256)';
+        getterFunction = '';
+      }
+
+      let actionHash = encode(action, code, proposedValue);
+      await gvProposal(cId, actionHash, memberRoles, governance, mrSequence, 0);
+      if (code == toHex('MASTADD')) {
+        let newMaster = await NXMaster.at(proposedValue);
+        contractInst = newMaster;
+      }
+      let parameter;
+      if(type == 'uint') {
+        parameter = await contractInst[getterFunction](code);
+      }
+      try {
+        parameter[1] = parameter[1].toNumber();
+      } catch (err) {}
+      if(type == 'uint') {
+        assert.equal(parameter[1], proposedValue, 'Not updated');
+      }
+    }
+
 	  it('Should Update Existing Market utility Implementation', async function() {
         let newUtility = await MarketUtility.new();
         let existingMarkets = await plotusNewInstance.getOpenMarkets();
@@ -143,10 +182,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Should create Markets", async function() {
-      await chainlinkGasAgg.setLatestAnswer(45000000);
+      await chainlinkGasAgg.setLatestAnswer(450000);
       await mockUniswapV2Pair.sync();
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:30000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:300000});
       // console.log(tx.receipt.gasUsed);
       eventData = tx.logs[2].args;
     });
@@ -154,7 +193,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     it("If gas is provided less than fastgas price from oracle, reward should be as per minimum of fast gas and provided gas", async function() {
       let gasUsed = eventData.gasUsed.toNumber();
       let gasPrice = await chainlinkGasAgg.latestAnswer();
-      gasPrice = Math.min(30000000, gasPrice);
+      gasPrice = Math.min(300000, gasPrice);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -166,10 +205,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided upto 125% of fast gas, reward should be as per provided gas", async function() {
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:50000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:500000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
-      let gasPrice = 50000000;
+      let gasPrice = 500000;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -182,10 +221,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided more than 125% of fast gas, reward should be as per 125% fast gas", async function() {
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:100000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:1000000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
-      let gasPrice = 56250000;
+      let gasPrice = 562500;
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -196,14 +235,20 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1)
     });
 
+    it('Should update MAXGAS variable', async function() {
+      await updateParameter(20, 2, 'MAXGAS', plotusNewInstance, 'configUint', 5000);
+      let configData = await plotusNewInstance.getUintParameters(toHex('MAXGAS'));
+      assert.equal(configData[1], 5000, 'Not updated');
+    });
+
     it("If gas is provided more than 125% of fast gas and maxGas price, reward should be as per minimum of 125% of fast gas or max gasprice", async function() {
-      await chainlinkGasAgg.setLatestAnswer(125000000);
+      await chainlinkGasAgg.setLatestAnswer(1250000);
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:200000000});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:2000000});
       eventData = tx.logs[2].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-      let gasPrice = Math.min(maxGas[1].toNumber(), 125000000*1.25);
+      let gasPrice = Math.min(maxGas[1].toNumber(), 1250000*1.25);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
       // console.log(gasUsed);
@@ -221,6 +266,13 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       // console.log(tx.logs[0].args);
       // console.log(newBalance);
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18).toFixed(2));
+    });
+
+    it('Should update Chainlink gas aggrefgartor address', async function() {
+      let clAgg = await MockChainLinkGasPriceAgg.new();
+      await updateParameter(21, 2, 'GASAGG', plotusNewInstance, 'configAddress', clAgg.address);
+      let address = await plotusNewInstance.clGasPriceAggregator();
+      assert.equal(address, clAgg.address, 'Not updated');
     });
     
 });
