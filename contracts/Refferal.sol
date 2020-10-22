@@ -80,9 +80,10 @@ contract Refferal {
    * @dev Allows users to claim their allocated tokens.
    * user should claim before end date.
    */
-  function claim(bytes32 hash, uint8 v, bytes32 r, bytes32 s) external {
+  function claim(bytes calldata hash, uint8 v, bytes32 r, bytes32 s) external {
     require(endDate > now, "Callable only before end date");
     require(!userClaimed[msg.sender], "Already claimed");
+    require(msg.sender == abi.decode(hash, (address)));
     require(isValidSignature(hash, v, r, s));
     userClaimed[msg.sender] = true;
     bLotToken.mint(msg.sender, refferalAmount);
@@ -95,7 +96,7 @@ contract Refferal {
    * @param r argument from vrs hash.
    * @param s argument from vrs hash.
    */  
-  function isValidSignature(bytes32 hash, uint8 v, bytes32 r, bytes32 s) public view returns(bool) {
+  function isValidSignature(bytes memory hash, uint8 v, bytes32 r, bytes32 s) public view returns(bool) {
     bytes memory prefix = "\x19Ethereum Signed Message:\n32";
     bytes32 prefixedHash = keccak256(abi.encodePacked(prefix, hash));
     address _signer = ecrecover(prefixedHash, v, r, s);
