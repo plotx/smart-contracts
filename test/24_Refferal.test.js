@@ -4,7 +4,7 @@ const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
-const Refferal = artifacts.require("Refferal");
+const Referral = artifacts.require("Referral");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
 const TokenController = artifacts.require("TokenController");
@@ -24,7 +24,7 @@ const adminPrivateKey = "0xfb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c0
 // get etherum accounts
 // swap ether with LOT
 let refferal;
-contract("Refferal", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Referral", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
 	it("Place the prediction with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -39,7 +39,7 @@ contract("Refferal", async function([user1, user2, user3, user4, user5, user6, u
 		// console.log(await plotusNewInstance.getOpenMarkets());
 		openMarkets = await plotusNewInstance.getOpenMarkets();
 		let  endDate = (await latestTime())/1+(24*3600);
-		refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei("1000"), toWei("400"));
+		refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei("1000"), toWei("400"));
 
 		await BLOTInstance.addMinter(refferal.address);
 
@@ -388,19 +388,19 @@ contract("More cases for refferal", async function([user1, user2]) {
 	})
 	it("Should Revert if deployed with null address as plot token, blot token", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		await assertRevert(Refferal.new(nullAddress, user1, user1, endDate, toWei(10),toWei(10)));
-		await assertRevert(Refferal.new(user1, nullAddress, user1, endDate, toWei(10), toWei(10)));
+		await assertRevert(Referral.new(nullAddress, user1, user1, endDate, toWei(10),toWei(10)));
+		await assertRevert(Referral.new(user1, nullAddress, user1, endDate, toWei(10), toWei(10)));
 	});
 	it("Should Revert if deployed with past time as end date", async () => {
 		let  endDate = (await latestTime())/1-(24);
-		await assertRevert(Refferal.new(user1, user1, user1, endDate, toWei(10), toWei(10)));
+		await assertRevert(Referral.new(user1, user1, user1, endDate, toWei(10), toWei(10)));
 	});
 	it("Should Revert if tries to same user claim multiple times, non owner tries to call takeLeftOverPlot, tries to call takeLeftOverPlot before end date", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(10), toWei(5));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(10), toWei(5));
 		await BLOTInstance.addMinter(_refferal.address);
 		await plotusToken.transfer(_refferal.address,toWei("1000"));
 		await assertRevert(_refferal.takeLeftOverPlot());
@@ -415,7 +415,7 @@ contract("More cases for refferal", async function([user1, user2]) {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
 		await BLOTInstance.addMinter(_refferal.address);
 		await plotusToken.transfer(_refferal.address, toWei(30));
 		hash = (await web3.eth.abi.encodeParameter("address",user1));
@@ -427,7 +427,7 @@ contract("More cases for refferal", async function([user1, user2]) {
 	});
 	it("Should be able to take back plot toekens after end date", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
 		await BLOTInstance.addMinter(_refferal.address);
 		await plotusToken.transfer(_refferal.address, toWei(30));
 		await increaseTime(24*3600);
@@ -436,19 +436,19 @@ contract("More cases for refferal", async function([user1, user2]) {
 	});
 	it("Owner should be able to transfer ownership to other address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
 		assert.equal(await _refferal.owner(), user1);
 		await _refferal.tranferOwnership(user2);
 		assert.equal(await _refferal.owner(), user2);
 	});
 	it("Should revert if tries to transfer ownership to null address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
 		await assertRevert(_refferal.tranferOwnership(nullAddress));
 	});
 	it("Should revert if tries to claim more than budget", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
 		await plotusToken.transfer(_refferal.address,toWei("1000"));
 		await BLOTInstance.addMinter(_refferal.address);
 		hash = (await web3.eth.abi.encodeParameter("address",user1));
@@ -464,7 +464,7 @@ contract("More cases for refferal", async function([user1, user2]) {
 
 	it("Should revert if signer is not the autherized address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
-		let _refferal = await Refferal.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
 		await plotusToken.transfer(_refferal.address,toWei("1000"));
 		hash = (await web3.eth.abi.encodeParameter("address",user2));
 		let user2PrvtKey = "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e";
