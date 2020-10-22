@@ -59,7 +59,7 @@ contract Referral {
     require(_bLotToken != address(0),"Cannot be null address");
     require(_signer != address(0),"Cannot be null address");
     require(_refferalAmount != 0,"Cannot be zero referral amount");
-    require(_refferalAmount >= _budget,"Cannot be less than referral amount");
+    require(_budget >= _refferalAmount,"Cannot be less than referral amount");
     require(_endDate > now,"End date cannot be past time");
     plotToken = PlotXToken(_plotToken);
     bLotToken = IbLOTToken(_bLotToken);
