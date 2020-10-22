@@ -23,7 +23,7 @@ interface IbLOTToken {
   function mint(address account, uint256 amount) external returns (bool);
 }
 
-contract Refferal {
+contract Referral {
 
   using SafeMath for uint256;
   IbLOTToken bLotToken;
