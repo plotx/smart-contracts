@@ -32,7 +32,7 @@ contract Referral {
   address public signer;
   uint public endDate;
   uint public remainingbudget;
-  uint public refferalAmount;
+  uint public referralAmount;
 
 
   /// @dev mapping to maintain if user have claimed or not
@@ -53,13 +53,13 @@ contract Referral {
    * @param _endDate user can claim thier allocated amounts before this time.
    * @param _budget total amount of BLot to be minted
    */
-  constructor(address _plotToken, address _bLotToken, address _signer, uint _endDate, uint _budget, uint _refferalAmount) public
+  constructor(address _plotToken, address _bLotToken, address _signer, uint _endDate, uint _budget, uint _referralAmount) public
   {
     require(_plotToken != address(0),"Cannot be null address");
     require(_bLotToken != address(0),"Cannot be null address");
     require(_signer != address(0),"Cannot be null address");
-    require(_refferalAmount != 0,"Cannot be zero referral amount");
-    require(_budget >= _refferalAmount,"Cannot be less than referral amount");
+    require(_referralAmount != 0,"Cannot be zero referral amount");
+    require(_budget >= _referralAmount,"Cannot be less than referral amount");
     require(_endDate > now,"End date cannot be past time");
     plotToken = PlotXToken(_plotToken);
     bLotToken = IbLOTToken(_bLotToken);
@@ -67,7 +67,7 @@ contract Referral {
     signer = _signer;
     endDate = _endDate;
     remainingbudget = _budget;
-    refferalAmount = _refferalAmount;
+    referralAmount = _referralAmount;
     plotToken.approve(address(bLotToken), _budget);
   }
 
@@ -89,7 +89,7 @@ contract Referral {
     bytes memory hash = abi.encode(msg.sender);
     require(isValidSignature(hash, v, r, s));
     userClaimed[msg.sender] = true;
-    bLotToken.mint(msg.sender, refferalAmount);
+    bLotToken.mint(msg.sender, referralAmount);
   } 
 
   /**
