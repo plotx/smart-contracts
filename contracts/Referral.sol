@@ -80,6 +80,14 @@ contract Referral {
   }
 
   /**
+   * @dev Allows owner to end the referral program and take back left over plot token.
+   */
+  function endReferralCampaign() external onlyOwner {
+    endDate = now;
+    plotToken.transfer(owner, plotToken.balanceOf(address(this)));
+  }
+
+  /**
    * @dev Allows users to claim their allocated tokens.
    * user should claim before end date.
    */
