@@ -443,11 +443,33 @@ contract("More cases for refferal", async function([user1, user2]) {
 		await _refferal.tranferOwnership(user2);
 		assert.equal(await _refferal.owner(), user2);
 	});
+
 	it("Should revert if tries to transfer ownership to null address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
 		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
 		await assertRevert(_refferal.tranferOwnership(nullAddress));
 	});
+
+	it("Owner should be able to update signer to other address", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		assert.equal(await _refferal.signer(), user1);
+		await _refferal.updateSigner(user2);
+		assert.equal(await _refferal.signer(), user2);
+	});
+
+	it("Should revert if tries to update signer to null address", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		await assertRevert(_refferal.updateSigner(nullAddress));
+	});
+
+	it("Should revert if unauthorized address tries to update signer to null address", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
+		await assertRevert(_refferal.updateSigner(nullAddress, {from:user2}));
+	});
+
 	it("Should revert if tries to claim more than budget", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
 		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));

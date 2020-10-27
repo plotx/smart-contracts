@@ -114,5 +114,14 @@ contract Referral {
     require(_newOwner != address(0), "Can not be null address");
     owner = _newOwner;
   }
+
+  /**
+   * @dev Allows owner to update the signer address.
+   * @param _newSigner new signer address
+   */
+  function updateSigner(address _newSigner) external onlyOwner {
+    require(_newSigner != address(0), "Can not be null address");
+    signer = _newSigner;
+  }
   
 }
