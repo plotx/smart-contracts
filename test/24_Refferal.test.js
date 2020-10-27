@@ -39,7 +39,8 @@ contract("Referral", async function([user1, user2, user3, user4, user5, user6, u
 		// console.log(await plotusNewInstance.getOpenMarkets());
 		openMarkets = await plotusNewInstance.getOpenMarkets();
 		let  endDate = (await latestTime())/1+(24*3600);
-		refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei("1000"), toWei("400"));
+		let refferalAmount = toWei("400");
+		refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei("1000"), refferalAmount);
 
 		await BLOTInstance.addMinter(refferal.address);
 
@@ -94,7 +95,8 @@ contract("Referral", async function([user1, user2, user3, user4, user5, user6, u
 		let signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
 
 		await refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2});
-
+		let balance = await BLOTInstance.balanceOf(user2);
+		assert.equal(balance/1,refferalAmount, "Incorrect referral amount");
 		// await BLOTInstance.transferFrom(user1, user2, "500000000000000000000", {
 		//   from: user1,
 		// });
