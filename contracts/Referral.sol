@@ -43,7 +43,7 @@ contract Referral {
    */
   modifier onlyOwner() {
     require(owner == msg.sender, "Not owner");
-        _;
+    _;
   }
 
   /**     
