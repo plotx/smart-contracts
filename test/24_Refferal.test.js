@@ -94,7 +94,7 @@ contract("Referral", async function([user1, user2, user3, user4, user5, user6, u
 		let hash = (await web3.eth.abi.encodeParameter("address",user2));
 		let signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
 
-		await refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2});
+		await refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user2});
 		let balance = await BLOTInstance.balanceOf(user2);
 		assert.equal(balance/1,refferalAmount, "Incorrect referral amount");
 		// await BLOTInstance.transferFrom(user1, user2, "500000000000000000000", {
@@ -134,13 +134,13 @@ contract("Referral", async function([user1, user2, user3, user4, user5, user6, u
 
 		await plotusToken.approve(BLOTInstance.address, "124000000000000000000");
 		// await BLOTInstance.mint(user4, "124000000000000000000");
-		await assertRevert(refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user4}));
+		await assertRevert(refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user4}));
 		hash = (await web3.eth.abi.encodeParameter("address",user4));
 		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
 
-		await refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user4});
-		await assertRevert(refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user4}));
-		// await refferal.claim({from:user4});
+		await refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user4});
+		await assertRevert(refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user4}));
+		// await refferal.claim(ser4});
 
 		// await BLOTInstance.approve(openMarkets["_openMarkets"][0], "124000000000000000000", {
 		// 	from: user4,
@@ -409,8 +409,8 @@ contract("More cases for refferal", async function([user1, user2]) {
 		await assertRevert(_refferal.takeLeftOverPlot({from:user2}));
 		let hash = (await web3.eth.abi.encodeParameter("address",user2));
 		let signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
-		await _refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2});
-		await assertRevert(_refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2}));
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user2});
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user2}));
 	});
 	it("Should Revert if tries to claim after end date, user can not claim multiple time", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
@@ -422,10 +422,10 @@ contract("More cases for refferal", async function([user1, user2]) {
 		await plotusToken.transfer(_refferal.address, toWei(30));
 		hash = (await web3.eth.abi.encodeParameter("address",user1));
 		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
-		await _refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user1});
-		await assertRevert(_refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user1}));
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1});
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1}));
 		await increaseTime(24*3600);
-		await assertRevert(_refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user1}));
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1}));
 	});
 	it("Should be able to take back plot toekens after end date", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
@@ -480,13 +480,13 @@ contract("More cases for refferal", async function([user1, user2]) {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
 		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
-		await _refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user1});
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1});
 		hash = (await web3.eth.abi.encodeParameter("address",user2));
 		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
-		await assertRevert(_refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2}));
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user2}));
 	});
 
-	it("Should revert if signer is not the autherized address", async () => {
+	it("Should revert if signer is not the authorized address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
 		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
 		await plotusToken.transfer(_refferal.address,toWei("1000"));
@@ -497,10 +497,10 @@ contract("More cases for refferal", async function([user1, user2]) {
 		masterInstance = await Master.at(masterInstance.address);
 		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
 		await BLOTInstance.addMinter(_refferal.address);
-		await assertRevert(_refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user2}));
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user2}));
 		hash = (await web3.eth.abi.encodeParameter("address",user1));
 		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
-		await _refferal.claim(hash, signedHash.v, signedHash.r, signedHash.s, {from:user1});
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1});
 	});
 });
 
