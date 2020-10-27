@@ -436,6 +436,19 @@ contract("More cases for refferal", async function([user1, user2]) {
 		await _refferal.takeLeftOverPlot();
 		assert.equal(await plotusToken.balanceOf(_refferal.address), 0);
 	});
+	it("Should be able to end campaign before end date and take back plot tokens", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10), {from:user2});
+		await BLOTInstance.addMinter(_refferal.address);
+		await plotusToken.transfer(_refferal.address, toWei(100));
+		let balanceBefore = (await plotusToken.balanceOf(user2));
+		await _refferal.endReferralCampaign({from:user2});
+		assert.equal((await plotusToken.balanceOf(user2))/1, balanceBefore/1 + 100000000000000000000);
+		assert.equal(await plotusToken.balanceOf(_refferal.address), 0);
+		hash = (await web3.eth.abi.encodeParameter("address",user1));
+		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1}));
+	});
 	it("Owner should be able to transfer ownership to other address", async () => {
 		let  endDate = (await latestTime())/1+(24*3600);
 		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address, user1, endDate, toWei(100), toWei(10));
