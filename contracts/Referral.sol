@@ -87,7 +87,6 @@ contract Referral {
     require(endDate > now, "Callable only before end date");
     require(!userClaimed[msg.sender], "Already claimed");
     bytes memory hash = abi.encode(msg.sender);
-    // require(msg.sender == abi.decode(hash, (address)));
     require(isValidSignature(hash, v, r, s));
     userClaimed[msg.sender] = true;
     bLotToken.mint(msg.sender, refferalAmount);
