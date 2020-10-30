@@ -17,13 +17,29 @@ pragma solidity 0.5.7;
 import "./MarketRegistry.sol";
 import "./interfaces/IChainLinkOracle.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
+import "./interfaces/ITokenController.sol";
 
 contract MarketRegistryNew is MarketRegistry {
 
     uint256 internal maxGasPrice;
     IChainLinkOracle public clGasPriceAggregator;
+    struct MarketCreationRewardUserData {
+      uint incentives;
+      uint lastClaimedIndex;
+      address[] marketsCreated;
+    }
 
-    mapping(address => uint256) userIncentives;
+    struct MarketCreationRewardData {
+      uint ethIncentive;
+      uint plotIncentive;
+      bool rewardPoolShareApplicable;
+    }
+
+    uint256 public rewardPoolPercForMC;
+    uint256 public plotStakeForRewardPoolShare;
+
+    mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
+    mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
     event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap);
     event ClaimedMarketCreationReward(address indexed user, uint256 plotIncentive);
 
@@ -62,21 +78,32 @@ contract MarketRegistryNew is MarketRegistry {
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
+      _checkIfCreatorStaked(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
       uint256 gasUsed = gasProvided - gasleft();
-      _calculateIncentive(gasUsed);
+      _calculateIncentive(gasUsed, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
     }
 
     /**
     * @dev internal function to calculate user incentive for market creation
     */
-    function _calculateIncentive(uint256 gasUsed) internal{
+    function _calculateIncentive(uint256 gasUsed, address _marketAddress) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
       uint256 gasPrice = _checkGasPrice();
       uint256 gasCost = gasUsed.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
-      userIncentives[msg.sender] = userIncentives[msg.sender].add(incentive);
+      marketCreationRewardUserData[msg.sender].incentives = marketCreationRewardUserData[msg.sender].incentives.add(incentive);
+      marketCreationRewardUserData[msg.sender].marketsCreated.push(_marketAddress);
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
+    }
+
+    function _checkIfCreatorStaked(address _market) internal {
+      if(
+        ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now)
+        >= plotStakeForRewardPoolShare)
+      {
+        marketCreationRewardData[_market].rewardPoolShareApplicable = true;
+      }
     }
 
     /**
@@ -88,17 +115,82 @@ contract MarketRegistryNew is MarketRegistry {
       return Math.min(Math.min(tx.gasprice,fastGasWithMaxDeviation), maxGasPrice);
     }
 
+    /**
+    * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
+    * @param _marketAddress The address specify the market.
+    * @param _result The final result of the market.
+    */
+    function resolveDispute(address payable _marketAddress, uint256 _result) external onlyAuthorizedToGovern {
+      uint256 ethDepositedInPool = marketData[_marketAddress].disputeStakes.ethDeposited;
+      uint256 plotDepositedInPool = marketData[_marketAddress].disputeStakes.tokenDeposited;
+      uint256 stakedAmount = marketData[_marketAddress].disputeStakes.stakeAmount;
+      address payable staker = address(uint160(marketData[_marketAddress].disputeStakes.staker));
+      address plotTokenAddress = address(plotToken);
+      plotDepositedInPool = plotDepositedInPool.add(marketCreationRewardData[_marketAddress].plotIncentive);
+      ethDepositedInPool = ethDepositedInPool.add(marketCreationRewardData[_marketAddress].ethIncentive);
+      delete marketCreationRewardData[_marketAddress].plotIncentive;
+      delete marketCreationRewardData[_marketAddress].ethIncentive;
+      _transferAsset(plotTokenAddress, _marketAddress, plotDepositedInPool);
+      IMarket(_marketAddress).resolveDispute.value(ethDepositedInPool)(true, _result);
+      emit DisputeResolved(_marketAddress, true);
+      _transferAsset(plotTokenAddress, staker, stakedAmount);
+    }
 
     /**
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
-    function claimCreationRewardV2() external {
-      uint256 pendingPLOTReward = userIncentives[msg.sender];
+    function claimCreationRewardV2(uint256 _maxRecords) external {
+      uint256 pendingPLOTReward = marketCreationRewardUserData[msg.sender].incentives;
       require(pendingPLOTReward > 0);
-      delete userIncentives[msg.sender];
+      delete marketCreationRewardUserData[msg.sender].incentives;
+      _getRewardPoolIncentives(_maxRecords);
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       emit ClaimedMarketCreationReward(msg.sender, pendingPLOTReward);
     }
+
+    function _getRewardPoolIncentives(uint256 _maxRecords) internal {
+      MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[msg.sender];
+      uint256 len = rewardData.marketsCreated.length;
+      uint lastClaimed = len;
+      uint256 count;
+      uint256 i;
+      uint256 ethIncentive;
+      uint256 plotIncentive;
+      for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
+        MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+        if(marketData.rewardPoolShareApplicable)
+        {
+          ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
+          if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
+            ethIncentive = ethIncentive.add(marketData.ethIncentive);
+            plotIncentive = plotIncentive.add(marketData.plotIncentive);
+            count++;
+          } else {
+            if(lastClaimed == len && (marketData.plotIncentive > 0 || marketData.ethIncentive > 0)) {
+              lastClaimed = i;
+            }
+          }
+        }
+      }
+      if(lastClaimed == len) {
+        lastClaimed = i;
+      }
+      rewardData.lastClaimedIndex = lastClaimed;
+    }
+
+    /**
+    * @dev Emits the MarketResult event.
+    * @param _totalReward The amount of reward to be distribute.
+    * @param winningOption The winning option of the market.
+    * @param closeValue The closing value of the market currency.
+    */
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256[] calldata marketCreatorIncentive, uint256 winningOption, uint256 closeValue, uint _roundId) external {
+      require(isMarket(msg.sender));
+      marketCreationRewardData[msg.sender].plotIncentive = marketCreatorIncentive[0];
+      marketCreationRewardData[msg.sender].ethIncentive = marketCreatorIncentive[1];
+      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
+    }
+    
 
     /**
     * @dev function to update address parameters of market
@@ -119,6 +211,10 @@ contract MarketRegistryNew is MarketRegistry {
         marketCreationIncentive = value;
       } else if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
         maxGasPrice = value;
+      } else if(code == "RPPERCMC") { // Reward Pool percent for market creator
+        rewardPoolPercForMC = value;
+      } else if(code == "PSFRPS") { // Reward Pool percent for market creator
+        plotStakeForRewardPoolShare = value;
       } else {
         marketUtility.updateUintParameters(code, value);
       }
@@ -133,6 +229,10 @@ contract MarketRegistryNew is MarketRegistry {
         value = marketCreationIncentive;
       } else if(code == "MAXGAS") {
         value = maxGasPrice;
+      } else if(code == "RPPERCMC") {
+        value = rewardPoolPercForMC;
+      } else if(code == "PSFRPS") {
+        value = plotStakeForRewardPoolShare;
       }
     }
 

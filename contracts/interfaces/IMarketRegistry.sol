@@ -23,6 +23,10 @@ contract IMarketRegistry {
 
     function transferAssets(address _asset, address _to, uint _amount) external;
 
+    function callMarketResultEvent(uint256[] calldata _totalReward, uint256[] calldata marketCreatorIncentive, uint256 winningOption, uint256 closeValue, uint _roundId) external;
+
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value);
+
     /**
     * @dev Initialize the PlotX.
     * @param _marketConfig The address of market config.
