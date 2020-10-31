@@ -79,21 +79,21 @@ contract MarketRegistryNew is MarketRegistry {
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
       _checkIfCreatorStaked(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
+      marketCreationRewardUserData[msg.sender].marketsCreated.push(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
       uint256 gasUsed = gasProvided - gasleft();
-      _calculateIncentive(gasUsed, marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
+      _calculateIncentive(gasUsed);
     }
 
     /**
     * @dev internal function to calculate user incentive for market creation
     */
-    function _calculateIncentive(uint256 gasUsed, address _marketAddress) internal{
+    function _calculateIncentive(uint256 gasUsed) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
       uint256 gasPrice = _checkGasPrice();
       uint256 gasCost = gasUsed.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
       marketCreationRewardUserData[msg.sender].incentives = marketCreationRewardUserData[msg.sender].incentives.add(incentive);
-      marketCreationRewardUserData[msg.sender].marketsCreated.push(_marketAddress);
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
     }
 
