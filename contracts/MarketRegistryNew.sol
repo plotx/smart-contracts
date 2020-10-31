@@ -102,14 +102,8 @@ contract MarketRegistryNew is MarketRegistry {
 
     function _checkIfCreatorStaked(address _market) internal {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
-      if(
-        tokensLocked >= plotStakeForRewardPoolShare)
-      {
-        marketCreationRewardData[_market].rewardPoolShareApplicable = true;
-        marketCreationRewardData[_market].rewardPoolSharePerc
-         = uint8(Math.min(rewardPoolPercForMC, tokensLocked.div(plotStakeForRewardPoolShare)));
-
-      }
+      marketCreationRewardData[_market].rewardPoolSharePerc
+       = uint8(Math.min(rewardPoolPercForMC, 1 + tokensLocked.div(plotStakeForRewardPoolShare)));
     }
 
     function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
@@ -168,17 +162,14 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 i;
       for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
         MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
-        if(marketData.rewardPoolShareApplicable)
-        {
-          ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
-          if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
-            ethIncentive = ethIncentive.add(marketData.ethIncentive);
-            plotIncentive = plotIncentive.add(marketData.plotIncentive);
-            count++;
-          } else {
-            if(lastClaimed == len && (marketData.plotIncentive > 0 || marketData.ethIncentive > 0)) {
-              lastClaimed = i;
-            }
+        ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
+        if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
+          ethIncentive = ethIncentive.add(marketData.ethIncentive);
+          plotIncentive = plotIncentive.add(marketData.plotIncentive);
+          count++;
+        } else {
+          if(lastClaimed == len && (marketData.plotIncentive > 0 || marketData.ethIncentive > 0)) {
+            lastClaimed = i;
           }
         }
       }
