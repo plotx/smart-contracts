@@ -27,6 +27,8 @@ contract IMarketRegistry {
 
     function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value);
 
+    function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256);
+
     /**
     * @dev Initialize the PlotX.
     * @param _marketConfig The address of market config.

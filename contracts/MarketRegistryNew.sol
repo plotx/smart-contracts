@@ -32,11 +32,12 @@ contract MarketRegistryNew is MarketRegistry {
     struct MarketCreationRewardData {
       uint ethIncentive;
       uint plotIncentive;
+      uint8 rewardPoolSharePerc;
       bool rewardPoolShareApplicable;
     }
 
-    uint256 public rewardPoolPercForMC;
-    uint256 public plotStakeForRewardPoolShare;
+    uint256 rewardPoolPercForMC;
+    uint256 plotStakeForRewardPoolShare;
 
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
     mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
@@ -51,6 +52,8 @@ contract MarketRegistryNew is MarketRegistry {
       require(msg.sender == marketInitiater);
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
       maxGasPrice = 100 * 10**9;
+      rewardPoolPercForMC = 10;
+      plotStakeForRewardPoolShare = 50000;
     }
 
     /**
@@ -98,12 +101,19 @@ contract MarketRegistryNew is MarketRegistry {
     }
 
     function _checkIfCreatorStaked(address _market) internal {
+      uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
       if(
-        ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now)
-        >= plotStakeForRewardPoolShare)
+        tokensLocked >= plotStakeForRewardPoolShare)
       {
         marketCreationRewardData[_market].rewardPoolShareApplicable = true;
+        marketCreationRewardData[_market].rewardPoolSharePerc
+         = uint8(Math.min(rewardPoolPercForMC, tokensLocked.div(plotStakeForRewardPoolShare)));
+
       }
+    }
+
+    function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
+      return marketCreationRewardData[_market].rewardPoolSharePerc;
     }
 
     /**

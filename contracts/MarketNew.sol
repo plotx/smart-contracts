@@ -239,7 +239,7 @@ contract MarketNew {
       } else {
         marketSettleData.WinningOption = 2;
       }
-      (, uint256 rewardPoolSharePerc) = marketRegistry.getUintParameters("RPPERCMC");
+      uint256 rewardPoolSharePerc = marketRegistry.getMarketCreatorRPoolSharePerc(address(this));
       uint[] memory totalReward = new uint256[](2);
       uint[] memory marketCreatorIncentive = new uint256[](2);
       if(optionsAvailable[marketSettleData.WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
