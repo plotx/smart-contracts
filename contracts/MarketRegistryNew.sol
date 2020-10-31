@@ -41,7 +41,7 @@ contract MarketRegistryNew is MarketRegistry {
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
     mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
     event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap);
-    event ClaimedMarketCreationReward(address indexed user, uint256 plotIncentive);
+    event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
 
     /**
     * @dev Set initial market creation incentive params.
@@ -143,19 +143,19 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 pendingPLOTReward = marketCreationRewardUserData[msg.sender].incentives;
       require(pendingPLOTReward > 0);
       delete marketCreationRewardUserData[msg.sender].incentives;
-      _getRewardPoolIncentives(_maxRecords);
+      (uint256 ethIncentive, uint256 plotIncentive) = _getRewardPoolIncentives(_maxRecords);
+      pendingPLOTReward = pendingPLOTReward.add(plotIncentive);
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
-      emit ClaimedMarketCreationReward(msg.sender, pendingPLOTReward);
+      _transferAsset(ETH_ADDRESS, msg.sender, ethIncentive);
+      emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
     }
 
-    function _getRewardPoolIncentives(uint256 _maxRecords) internal {
+    function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 ethIncentive, uint256 plotIncentive) {
       MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[msg.sender];
       uint256 len = rewardData.marketsCreated.length;
       uint lastClaimed = len;
       uint256 count;
       uint256 i;
-      uint256 ethIncentive;
-      uint256 plotIncentive;
       for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
         MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
         if(marketData.rewardPoolShareApplicable)
