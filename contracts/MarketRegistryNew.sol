@@ -53,7 +53,7 @@ contract MarketRegistryNew is MarketRegistry {
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
       maxGasPrice = 100 * 10**9;
       rewardPoolPercForMC = 10;
-      plotStakeForRewardPoolShare = 500000;
+      plotStakeForRewardPoolShare = 50000;
     }
 
     /**
