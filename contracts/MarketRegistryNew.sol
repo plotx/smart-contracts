@@ -32,8 +32,7 @@ contract MarketRegistryNew is MarketRegistry {
     struct MarketCreationRewardData {
       uint ethIncentive;
       uint plotIncentive;
-      uint8 rewardPoolSharePerc;
-      bool rewardPoolShareApplicable;
+      uint rewardPoolSharePerc;
     }
 
     uint256 maxRewardPoolPercForMC;
@@ -106,7 +105,7 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_market].rewardPoolSharePerc
-       = uint8(Math.min(maxRewardPoolPercForMC, minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100)));
+       = Math.min(maxRewardPoolPercForMC, minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100));
     }
 
     function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
