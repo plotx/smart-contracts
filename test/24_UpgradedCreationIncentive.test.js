@@ -1,6 +1,7 @@
 const { assert } = require("chai");
 const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 const Market = artifacts.require("MockMarket");
+const MarketNew = artifacts.require("MarketNew");
 const Plotus = artifacts.require("MarketRegistry");
 const MarketRegistryNew = artifacts.require("MarketRegistryNew");
 const MockChainLinkGasPriceAgg = artifacts.require("MockChainLinkGasPriceAgg");
@@ -170,6 +171,29 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await assertRevert(plotusNewInstance.setGasPriceAggAndMaxGas(chainlinkGasAgg.address, {from:user2}));
     });
 
+    it('Should Update Market Implementations', async function() {
+        let market1 = await MarketNew.new();
+        let market2 = await MarketNew.new();
+        let actionHash = encode1(
+          ['uint256[]', 'address[]'],
+          [
+            [0,1],
+            [market1.address, market2.address]
+          ]
+        );
+        let proposalLength =(await governance.getProposalLength())/1;
+        await gvProposal(
+          5,
+          actionHash,
+          await MemberRoles.at(await masterInstance.getLatestAddress(toHex('MR'))),
+          governance,
+          2,
+          0
+        );
+        assert.equal((await governance.proposalActionStatus(proposalLength))/1, 3)
+        await increaseTime(604800);
+    });
+
     it("Should be able to claim market creation rewards of pre upgrade", async function() {
       let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
       await plotusNewInstance.claimCreationReward();
@@ -178,7 +202,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Should not be able to claim the market creation rewards if not created any market", async function() {
-      let tx = await assertRevert(plotusNewInstance.claimCreationRewardV2());
+      let tx = await assertRevert(plotusNewInstance.claimCreationRewardV2(100));
     });
 
     it("Should create Markets", async function() {
@@ -251,7 +275,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("Should be able to claim the market creation rewards", async function() {
       let oldBalance = parseFloat(await plotusToken.balanceOf(user1));
-      let tx = await plotusNewInstance.claimCreationRewardV2();
+      let tx = await plotusNewInstance.claimCreationRewardV2(100);
       let newBalance = parseFloat(await plotusToken.balanceOf(user1));
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18).toFixed(2));
     });

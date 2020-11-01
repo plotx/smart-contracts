@@ -36,7 +36,8 @@ contract MarketRegistryNew is MarketRegistry {
       bool rewardPoolShareApplicable;
     }
 
-    uint256 rewardPoolPercForMC;
+    uint256 maxRewardPoolPercForMC;
+    uint256 minRewardPoolPercForMC;
     uint256 plotStakeForRewardPoolShare;
 
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
@@ -52,7 +53,8 @@ contract MarketRegistryNew is MarketRegistry {
       require(msg.sender == marketInitiater);
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
       maxGasPrice = 100 * 10**9;
-      rewardPoolPercForMC = 10;
+      maxRewardPoolPercForMC = 1000; // Raised by 2 decimals
+      minRewardPoolPercForMC = 100; // Raised by 2 decimals
       plotStakeForRewardPoolShare = 50000;
     }
 
@@ -102,8 +104,9 @@ contract MarketRegistryNew is MarketRegistry {
 
     function _checkIfCreatorStaked(address _market) internal {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
+      //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_market].rewardPoolSharePerc
-       = uint8(Math.min(rewardPoolPercForMC, 1 + tokensLocked.div(plotStakeForRewardPoolShare)));
+       = uint8(Math.min(maxRewardPoolPercForMC, minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100)));
     }
 
     function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
@@ -212,8 +215,10 @@ contract MarketRegistryNew is MarketRegistry {
         marketCreationIncentive = value;
       } else if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
         maxGasPrice = value;
-      } else if(code == "RPPERCMC") { // Reward Pool percent for market creator
-        rewardPoolPercForMC = value;
+      } else if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
+        maxRewardPoolPercForMC = value;
+      } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
+        minRewardPoolPercForMC = value;
       } else if(code == "PSFRPS") { // Reward Pool percent for market creator
         plotStakeForRewardPoolShare = value;
       } else {
@@ -230,8 +235,10 @@ contract MarketRegistryNew is MarketRegistry {
         value = marketCreationIncentive;
       } else if(code == "MAXGAS") {
         value = maxGasPrice;
-      } else if(code == "RPPERCMC") {
-        value = rewardPoolPercForMC;
+      } else if(code == "MAXRPSP") {
+        value = maxRewardPoolPercForMC;
+      } else if(code == "MINRPSP") {
+        value = minRewardPoolPercForMC;
       } else if(code == "PSFRPS") {
         value = plotStakeForRewardPoolShare;
       }
