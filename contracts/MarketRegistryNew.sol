@@ -101,6 +101,9 @@ contract MarketRegistryNew is MarketRegistry {
       emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
     }
 
+    /**
+    * @dev internal function to calculate market reward pool share percent to be rewarded to market creator
+    */
     function _checkIfCreatorStaked(address _market) internal {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
@@ -108,6 +111,9 @@ contract MarketRegistryNew is MarketRegistry {
        = Math.min(maxRewardPoolPercForMC, minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100));
     }
 
+    /**
+    * @dev Get market reward pool share percent to be rewarded to market creator
+    */
     function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
       return marketCreationRewardData[_market].rewardPoolSharePerc;
     }
@@ -156,6 +162,9 @@ contract MarketRegistryNew is MarketRegistry {
       emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
     }
 
+    /**
+    * @dev internal function to calculate market reward pool share incentives for market creator
+    */
     function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 ethIncentive, uint256 plotIncentive) {
       MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[msg.sender];
       uint256 len = rewardData.marketsCreated.length;
