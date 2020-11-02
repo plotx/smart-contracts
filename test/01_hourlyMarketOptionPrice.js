@@ -434,8 +434,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.08);
 		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(11.33));
-		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(12.5));
-		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(6.66));
+		assert.equal(parseInt((parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100))/tokenPrice) , parseInt(12.5));
+		assert.equal(parseInt((parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100))/tokenPrice) , parseInt(6.66));
 	});
 });
 

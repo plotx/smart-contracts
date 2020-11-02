@@ -333,7 +333,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
-        from: user7,
+        from: user12,
       });
       await plotusToken.transfer(user7, toWei(10000));
       await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
@@ -378,7 +378,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
-        from: user7,
+        from: user12,
       });
       await plotusToken.transfer(user7, toWei(10000));
       await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
@@ -421,7 +421,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
-        from: user7,
+        from: user12,
       });
       await plotusToken.transfer(user7, toWei(10000));
       await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
@@ -430,7 +430,11 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       });
       let rewardPoolEth = 0.3;
       let rewardPoolPlot = 300;
-      eventData = tx.logs[1].args;
+      try {
+        eventData = tx.logs[2].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
@@ -474,7 +478,11 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       });
       let rewardPoolEth = 0.4;
       let rewardPoolPlot = 400;
-      eventData = tx.logs[1].args;
+      try {
+        eventData = tx.logs[2].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
@@ -508,7 +516,11 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let marketInstance = await MarketNew.at(openMarkets[0][1]);
       let rewardPoolEth = 0;
       let rewardPoolPlot = 0;
-      eventData = tx.logs[1].args;
+      try {
+        eventData = tx.logs[2].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
