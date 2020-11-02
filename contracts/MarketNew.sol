@@ -265,9 +265,13 @@ contract MarketNew {
           leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
           ethAmountToPool = ethAmountToPool.add(leveragedAsset);
         }
+        marketCreatorIncentive[0] = _calculatePercentage(rewardPoolSharePerc, tokenAmountToPool, 10000);
+        marketCreatorIncentive[1] = _calculatePercentage(rewardPoolSharePerc, ethAmountToPool, 10000);
+        tokenAmountToPool = tokenAmountToPool.sub(marketCreatorIncentive[0]);
+        ethAmountToPool = ethAmountToPool.sub(marketCreatorIncentive[1]);
       }
-      _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount));
-      _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount));
+      _transferAsset(ETH_ADDRESS, address(marketRegistry), ethAmountToPool.add(ethCommissionAmount).add(marketCreatorIncentive[1]));
+      _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount).add(marketCreatorIncentive[0]));
       delete ethCommissionAmount;
       delete plotCommissionAmount;
       marketRegistry.callMarketResultEvent(rewardToDistribute, marketCreatorIncentive, marketSettleData.WinningOption, _value, _roundId);

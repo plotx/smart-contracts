@@ -54,7 +54,7 @@ contract MarketRegistryNew is MarketRegistry {
       maxGasPrice = 100 * 10**9;
       maxRewardPoolPercForMC = 1000; // Raised by 2 decimals
       minRewardPoolPercForMC = 100; // Raised by 2 decimals
-      plotStakeForRewardPoolShare = 50000;
+      plotStakeForRewardPoolShare = 50000 ether;
     }
 
     /**
