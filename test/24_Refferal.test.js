@@ -5,6 +5,7 @@ const Market = artifacts.require("MockMarket");
 const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
 const Referral = artifacts.require("Referral");
+const ReferralV2 = artifacts.require("ReferralV2");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
 const TokenController = artifacts.require("TokenController");
@@ -24,7 +25,7 @@ const adminPrivateKey = "0xfb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c0
 // get etherum accounts
 // swap ether with LOT
 let refferal;
-contract("Referral", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10]) {
+contract("Referral", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11]) {
 	it("Place the prediction with ether", async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -381,7 +382,7 @@ contract("Market", async function([user1, user2]) {
 	});
 });
 
-contract("More cases for refferal", async function([user1, user2]) {
+contract("More cases for refferal", async function([user1, user2, user3]) {
 	before(async function() {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -514,6 +515,43 @@ contract("More cases for refferal", async function([user1, user2]) {
 		hash = (await web3.eth.abi.encodeParameter("address",user1));
 		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
 		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1});
+	});
+
+	it("Should revert if already claimed in V1", async () => {
+		let  endDate = (await latestTime())/1+(24*3600);
+		let _refferal = await Referral.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(100), toWei(60));
+		await plotusToken.transfer(_refferal.address,toWei("1000"));
+		hash = (await web3.eth.abi.encodeParameter("address",user2));
+		let user2PrvtKey = "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e";
+		signedHash = (await web3.eth.accounts.sign(hash, user2PrvtKey));
+		masterInstance = await OwnedUpgradeabilityProxy.deployed();
+		masterInstance = await Master.at(masterInstance.address);
+		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
+		await BLOTInstance.addMinter(_refferal.address);
+		hash = (await web3.eth.abi.encodeParameter("address",user1));
+		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1});
+
+		_refferal = await ReferralV2.new(plotusToken.address, BLOTInstance.address,user1, endDate, toWei(1000), toWei(250), _refferal.address);
+		await plotusToken.transfer(_refferal.address,toWei("1000"));
+		hash = (await web3.eth.abi.encodeParameter("address",user2));
+		user2PrvtKey = "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e";
+		signedHash = (await web3.eth.accounts.sign(hash, user2PrvtKey));
+		masterInstance = await OwnedUpgradeabilityProxy.deployed();
+		masterInstance = await Master.at(masterInstance.address);
+		BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
+		await BLOTInstance.addMinter(_refferal.address);
+		hash = (await web3.eth.abi.encodeParameter("address",user1));
+		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
+		await assertRevert(_refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user1}));
+
+		let refferalAmount = toWei("250");
+
+		hash = (await web3.eth.abi.encodeParameter("address",user3));
+		signedHash = (await web3.eth.accounts.sign(hash, adminPrivateKey));
+		await _refferal.claim(signedHash.v, signedHash.r, signedHash.s, {from:user3});
+		let balance = await BLOTInstance.balanceOf(user3);
+		assert.equal(balance/1,refferalAmount, "Incorrect referral amount");
 	});
 });
 
