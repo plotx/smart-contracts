@@ -41,7 +41,7 @@ contract MarketRegistryNew is MarketRegistry {
 
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
     mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
-    event MarketCreationReward(address indexed createdBy, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap);
+    event MarketCreationReward(address indexed createdBy, address marketAddress, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
     event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
 
     /**
@@ -85,20 +85,21 @@ contract MarketRegistryNew is MarketRegistry {
       _checkIfCreatorStaked(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
       marketCreationRewardUserData[msg.sender].marketsCreated.push(marketCreationData[_marketType][_marketCurrencyIndex].marketAddress);
       uint256 gasUsed = gasProvided - gasleft();
-      _calculateIncentive(gasUsed);
+      _calculateIncentive(gasUsed, _marketType, _marketCurrencyIndex);
     }
 
     /**
     * @dev internal function to calculate user incentive for market creation
     */
-    function _calculateIncentive(uint256 gasUsed) internal{
+    function _calculateIncentive(uint256 gasUsed, uint256 _marketType, uint256 _marketCurrencyIndex) internal{
+      address _marketAddress = marketCreationData[_marketType][_marketCurrencyIndex].marketAddress;
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
       uint256 gasPrice = _checkGasPrice();
       uint256 gasCost = gasUsed.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
       marketCreationRewardUserData[msg.sender].incentives = marketCreationRewardUserData[msg.sender].incentives.add(incentive);
-      emit MarketCreationReward(msg.sender, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice);
+      emit MarketCreationReward(msg.sender, _marketAddress, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice, marketCreationRewardData[_marketAddress].rewardPoolSharePerc);
     }
 
     /**
@@ -108,7 +109,10 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_market].rewardPoolSharePerc
-       = Math.min(maxRewardPoolPercForMC, minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100));
+       = Math.min(
+          maxRewardPoolPercForMC,
+          minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100)
+        );
     }
 
     /**
