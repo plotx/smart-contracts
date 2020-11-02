@@ -76,6 +76,6 @@ contract MarketNew is Market {
     _transferAsset(plotToken, address(marketRegistry), tokenAmountToPool.add(plotCommissionAmount).add(marketCreatorIncentive[0]));
     delete ethCommissionAmount;
     delete plotCommissionAmount;
-    marketRegistry.callMarketResultEvent(rewardToDistribute, marketCreatorIncentive, marketSettleData.WinningOption, _value, _roundId);
+    marketRegistry.callMarketResultEventAndSetIncentives(rewardToDistribute, marketCreatorIncentive, marketSettleData.WinningOption, _value, _roundId);
   }
 }

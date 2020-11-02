@@ -200,7 +200,7 @@ contract MarketRegistryNew is MarketRegistry {
     * @param winningOption The winning option of the market.
     * @param closeValue The closing value of the market currency.
     */
-    function callMarketResultEvent(uint256[] calldata _totalReward, uint256[] calldata marketCreatorIncentive, uint256 winningOption, uint256 closeValue, uint _roundId) external {
+    function callMarketResultEventAndSetIncentives(uint256[] calldata _totalReward, uint256[] calldata marketCreatorIncentive, uint256 winningOption, uint256 closeValue, uint _roundId) external {
       require(isMarket(msg.sender));
       marketCreationRewardData[msg.sender].plotIncentive = marketCreatorIncentive[0];
       marketCreationRewardData[msg.sender].ethIncentive = marketCreatorIncentive[1];
