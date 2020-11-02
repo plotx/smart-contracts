@@ -543,6 +543,24 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth/100).toFixed(2));
     });
 
+    it('Should update MAXRPSP variable', async function() {
+      await updateParameter(20, 2, 'MAXRPSP', plotusNewInstance, 'configUint', 5000);
+      configData = await plotusNewInstance.getUintParameters(toHex('MAXRPSP'));
+      assert.equal(configData[1], 5000, 'Not updated');
+    });
+
+    it('Should update MINRPSP variable', async function() {
+      await updateParameter(20, 2, 'MINRPSP', plotusNewInstance, 'configUint', 5000);
+      configData = await plotusNewInstance.getUintParameters(toHex('MINRPSP'));
+      assert.equal(configData[1], 5000, 'Not updated');
+    });
+
+    it('Should update MINRPSP variable', async function() {
+      await updateParameter(20, 2, 'MINRPSP', plotusNewInstance, 'configUint', 5000);
+      configData = await plotusNewInstance.getUintParameters(toHex('MINRPSP'));
+      assert.equal(configData[1], 5000, 'Not updated');
+    });
+
     it('Should update Chainlink gas aggrefgartor address', async function() {
       let clAgg = await MockChainLinkGasPriceAgg.new();
       await updateParameter(21, 2, 'GASAGG', plotusNewInstance, 'configAddress', clAgg.address);
