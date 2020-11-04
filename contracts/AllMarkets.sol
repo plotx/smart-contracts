@@ -106,6 +106,7 @@ contract Market is Governed{
     }
 
     event MarketTypes(uint64 indexed predictionTime, uint64 optionRangePerc, bool status);
+    event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
 
     MarketData[] public marketData;
     MarketSettleData public marketSettleData;
@@ -120,12 +121,22 @@ contract Market is Governed{
     }
 
     struct MarketCurrency {
-      address marketImplementation;
+      bytes32 currencyName;
+      address marketFeed;
       uint8 decimals;
     }
+
     MarketCurrency[] marketCurrencies;
+    mapping(bytes32 => uint) marketCurrency;
+
     mapping(uint64 => MarketTypeData) marketType;
     uint64[] marketTypeArray;
+
+    function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals) public onlyAuthorizedToGovern {
+      marketCurrency[_currencyName] = marketCurrencies.length;
+      marketCurrencies.push(MarketCurrency(_currencyName, _marketFeed, decimals));
+      emit MarketCurrencies(marketCurrency[_currencyName], _marketFeed, _currencyName, true);
+    }
 
     function addMarketType(uint64 _predictionTime, uint64 _optionRangePerc) public onlyAuthorizedToGovern {
       marketType[_predictionTime] = MarketTypeData(_optionRangePerc, uint64(marketTypeArray.length));
