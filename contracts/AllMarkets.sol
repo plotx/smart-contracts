@@ -172,12 +172,13 @@ contract Market is Governed{
 
     function  deposit(uint _amount) public returns(bool res)  {
       plt.transferFrom (msg.sender,address(this), _amount);
-       UserGlobalPredictionData[msg.sender].unusedBalance  += _amount ;
+      UserGlobalPredictionData[msg.sender].unusedBalance  += _amount ;
     }
 
      function  withdraw() public returns(bool res)  {
-       UserGlobalPredictionData[msg.sender].usedBalance  = 0 ;
-      plt.transfer (msg.sender, UserGlobalPredictionData [msg.sender].usedBalance );
+      uint _amount = UserGlobalPredictionData[msg.sender].unusedBalance;
+      UserGlobalPredictionData[msg.sender].unusedBalance  = 0;
+      plt.transfer (msg.sender, _amount);
       
     }
     
