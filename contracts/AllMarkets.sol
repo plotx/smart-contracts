@@ -15,9 +15,9 @@
 
 pragma solidity 0.5.7;
 
-// import "./SafeMath.sol";
+import "./external/openzeppelin-solidity/math/SafeMath.sol";
 // import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-// import "./interfaces/IMarketUtility.sol";
+import "./interfaces/IMarketUtility.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/IToken.sol";
 // import "./IERC20.sol";
@@ -25,7 +25,7 @@ import "./interfaces/IToken.sol";
 // import "./interfaces/IMarketRegistry.sol";
 
 contract Market is Governed{
-    // using SafeMath for *;
+    using SafeMath for *;
 
        enum PredictionStatus {
       Live,
@@ -56,7 +56,7 @@ contract Market is Governed{
 
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
     // ITokenController constant tokenController = ITokenController(0xCEFED1C83a84FB5AcAF15734010d51B87C3cc73A);
-    // IMarketUtility constant marketUtility = IMarketUtility(0xFB2990f67cd035E1C62eEc9D98A66E817a830E40);
+    IMarketUtility constant marketUtility = IMarketUtility(0xFB2990f67cd035E1C62eEc9D98A66E817a830E40);
 
     // uint8[] constant roundOfToNearest = [25,1];
     uint constant totalOptions = 3;
@@ -124,17 +124,27 @@ contract Market is Governed{
       bytes32 currencyName;
       address marketFeed;
       uint8 decimals;
+      uint8 roundOfToNearest;
     }
 
+    struct MarketCreationData {
+      uint64 initialStartTime;
+      uint64 latestMarket;
+      uint64 penultimateMarket;
+    }
+
+
+    bool public marketCreationPaused;
     MarketCurrency[] marketCurrencies;
     mapping(bytes32 => uint) marketCurrency;
 
     mapping(uint64 => MarketTypeData) marketType;
+    mapping(uint256 => mapping(uint256 => MarketCreationData)) public marketCreationData;
     uint64[] marketTypeArray;
 
-    function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals) public onlyAuthorizedToGovern {
+    function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) public onlyAuthorizedToGovern {
       marketCurrency[_currencyName] = marketCurrencies.length;
-      marketCurrencies.push(MarketCurrency(_currencyName, _marketFeed, decimals));
+      marketCurrencies.push(MarketCurrency(_currencyName, _marketFeed, decimals, roundOfToNearest));
       emit MarketCurrencies(marketCurrency[_currencyName], _marketFeed, _currencyName, true);
     }
 
@@ -158,16 +168,38 @@ contract Market is Governed{
     * @dev Initialize the market.
     * @param _startTime The time at which market will create.
     * @param _predictionTime The time duration of market.
-    * @param _minValue The minimum value of neutral option range.
-    * @param _maxValue The maximum value of neutral option range.
     */
-    function initiate(uint32 _currencyIndex,uint32 _startTime, uint32 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable {
+    function initiate(uint32 _marketCurrencyIndex,uint32 _startTime, uint32 _predictionTime) public payable {
+      require(!marketCreationPaused);
+      _checkPreviousMarket( _predictionTime, _marketCurrencyIndex);
       // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       // require(marketData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
-      marketData.push(MarketData(marketType[_predictionTime].index,_currencyIndex,_startTime,_predictionTime,_minValue,_maxValue));
-    
+      marketUtility.update();
+      uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].marketFeed);
+      uint64 _optionRangePerc = marketType[_predictionTime].optionRangePerc;
+      _optionRangePerc = uint64(currentPrice.mul(_optionRangePerc.div(2)).div(10000));
+      uint64 _decimals = marketCurrencies[_marketCurrencyIndex].decimals;
+      uint8 _roundOfToNearest = marketCurrencies[_marketCurrencyIndex].roundOfToNearest;
+      uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+      uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+      uint marketIndex = marketData.length;
+      marketData.push(MarketData(marketType[_predictionTime].index,_marketCurrencyIndex,_startTime,_predictionTime,_minValue,_maxValue));
+      (marketCreationData[_predictionTime][_marketCurrencyIndex].penultimateMarket, marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket) =
+       (marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket, uint64(marketIndex));
+    }
+
+    function _checkPreviousMarket(uint64 _predictionTime, uint64 _marketCurrencyIndex) internal {
+      uint64 penultimateMarket = marketCreationData[_predictionTime][_marketCurrencyIndex].penultimateMarket;
+      // if(penultimateMarket != address(0)) {
+      //   IMarket(penultimateMarket).settleMarket();
+      // }
+    }
+
+    function pauseMarketCreation() external onlyAuthorizedToGovern {
+      require(!marketCreationPaused);
+      marketCreationPaused = true;
     }
 
     function  deposit(uint _amount) public returns(bool res)  {
@@ -236,5 +268,9 @@ contract Market is Governed{
       optionsAvailable[_marketId][_prediction].predictionPoints = optionsAvailable[_prediction][_marketId].predictionPoints+(predictionPoints);
       optionsAvailable[_marketId][_prediction].assetStaked[_asset] = optionsAvailable[_prediction][_marketId].assetStaked[_asset]+(_predictionStake);
       optionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction][_marketId].assetLeveraged[_asset]+(_predictionStake*(_leverage));
+    }
+
+    function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
+        return ((a + m - 1) / m) * m;
     }
 }
