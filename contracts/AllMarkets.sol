@@ -117,7 +117,7 @@ contract Market is Governed{
     mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
     struct MarketTypeData {
       uint64 optionRangePerc;
-      uint64 index;
+      uint32 index;
     }
 
     struct MarketCurrency {
@@ -139,13 +139,13 @@ contract Market is Governed{
     }
 
     function addMarketType(uint64 _predictionTime, uint64 _optionRangePerc) public onlyAuthorizedToGovern {
-      marketType[_predictionTime] = MarketTypeData(_optionRangePerc, uint64(marketTypeArray.length));
+      marketType[_predictionTime] = MarketTypeData(_optionRangePerc, uint32(marketTypeArray.length));
       marketTypeArray.push(_predictionTime);
       emit MarketTypes(_predictionTime, _optionRangePerc, true);
     }
 
     function removeMarketType(uint64 _predictionTime) public onlyAuthorizedToGovern {
-      uint64 marketTypeIndex= marketType[_predictionTime].index;
+      uint32 marketTypeIndex= marketType[_predictionTime].index;
       uint256 topIndex = marketTypeArray.length - 1;
       marketType[marketTypeArray[topIndex]].index = marketTypeIndex; 
       marketTypeArray[marketTypeIndex] = marketTypeArray[topIndex];
@@ -161,12 +161,12 @@ contract Market is Governed{
     * @param _minValue The minimum value of neutral option range.
     * @param _maxValue The maximum value of neutral option range.
     */
-    function initiate(uint32 _startTime, uint32 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable {
+    function initiate(uint32 _currencyIndex,uint32 _startTime, uint32 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable {
       // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       // require(marketData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
-      marketData.push(MarketData(0,0,_startTime,_predictionTime,_minValue,_maxValue));
+      marketData.push(MarketData(marketType[_predictionTime].index,_currencyIndex,_startTime,_predictionTime,_minValue,_maxValue));
     
     }
 
