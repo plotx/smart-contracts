@@ -38,6 +38,7 @@ contract MarketRegistryNew is MarketRegistry {
     uint256 maxRewardPoolPercForMC;
     uint256 minRewardPoolPercForMC;
     uint256 plotStakeForRewardPoolShare;
+    uint256 rewardPoolShareThreshold;
 
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
     mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
@@ -52,9 +53,10 @@ contract MarketRegistryNew is MarketRegistry {
       require(msg.sender == marketInitiater);
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
       maxGasPrice = 100 * 10**9;
-      maxRewardPoolPercForMC = 1000; // Raised by 2 decimals
-      minRewardPoolPercForMC = 100; // Raised by 2 decimals
-      plotStakeForRewardPoolShare = 50000 ether;
+      maxRewardPoolPercForMC = 500; // Raised by 2 decimals
+      minRewardPoolPercForMC = 50; // Raised by 2 decimals
+      plotStakeForRewardPoolShare = 25000 ether;
+      rewardPoolShareThreshold = 1 ether;
     }
 
     /**
@@ -111,15 +113,15 @@ contract MarketRegistryNew is MarketRegistry {
       marketCreationRewardData[_market].rewardPoolSharePerc
        = Math.min(
           maxRewardPoolPercForMC,
-          minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(100)
+          minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
         );
     }
 
     /**
     * @dev Get market reward pool share percent to be rewarded to market creator
     */
-    function getMarketCreatorRPoolSharePerc(address _market) external view returns(uint256) {
-      return marketCreationRewardData[_market].rewardPoolSharePerc;
+    function getMarketCreatorRPoolShareParams(address _market) external view returns(uint256, uint256) {
+      return (marketCreationRewardData[_market].rewardPoolSharePerc, rewardPoolShareThreshold);
     }
 
     /**
@@ -177,14 +179,16 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 i;
       for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
         MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
-        ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
-        if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
-          ethIncentive = ethIncentive.add(marketData.ethIncentive);
-          plotIncentive = plotIncentive.add(marketData.plotIncentive);
-          count++;
-        } else {
-          if(lastClaimed == len && (marketData.plotIncentive > 0 || marketData.ethIncentive > 0)) {
-            lastClaimed = i;
+        if(marketData.ethIncentive > 0 || marketData.plotIncentive > 0) {
+          ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
+          if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
+            ethIncentive = ethIncentive.add(marketData.ethIncentive);
+            plotIncentive = plotIncentive.add(marketData.plotIncentive);
+            count++;
+          } else {
+            if(lastClaimed == len) {
+              lastClaimed = i;
+            }
           }
         }
       }
@@ -233,6 +237,8 @@ contract MarketRegistryNew is MarketRegistry {
         minRewardPoolPercForMC = value;
       } else if(code == "PSFRPS") { // Reward Pool percent for market creator
         plotStakeForRewardPoolShare = value;
+      } else if(code == "RPSTH") { // Reward Pool percent for market creator
+        rewardPoolShareThreshold = value;
       } else {
         marketUtility.updateUintParameters(code, value);
       }
@@ -253,6 +259,8 @@ contract MarketRegistryNew is MarketRegistry {
         value = minRewardPoolPercForMC;
       } else if(code == "PSFRPS") {
         value = plotStakeForRewardPoolShare;
+      } else if(code == "RPSTH") {
+        value = rewardPoolShareThreshold;
       }
     }
 
