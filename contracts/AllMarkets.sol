@@ -218,6 +218,45 @@ contract Market is Governed{
       plt.transfer (msg.sender, _amountPlt);
       
     }
+
+    /**
+    * @dev Get market expire time
+    * @return the time upto which user can place predictions in market
+    */
+    function marketExpireTime(uint _marketId) internal view returns(uint256) {
+      return marketData[_marketId].startTime.add(marketData[_marketId].predictionTime);
+    }
+
+    function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
+      return _percent.mul(_value).div(_divisor);
+    }
+
+    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 ethStaked, uint256 plotStaked) {
+      for(uint256 i = 1; i<= totalOptions;i++) {
+        ethStaked = ethStaked.add(optionsAvailable[i].assetStaked[ETH_ADDRESS]);
+        plotStaked = plotStaked.add(optionsAvailable[i].assetStaked[plotToken]);
+      }
+    }
+
+    function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, uint _leverage, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
+      uint[] memory params = new uint[](11);
+      params[0] = _prediction;
+      params[1] = marketData.neutralMinValue;
+      params[2] = marketData.neutralMaxValue;
+      params[3] = marketData.startTime;
+      params[4] = marketExpireTime(_marketId);
+      (params[5], params[6]) = getTotalAssetsStaked(_marketId);
+      params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
+      params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
+      params[9] = _predictionStake;
+      params[10] = _leverage;
+      bool checkMultiplier;
+      if(!userData[msg.sender].multiplierApplied) {
+        checkMultiplier = true;
+      }
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
+      
+    }
     
 
     /**
@@ -227,36 +266,46 @@ contract Market is Governed{
     * @param _prediction The option on which user placed prediction.
     * @param _leverage The leverage opted by user at the time of prediction.
     */
-    function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public payable {
-    //   require(!marketRegistry.marketCreationPaused() && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
-    //   require(now >= marketData.startTime && now <= marketExpireTime());
-     
+    function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public {
+      require(!marketCreationPaused && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
+      require(now >= marketData[_marketId].startTime && now <= marketExpireTime(_marketId));
+
       uint256 _commissionStake;
-        _commissionStake = _predictionStake * 1000 / 100000;
-        plotCommissionAmount = plotCommissionAmount + _commissionStake ;
-       UserGlobalPredictionData[msg.sender].usedBalance += _predictionStake - _commissionStake;
-       UserGlobalPredictionData[msg.sender].unusedBalance -= _predictionStake;
-       UserGlobalPredictionData[msg.sender].totalPlotParticipated += _predictionStake;
-       UserGlobalPredictionData[msg.sender].marketsPredicted.push(_marketId);
-       UserGlobalPredictionData[msg.sender].marketParticipated[_marketId]=true;
-     
+      if(_asset == ETH_ADDRESS) {
+        require(_predictionStake <= UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS]);
+        _commissionStake = _calculatePercentage(ethCommissionPerc, _predictionStake, 10000);
+        ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
+        UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].sub(_predictionStake);
+        UserGlobalPredictionData[msg.sender].currencyUsedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[ETH_ADDRESS].add(_predictionStake).sub(ethCommissionAmount);
+      } else {
+        if (_asset == plotToken){
+          UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].sub(_predictionStake);
+        } else {
+          require(_asset == tokenController.bLOTToken());
+          require(_leverage == MAX_LEVERAGE);
+          require(!userData[msg.sender].predictedWithBlot);
+          userData[msg.sender].predictedWithBlot = true;
+          tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
+          _asset = plotToken;
+        }
+        _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 10000);
+        plotCommissionAmount = plotCommissionAmount.add(_commissionStake);
+        if(_asset == plotToken) {
+          UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken].add(_predictionStake).sub(plotCommissionAmount);
+        }
+      }
+      _commissionStake = _predictionStake.sub(_commissionStake);
 
 
-      // (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_prediction, _commissionStake, _leverage, _asset);
-      uint predictionPoints = optionsAvailable[_marketId][_prediction].priceFactor  * _predictionStake * 12 * 12;
-      optionsAvailable [_marketId][_prediction].priceFactor = 10;
-      
-        userData[msg.sender][_marketId].multiplierApplied = true; 
-      
-    //   require(predictionPoints > 0);
+      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _leverage, _asset);
+      if(isMultiplierApplied) {
+        userData[msg.sender].multiplierApplied = true; 
+      }
+      require(predictionPoints > 0);
 
-      _storePredictionData(_marketId,_prediction, _commissionStake, _asset, _leverage, predictionPoints);
-    //   marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      _storePredictionData(_prediction, _commissionStake, _asset, _leverage, predictionPoints);
+      _setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
-
-   
-
-
 
     /**
     * @dev Stores the prediction data.
@@ -273,6 +322,28 @@ contract Market is Governed{
       optionsAvailable[_marketId][_prediction].predictionPoints = optionsAvailable[_prediction][_marketId].predictionPoints+(predictionPoints);
       optionsAvailable[_marketId][_prediction].assetStaked[_asset] = optionsAvailable[_prediction][_marketId].assetStaked[_asset]+(_predictionStake);
       optionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction][_marketId].assetLeveraged[_asset]+(_predictionStake*(_leverage));
+    }
+
+    /**
+    * @dev Emits the PlacePrediction event and sets the user data.
+    * @param _user The address who placed prediction.
+    * @param _value The amount of ether user staked.
+    * @param _predictionPoints The positions user will get.
+    * @param _predictionAsset The prediction assets user will get.
+    * @param _prediction The option range on which user placed prediction.
+    * @param _leverage The leverage selected by user at the time of place prediction.
+    */
+    function _setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
+      if(_predictionAsset == ETH_ADDRESS) {
+        userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
+      } else {
+        userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
+      }
+      if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
+        userData[_user].marketsParticipated.push(msg.sender);
+        userData[_user].marketsParticipatedFlag[msg.sender] = true;
+      }
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
 
     function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
