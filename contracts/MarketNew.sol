@@ -79,8 +79,9 @@ contract MarketNew is Market {
         marketCreatorIncentive[0] = _calculatePercentage(rewardPoolSharePerc, totalReward[0], 10000);
         marketCreatorIncentive[1] = _calculatePercentage(rewardPoolSharePerc, totalReward[1], 10000);
       }
-      rewardToDistribute[0] = totalReward[0].sub(marketCreatorIncentive[0]);
-      rewardToDistribute[1] = totalReward[1].sub(marketCreatorIncentive[1]);
+      totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
+      totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
+      rewardToDistribute = totalReward;
     } else {
       for(uint i=1;i <= totalOptions;i++){
         uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
