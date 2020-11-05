@@ -98,8 +98,8 @@ contract Market is Governed{
     
     struct UserGlobalPrediction
     {
-        uint usedBalance;
-        uint unusedBalance;
+        mapping(address => uint) currencyUsedBalance;
+        mapping(address => uint) currencyUnusedBalance;
         uint totalPlotParticipated;
         uint[] marketsPredicted;
         mapping(uint=>bool) marketParticipated;
@@ -202,15 +202,20 @@ contract Market is Governed{
       marketCreationPaused = true;
     }
 
-    function  deposit(uint _amount) public returns(bool res)  {
+    function  deposit(uint _amount) payable public returns(bool res)  {
       plt.transferFrom (msg.sender,address(this), _amount);
-      UserGlobalPredictionData[msg.sender].unusedBalance  += _amount ;
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address]  += UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address].add(_amount);
     }
 
      function  withdraw() public returns(bool res)  {
-      uint _amount = UserGlobalPredictionData[msg.sender].unusedBalance;
-      UserGlobalPredictionData[msg.sender].unusedBalance  = 0;
-      plt.transfer (msg.sender, _amount);
+      withdrawReward(msg.sender);
+      uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address];
+      uint _amountEth = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address] = 0;
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = 0;
+      msg.sender.transfer(_amountEth);
+      plt.transfer (msg.sender, _amountPlt);
       
     }
     
