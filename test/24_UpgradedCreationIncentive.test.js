@@ -326,15 +326,14 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("Scenario 2: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-      await plotusToken.transfer(user9, toWei(25000));
-      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user9 });
-      await tokenController.lock("0x534d", toWei(25000), 86400 * 30, { from: user9 });
+      await plotusToken.transfer(user12, toWei(25000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user12 });
+      await tokenController.lock("0x534d", toWei(25000), 86400 * 30, { from: user12 });
       await chainlinkGasAgg.setLatestAnswer(450000);
       await increaseTime(3610);
-      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user9});
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user12});
       let openMarkets = await plotusNewInstance.getOpenMarkets();
       let marketInstance = await MarketNew.at(openMarkets[0][1]);
-      await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
         from: user13,
@@ -364,11 +363,11 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(10000);
       await marketInstance.settleMarket();
       await increaseTime(10000);
-      let oldBalance = parseFloat(await plotusToken.balanceOf(user9));
-      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user9));
-      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user9});
-      let newBalance = parseFloat(await plotusToken.balanceOf(user9));
-      let newBalanceEth = parseFloat(await web3.eth.getBalance(user9));
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user12));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user12));
+      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user12});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user12));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user12));
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
       assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
     });
@@ -437,14 +436,13 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       }
       let openMarkets = await plotusNewInstance.getOpenMarkets();
       let marketInstance = await MarketNew.at(openMarkets[0][1]);
-      await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
-        from: user12,
+        from: user13,
       });
       await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
         value: "1000000000000000000",
-        from: user12,
+        from: user13,
       });
       await plotusToken.transfer(user7, toWei(10000));
       await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});

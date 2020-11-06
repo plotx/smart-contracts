@@ -592,7 +592,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 			from: user2,
 		});
 
-		await increaseTime(1211);
+		await increaseTime(1210);
 		let currentPriceAfter_af = await MockchainLinkInstance.latestAnswer();
 		//console.log(currentPriceAfter_af / 1);
 		let priceOption1_af = await marketInstance.getOptionPrice(1);
