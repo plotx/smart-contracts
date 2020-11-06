@@ -68,6 +68,9 @@ contract Market is Governed{
     mapping(uint => bool) internal lockedForDispute;
     mapping(uint =>address) internal incentiveToken;
     // uint internal ethAmountToPool;
+    mapping(uint =>uint) internal ethAmountToPool;
+    mapping(uint =>uint) internal tokenAmountToPool;
+
     uint internal ethCommissionAmount;
     uint internal plotCommissionAmount;
     // uint internal tokenAmountToPool;
@@ -107,10 +110,12 @@ contract Market is Governed{
 
     event MarketTypes(uint64 indexed predictionTime, uint64 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
+    event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
 
     MarketData[] public marketData;
     MarketSettleData public marketSettleData;
 
+    mapping(uint256 => MarketSettleData) marketSettleData;
     mapping(address => mapping(uint=> UserData)) internal userData;
 
     mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
@@ -195,6 +200,98 @@ contract Market is Governed{
       // if(penultimateMarket != address(0)) {
       //   IMarket(penultimateMarket).settleMarket();
       // }
+    }
+
+    /**
+    * @dev Get market settle time
+    * @return the time at which the market result will be declared
+    */
+    function marketSettleTime(uint256 _marketId) public view returns(uint64) {
+      if(marketSettleData[_marketId].settleTime > 0) {
+        return marketSettleData[_marketId].settleTime;
+      }
+      return uint64(marketData[_marketId].startTime.add(marketData[_marketId].predictionTime.mul(2)));
+    }
+
+    /**
+    * @dev Gets the status of market.
+    * @return PredictionStatus representing the status of market.
+    */
+    function marketStatus(uint256 _marketId) internal view returns(PredictionStatus){
+      if(predictionStatus == PredictionStatus.Live && now >= marketExpireTime(_marketId)) {
+        return PredictionStatus.InSettlement;
+      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime(_marketId)) {
+        return PredictionStatus.Cooling;
+      }
+      return predictionStatus;
+    }
+
+    /**
+    * @dev Get market cooldown time
+    * @return the time upto which user can raise the dispute after the market is settled
+    */
+    function marketCoolDownTime(uint256 _marketId) public view returns(uint256) {
+      return marketSettleData[_marketId].settleTime.add(marketData[_marketId].predictionTime.div(4));
+    }
+
+    /**
+    * @dev Settle the market, setting the winning option
+    */
+    function settleMarket(uint256 _marketId) external {
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, uint256(marketSettleTime(_marketId)));
+      if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
+        _postResult(_value, _roundId, _marketId);
+      }
+    }
+
+    /**
+    * @dev Calculate the result of market.
+    * @param _value The current price of market currency.
+    */
+    function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
+      require(now >= marketSettleTime(_marketId),"Time not reached");
+      require(_value > 0,"value should be greater than 0");
+      uint riskPercentage;
+      ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
+      if(predictionStatus != PredictionStatus.InDispute) {
+        marketSettleData[_marketId].settleTime = uint64(now);
+      } else {
+        delete marketSettleData[_marketId].settleTime;
+      }
+      predictionStatus = PredictionStatus.Settled;
+      if(_value < marketData[_marketId].neutralMinValue) {
+        marketSettleData[_marketId].WinningOption = 1;
+      } else if(_value > marketData[_marketId].neutralMaxValue) {
+        marketSettleData[_marketId].WinningOption = 3;
+      } else {
+        marketSettleData[_marketId].WinningOption = 2;
+      }
+      uint[] memory totalReward = new uint256[](2);
+      if(optionsAvailable[marketSettleData[_marketId].WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
+        optionsAvailable[marketSettleData[_marketId].WinningOption].assetStaked[plotToken] > 0
+      ){
+        for(uint i=1;i <= totalOptions;i++){
+          if(i!=marketSettleData[_marketId].WinningOption) {
+            uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+            totalReward[0] = totalReward[0].add(leveragedAsset);
+            leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+            totalReward[1] = totalReward[1].add(leveragedAsset);
+          }
+        }
+        rewardToDistribute[_marketId] = totalReward;
+      } else {
+        uint256 tokenParticipation;
+        uint256 ethParticipation;
+        for(uint i=1;i <= totalOptions;i++){
+          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          tokenParticipation = tokenParticipation.add(leveragedAsset);
+          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          ethParticipation = ethParticipation.add(leveragedAsset);
+        }
+      }
+      ethAmountToPool[_marketId] = ethParticipation;
+      tokenAmountToPool[_marketId] = tokenParticipation;
+      emit MarketResult(_marketId, rewardToDistribute[_marketId], marketSettleData[_marketId].WinningOption, _value, _roundId);
     }
 
     function pauseMarketCreation() external onlyAuthorizedToGovern {
