@@ -113,7 +113,7 @@ contract Market is Governed{
 
     mapping(address => mapping(uint=> UserData)) internal userData;
 
-    mapping(uint =>mapping(uint=>option)) public optionsAvailable;
+    mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
     mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
     struct MarketTypeData {
       uint64 optionRangePerc;
@@ -233,8 +233,8 @@ contract Market is Governed{
 
     function getTotalAssetsStaked(uint _marketId) public view returns(uint256 ethStaked, uint256 plotStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
-        ethStaked = ethStaked.add(optionsAvailable[i].assetStaked[ETH_ADDRESS]);
-        plotStaked = plotStaked.add(optionsAvailable[i].assetStaked[plotToken]);
+        ethStaked = ethStaked.add(marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS]);
+        plotStaked = plotStaked.add(marketOptionsAvailable[_marketId][i].assetStaked[plotToken]);
       }
     }
 
@@ -246,12 +246,12 @@ contract Market is Governed{
       params[3] = marketData.startTime;
       params[4] = marketExpireTime(_marketId);
       (params[5], params[6]) = getTotalAssetsStaked(_marketId);
-      params[7] = optionsAvailable[_prediction].assetStaked[ETH_ADDRESS];
-      params[8] = optionsAvailable[_prediction].assetStaked[plotToken];
+      params[7] = marketOptionsAvailable[_marketId][_prediction].assetStaked[ETH_ADDRESS];
+      params[8] = marketOptionsAvailable[_marketId][_prediction].assetStaked[plotToken];
       params[9] = _predictionStake;
       params[10] = _leverage;
       bool checkMultiplier;
-      if(!userData[msg.sender].multiplierApplied) {
+      if(!userData[msg.sender][_marketId].multiplierApplied) {
         checkMultiplier = true;
       }
       (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
@@ -283,8 +283,8 @@ contract Market is Governed{
         } else {
           require(_asset == tokenController.bLOTToken());
           require(_leverage == MAX_LEVERAGE);
-          require(!userData[msg.sender].predictedWithBlot);
-          userData[msg.sender].predictedWithBlot = true;
+          require(!userData[msg.sender][_marketId].predictedWithBlot);
+          userData[msg.sender][_marketId].predictedWithBlot = true;
           tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
           _asset = plotToken;
         }
@@ -299,7 +299,7 @@ contract Market is Governed{
 
       (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _leverage, _asset);
       if(isMultiplierApplied) {
-        userData[msg.sender].multiplierApplied = true; 
+        userData[msg.sender][_marketId].multiplierApplied = true; 
       }
       require(predictionPoints > 0);
 
@@ -316,12 +316,12 @@ contract Market is Governed{
     * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _marketId, uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
-      userData[msg.sender][_marketId].predictionPoints[_prediction] = userData[msg.sender][_marketId].predictionPoints[_prediction]+(predictionPoints);
-      userData[msg.sender][_marketId].assetStaked[_asset][_prediction] = userData[msg.sender][_marketId].assetStaked[_asset][_prediction]+(_predictionStake);
-      userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction] = userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction]+(_predictionStake*(_leverage));
-      optionsAvailable[_marketId][_prediction].predictionPoints = optionsAvailable[_prediction][_marketId].predictionPoints+(predictionPoints);
-      optionsAvailable[_marketId][_prediction].assetStaked[_asset] = optionsAvailable[_prediction][_marketId].assetStaked[_asset]+(_predictionStake);
-      optionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction][_marketId].assetLeveraged[_asset]+(_predictionStake*(_leverage));
+      userData[msg.sender][_marketId].predictionPoints[_prediction] = userData[msg.sender][_marketId].predictionPoints[_prediction].add(predictionPoints);
+      userData[msg.sender][_marketId].assetStaked[_asset][_prediction] = userData[msg.sender][_marketId].assetStaked[_asset][_prediction].add(_predictionStake);
+      userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction] = userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
+      marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_prediction][_marketId].predictionPoints.add(predictionPoints);
+      marketOptionsAvailable[_marketId][_prediction].assetStaked[_asset] = marketOptionsAvailable[_prediction][_marketId].assetStaked[_asset].add(_predictionStake);
+      marketOptionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = marketOptionsAvailable[_prediction][_marketId].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
     /**
@@ -335,13 +335,13 @@ contract Market is Governed{
     */
     function _setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
       if(_predictionAsset == ETH_ADDRESS) {
-        userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
+        userData[_user][_marketId].totalEthStaked = userData[_user][_marketId].totalEthStaked.add(_value);
       } else {
-        userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
+        userData[_user][_marketId].totalPlotStaked = userData[_user][_marketId].totalPlotStaked.add(_value);
       }
-      if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
-        userData[_user].marketsParticipated.push(msg.sender);
-        userData[_user].marketsParticipatedFlag[msg.sender] = true;
+      if(!userData[_user][_marketId].marketsParticipatedFlag[msg.sender]) {
+        userData[_user][_marketId].marketsParticipated.push(msg.sender);
+        userData[_user][_marketId].marketsParticipatedFlag[msg.sender] = true;
       }
       emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
