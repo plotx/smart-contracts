@@ -32,7 +32,7 @@ var incentivesGained = 0;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 var nullAddress = "0x0000000000000000000000000000";
 
-contract("MarketUtility", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12]) {
+contract("MarketUtility", async function([user1, user2, user3, user4, user5, user6, user7, user8, user9, user10, user11, user12, user13]) {
 	let masterInstance,
 		plotusToken,
 		marketConfig,
@@ -337,11 +337,11 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
-        from: user12,
+        from: user13,
       });
       await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
         value: "1000000000000000000",
-        from: user12,
+        from: user13,
       });
       await plotusToken.transfer(user7, toWei(10000));
       await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});

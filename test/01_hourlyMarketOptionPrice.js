@@ -612,7 +612,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.13);
-		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
+		assert.equal((optionPriceETH2 / 1000).toFixed(2), (0.15).toFixed(2));
 		assert.equal((optionPriceETH3 / 1000).toFixed(2), (0.078).toFixed(2));
 		assert.equal(parseInt(optionPriceLOT1 / 1000), parseInt(11));
 		expect(optionPriceLOT2 / 1000).to.be.closeTo(12.9, 13.3);//12.917
