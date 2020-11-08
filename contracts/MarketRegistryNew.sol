@@ -178,12 +178,14 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 count;
       uint256 i;
       for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
-        MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+        MarketCreationRewardData storage marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
         if(marketData.ethIncentive > 0 || marketData.plotIncentive > 0) {
           ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
           if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
             ethIncentive = ethIncentive.add(marketData.ethIncentive);
             plotIncentive = plotIncentive.add(marketData.plotIncentive);
+            delete marketData.ethIncentive;
+            delete marketData.plotIncentive;
             count++;
           } else {
             if(lastClaimed == len) {
