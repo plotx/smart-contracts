@@ -64,6 +64,8 @@ contract Market is Governed{
     uint constant ethCommissionPerc = 10; //with 2 decimals
     uint constant plotCommissionPerc = 5; //with 2 decimals
     // bytes32[] public constant marketCurrency = ["BTC/USD","ETH/USD"];
+
+    uint256 internal marketCreationIncentive;
     
     mapping(uint => bool) internal lockedForDispute;
     mapping(uint =>address) internal incentiveToken;
@@ -120,6 +122,7 @@ contract Market is Governed{
 
     mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
     mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
+    mapping(address => uint256) marketsCreatedByUser;
     struct MarketTypeData {
       uint64 optionRangePerc;
       uint32 index;
@@ -194,13 +197,39 @@ contract Market is Governed{
       marketData.push(MarketData(marketType[_predictionTime].index,_marketCurrencyIndex,_startTime,_predictionTime,_minValue,_maxValue));
       (marketCreationData[_predictionTime][_marketCurrencyIndex].penultimateMarket, marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket, uint64(marketIndex));
+      marketsCreatedByUser[msg.sender]++;
+    }
+
+    /**
+    * @dev function to reward user for initiating market creation calls
+    */
+    function claimCreationReward() external {
+      require(marketsCreatedByUser[msg.sender] > 0);
+      uint256 pendingReward = marketCreationIncentive.mul(marketsCreatedByUser[msg.sender]);
+      require(plotToken.balanceOf(address(this)) > pendingReward);
+      delete marketsCreatedByUser[msg.sender];
+      _transferAsset(address(plotToken), msg.sender, pendingReward);
+    }
+
+    /**
+    * @dev Transfer the assets to specified address.
+    * @param _asset The asset transfer to the specific address.
+    * @param _recipient The address to transfer the asset of
+    * @param _amount The amount which is transfer.
+    */
+    function _transferAsset(address _asset, address payable _recipient, uint256 _amount) internal {
+      if(_amount > 0) { 
+        if(_asset == ETH_ADDRESS) {
+          _recipient.transfer(_amount);
+        } else {
+          require(IToken(_asset).transfer(_recipient, _amount));
+        }
+      }
     }
 
     function _checkPreviousMarket(uint64 _predictionTime, uint64 _marketCurrencyIndex) internal {
       uint64 penultimateMarket = marketCreationData[_predictionTime][_marketCurrencyIndex].penultimateMarket;
-      // if(penultimateMarket != address(0)) {
-      //   IMarket(penultimateMarket).settleMarket();
-      // }
+      settleMarket(penultimateMarket);
     }
 
     /**
