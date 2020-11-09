@@ -440,8 +440,8 @@ contract Market is Governed{
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken]  += UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
     }
 
-     function  withdraw() public returns(bool res)  {
-      withdrawReward(msg.sender);
+     function  withdraw(uint _maxRecords) public returns(bool res)  {
+      withdrawReward(_maxRecords);
       uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
       uint _amountEth = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = 0;
@@ -535,7 +535,7 @@ contract Market is Governed{
       }
       require(predictionPoints > 0);
 
-      _storePredictionData(_prediction, _commissionStake, _asset, _leverage, predictionPoints);
+      _storePredictionData(_marketId, _prediction, _commissionStake, _asset, _leverage, predictionPoints);
       _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
@@ -569,18 +569,18 @@ contract Market is Governed{
     */
     function claimReturn(address payable _user, uint _marketId) public returns(uint256) {
 
-      if(lockedForDispute || marketStatus(_marketId) != PredictionStatus.Settled || marketCreationPaused) {
+      if(lockedForDispute[_marketId] || marketStatus(_marketId) != PredictionStatus.Settled || marketCreationPaused) {
         return 0;
       }
       if(userData[_user][_marketId].claimedReward) {
         return 1;
       }
       userData[_user][_marketId].claimedReward = true;
-      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user);
+      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user, _marketId);
       UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken].add(_returnAmount[0]);
       UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS].add(_returnAmount[1]);
-      _transferAsset(incentiveToken, _user, _incentive);
-      emit Claimed(_marketId, _user, _returnAmount, _predictionAssets, _incentive, incentiveToken);
+      _transferAsset(incentiveToken[_marketId], _user, _incentive);
+      emit Claimed(_marketId, _user, _returnAmount, _predictionAssets, _incentive, incentiveToken[_marketId]);
       return 2;
     }
 
@@ -594,7 +594,7 @@ contract Market is Governed{
     function getReturn(address _user, uint _marketId)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint incentive, address _incentiveToken){
       (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
       if(marketStatus(_marketId) != PredictionStatus.Settled || ethStaked.add(plotStaked) ==0) {
-       return (returnAmount, _predictionAssets, incentive, incentiveToken);
+       return (returnAmount, _predictionAssets, incentive, incentiveToken[_marketId]);
       }
       _predictionAssets = new address[](2);
       _predictionAssets[0] = plotToken;
@@ -604,10 +604,10 @@ contract Market is Governed{
       uint256 _totalPredictionPoints = 0;
       (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user, _marketId);
       incentive = _calculateIncentives(_marketId, _totalUserPredictionPoints, _totalPredictionPoints);
-      if(userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption] > 0) {
-        returnAmount = _addUserReward(_user, returnAmount);
+      if(userData[_user][_marketId].predictionPoints[marketSettleData[_marketId].WinningOption] > 0) {
+        returnAmount = _addUserReward(_marketId, _user, returnAmount);
       }
-      return (returnAmount, _predictionAssets, incentive, incentiveToken);
+      return (returnAmount, _predictionAssets, incentive, incentiveToken[_marketId]);
     }
 
     /**
@@ -619,7 +619,7 @@ contract Market is Governed{
     function _addUserReward(uint256 _marketId, address _user, uint[] memory returnAmount) internal view returns(uint[] memory){
       uint reward;
       for(uint j = 0; j< returnAmount.length; j++) {
-        reward = userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption].mul(rewardToDistribute[_marketId][j]).div(marketOptionsAvailable[marketSettleData.WinningOption].predictionPoints);
+        reward = userData[_user][_marketId].predictionPoints[marketSettleData[_marketId].WinningOption].mul(rewardToDistribute[_marketId][j]).div(marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].predictionPoints);
         returnAmount[j] = returnAmount[j].add(reward);
       }
       return returnAmount;
@@ -648,20 +648,20 @@ contract Market is Governed{
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user][_marketId].predictionPoints[i]);
         _totalPredictionPoints = _totalPredictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
-        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
-        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
+        _return[0] =  _callReturn(_marketId, _return[0], _user, i, riskPercentage, plotToken);
+        _return[1] =  _callReturn(_marketId, _return[1], _user, i, riskPercentage, ETH_ADDRESS);
       }
     }
 
     /**
     * @dev Calls the total return amount internally.
     */
-    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
-      if(i == marketSettleData.WinningOption) {
+    function _callReturn(uint _marketId, uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
+      if(i == marketSettleData[_marketId].WinningOption) {
         riskPercentage = 0;
       }
-      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
-      return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset));
+      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user][_marketId].LeverageAsset[_asset][i], 100);
+      return _return.add(userData[_user][_marketId].assetStaked[_asset][i].sub(leveragedAsset));
     }
 
     /**
