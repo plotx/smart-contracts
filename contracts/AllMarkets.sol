@@ -21,7 +21,7 @@ import "./interfaces/IMarketUtility.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/IToken.sol";
 // import "./IERC20.sol";
-// import "./interfaces/ITokenController.sol";
+import "./interfaces/ITokenController.sol";
 // import "./interfaces/IMarketRegistry.sol";
 
 contract Market is Governed{
@@ -225,7 +225,7 @@ contract Market is Governed{
 
     /**
     * @dev Raise the dispute if wrong value passed at the time of market result declaration.
-    * @param proposedValue The proposed value of market currency.
+    * @param _proposedValue The proposed value of market currency.
     * @param proposalTitle The title of proposal created by user.
     * @param description The description of dispute.
     * @param solutionHash The ipfs solution hash.
@@ -251,7 +251,7 @@ contract Market is Governed{
 
     /**
     * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
-    * @param _marketAddress The address specify the market.
+    * @param _marketId Index of market.
     * @param _result The final result of the market.
     */
     function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
