@@ -27,7 +27,7 @@ import "./interfaces/IToken.sol";
 contract Market is Governed{
     using SafeMath for *;
 
-       enum PredictionStatus {
+    enum PredictionStatus {
       Live,
       InSettlement,
       Cooling,
@@ -85,11 +85,19 @@ contract Market is Governed{
     struct UserData {
       bool claimedReward;
       bool predictedWithBlot;
-       bool multiplierApplied;
+      bool multiplierApplied;
       mapping(uint => uint) predictionPoints;
       mapping(address => mapping(uint => uint)) assetStaked;
       mapping(address => mapping(uint => uint)) PLOTStaked;
-       mapping(address => mapping(uint => uint)) LeverageAsset;
+      mapping(address => mapping(uint => uint)) LeverageAsset;
+    }
+
+    struct UserParticipationData {
+      uint256 lastClaimedIndex;
+      uint256 totalEthStaked;
+      uint256 totalPlotStaked;
+      uint[] marketsParticipated;
+      mapping(uint => bool) marketsParticipatedFlag;
     }
 
     struct MarketData {
@@ -118,7 +126,9 @@ contract Market is Governed{
     MarketSettleData public marketSettleData;
 
     mapping(uint256 => MarketSettleData) marketSettleData;
-    mapping(address => mapping(uint=> UserData)) internal userData;
+    mapping(address => mapping(uint => UserData)) internal userData;
+    mapping(address => UserParticipationData) userParticipationData;
+    
 
     mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
     mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
@@ -347,14 +357,14 @@ contract Market is Governed{
     function  deposit(uint _amount) payable public returns(bool res)  {
       plt.transferFrom (msg.sender,address(this), _amount);
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address]  += UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address].add(_amount);
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken]  += UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
     }
 
      function  withdraw() public returns(bool res)  {
       withdrawReward(msg.sender);
-      uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address];
+      uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
       uint _amountEth = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plt.address] = 0;
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = 0;
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = 0;
       msg.sender.transfer(_amountEth);
       plt.transfer (msg.sender, _amountPlt);
@@ -450,6 +460,131 @@ contract Market is Governed{
     }
 
     /**
+    * @dev Claim the pending return of the market.
+    * @param maxRecords Maximum number of records to claim reward for
+    */
+    function withdrawReward(uint256 maxRecords) public {
+      uint256 i;
+      uint len = userParticipationData[msg.sender].marketsParticipated.length;
+      uint lastClaimed = len;
+      uint count;
+      for(i = userParticipationData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
+        if(claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]) > 0) {
+          count++;
+        } else {
+          if(lastClaimed == len) {
+            lastClaimed = i;
+          }
+        }
+      }
+      if(lastClaimed == len) {
+        lastClaimed = i;
+      }
+      userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
+    }
+    /**
+    * @dev Claim the return amount of the specified address.
+    * @param _user The address to query the claim return amount of.
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
+    */
+    function claimReturn(address payable _user, uint _marketId) public returns(uint256) {
+
+      if(lockedForDispute || marketStatus(_marketId) != PredictionStatus.Settled || marketCreationPaused) {
+        return 0;
+      }
+      if(userData[_user][_marketId].claimedReward) {
+        return 1;
+      }
+      userData[_user][_marketId].claimedReward = true;
+      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user);
+      UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken].add(_returnAmount[0]);
+      UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS].add(_returnAmount[1]);
+      _transferAsset(incentiveToken, _user, _incentive);
+      marketRegistry.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentive, incentiveToken);
+      return 2;
+    }
+
+    /** 
+    * @dev Gets the return amount of the specified address.
+    * @param _user The address to specify the return of
+    * @return returnAmount uint[] memory representing the return amount.
+    * @return incentive uint[] memory representing the amount incentive.
+    * @return _incentiveTokens address[] memory representing the incentive tokens.
+    */
+    function getReturn(address _user, uint _marketId)public view returns (uint[] memory returnAmount, address[] memory _predictionAssets, uint incentive, address _incentiveToken){
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
+      if(marketStatus(_marketId) != PredictionStatus.Settled || ethStaked.add(plotStaked) ==0) {
+       return (returnAmount, _predictionAssets, incentive, incentiveToken);
+      }
+      _predictionAssets = new address[](2);
+      _predictionAssets[0] = plotToken;
+      _predictionAssets[1] = ETH_ADDRESS;
+
+      uint256 _totalUserPredictionPoints = 0;
+      uint256 _totalPredictionPoints = 0;
+      (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user, _marketId);
+      incentive = _calculateIncentives(_marketId, _totalUserPredictionPoints, _totalPredictionPoints);
+      if(userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption] > 0) {
+        returnAmount = _addUserReward(_user, returnAmount);
+      }
+      return (returnAmount, _predictionAssets, incentive, incentiveToken);
+    }
+
+    /**
+    * @dev Adds the reward in the total return of the specified address.
+    * @param _user The address to specify the return of.
+    * @param returnAmount The return amount.
+    * @return uint[] memory representing the return amount after adding reward.
+    */
+    function _addUserReward(uint256 _marketId, address _user, uint[] memory returnAmount) internal view returns(uint[] memory){
+      uint reward;
+      for(uint j = 0; j< returnAmount.length; j++) {
+        reward = userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption].mul(rewardToDistribute[_marketId][j]).div(optionsAvailable[marketSettleData.WinningOption].predictionPoints);
+        returnAmount[j] = returnAmount[j].add(reward);
+      }
+      return returnAmount;
+    }
+
+    /**
+    * @dev Calculates the incentives.
+    * @param _totalUserPredictionPoints The positions of user.
+    * @param _totalPredictionPoints The total positions of winners.
+    * @return incentive the calculated incentive.
+    */
+    function _calculateIncentives(uint256 _marketId, uint256 _totalUserPredictionPoints, uint256 _totalPredictionPoints) internal view returns(uint256 incentive){
+      incentive = _totalUserPredictionPoints.mul(incentiveToDistribute[_marketId].div(_totalPredictionPoints));
+    }
+
+    /**
+    * @dev Calculate the return of the specified address.
+    * @param _user The address to query the return of.
+    * @return _return uint[] memory representing the return amount owned by the passed address.
+    * @return _totalUserPredictionPoints uint representing the positions owned by the passed address.
+    * @return _totalPredictionPoints uint representing the total positions of winners.
+    */
+    function _calculateUserReturn(address _user, uint _marketId) internal view returns(uint[] memory _return, uint _totalUserPredictionPoints, uint _totalPredictionPoints){
+      ( , uint riskPercentage, , ) = marketUtility.getBasicMarketDetails();
+      _return = new uint256[](2);
+      for(uint  i=1;i<=totalOptions;i++){
+        _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user][_marketId].predictionPoints[i]);
+        _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[_marketId][i].predictionPoints);
+        _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
+        _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
+      }
+    }
+
+    /**
+    * @dev Calls the total return amount internally.
+    */
+    function _callReturn(uint _return,address _user,uint i,uint riskPercentage, address _asset)internal view returns(uint){
+      if(i == marketSettleData.WinningOption) {
+        riskPercentage = 0;
+      }
+      uint256 leveragedAsset = _calculatePercentage(riskPercentage, userData[_user].LeverageAsset[_asset][i], 100);
+      return _return.add(userData[_user].assetStaked[_asset][i].sub(leveragedAsset));
+    }
+
+    /**
     * @dev Stores the prediction data.
     * @param _prediction The option on which user place prediction.
     * @param _predictionStake The amount staked by user at the time of prediction.
@@ -477,13 +612,13 @@ contract Market is Governed{
     */
     function _setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
       if(_predictionAsset == ETH_ADDRESS) {
-        userData[_user][_marketId].totalEthStaked = userData[_user][_marketId].totalEthStaked.add(_value);
+        userParticipationData[_user].totalEthStaked = userParticipationData[_user].totalEthStaked.add(_value);
       } else {
-        userData[_user][_marketId].totalPlotStaked = userData[_user][_marketId].totalPlotStaked.add(_value);
+        userParticipationData[_user].totalPlotStaked = userParticipationData[_user].totalPlotStaked.add(_value);
       }
-      if(!userData[_user][_marketId].marketsParticipatedFlag[msg.sender]) {
-        userData[_user][_marketId].marketsParticipated.push(msg.sender);
-        userData[_user][_marketId].marketsParticipatedFlag[msg.sender] = true;
+      if(!userParticipationData[_user].marketsParticipatedFlag[_marketId]) {
+        userParticipationData[_user].marketsParticipated.push(_marketId);
+        userParticipationData[_user].marketsParticipatedFlag[_marketId] = true;
       }
       emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
