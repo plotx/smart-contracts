@@ -19,10 +19,11 @@ import "./external/openzeppelin-solidity/math/SafeMath.sol";
 // import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMarketUtility.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./interfaces/IToken.sol";
 // import "./IERC20.sol";
 import "./interfaces/ITokenController.sol";
-// import "./interfaces/IMarketRegistry.sol";
+import "./interfaces/IMarketRegistry.sol";
 
 contract Market is Governed{
     using SafeMath for *;
@@ -54,9 +55,10 @@ contract Market is Governed{
     address constant plotToken = 0x10FeBdffd88bD00e47B6901CB6Eb1b440931d235;
     IToken plt = IToken(plotToken);
 
-    // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
+    IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
     ITokenController constant tokenController = ITokenController(0xCEFED1C83a84FB5AcAF15734010d51B87C3cc73A);
     IMarketUtility constant marketUtility = IMarketUtility(0xFB2990f67cd035E1C62eEc9D98A66E817a830E40);
+    IGovernance internal governance = IGovernance(0x309D36e5887EA8863A721680f728487F8d70DD09);
 
     // uint8[] constant roundOfToNearest = [25,1];
     uint constant totalOptions = 3;
@@ -123,8 +125,10 @@ contract Market is Governed{
     event MarketTypes(uint64 indexed predictionTime, uint64 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
-    event Claimed(uint indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
+    event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId,uint256 _leverage);
+    event DisputeRaised(uint256 indexed marketId, address raisedBy, uint64 proposalId, uint256 proposedValue);
+    event DisputeResolved(uint256 indexed marketId, bool status);
 
     MarketData[] public marketData;
 
@@ -153,7 +157,7 @@ contract Market is Governed{
       uint64 initialStartTime;
       uint64 latestMarket;
       uint64 penultimateMarket;
-      uint64 paused;
+      bool paused;
     }
 
 
@@ -220,7 +224,7 @@ contract Market is Governed{
     function claimCreationReward() external {
       require(marketsCreatedByUser[msg.sender] > 0);
       uint256 pendingReward = marketCreationIncentive.mul(marketsCreatedByUser[msg.sender]);
-      require(plotToken.balanceOf(address(this)) > pendingReward);
+      require(plt.balanceOf(address(this)) > pendingReward);
       delete marketsCreatedByUser[msg.sender];
       _transferAsset(address(plotToken), msg.sender, pendingReward);
     }
@@ -245,7 +249,7 @@ contract Market is Governed{
       marketData[_marketId].disputeStakeAmount = _stakeForDispute;
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(address(this), _proposedValue));
-      emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
+      emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
       delete ethAmountToPool[_marketId];
       delete tokenAmountToPool[_marketId];
       predictionStatus[_marketId] = PredictionStatus.InDispute;
@@ -287,7 +291,7 @@ contract Market is Governed{
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
       uint _stakedAmount = marketData[_marketId].disputeStakeAmount;
-      plotToken.burn(_stakedAmount);
+      plt.burn(_stakedAmount);
     }
 
     function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
@@ -333,12 +337,12 @@ contract Market is Governed{
     * @return PredictionStatus representing the status of market.
     */
     function marketStatus(uint256 _marketId) internal view returns(PredictionStatus){
-      if(predictionStatus == PredictionStatus.Live && now >= marketExpireTime(_marketId)) {
+      if(predictionStatus[_marketId] == PredictionStatus.Live && now >= marketExpireTime(_marketId)) {
         return PredictionStatus.InSettlement;
-      } else if(predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime(_marketId)) {
+      } else if(predictionStatus[_marketId] == PredictionStatus.Settled && now <= marketCoolDownTime(_marketId)) {
         return PredictionStatus.Cooling;
       }
-      return predictionStatus;
+      return predictionStatus[_marketId];
     }
 
     /**
@@ -352,7 +356,7 @@ contract Market is Governed{
     /**
     * @dev Settle the market, setting the winning option
     */
-    function settleMarket(uint256 _marketId) external {
+    function settleMarket(uint256 _marketId) public {
       (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketData[_marketId].currency].marketFeed, uint256(marketSettleTime(_marketId)));
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId, _marketId);
@@ -370,12 +374,12 @@ contract Market is Governed{
       uint256 tokenParticipation;
       uint256 ethParticipation;
       ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
-      if(predictionStatus != PredictionStatus.InDispute) {
+      if(predictionStatus[_marketId] != PredictionStatus.InDispute) {
         marketSettleData[_marketId].settleTime = uint64(now);
       } else {
         delete marketSettleData[_marketId].settleTime;
       }
-      predictionStatus = PredictionStatus.Settled;
+      predictionStatus[_marketId] = PredictionStatus.Settled;
       if(_value < marketData[_marketId].neutralMinValue) {
         marketSettleData[_marketId].WinningOption = 1;
       } else if(_value > marketData[_marketId].neutralMaxValue) {
@@ -384,14 +388,14 @@ contract Market is Governed{
         marketSettleData[_marketId].WinningOption = 2;
       }
       uint[] memory totalReward = new uint256[](2);
-      if(optionsAvailable[marketSettleData[_marketId].WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
-        optionsAvailable[marketSettleData[_marketId].WinningOption].assetStaked[plotToken] > 0
+      if(marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].assetStaked[ETH_ADDRESS] > 0 ||
+        marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].assetStaked[plotToken] > 0
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=marketSettleData[_marketId].WinningOption) {
-            uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+            uint256 leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetLeveraged[plotToken], 100);
             totalReward[0] = totalReward[0].add(leveragedAsset);
-            leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+            leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetLeveraged[ETH_ADDRESS], 100);
             totalReward[1] = totalReward[1].add(leveragedAsset);
           }
         }
@@ -399,9 +403,9 @@ contract Market is Governed{
       } else {
         
         for(uint i=1;i <= totalOptions;i++){
-          uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
+          uint256 leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetLeveraged[plotToken], 100);
           tokenParticipation = tokenParticipation.add(leveragedAsset);
-          leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[ETH_ADDRESS], 100);
+          leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetLeveraged[ETH_ADDRESS], 100);
           ethParticipation = ethParticipation.add(leveragedAsset);
         }
       }
@@ -469,9 +473,9 @@ contract Market is Governed{
     function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, uint _leverage, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
       uint[] memory params = new uint[](11);
       params[0] = _prediction;
-      params[1] = marketData.neutralMinValue;
-      params[2] = marketData.neutralMaxValue;
-      params[3] = marketData.startTime;
+      params[1] = marketData[_marketId].neutralMinValue;
+      params[2] = marketData[_marketId].neutralMaxValue;
+      params[3] = marketData[_marketId].startTime;
       params[4] = marketExpireTime(_marketId);
       (params[5], params[6]) = getTotalAssetsStaked(_marketId);
       params[7] = marketOptionsAvailable[_marketId][_prediction].assetStaked[ETH_ADDRESS];
