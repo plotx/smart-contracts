@@ -55,7 +55,7 @@ contract Market is Governed{
     IToken plt = IToken(plotToken);
 
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
-    // ITokenController constant tokenController = ITokenController(0xCEFED1C83a84FB5AcAF15734010d51B87C3cc73A);
+    ITokenController constant tokenController = ITokenController(0xCEFED1C83a84FB5AcAF15734010d51B87C3cc73A);
     IMarketUtility constant marketUtility = IMarketUtility(0xFB2990f67cd035E1C62eEc9D98A66E817a830E40);
 
     // uint8[] constant roundOfToNearest = [25,1];
@@ -107,6 +107,8 @@ contract Market is Governed{
       uint32 predictionTime;
       uint64 neutralMinValue;
       uint64 neutralMaxValue;
+      address disputeRaisedBy;
+      uint256 disputeStakeAmount;
     }
     
     struct UserGlobalPrediction
@@ -123,7 +125,6 @@ contract Market is Governed{
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
 
     MarketData[] public marketData;
-    MarketSettleData public marketSettleData;
 
     mapping(uint256 => MarketSettleData) marketSettleData;
     mapping(address => mapping(uint => UserData)) internal userData;
@@ -133,6 +134,7 @@ contract Market is Governed{
     mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
     mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
     mapping(address => uint256) marketsCreatedByUser;
+    mapping(uint64 => uint256) disputeProposalId;
     struct MarketTypeData {
       uint64 optionRangePerc;
       uint32 index;
@@ -204,7 +206,7 @@ contract Market is Governed{
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint marketIndex = marketData.length;
-      marketData.push(MarketData(marketType[_predictionTime].index,_marketCurrencyIndex,_startTime,_predictionTime,_minValue,_maxValue));
+      marketData.push(MarketData(marketType[_predictionTime].index,_marketCurrencyIndex,_startTime,_predictionTime,_minValue,_maxValue, address(0),0));
       (marketCreationData[_predictionTime][_marketCurrencyIndex].penultimateMarket, marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_predictionTime][_marketCurrencyIndex].latestMarket, uint64(marketIndex));
       marketsCreatedByUser[msg.sender]++;
@@ -219,6 +221,77 @@ contract Market is Governed{
       require(plotToken.balanceOf(address(this)) > pendingReward);
       delete marketsCreatedByUser[msg.sender];
       _transferAsset(address(plotToken), msg.sender, pendingReward);
+    }
+
+    /**
+    * @dev Raise the dispute if wrong value passed at the time of market result declaration.
+    * @param proposedValue The proposed value of market currency.
+    * @param proposalTitle The title of proposal created by user.
+    * @param description The description of dispute.
+    * @param solutionHash The ipfs solution hash.
+    */
+    function raiseDispute(uint256 _marketId, uint256 _proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
+      require(getTotalStakedValueInPLOT(_marketId) > 0, "No participation");
+      require(marketStatus(_marketId) == PredictionStatus.Cooling);
+      uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
+      tokenController.transferFrom(plotToken, msg.sender, address(marketRegistry), _stakeForDispute);
+      lockedForDispute[_marketId] = true;
+      // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
+      uint64 proposalId = uint64(governance.getProposalLength());
+      // marketData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
+      marketData[_marketId].disputeRaisedBy = msg.sender;
+      marketData[_marketId].disputeStakeAmount = _stakeForDispute;
+      disputeProposalId[proposalId] = _marketId;
+      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(address(this), _proposedValue));
+      emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
+      delete ethAmountToPool[_marketId];
+      delete tokenAmountToPool[_marketId];
+      predictionStatus[_marketId] = PredictionStatus.InDispute;
+    }
+
+    /**
+    * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
+    * @param _marketAddress The address specify the market.
+    * @param _result The final result of the market.
+    */
+    function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
+      uint256 stakedAmount = marketData[_marketId].disputeStakeAmount;
+      address payable staker = address(uint160(marketData[_marketId].disputeRaisedBy));
+      _resolveDispute(_marketId, true, _result);
+      emit DisputeResolved(_marketId, true);
+      _transferAsset(plotToken, staker, stakedAmount);
+    }
+
+    /**
+    * @dev Resolve the dispute
+    * @param accepted Flag mentioning if dispute is accepted or not
+    * @param finalResult The final correct value of market currency.
+    */
+    function _resolveDispute(uint256 _marketId, bool accepted, uint256 finalResult) internal {
+      require(marketStatus(_marketId) == PredictionStatus.InDispute);
+      if(accepted) {
+        _postResult(finalResult, 0, _marketId);
+      }
+      lockedForDispute[_marketId] = false;
+      predictionStatus[_marketId] = PredictionStatus.Settled;
+    }
+
+    /**
+    * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
+    * @param _proposalId Id of dispute resolution proposal
+    */
+    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
+      uint256 _marketId = disputeProposalId[uint64(_proposalId)];
+      _resolveDispute(_marketId, false, 0);
+      emit DisputeResolved(_marketId, false);
+      uint _stakedAmount = marketData[_marketId].disputeStakeAmount;
+      plotToken.burn(_stakedAmount);
+    }
+
+    function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
+      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
+      return plotStaked.add(ethStaked);
     }
 
     /**
