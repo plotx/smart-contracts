@@ -123,6 +123,8 @@ contract Market is Governed{
     event MarketTypes(uint64 indexed predictionTime, uint64 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
+    event Claimed(uint indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId,uint256 _leverage);
 
     MarketData[] public marketData;
 
@@ -351,7 +353,7 @@ contract Market is Governed{
     * @dev Settle the market, setting the winning option
     */
     function settleMarket(uint256 _marketId) external {
-      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketFeedAddress, uint256(marketSettleTime(_marketId)));
+      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketData[_marketId].currency].marketFeed, uint256(marketSettleTime(_marketId)));
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
         _postResult(_value, _roundId, _marketId);
       }
@@ -365,6 +367,8 @@ contract Market is Governed{
       require(now >= marketSettleTime(_marketId),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint riskPercentage;
+      uint256 tokenParticipation;
+      uint256 ethParticipation;
       ( , riskPercentage, , ) = marketUtility.getBasicMarketDetails();
       if(predictionStatus != PredictionStatus.InDispute) {
         marketSettleData[_marketId].settleTime = uint64(now);
@@ -393,8 +397,7 @@ contract Market is Governed{
         }
         rewardToDistribute[_marketId] = totalReward;
       } else {
-        uint256 tokenParticipation;
-        uint256 ethParticipation;
+        
         for(uint i=1;i <= totalOptions;i++){
           uint256 leveragedAsset = _calculatePercentage(riskPercentage, optionsAvailable[i].assetLeveraged[plotToken], 100);
           tokenParticipation = tokenParticipation.add(leveragedAsset);
@@ -479,7 +482,7 @@ contract Market is Governed{
       if(!userData[msg.sender][_marketId].multiplierApplied) {
         checkMultiplier = true;
       }
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketCurrencies[marketData[_marketId].currency].marketFeed, checkMultiplier);
       
     }
     
@@ -529,7 +532,7 @@ contract Market is Governed{
       require(predictionPoints > 0);
 
       _storePredictionData(_prediction, _commissionStake, _asset, _leverage, predictionPoints);
-      _setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
     /**
@@ -573,7 +576,7 @@ contract Market is Governed{
       UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken].add(_returnAmount[0]);
       UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS].add(_returnAmount[1]);
       _transferAsset(incentiveToken, _user, _incentive);
-      marketRegistry.callClaimedEvent(_user, _returnAmount, _predictionAssets, _incentive, incentiveToken);
+      emit Claimed(_marketId, _user, _returnAmount, _predictionAssets, _incentive, incentiveToken);
       return 2;
     }
 
@@ -612,7 +615,7 @@ contract Market is Governed{
     function _addUserReward(uint256 _marketId, address _user, uint[] memory returnAmount) internal view returns(uint[] memory){
       uint reward;
       for(uint j = 0; j< returnAmount.length; j++) {
-        reward = userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption].mul(rewardToDistribute[_marketId][j]).div(optionsAvailable[marketSettleData.WinningOption].predictionPoints);
+        reward = userData[_user][_marketId].predictionPoints[marketSettleData.WinningOption].mul(rewardToDistribute[_marketId][j]).div(marketOptionsAvailable[marketSettleData.WinningOption].predictionPoints);
         returnAmount[j] = returnAmount[j].add(reward);
       }
       return returnAmount;
@@ -640,7 +643,7 @@ contract Market is Governed{
       _return = new uint256[](2);
       for(uint  i=1;i<=totalOptions;i++){
         _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user][_marketId].predictionPoints[i]);
-        _totalPredictionPoints = _totalPredictionPoints.add(optionsAvailable[_marketId][i].predictionPoints);
+        _totalPredictionPoints = _totalPredictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
         _return[0] =  _callReturn(_return[0], _user, i, riskPercentage, plotToken);
         _return[1] =  _callReturn(_return[1], _user, i, riskPercentage, ETH_ADDRESS);
       }
@@ -683,7 +686,7 @@ contract Market is Governed{
     * @param _prediction The option range on which user placed prediction.
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
-    function _setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
+    function _setUserGlobalPredictionData(uint256 _marketId, address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
       if(_predictionAsset == ETH_ADDRESS) {
         userParticipationData[_user].totalEthStaked = userParticipationData[_user].totalEthStaked.add(_value);
       } else {
@@ -693,7 +696,7 @@ contract Market is Governed{
         userParticipationData[_user].marketsParticipated.push(_marketId);
         userParticipationData[_user].marketsParticipatedFlag[_marketId] = true;
       }
-      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, _marketId,_leverage);
     }
 
     function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
