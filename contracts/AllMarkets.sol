@@ -136,6 +136,7 @@ contract Market is Governed{
       uint64 initialStartTime;
       uint64 latestMarket;
       uint64 penultimateMarket;
+      uint64 paused;
     }
 
 
@@ -175,7 +176,7 @@ contract Market is Governed{
     * @param _predictionTime The time duration of market.
     */
     function initiate(uint32 _marketCurrencyIndex,uint32 _startTime, uint32 _predictionTime) public payable {
-      require(!marketCreationPaused);
+      require(!marketCreationPaused && !marketCreationData[_predictionTime][_marketCurrencyIndex].paused);
       _checkPreviousMarket( _predictionTime, _marketCurrencyIndex);
       // OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       // require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
@@ -297,6 +298,21 @@ contract Market is Governed{
     function pauseMarketCreation() external onlyAuthorizedToGovern {
       require(!marketCreationPaused);
       marketCreationPaused = true;
+    }
+
+    function pauseMarketCreationType(uint64 _predictionTime, uint64 _marketCurrencyIndex) external onlyAuthorizedToGovern {
+      require(!marketCreationData[_predictionTime][_marketCurrencyIndex].paused);
+      marketCreationData[_predictionTime][_marketCurrencyIndex].paused = true;
+    }
+
+    function resumeMarketCreation() external onlyAuthorizedToGovern {
+      require(marketCreationPaused);
+      marketCreationPaused = false;
+    }
+
+    function resumeMarketCreationType(uint64 _predictionTime, uint64 _marketCurrencyIndex) external onlyAuthorizedToGovern {
+      require(marketCreationData[_predictionTime][_marketCurrencyIndex].paused);
+      marketCreationData[_predictionTime][_marketCurrencyIndex].paused = false;
     }
 
     function  deposit(uint _amount) payable public returns(bool res)  {
