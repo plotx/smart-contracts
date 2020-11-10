@@ -576,8 +576,13 @@ contract AllMarkets is Governed {
       uint len = userParticipationData[msg.sender].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
+      uint ethReward = 0;
+      uint plotReward =0 ;
       for(i = userParticipationData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        if(claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]) > 0) {
+        (uint claimed, uint tempEthReward,uint tempPlotReward) = claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]);
+        if(claimed > 0) {
+          ethReward = ethReward.add(tempEthReward);
+          plotReward = plotReward.add(tempPlotReward);
           count++;
         } else {
           if(lastClaimed == len) {
@@ -588,6 +593,8 @@ contract AllMarkets is Governed {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(ethReward);
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(plotReward);
       userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
     }
     /**
@@ -595,21 +602,19 @@ contract AllMarkets is Governed {
     * @param _user The address to query the claim return amount of.
     * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
     */
-    function claimReturn(address payable _user, uint _marketId) public returns(uint256) {
+    function claimReturn(address payable _user, uint _marketId) public returns(uint256, uint256, uint256) {
 
       if(lockedForDispute[_marketId] || marketStatus(_marketId) != PredictionStatus.Settled || marketCreationPaused) {
-        return 0;
+        return (0, 0 ,0);
       }
       if(userData[_user][_marketId].claimedReward) {
-        return 1;
+        return (1, 0, 0);
       }
       userData[_user][_marketId].claimedReward = true;
       (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user, _marketId);
-      UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[_user].currencyUnusedBalance[plotToken].add(_returnAmount[0]);
-      UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[_user].currencyUnusedBalance[ETH_ADDRESS].add(_returnAmount[1]);
       _transferAsset(incentiveToken[_marketId], _user, _incentive);
       emit Claimed(_marketId, _user, _returnAmount, _predictionAssets, _incentive, incentiveToken[_marketId]);
-      return 2;
+      return (2, _returnAmount[0], _returnAmount[1]);
     }
 
     /** 
