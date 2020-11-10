@@ -673,6 +673,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user10});
       let openMarkets = await plotusNewInstance.getOpenMarkets();
       let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      let pendingRewards = await plotusNewInstance.getPendingMarketCreationRewards();
       await increaseTime(100);
       await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
         value: "100000000000000000",
@@ -691,6 +692,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
         from: user7,
       });
       await increaseTime(10000);
+      pendingRewards = await plotusNewInstance.getPendingMarketCreationRewards();
       await marketInstance.settleMarket();
       let proposalId = await governance.getProposalLength();
       await marketInstance.raiseDispute("9999999000000000","raise dispute","this is description","this is solution hash", { from: user10 });
@@ -733,9 +735,12 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
       let oldBalance = parseFloat(await plotusToken.balanceOf(user10));
       let oldBalanceEth = parseFloat(await web3.eth.getBalance(user10));
+      pendingRewards = await plotusNewInstance.getPendingMarketCreationRewards({from:user10});
       tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user10});
       let newBalance = parseFloat(await plotusToken.balanceOf(user10));
       let newBalanceEth = parseFloat(await web3.eth.getBalance(user10));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + pendingRewards[0]/1e18 + pendingRewards[1]/1e18).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + pendingRewards[2]/1e18).toFixed(2));
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
       assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
     });

@@ -201,6 +201,35 @@ contract MarketRegistryNew is MarketRegistry {
     }
 
     /**
+    * @dev function to get pending reward of user for initiating market creation calls as per the new incetive calculations
+    * @return plotIncentive Incentives given for creating market as per the gas consumed
+    * @return pendingPLOTReward PLOT Reward pool share of markets created by user
+    * @return pendingETHReward ETH Reward pool share of markets created by user
+    */
+    function getPendingMarketCreationRewards() external view returns(uint256 plotIncentive, uint256 pendingPLOTReward, uint256 pendingETHReward){
+      plotIncentive = marketCreationRewardUserData[msg.sender].incentives;
+      (pendingETHReward, pendingPLOTReward) = _getPendingRewardPoolIncentives();
+    }
+
+    /**
+    * @dev internal function to calculate market reward pool share incentives for market creator
+    */
+    function _getPendingRewardPoolIncentives() internal view returns(uint256 ethIncentive, uint256 plotIncentive) {
+      MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[msg.sender];
+      uint256 len = rewardData.marketsCreated.length;
+      for(uint256 i = rewardData.lastClaimedIndex;i < len; i++) {
+        MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+        if(marketData.ethIncentive > 0 || marketData.plotIncentive > 0) {
+          ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
+          if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
+            ethIncentive = ethIncentive.add(marketData.ethIncentive);
+            plotIncentive = plotIncentive.add(marketData.plotIncentive);
+          }
+        }
+      }
+    }
+
+    /**
     * @dev Emits the MarketResult event.
     * @param _totalReward The amount of reward to be distribute.
     * @param winningOption The winning option of the market.
