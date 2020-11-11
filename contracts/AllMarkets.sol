@@ -41,7 +41,6 @@ contract AllMarkets is Governed {
       uint predictionPoints;
       uint priceFactor;
       mapping(address => uint256) assetStaked;
-      mapping(address => uint256) assetLeveraged;
       
     }
 
@@ -62,7 +61,6 @@ contract AllMarkets is Governed {
 
     // uint8[] constant roundOfToNearest = [25,1];
     uint constant totalOptions = 3;
-    uint constant MAX_LEVERAGE = 5;
     uint constant ethCommissionPerc = 10; //with 2 decimals
     uint constant plotCommissionPerc = 5; //with 2 decimals
     // bytes32[] public constant marketCurrency = ["BTC/USD","ETH/USD"];
@@ -91,7 +89,6 @@ contract AllMarkets is Governed {
       mapping(uint => uint) predictionPoints;
       mapping(address => mapping(uint => uint)) assetStaked;
       mapping(address => mapping(uint => uint)) PLOTStaked;
-      mapping(address => mapping(uint => uint)) LeverageAsset;
     }
 
     struct UserParticipationData {
@@ -126,7 +123,7 @@ contract AllMarkets is Governed {
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
-    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId,uint256 _leverage);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId);
     event DisputeRaised(uint256 indexed marketId, address raisedBy, uint64 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketId, bool status);
 
@@ -496,7 +493,13 @@ contract AllMarkets is Governed {
       }
     }
 
-    function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, uint _leverage, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
+    function getTotalPredictionPoints(uint _marketId) public view returns(uint256 predictionPoints) {
+      for(uint256 i = 1; i<= totalOptions;i++) {
+        predictionPoints = predictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
+      }
+    }
+
+    function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
       uint[] memory params = new uint[](11);
       params[0] = _prediction;
       params[1] = marketData[_marketId].neutralMinValue;
@@ -504,11 +507,11 @@ contract AllMarkets is Governed {
       params[3] = marketData[_marketId].startTime;
       // params[4] = now + 1000;
       params[4] = marketExpireTime(_marketId);
-      (params[5], params[6]) = getTotalAssetsStaked(_marketId);
-      params[7] = marketOptionsAvailable[_marketId][_prediction].assetStaked[ETH_ADDRESS];
-      params[8] = marketOptionsAvailable[_marketId][_prediction].assetStaked[plotToken];
-      params[9] = _predictionStake;
-      params[10] = _leverage;
+      params[5] = getTotalPredictionPoints(_marketId);
+      params[6] = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
+      // params[7] = marketOptionsAvailable[_marketId][_prediction].assetStaked[ETH_ADDRESS];
+      // params[8] = marketOptionsAvailable[_marketId][_prediction].assetStaked[plotToken];
+      params[7] = _predictionStake;
       bool checkMultiplier;
       if(!userData[msg.sender][_marketId].multiplierApplied) {
         checkMultiplier = true;
@@ -523,13 +526,12 @@ contract AllMarkets is Governed {
     * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
-    * @param _leverage The leverage opted by user at the time of prediction.
     */
-    function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction,uint256 _leverage) public {
-      require(!marketCreationPaused && _prediction <= totalOptions && _leverage <= MAX_LEVERAGE);
+    function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction) public {
+      require(!marketCreationPaused && _prediction <= totalOptions);
       require(now >= marketData[_marketId].startTime && now <= marketExpireTime(_marketId));
-      // require(now >= marketData[_marketId].startTime, "0");
-      // // require(now <= marketExpireTime(_marketId), "2");
+      // require(now >= marketData[_marketId].startTime);
+      // require(now <= marketExpireTime(_marketId));
 
       uint256 _commissionStake;
       if(_asset == ETH_ADDRESS) {
@@ -543,7 +545,6 @@ contract AllMarkets is Governed {
           UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].sub(_predictionStake);
         } else {
           require(_asset == tokenController.bLOTToken());
-          require(_leverage == MAX_LEVERAGE);
           require(!userData[msg.sender][_marketId].predictedWithBlot);
           userData[msg.sender][_marketId].predictedWithBlot = true;
           tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
@@ -557,14 +558,14 @@ contract AllMarkets is Governed {
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
 
-      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _leverage, _asset);
+      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _asset);
       if(isMultiplierApplied) {
         userData[msg.sender][_marketId].multiplierApplied = true; 
       }
       require(predictionPoints > 0);
 
-      _storePredictionData(_marketId, _prediction, _commissionStake, _asset, _leverage, predictionPoints);
-      _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
+      _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction);
     }
 
     /**
@@ -704,10 +705,9 @@ contract AllMarkets is Governed {
     * @param _prediction The option on which user place prediction.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _asset The asset used by user during prediction.
-    * @param _leverage The leverage opted by user during prediction.
     * @param predictionPoints The positions user got during prediction.
     */
-    function _storePredictionData(uint _marketId, uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
+    function _storePredictionData(uint _marketId, uint _prediction, uint _predictionStake, address _asset, uint predictionPoints) internal {
       userData[msg.sender][_marketId].predictionPoints[_prediction] = userData[msg.sender][_marketId].predictionPoints[_prediction].add(predictionPoints);
       userData[msg.sender][_marketId].assetStaked[_asset][_prediction] = userData[msg.sender][_marketId].assetStaked[_asset][_prediction].add(_predictionStake);
       // userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction] = userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
@@ -723,9 +723,8 @@ contract AllMarkets is Governed {
     * @param _predictionPoints The positions user will get.
     * @param _predictionAsset The prediction assets user will get.
     * @param _prediction The option range on which user placed prediction.
-    * @param _leverage The leverage selected by user at the time of place prediction.
     */
-    function _setUserGlobalPredictionData(uint256 _marketId, address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) internal {
+    function _setUserGlobalPredictionData(uint256 _marketId, address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction) internal {
       if(_predictionAsset == ETH_ADDRESS) {
         userParticipationData[_user].totalEthStaked = userParticipationData[_user].totalEthStaked.add(_value);
       } else {
@@ -735,7 +734,7 @@ contract AllMarkets is Governed {
         userParticipationData[_user].marketsParticipated.push(_marketId);
         userParticipationData[_user].marketsParticipatedFlag[_marketId] = true;
       }
-      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, _marketId,_leverage);
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, _marketId);
     }
 
     function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
