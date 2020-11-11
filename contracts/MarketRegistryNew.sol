@@ -33,6 +33,7 @@ contract MarketRegistryNew is MarketRegistry {
       uint ethIncentive;
       uint plotIncentive;
       uint rewardPoolSharePerc;
+      address createdBy;
     }
 
     uint256 maxRewardPoolPercForMC;
@@ -42,6 +43,7 @@ contract MarketRegistryNew is MarketRegistry {
 
     mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
     mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
+    event MarketCreatorRewardPoolShare(address indexed createdBy, address indexed marketAddress, uint256 plotIncentive, uint256 ethIncentive);
     event MarketCreationReward(address indexed createdBy, address marketAddress, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
     event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
 
@@ -109,6 +111,7 @@ contract MarketRegistryNew is MarketRegistry {
     */
     function _checkIfCreatorStaked(address _market) internal {
       uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(msg.sender, "SM", now);
+      marketCreationRewardData[_market].createdBy = msg.sender;
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_market].rewardPoolSharePerc
        = Math.min(
@@ -239,6 +242,7 @@ contract MarketRegistryNew is MarketRegistry {
       require(isMarket(msg.sender));
       marketCreationRewardData[msg.sender].plotIncentive = marketCreatorIncentive[0];
       marketCreationRewardData[msg.sender].ethIncentive = marketCreatorIncentive[1];
+      emit MarketCreatorRewardPoolShare(msg.sender, marketCreationRewardData[msg.sender].createdBy, marketCreatorIncentive[0], marketCreatorIncentive[1]);
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
     }
     
