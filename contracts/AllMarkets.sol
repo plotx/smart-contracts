@@ -63,6 +63,8 @@ contract AllMarkets is Governed {
     uint constant totalOptions = 3;
     uint constant ethCommissionPerc = 10; //with 2 decimals
     uint constant plotCommissionPerc = 5; //with 2 decimals
+    uint constant defaultMaxRecords = 20;
+
     // bytes32[] public constant marketCurrency = ["BTC/USD","ETH/USD"];
 
     uint256 internal marketCreationIncentive;
@@ -530,9 +532,10 @@ contract AllMarkets is Governed {
     function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction) public {
       require(!marketCreationPaused && _prediction <= totalOptions);
       require(now >= marketData[_marketId].startTime && now <= marketExpireTime(_marketId));
-      // require(now >= marketData[_marketId].startTime);
-      // require(now <= marketExpireTime(_marketId));
-
+      if(_predictionStake > UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset] && _asset != tokenController.bLOTToken())
+      {
+        withdrawReward(defaultMaxRecords);
+      }
       uint256 _commissionStake;
       if(_asset == ETH_ADDRESS) {
         require(_predictionStake <= UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS]);
