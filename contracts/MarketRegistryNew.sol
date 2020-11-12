@@ -205,20 +205,21 @@ contract MarketRegistryNew is MarketRegistry {
 
     /**
     * @dev function to get pending reward of user for initiating market creation calls as per the new incetive calculations
+    * @param _user Address of user for whom pending rewards to be checked
     * @return plotIncentive Incentives given for creating market as per the gas consumed
     * @return pendingPLOTReward PLOT Reward pool share of markets created by user
     * @return pendingETHReward ETH Reward pool share of markets created by user
     */
-    function getPendingMarketCreationRewards() external view returns(uint256 plotIncentive, uint256 pendingPLOTReward, uint256 pendingETHReward){
-      plotIncentive = marketCreationRewardUserData[msg.sender].incentives;
-      (pendingETHReward, pendingPLOTReward) = _getPendingRewardPoolIncentives();
+    function getPendingMarketCreationRewards(address _user) external view returns(uint256 plotIncentive, uint256 pendingPLOTReward, uint256 pendingETHReward){
+      plotIncentive = marketCreationRewardUserData[_user].incentives;
+      (pendingETHReward, pendingPLOTReward) = _getPendingRewardPoolIncentives(_user);
     }
 
     /**
     * @dev internal function to calculate market reward pool share incentives for market creator
     */
-    function _getPendingRewardPoolIncentives() internal view returns(uint256 ethIncentive, uint256 plotIncentive) {
-      MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[msg.sender];
+    function _getPendingRewardPoolIncentives(address _user) internal view returns(uint256 ethIncentive, uint256 plotIncentive) {
+      MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[_user];
       uint256 len = rewardData.marketsCreated.length;
       for(uint256 i = rewardData.lastClaimedIndex;i < len; i++) {
         MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
