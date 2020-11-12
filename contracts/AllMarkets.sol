@@ -414,20 +414,24 @@ contract AllMarkets is Governed {
       ){
         for(uint i=1;i <= totalOptions;i++){
           if(i!=marketSettleData[_marketId].WinningOption) {
+            uint256 commission = _calculatePercentage(plotCommissionPerc, marketOptionsAvailable[_marketId][i].assetStaked[plotToken], 10000);
             // uint256 leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetStaked[plotToken], 100);
-            totalReward[0] = totalReward[0].add(marketOptionsAvailable[_marketId][i].assetStaked[plotToken]);
+            totalReward[0] = totalReward[0].add(marketOptionsAvailable[_marketId][i].assetStaked[plotToken]).sub(commission);
+            commission = _calculatePercentage(ethCommissionPerc, marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS], 10000);
             // leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS], 100);
-            totalReward[1] = totalReward[1].add(marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS]);
+            totalReward[1] = totalReward[1].add(marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS]).sub(commission);
           }
         }
         rewardToDistribute[_marketId] = totalReward;
       } else {
         
         for(uint i=1;i <= totalOptions;i++){
+          uint256 commission = _calculatePercentage(plotCommissionPerc, marketOptionsAvailable[_marketId][i].assetStaked[plotToken], 10000);
           // uint256 leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetStaked[plotToken], 100);
-          tokenParticipation = tokenParticipation.add(marketOptionsAvailable[_marketId][i].assetStaked[plotToken]);
+          tokenParticipation = tokenParticipation.add(marketOptionsAvailable[_marketId][i].assetStaked[plotToken]).sub(commission);
+            commission = _calculatePercentage(ethCommissionPerc, marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS], 10000);
           // leveragedAsset = _calculatePercentage(riskPercentage, marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS], 100);
-          ethParticipation = ethParticipation.add(marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS]);
+          ethParticipation = ethParticipation.add(marketOptionsAvailable[_marketId][i].assetStaked[ETH_ADDRESS]).sub(commission);
         }
       }
       ethAmountToPool[_marketId] = ethParticipation;
@@ -538,14 +542,14 @@ contract AllMarkets is Governed {
       }
       uint256 _commissionStake;
       if(_asset == ETH_ADDRESS) {
-        require(_predictionStake <= UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS]);
+        require(_predictionStake <= UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset]);
         _commissionStake = _calculatePercentage(ethCommissionPerc, _predictionStake, 10000);
-        ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
-        UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].sub(_predictionStake);
-        UserGlobalPredictionData[msg.sender].currencyUsedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[ETH_ADDRESS].add(_predictionStake).sub(ethCommissionAmount);
+        // ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
+        UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset].sub(_predictionStake);
+        UserGlobalPredictionData[msg.sender].currencyUsedBalance[_asset] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[_asset].add(_predictionStake).sub(_commissionStake);
       } else {
         if (_asset == plotToken){
-          UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].sub(_predictionStake);
+          UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset].sub(_predictionStake);
         } else {
           require(_asset == tokenController.bLOTToken());
           require(!userData[msg.sender][_marketId].predictedWithBlot);
@@ -554,9 +558,9 @@ contract AllMarkets is Governed {
           _asset = plotToken;
         }
         _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 10000);
-        plotCommissionAmount = plotCommissionAmount.add(_commissionStake);
+        // plotCommissionAmount = plotCommissionAmount.add(_commissionStake);
         if(_asset == plotToken) {
-          UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken].add(_predictionStake).sub(plotCommissionAmount);
+          UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[plotToken].add(_predictionStake).sub(_commissionStake);
         }
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
