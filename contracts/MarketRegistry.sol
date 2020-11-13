@@ -22,8 +22,9 @@ import "./interfaces/IToken.sol";
 import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IMarketUtility.sol";
+import "./external/BasicMetaTransaction.sol";
 
-contract MarketRegistry is Governed, Iupgradable {
+contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
 
     using SafeMath for *; 
 
@@ -120,7 +121,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param _plotToken The instance of PlotX token.
     */
     function initiate(address _defaultAddress, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
-      require(address(ms) == msg.sender);
+      require(address(ms) == _msgSender());
       marketCreationIncentive = 50 ether;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
@@ -134,7 +135,7 @@ contract MarketRegistry is Governed, Iupgradable {
     * @dev Start the initial market.
     */
     function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external {
-      require(marketInitiater == msg.sender);
+      require(marketInitiater == _msgSender());
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
       _addNewMarketCurrency(_btcMarketImplementation);
@@ -228,9 +229,9 @@ contract MarketRegistry is Governed, Iupgradable {
      */
     function setMasterAddress() public {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-      require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
-      ms = IMaster(msg.sender);
-      masterAddress = msg.sender;
+      require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
+      ms = IMaster(_msgSender());
+      masterAddress = _msgSender();
       governance = IGovernance(ms.getLatestAddress("GV"));
     }
 
@@ -274,18 +275,18 @@ contract MarketRegistry is Governed, Iupgradable {
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
-      userData[msg.sender].marketsCreated++;
+      userData[_msgSender()].marketsCreated++;
     }
 
     /**
     * @dev function to reward user for initiating market creation calls
     */
     function claimCreationReward() external {
-      require(userData[msg.sender].marketsCreated > 0);
-      uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
+      require(userData[_msgSender()].marketsCreated > 0);
+      uint256 pendingReward = marketCreationIncentive.mul(userData[_msgSender()].marketsCreated);
       require(plotToken.balanceOf(address(this)) > pendingReward);
-      delete userData[msg.sender].marketsCreated;
-      _transferAsset(address(plotToken), msg.sender, pendingReward);
+      delete userData[_msgSender()].marketsCreated;
+      _transferAsset(address(plotToken), _msgSender(), pendingReward);
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
@@ -328,12 +329,12 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param _user The address who raises the dispute.
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool, uint256 _proposedValue) public {
-      require(isMarket(msg.sender));
+      require(isMarket(_msgSender()));
       uint64 proposalId = uint64(governance.getProposalLength());
-      marketData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      disputeProposalId[proposalId] = msg.sender;
+      marketData[_msgSender()].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
+      disputeProposalId[proposalId] = _msgSender();
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, action);
-      emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
+      emit DisputeRaised(_msgSender(), _user, proposalId, _proposedValue);
     }
 
     /**
@@ -371,11 +372,11 @@ contract MarketRegistry is Governed, Iupgradable {
     */
     function claimPendingReturn(uint256 maxRecords) external {
       uint256 i;
-      uint len = userData[msg.sender].marketsParticipated.length;
+      uint len = userData[_msgSender()].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
-      for(i = userData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        if(IMarket(userData[msg.sender].marketsParticipated[i]).claimReturn(msg.sender) > 0) {
+      for(i = userData[_msgSender()].lastClaimedIndex; i < len && count < maxRecords; i++) {
+        if(IMarket(userData[_msgSender()].marketsParticipated[i]).claimReturn(_msgSender()) > 0) {
           count++;
         } else {
           if(lastClaimed == len) {
@@ -386,7 +387,7 @@ contract MarketRegistry is Governed, Iupgradable {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      userData[msg.sender].lastClaimedIndex = lastClaimed;
+      userData[_msgSender()].lastClaimedIndex = lastClaimed;
     }
 
     function () external payable {
@@ -444,8 +445,8 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param closeValue The closing value of the market currency.
     */
     function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _roundId) external {
-      require(isMarket(msg.sender));
-      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
+      require(isMarket(_msgSender()));
+      emit MarketResult(_msgSender(), _totalReward, winningOption, closeValue, _roundId);
     }
     
     /**
@@ -458,17 +459,17 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
     function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external {
-      require(isMarket(msg.sender));
+      require(isMarket(_msgSender()));
       if(_predictionAsset == ETH_ADDRESS) {
         userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
       } else {
         userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
       }
-      if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
-        userData[_user].marketsParticipated.push(msg.sender);
-        userData[_user].marketsParticipatedFlag[msg.sender] = true;
+      if(!userData[_user].marketsParticipatedFlag[_msgSender()]) {
+        userData[_user].marketsParticipated.push(_msgSender());
+        userData[_user].marketsParticipatedFlag[_msgSender()] = true;
       }
-      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, _msgSender(),_leverage);
     }
 
     /**
@@ -480,8 +481,8 @@ contract MarketRegistry is Governed, Iupgradable {
     * @param incentiveToken The incentive tokens of user.
     */
     function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint incentives, address incentiveToken) external {
-      require(isMarket(msg.sender));
-      emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveToken);
+      require(isMarket(_msgSender()));
+      emit Claimed(_msgSender(), _user, _reward, predictionAssets, incentives, incentiveToken);
     }
 
     /**

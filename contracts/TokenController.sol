@@ -24,8 +24,9 @@ import "./interfaces/IToken.sol";
 import "./interfaces/IMarketRegistry.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/BasicMetaTransaction.sol";
 
-contract TokenController is IERC1132, Governed, Iupgradable {
+contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransaction {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -47,7 +48,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(marketRegistry.isMarket(msg.sender), "Not authorized");
+        require(marketRegistry.isMarket(_msgSender()), "Not authorized");
         _;
     }
 
@@ -56,12 +57,12 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     */
     function setMasterAddress() public {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!constructorCheck, "Already ");
         smLockPeriod = 30 days;
         constructorCheck = true;
-        masterAddress = msg.sender;
-        IMaster ms = IMaster(msg.sender);
+        masterAddress = _msgSender();
+        IMaster ms = IMaster(_msgSender());
         token = PlotXToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
         marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
@@ -73,7 +74,7 @@ contract TokenController is IERC1132, Governed, Iupgradable {
      */
     function initiateVesting(address _vesting) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
         vesting = Vesting(_vesting);
 
     }
@@ -130,18 +131,18 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     {
 
         require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR", "Unspecified reason or time");
-        require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
+        require(tokensLocked(_msgSender(), _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
         
         uint256 validUntil = _time.add(now); //solhint-disable-line
 
-        lockReason[msg.sender].push(_reason);
+        lockReason[_msgSender()].push(_reason);
 
-        require(token.transferFrom(msg.sender, address(this), _amount));
+        require(token.transferFrom(_msgSender(), address(this), _amount));
 
-        locked[msg.sender][_reason] = LockToken(_amount, validUntil, false);
+        locked[_msgSender()][_reason] = LockToken(_amount, validUntil, false);
 
-        emit Locked(msg.sender, _reason, _amount, validUntil);
+        emit Locked(_msgSender(), _reason, _amount, validUntil);
         return true;
     }
 
@@ -211,15 +212,15 @@ contract TokenController is IERC1132, Governed, Iupgradable {
     {
         require(_reason == "SM" || _reason == "DR","Unspecified reason");
         require(_amount != 0, AMOUNT_ZERO);
-        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
-        require(token.transferFrom(msg.sender, address(this), _amount));
+        require(tokensLocked(_msgSender(), _reason) > 0, NOT_LOCKED);
+        require(token.transferFrom(_msgSender(), address(this), _amount));
 
-        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
+        locked[_msgSender()][_reason].amount = locked[_msgSender()][_reason].amount.add(_amount);
         if(_reason == "SM") {
-            locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(smLockPeriod);
+            locked[_msgSender()][_reason].validity = locked[_msgSender()][_reason].validity.add(smLockPeriod);
         }
         
-        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+        emit Locked(_msgSender(), _reason, locked[_msgSender()][_reason].amount, locked[_msgSender()][_reason].validity);
         return true;
     }
 
@@ -236,11 +237,11 @@ contract TokenController is IERC1132, Governed, Iupgradable {
             require(_time == smLockPeriod, "Must be smLockPeriod");
         }
         require(_time != 0, "Time cannot be zero");
-        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
+        require(tokensLocked(_msgSender(), _reason) > 0, NOT_LOCKED);
 
-        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
+        locked[_msgSender()][_reason].validity = locked[_msgSender()][_reason].validity.add(_time);
 
-        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
+        emit Locked(_msgSender(), _reason, locked[_msgSender()][_reason].amount, locked[_msgSender()][_reason].validity);
         return true;
     }
 

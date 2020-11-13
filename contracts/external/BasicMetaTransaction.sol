@@ -61,7 +61,7 @@ contract BasicMetaTransaction {
 		return (owner == signer);
     }
 
-    function _msgSender() public view returns(address sender) {
+    function _msgSender() public view returns(address payable sender) {
         if(msg.sender == address(this)) {
             bytes memory array = msg.data;
             uint256 index = msg.data.length;
