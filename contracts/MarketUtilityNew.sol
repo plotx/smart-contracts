@@ -18,6 +18,12 @@ pragma solidity 0.5.7;
 import "./MarketUtility.sol";
 
 contract MarketUtilityNew is MarketUtility {
+
+  function setAuthorizedAddress(address _allMarketsContract) external {
+    require(msg.sender == initiater);
+    authorizedAddress = _allMarketsContract;
+  }
+
   /**
     * @dev Calculate the option price for given params
     * params
