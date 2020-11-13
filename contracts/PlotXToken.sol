@@ -17,8 +17,9 @@ pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
+import "./external/BasicMetaTransaction.sol";
 
-contract PlotXToken is ERC20 {
+contract PlotXToken is ERC20, BasicMetaTransaction {
     using SafeMath for uint256;
 
     mapping(address => uint256) public lockedForGV;
@@ -29,7 +30,7 @@ contract PlotXToken is ERC20 {
     address public operator;
 
     modifier onlyOperator() {
-        require(msg.sender == operator, "Not operator");
+        require(_msgSender() == operator, "Not operator");
         _;
     }
 
@@ -63,7 +64,22 @@ contract PlotXToken is ERC20 {
      * @param amount The amount that will be burnt.
      */
     function burn(uint256 amount) public {
-        _burn(msg.sender, amount);
+        _burn(_msgSender(), amount);
+    }
+
+    function approve(address spender, uint256 value) public returns (bool) {
+        _approve(_msgSender(), spender, value);
+        return true;
+    }
+
+    function increaseAllowance(address spender, uint256 addedValue) public returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].add(addedValue));
+        return true;
+    }
+
+    function decreaseAllowance(address spender, uint256 subtractedValue) public returns (bool) {
+        _approve(_msgSender(), spender, _allowances[_msgSender()][spender].sub(subtractedValue));
+        return true;
     }
 
     /**
@@ -96,8 +112,8 @@ contract PlotXToken is ERC20 {
      * @param value The amount to be transferred.
      */
     function transfer(address to, uint256 value) public returns (bool) {
-        require(lockedForGV[msg.sender] < now, "Locked for governance"); // if not voted under governance
-        _transfer(msg.sender, to, value);
+        require(lockedForGV[_msgSender()] < now, "Locked for governance"); // if not voted under governance
+        _transfer(_msgSender(), to, value);
         return true;
     }
 
