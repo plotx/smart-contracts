@@ -468,7 +468,7 @@ contract AllMarkets is Governed {
       marketCreationData[_predictionTime][_marketCurrencyIndex].paused = false;
     }
 
-    function  deposit(uint _amount) payable public returns(bool res)  {
+    function  deposit(uint _amount) payable public {
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
       if(_amount > 0) {
         plt.transferFrom (msg.sender,address(this), _amount);
@@ -476,14 +476,14 @@ contract AllMarkets is Governed {
       }
     }
 
-     function  withdraw(uint _maxRecords) public returns(bool res)  {
+     function  withdraw(uint _maxRecords) public {
       withdrawReward(_maxRecords);
       uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
       uint _amountEth = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
       delete UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
       delete UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      msg.sender.transfer(_amountEth);
       _transferAsset(plotToken, msg.sender, _amountPlt);
+      _transferAsset(ETH_ADDRESS, msg.sender, _amountEth);
     }
 
     /**
@@ -585,7 +585,7 @@ contract AllMarkets is Governed {
       uint ethReward = 0;
       uint plotReward =0 ;
       for(i = userParticipationData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        (uint claimed, uint tempEthReward,uint tempPlotReward) = claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]);
+        (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]);
         if(claimed > 0) {
           ethReward = ethReward.add(tempEthReward);
           plotReward = plotReward.add(tempPlotReward);
@@ -599,8 +599,8 @@ contract AllMarkets is Governed {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(ethReward);
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(plotReward);
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
+      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
       userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
     }
 
