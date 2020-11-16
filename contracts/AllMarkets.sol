@@ -603,6 +603,32 @@ contract AllMarkets is Governed {
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(plotReward);
       userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
     }
+
+    /**
+    * @dev Gets number of positions user got in prediction
+    * @param _user Address of user
+    * @param _option Option Id
+    */
+    function getUserPredictionPoints(address _user, uint256 _marketId, uint256 _option) external view returns(uint256) {
+      return userData[_user][_marketId].predictionPoints[_option];
+    }
+
+    // function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
+    //   // require(master.isWhitelistedSponsor(msg.sender));
+    //   require(marketStatus() <= PredictionStatus.InSettlement);
+    //   require(incentiveToken[_marketId] == address(0), "Already sponsored");
+    //   incentiveToken[_marketId] = _token;
+    //   incentiveToDistribute[_marketId] = _value;
+    //   plt.transferFrom(_token, msg.sender, address(this), _value);
+    // }
+
+    // function withdrawSponsoredIncentives(uint256 _marketId) external {
+    //   // require(master.isWhitelistedSponsor(msg.sender));
+    //   require(incentiveToDistribute[_marketId] > 0, "No incentives");
+    //   require(getTotalPredictionPoints(_marketId) == 0, "Cannot Withdraw");
+    //   _transferAsset(incentiveToken[_marketId], msg.sender, incentiveToDistribute[_marketId]);
+    // }
+
     /**
     * @dev Claim the return amount of the specified address.
     * @param _user The address to query the claim return amount of.
