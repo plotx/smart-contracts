@@ -12,6 +12,7 @@ const MockWeth = artifacts.require("MockWeth");
 const MarketUtility = artifacts.require("MarketUtility");
 const MockConfig = artifacts.require("MockConfig");
 const Governance = artifacts.require("Governance");
+const ProposalCategory = artifacts.require("ProposalCategory");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
@@ -43,7 +44,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 		plotusNewInstance, governance,
 		mockUniswapV2Pair,
 		mockUniswapFactory, weth,
-    chainlinkGasAgg;
+    chainlinkGasAgg, pc;
 	before(async () => {
 		masterInstance = await OwnedUpgradeabilityProxy.deployed();
 		masterInstance = await Master.at(masterInstance.address);
@@ -55,6 +56,8 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 		memberRoles = await MemberRoles.at(memberRoles);
 		governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
 		governance = await Governance.at(governance);
+    pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+    pc = await ProposalCategory.at(pc);
 		MockUniswapRouterInstance = await MockUniswapRouter.deployed();
 		mockUniswapFactory = await MockUniswapFactory.deployed();
 		plotusNewInstance = await Plotus.at(plotusNewAddress);
@@ -240,7 +243,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     it("If gas is provided more than 125% of fast gas, reward should be as per 125% fast gas", async function() {
       await increaseTime(3610);
       let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:1000000});
-      eventData = tx.logs[2].args;
+      eventData = tx.logs[tx.logs.length-1].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let gasPrice = 562500;
       estimatedGasCost = gasPrice*gasUsed;
@@ -262,7 +265,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await chainlinkGasAgg.setLatestAnswer(1250000);
       await increaseTime(3610);
       let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:2000000});
-      eventData = tx.logs[2].args;
+      eventData = tx.logs[tx.logs.length-1].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 1250000*1.25);
@@ -302,7 +305,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       });
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 99.95;
-      eventData = tx.logs[2].args;
+      eventData = tx.logs[tx.logs.length-1].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
@@ -349,7 +352,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       });
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 99.95;
-      eventData = tx.logs[2].args;
+      eventData = tx.logs[tx.logs.length-1].args;
       let gasUsed = eventData.gasUsed.toNumber();
       let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
       let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
@@ -394,7 +397,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 9.95;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -430,7 +433,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       await increaseTime(3610);
       let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user4});
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -495,7 +498,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 99.95;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -543,7 +546,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 99.95;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -581,7 +584,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0;
       let rewardPoolPlot = 0;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -634,7 +637,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0.1;
       let rewardPoolPlot = 99.95;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -718,7 +721,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let rewardPoolEth = 0.99;
       let rewardPoolPlot = 99.95;
       try {
-        eventData = tx.logs[2].args;
+        eventData = tx.logs[tx.logs.length-1].args;
       } catch(e) {
         eventData = tx.logs[1].args;
       }
@@ -743,6 +746,91 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + pendingRewards[2]/1e18).toFixed(2));
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
       assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
+
+    it('Should Add category to pause market creation of particular type of market', async function() {
+      let c1 = await pc.totalCategories();
+      //proposal to add category
+      let actionHash = encode1(
+        ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+        [
+          "Pause",
+          1,
+          50,
+          50,
+          [1],
+          86400,
+          "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+          nullAddress,
+          toHex("PL"),
+          [0, 0, 0, 1],
+          "toggleMarketCreationType(uint256,bool)",
+        ]
+      );
+      let p1 = await governance.getProposalLength();
+      await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
+      await governance.submitVote(p1.toNumber(), 1);
+      await governance.closeProposal(p1.toNumber());
+      let cat2 = await pc.totalCategories();
+      assert.notEqual(c1.toNumber(), cat2.toNumber(), "category not updated");
+    });
+
+    it('Should pause market creation of particular type of market', async function() {
+      await plotusNewInstance.createMarket(0,0);
+      await increaseTime(604800);
+      let c1 = await pc.totalCategories();
+      //proposal to add category
+      actionHash = encode1(
+        ["uint256","bool"],
+        [
+          0, true
+        ]
+      );
+      let p1 = await governance.getProposalLength();
+      await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", c1 - 1, "Add new member", actionHash);
+      await governance.submitVote(p1.toNumber(), 1);
+      await governance.closeProposal(p1.toNumber());
+      assert.equal((await governance.proposalActionStatus(p1.toNumber()))/1, 3)
+      let cat2 = await pc.totalCategories();
+      assert.notEqual(c1, cat2, "category not updated");
+      await assertRevert(plotusNewInstance.createMarket(0,0));
+    });
+
+    it('Should not execute if market is already paused', async function() {
+      await increaseTime(604800);
+      let c1 = await pc.totalCategories();
+      //proposal to add category
+      actionHash = encode1(
+        ["uint256","bool"],
+        [
+          0, true
+        ]
+      );
+      let p1 = await governance.getProposalLength();
+      await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", c1 - 1, "Add new member", actionHash);
+      await governance.submitVote(p1.toNumber(), 1);
+      await governance.closeProposal(p1.toNumber());
+      assert.equal((await governance.proposalActionStatus(p1.toNumber()))/1, 1)
+    });
+
+    it('Should resume market creation of particular type of market', async function() {
+      await increaseTime(604800);
+      await assertRevert(plotusNewInstance.createMarket(0,0));
+      await increaseTime(604800);
+      let c1 = await pc.totalCategories();
+      //proposal to add category
+      actionHash = encode1(
+        ["uint256","bool"],
+        [
+          0, false
+        ]
+      );
+      let p1 = await governance.getProposalLength();
+      await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", c1 - 1, "Add new member", actionHash);
+      await governance.submitVote(p1.toNumber(), 1);
+      await governance.closeProposal(p1.toNumber());
+      assert.equal((await governance.proposalActionStatus(p1.toNumber()))/1, 3)
+      await plotusNewInstance.createMarket(0,0);
     });
 
     it('Should update MAXRPSP variable', async function() {
