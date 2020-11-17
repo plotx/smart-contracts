@@ -55,7 +55,7 @@ And run generate the coverage report using
 npm run coverage
 ```
 
-### Contract Addresses
+### Contract Addresses - Mainnet
 - PLOT Token: 0x72F020f8f3E8fd9382705723Cd26380f8D0c66Bb
 - Master: 0x03c41c5Aff6D541EF7D4c51c8B2E32a5d4427275
 - MarketRegistry: 0xE210330d6768030e816d223836335079C7A0c851
@@ -70,4 +70,20 @@ npm run coverage
 Market Implementation Addresses
 - ETH/USD: 0x25cf9d73b711bff4d3445a0f7f2e63ade5133e67
 - BTC/USD: 0x5d24cf40ead0601893c212ff3af4895dc42a760b
+
+### Contract Addresses - Kovan
+- PLOT Token: 0x1616111F8914F377c22DC576ca6BaB947597022F
+- Master: 0x6bd86cf45fff86300910599107e24dd5db9e1f51
+- MarketRegistry: 0x9f94a65878ea576AbeEA36857587110bcF1BBca5
+- MarketUtility: 0x388716cC71CcFCCe98BAF48E61e6D1F8D259eccC
+- Governance: 0xab4C2C278862931f2929E434464CFc3dC340C6D4
+- ProposalCategory: 0xEAf8e09C80609af4b29946D62F46C26888541332
+- MemberRoles: 0x6C31400177CD31d48f7bf47Cc333ba0651b17d11
+- TokenController: 0xb27E5Fa57B37be78ddE637F705Bd8bd440ed19af
+- bPLOT Token: 0xc84244c52Ff9F1f103F624388DcCc36801062b7a
+- Vesting: 0xdd8cc36531cad81b08704e35cb22cb8f525f4159
+
+Market Implementation Addresses
+- ETH/USD: 0x8f2d95c4c35d5cf6db1a794ff6a3d97178175b9d
+- BTC/USD: 0x7930515cd9dfd91fb65bfe60b0a64e06576c4b19
 
