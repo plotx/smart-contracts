@@ -123,7 +123,7 @@ contract MarketRegistryNew is MarketRegistry {
     }
 
     /**
-    * @dev Pause Market creation of `_marketType` Type.
+    * @dev Toggle Market creation of `_marketType` Type.
     */
     function toggleMarketCreationType(uint256 _marketType, bool _flag) external onlyAuthorizedToGovern {
       require(marketCreationPausedOfType[_marketType] != _flag);
