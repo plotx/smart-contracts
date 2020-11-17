@@ -90,7 +90,6 @@ contract AllMarkets is Governed {
       bool multiplierApplied;
       mapping(uint => uint) predictionPoints;
       mapping(address => mapping(uint => uint)) assetStaked;
-      mapping(address => mapping(uint => uint)) PLOTStaked;
     }
 
     struct UserParticipationData {
@@ -99,6 +98,7 @@ contract AllMarkets is Governed {
       uint256 totalPlotStaked;
       uint[] marketsParticipated;
       mapping(uint => bool) marketsParticipatedFlag;
+      mapping(address => uint) currencyUnusedBalance;
     }
 
     struct MarketData {
@@ -108,19 +108,15 @@ contract AllMarkets is Governed {
       uint32 predictionTime;
       uint64 neutralMinValue;
       uint64 neutralMaxValue;
+    }
+
+    struct MarketDisputeData {
       address disputeRaisedBy;
       uint256 disputeStakeAmount;
     }
-    
-    struct UserGlobalPrediction
-    {
-        mapping(address => uint) currencyUsedBalance;
-        mapping(address => uint) currencyUnusedBalance;
-        uint totalPlotParticipated;
-        uint[] marketsPredicted;
-        mapping(uint=>bool) marketParticipated;
-    }
 
+    event Deposited(address indexed user, uint256 plot, uint256 eth);
+    event Withdrawn(address indexed user, uint256 plot, uint256 eth);
     event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
@@ -133,13 +129,13 @@ contract AllMarkets is Governed {
 
     MarketData[] public marketData;
 
+    mapping(uint256 => MarketDisputeData) public marketDisputeData;
     mapping(uint256 => MarketSettleData) public marketSettleData;
     mapping(address => mapping(uint => UserData)) internal userData;
     mapping(address => UserParticipationData) userParticipationData;
     
 
     mapping(uint =>mapping(uint=>option)) public marketOptionsAvailable;
-    mapping(address => UserGlobalPrediction) UserGlobalPredictionData;
     mapping(address => uint256) marketsCreatedByUser;
     mapping(uint64 => uint256) disputeProposalId;
     struct MarketTypeData {
@@ -189,7 +185,6 @@ contract AllMarkets is Governed {
     }
 
     function removeMarketType(uint32 _marketTypeIndex) public onlyAuthorizedToGovern {
-      uint32 marketTypeIndex= _marketTypeIndex;
       delete marketType[marketTypeArray[_marketTypeIndex].predictionTime];
       delete marketTypeArray[_marketTypeIndex];
       // uint256 topIndex = marketTypeArray.length - 1;
@@ -237,7 +232,7 @@ contract AllMarkets is Governed {
       uint8 _roundOfToNearest = marketCurrencies[_marketCurrencyIndex].roundOfToNearest;
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
-      marketData.push(MarketData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue, address(0),0));
+      marketData.push(MarketData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, uint64(marketData.length));
       marketsCreatedByUser[msg.sender]++;
@@ -270,8 +265,8 @@ contract AllMarkets is Governed {
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint64 proposalId = uint64(governance.getProposalLength());
       // marketData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      marketData[_marketId].disputeRaisedBy = msg.sender;
-      marketData[_marketId].disputeStakeAmount = _stakeForDispute;
+      marketDisputeData[_marketId].disputeRaisedBy = msg.sender;
+      marketDisputeData[_marketId].disputeStakeAmount = _stakeForDispute;
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(address(this), _proposedValue));
       emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
@@ -286,8 +281,8 @@ contract AllMarkets is Governed {
     * @param _result The final result of the market.
     */
     function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
-      uint256 stakedAmount = marketData[_marketId].disputeStakeAmount;
-      address payable staker = address(uint160(marketData[_marketId].disputeRaisedBy));
+      uint256 stakedAmount = marketDisputeData[_marketId].disputeStakeAmount;
+      address payable staker = address(uint160(marketDisputeData[_marketId].disputeRaisedBy));
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
       _transferAsset(plotToken, staker, stakedAmount);
@@ -315,7 +310,7 @@ contract AllMarkets is Governed {
       uint256 _marketId = disputeProposalId[uint64(_proposalId)];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      uint _stakedAmount = marketData[_marketId].disputeStakeAmount;
+      uint _stakedAmount = marketDisputeData[_marketId].disputeStakeAmount;
       plt.burn(_stakedAmount);
     }
 
@@ -471,21 +466,23 @@ contract AllMarkets is Governed {
     }
 
     function  deposit(uint _amount) payable public {
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
+      userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
       if(_amount > 0) {
         plt.transferFrom (msg.sender,address(this), _amount);
-        UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
+        userParticipationData[msg.sender].currencyUnusedBalance[plotToken] = userParticipationData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
       }
+      emit Deposited(msg.sender, _amount, msg.value);
     }
 
      function  withdraw(uint _maxRecords) public {
       withdrawReward(_maxRecords);
-      uint _amountPlt = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
-      uint _amountEth = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      delete UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken];
-      delete UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
+      uint _amountPlt = userParticipationData[msg.sender].currencyUnusedBalance[plotToken];
+      uint _amountEth = userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
+      delete userParticipationData[msg.sender].currencyUnusedBalance[plotToken];
+      delete userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
       _transferAsset(plotToken, msg.sender, _amountPlt);
       _transferAsset(ETH_ADDRESS, msg.sender, _amountEth);
+      emit Withdrawn(msg.sender, _amountPlt, _amountEth);
     }
 
     /**
@@ -546,7 +543,7 @@ contract AllMarkets is Governed {
       require(now >= marketData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint256 _commissionStake;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
-        uint256 unusedBalance = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset];
+        uint256 unusedBalance = userParticipationData[msg.sender].currencyUnusedBalance[_asset];
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
@@ -554,8 +551,7 @@ contract AllMarkets is Governed {
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
         // ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
-        UserGlobalPredictionData[msg.sender].currencyUnusedBalance[_asset] = unusedBalance.sub(_predictionStake);
-        UserGlobalPredictionData[msg.sender].currencyUsedBalance[_asset] = UserGlobalPredictionData[msg.sender].currencyUsedBalance[_asset].add(_predictionStake).sub(_commissionStake);
+        userParticipationData[msg.sender].currencyUnusedBalance[_asset] = unusedBalance.sub(_predictionStake);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[msg.sender][_marketId].predictedWithBlot);
@@ -604,8 +600,8 @@ contract AllMarkets is Governed {
         lastClaimed = i;
       }
       emit Claimed(msg.sender, plotReward, ethReward);
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
-      UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
+      userParticipationData[msg.sender].currencyUnusedBalance[plotToken] = userParticipationData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
+      userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userParticipationData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
       userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
     }
 
