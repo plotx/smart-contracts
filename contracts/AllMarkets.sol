@@ -124,14 +124,16 @@ contract AllMarkets is Governed {
     event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
-    event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets, uint256 incentive, address incentiveToken);
+    // event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets);
+    event Claimed(address indexed user, uint256 plotReward, uint256 ethReward);
+    event ClaimedIncentive(address indexed user, uint256 marketIndex, address incentiveTokenAddress, uint256 incentive);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId);
     event DisputeRaised(uint256 indexed marketId, address raisedBy, uint64 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketId, bool status);
 
     MarketData[] public marketData;
 
-    mapping(uint256 => MarketSettleData) marketSettleData;
+    mapping(uint256 => MarketSettleData) public marketSettleData;
     mapping(address => mapping(uint => UserData)) internal userData;
     mapping(address => UserParticipationData) userParticipationData;
     
@@ -584,9 +586,11 @@ contract AllMarkets is Governed {
       uint count;
       uint ethReward = 0;
       uint plotReward =0 ;
+      require(!marketCreationPaused);
       for(i = userParticipationData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
         (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(msg.sender, userParticipationData[msg.sender].marketsParticipated[i]);
         if(claimed > 0) {
+          delete userParticipationData[msg.sender].marketsParticipated[i];
           ethReward = ethReward.add(tempEthReward);
           plotReward = plotReward.add(tempPlotReward);
           count++;
@@ -599,6 +603,7 @@ contract AllMarkets is Governed {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
+      emit Claimed(msg.sender, plotReward, ethReward);
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
       UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = UserGlobalPredictionData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
       userParticipationData[msg.sender].lastClaimedIndex = lastClaimed;
@@ -634,19 +639,34 @@ contract AllMarkets is Governed {
     * @param _user The address to query the claim return amount of.
     * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
     */
-    function claimReturn(address payable _user, uint _marketId) public returns(uint256, uint256, uint256) {
+    function claimReturn(address payable _user, uint _marketId) internal returns(uint256, uint256, uint256) {
 
-      if(lockedForDispute[_marketId] || marketStatus(_marketId) != PredictionStatus.Settled || marketCreationPaused) {
+      if(marketStatus(_marketId) != PredictionStatus.Settled) {
         return (0, 0 ,0);
       }
       if(userData[_user][_marketId].claimedReward) {
         return (1, 0, 0);
       }
       userData[_user][_marketId].claimedReward = true;
-      (uint[] memory _returnAmount, address[] memory _predictionAssets, uint _incentive, ) = getReturn(_user, _marketId);
-      _transferAsset(incentiveToken[_marketId], _user, _incentive);
-      emit Claimed(_marketId, _user, _returnAmount, _predictionAssets, _incentive, incentiveToken[_marketId]);
+      // (uint[] memory _returnAmount, address[] memory _predictionAssets,, ) = getReturn(_user, _marketId);
+      uint[] memory _returnAmount = new uint256[](2);
+      uint256 _winningOption = marketSettleData[_marketId].WinningOption;
+      _returnAmount[0] = userData[_user][_marketId].assetStaked[plotToken][_winningOption];
+      _returnAmount[1] = userData[_user][_marketId].assetStaked[ETH_ADDRESS][_winningOption];
+      // (_returnAmount, , ) = _calculateUserReturn(_user, _marketId, _winningOption);
+      uint256 userPredictionPointsOnWinngOption = userData[_user][_marketId].predictionPoints[_winningOption];
+      if(userPredictionPointsOnWinngOption > 0) {
+        _returnAmount = _addUserReward(_marketId, _user, _returnAmount, _winningOption, userPredictionPointsOnWinngOption);
+      }
+      // _transferAsset(incentiveToken[_marketId], _user, _incentive);
+      // emit Claimed(_marketId, _user, _returnAmount, _predictionAssets);
       return (2, _returnAmount[0], _returnAmount[1]);
+    }
+
+    function claimIncentive(address payable _user, uint256 _marketId) external {
+      ( , , uint _incentive, ) = getReturn(_user, _marketId);
+      _transferAsset(incentiveToken[_marketId], _user, _incentive);
+      emit ClaimedIncentive(_user, _marketId, incentiveToken[_marketId], _incentive);
     }
 
     /** 
@@ -668,12 +688,12 @@ contract AllMarkets is Governed {
       uint256 _totalPredictionPoints = 0;
       uint256 _winningOption = marketSettleData[_marketId].WinningOption;
       (returnAmount, _totalUserPredictionPoints, _totalPredictionPoints) = _calculateUserReturn(_user, _marketId, _winningOption);
-      if(incentiveToDistribute[_marketId] > 0) {
-        incentive = _calculateIncentives(_marketId, _totalUserPredictionPoints, _totalPredictionPoints);
-      }
       uint256 userPredictionPointsOnWinngOption = userData[_user][_marketId].predictionPoints[_winningOption];
       if(userPredictionPointsOnWinngOption > 0) {
         returnAmount = _addUserReward(_marketId, _user, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
+      }
+      if(incentiveToDistribute[_marketId] > 0) {
+        incentive = _calculateIncentives(_marketId, _totalUserPredictionPoints, _totalPredictionPoints);
       }
       return (returnAmount, _predictionAssets, incentive, incentiveToken[_marketId]);
     }
@@ -733,8 +753,8 @@ contract AllMarkets is Governed {
       userData[msg.sender][_marketId].predictionPoints[_prediction] = userData[msg.sender][_marketId].predictionPoints[_prediction].add(predictionPoints);
       userData[msg.sender][_marketId].assetStaked[_asset][_prediction] = userData[msg.sender][_marketId].assetStaked[_asset][_prediction].add(_predictionStake);
       // userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction] = userData[msg.sender][_marketId].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
-      marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_prediction][_marketId].predictionPoints.add(predictionPoints);
-      marketOptionsAvailable[_marketId][_prediction].assetStaked[_asset] = marketOptionsAvailable[_prediction][_marketId].assetStaked[_asset].add(_predictionStake);
+      marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints);
+      marketOptionsAvailable[_marketId][_prediction].assetStaked[_asset] = marketOptionsAvailable[_marketId][_prediction].assetStaked[_asset].add(_predictionStake);
       // marketOptionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = marketOptionsAvailable[_prediction][_marketId].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
     }
 
