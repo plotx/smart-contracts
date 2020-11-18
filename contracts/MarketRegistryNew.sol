@@ -243,7 +243,7 @@ contract MarketRegistryNew is MarketRegistry {
       require(isMarket(msg.sender));
       marketCreationRewardData[msg.sender].plotIncentive = marketCreatorIncentive[0];
       marketCreationRewardData[msg.sender].ethIncentive = marketCreatorIncentive[1];
-      emit MarketCreatorRewardPoolShare(msg.sender, marketCreationRewardData[msg.sender].createdBy, marketCreatorIncentive[0], marketCreatorIncentive[1]);
+      emit MarketCreatorRewardPoolShare(marketCreationRewardData[msg.sender].createdBy, msg.sender, marketCreatorIncentive[0], marketCreatorIncentive[1]);
       emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
     }
     
