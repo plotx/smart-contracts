@@ -21,6 +21,7 @@
     "bignumber.js": "^9.0.0",
     "coveralls": "^3.0.2",
     "ethereumjs-abi": "^0.6.8",
+    "ethereumjs-util": "^7.0.7",
     "ganache-cli": "^6.9.0",
     "pify": "^5.0.0",
     "solhint": "^3.2.0",

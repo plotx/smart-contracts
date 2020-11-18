@@ -27,4 +27,10 @@ function encode1(...args) {
   return "0x" + encoded.toString("hex");
 }
 
-module.exports = { encode, encode1 };
+function encode3(...args) {
+  var encoded = abi.simpleEncode.apply(this, args);
+  encoded = encoded.toString('hex');
+  return '0x' + encoded;
+}
+
+module.exports = { encode, encode1, encode3};
