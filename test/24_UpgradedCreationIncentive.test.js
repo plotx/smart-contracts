@@ -853,9 +853,10 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
         let openMarkets = await plotusNewInstance.getOpenMarkets();
         let marketInstance = await MarketNew.at(openMarkets[0][1]);
         await increaseTime(100);
+        await plotusToken.transfer(user12, toWei(10000));
         await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
           value: "100000000000000000",
-          from: user12,
+          from: user7,
         });
         await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
           value: "1000000000000000000",
@@ -867,7 +868,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
           from: user7,
         });
         await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 5, {
-          from: user7,
+          from: user12,
         });
         let rewardPoolEth = 0.99;
         let rewardPoolPlot = 99.95;
@@ -1028,6 +1029,14 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
         assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + plotPoolShareExpectedForMarket2).toFixed(2));
         assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + ethExpectedForMarket2).toFixed(2));
       });
+
+      it("should be able to claim market participation rewards", async function() {
+        let reward = await market2.getReturn(user7);
+        await market2.claimReturn(user7 ,{from: user7});
+        let balance = await plotusToken.balanceOf(market2.address);
+        let perc = await plotusNewInstance.getMarketCreatorRPoolShareParams(market2.address);
+        assert.equal(reward[0][0]/1e18, 99.95 + 99.95 - perc[0]*1*99.95/10000);
+      })
 
       it("Should be able to claim market 3 rewards", async function() {
         await increaseTime(604800);
