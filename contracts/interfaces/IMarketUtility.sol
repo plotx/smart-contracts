@@ -69,4 +69,15 @@ contract IMarketUtility {
         address _currencyFeedAddress,
         uint256 _settleTime
     ) public view returns (uint256 latestAnswer, uint256 roundId);
+
+    /**
+     * @dev Get value of provided currency address in ETH
+     * @param _currencyAddress Address of currency
+     * @param _amount Amount of provided currency
+     * @return Value of provided amount in ETH
+     **/
+    function getAssetValueETH(address _currencyAddress, uint256 _amount)
+        public
+        view
+        returns (uint256 tokenEthValue);
 }
