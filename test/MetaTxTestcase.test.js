@@ -7,6 +7,7 @@ const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
+const latestTime = require("./utils/latestTime.js").latestTime;
 const { toHex, toWei } = require("./utils/ethTools.js");
 const expectEvent = require("./utils/expectEvent");
 const Web3 = require("web3");
@@ -40,8 +41,9 @@ contract("MetaTxs", ([user1,user2,user3]) => {
     pc = await ProposalCategory.at(address);
     address = await nxms.getLatestAddress(toHex("MR"));
     mr = await MemberRoles.at(address);
-    tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
+    tc = await TokenController.at(await nxms.getLatestAddress(toHex("TC")));
   });
+describe('PlotxToken Test Cases', function() {
 
   it("Should be able to transfer plot via meta transaction", async function () {
     let functionSignature = encode("transfer(address,uint256)", user2, toWei(1000));
@@ -194,5 +196,56 @@ contract("MetaTxs", ([user1,user2,user3]) => {
     assert.equal(user1BalAfter, user1BalBefore - 500);
     assert.equal(approvalAfter, approvalBefore/1 - 500);
   });
+});
+
+describe('Token Controller Test Cases', function() {
+
+  it("Should be able to Lock plot via meta transaction", async function () {
+    await plotusToken.transfer(user2, toWei(100));
+    await plotusToken.approve(tc.address,toWei(100),{from:user2});
+    let functionSignature = encode("lock(bytes32,uint256,uint256)", toHex("DR"), toWei(10), 10000);
+    let values = [new BN(await tc.getNonce(user2)), tc.address, new BN(await tc.getChainID()), ethutil.toBuffer(functionSignature)];
+    let types = ['uint256', 'address', 'uint256', 'bytes']
+
+    let user2BalBefore = (await plotusToken.balanceOf(user2))/1e18;
+    let user2LockedBefore = (await tc.tokensLocked(user2, toHex("DR")))/1e18;
+    await signAndExecuteMetaTx(
+      "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e",
+      types,
+      values,
+      user2,
+      functionSignature,
+      tc
+      );
+    let user2BalAfter = (await plotusToken.balanceOf(user2))/1e18;
+    let user2LockedAfter = (await tc.tokensLocked(user2,toHex("DR")))/1e18;
+
+    assert.equal(user2BalAfter, user2BalBefore - 10);
+    assert.equal(user2LockedAfter,  user2LockedBefore/1 + 10);
+  });
+
+  it("Should be able to Lock plot via meta transaction", async function () {
+    let functionSignature = encode("increaseLockAmount(bytes32,uint256)", toHex("DR"), toWei(15));
+    let values = [new BN(await tc.getNonce(user2)), tc.address, new BN(await tc.getChainID()), ethutil.toBuffer(functionSignature)];
+    let types = ['uint256', 'address', 'uint256', 'bytes']
+
+    let user2BalBefore = (await plotusToken.balanceOf(user2))/1e18;
+    let user2LockedBefore = (await tc.tokensLocked(user2, toHex("DR")))/1e18;
+    await signAndExecuteMetaTx(
+      "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e",
+      types,
+      values,
+      user2,
+      functionSignature,
+      tc
+      );
+    let user2BalAfter = (await plotusToken.balanceOf(user2))/1e18;
+    let user2LockedAfter = (await tc.tokensLocked(user2,toHex("DR")))/1e18;
+
+    assert.equal(user2BalAfter, user2BalBefore - 15);
+    assert.equal(user2LockedAfter,  user2LockedBefore/1 + 15);
+  });
+
+});
 
 });
