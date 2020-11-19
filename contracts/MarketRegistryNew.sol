@@ -41,8 +41,9 @@ contract MarketRegistryNew is MarketRegistry {
     uint256 plotStakeForRewardPoolShare;
     uint256 rewardPoolShareThreshold;
 
-    mapping(address => MarketCreationRewardUserData) private marketCreationRewardUserData; //Of user
-    mapping(address => MarketCreationRewardData) private marketCreationRewardData; //Of user
+    mapping(address => MarketCreationRewardUserData) internal marketCreationRewardUserData; //Of user
+    mapping(address => MarketCreationRewardData) internal marketCreationRewardData; //Of user
+    mapping(uint256 => bool) internal marketCreationPausedOfType;
     event MarketCreatorRewardPoolShare(address indexed createdBy, address indexed marketAddress, uint256 plotIncentive, uint256 ethIncentive);
     event MarketCreationReward(address indexed createdBy, address marketAddress, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
     event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
@@ -67,6 +68,7 @@ contract MarketRegistryNew is MarketRegistry {
     * @param _marketCurrencyIndex the index of market currency.
     */
     function createMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public payable{
+      require(!marketCreationPausedOfType[_marketType]);
       uint256 gasProvided = gasleft();
       address penultimateMarket = marketCreationData[_marketType][_marketCurrencyIndex].penultimateMarket;
       if(penultimateMarket != address(0)) {
@@ -118,6 +120,14 @@ contract MarketRegistryNew is MarketRegistry {
           maxRewardPoolPercForMC,
           minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
         );
+    }
+
+    /**
+    * @dev Toggle Market creation of `_marketType` Type.
+    */
+    function toggleMarketCreationType(uint256 _marketType, bool _flag) external onlyAuthorizedToGovern {
+      require(marketCreationPausedOfType[_marketType] != _flag);
+      marketCreationPausedOfType[_marketType] = _flag;
     }
 
     /**
@@ -298,4 +308,7 @@ contract MarketRegistryNew is MarketRegistry {
       }
     }
 
+    function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external {
+      revert("Deprecated");
+    }
 }
