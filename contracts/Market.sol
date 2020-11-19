@@ -104,7 +104,7 @@ contract Market is BasicMetaTransaction {
     */
     function initiate(uint64 _startTime, uint64 _predictionTime, uint64 _minValue, uint64 _maxValue) public payable {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-      require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
+      require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
       require(marketData.startTime == 0, "Already initialized");
       require(_startTime.add(_predictionTime) > now);
       marketData.startTime = _startTime;
@@ -297,7 +297,7 @@ contract Market is BasicMetaTransaction {
     * @param finalResult The final correct value of market currency.
     */
     function resolveDispute(bool accepted, uint256 finalResult) external payable {
-      require(_msgSender() == address(marketRegistry) && marketStatus() == PredictionStatus.InDispute);
+      require(msg.sender == address(marketRegistry) && marketStatus() == PredictionStatus.InDispute);
       if(accepted) {
         _postResult(finalResult, 0);
       }

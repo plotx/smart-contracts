@@ -48,7 +48,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(marketRegistry.isMarket(_msgSender()), "Not authorized");
+        require(marketRegistry.isMarket(msg.sender), "Not authorized");
         _;
     }
 
@@ -57,12 +57,12 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
     */
     function setMasterAddress() public {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         require(!constructorCheck, "Already ");
         smLockPeriod = 30 days;
         constructorCheck = true;
-        masterAddress = _msgSender();
-        IMaster ms = IMaster(_msgSender());
+        masterAddress = msg.sender;
+        IMaster ms = IMaster(msg.sender);
         token = PlotXToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
         marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
@@ -74,7 +74,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
      */
     function initiateVesting(address _vesting) external {
         OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
+        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
         vesting = Vesting(_vesting);
 
     }

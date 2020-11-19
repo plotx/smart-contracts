@@ -121,7 +121,7 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @param _plotToken The instance of PlotX token.
     */
     function initiate(address _defaultAddress, address _marketUtility, address _plotToken, address payable[] memory _configParams) public {
-      require(address(ms) == _msgSender());
+      require(address(ms) == msg.sender);
       marketCreationIncentive = 50 ether;
       plotToken = IToken(_plotToken);
       address tcAddress = ms.getLatestAddress("TC");
@@ -229,9 +229,9 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
      */
     function setMasterAddress() public {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-      require(_msgSender() == proxy.proxyOwner(),"Sender is not proxy owner.");
-      ms = IMaster(_msgSender());
-      masterAddress = _msgSender();
+      require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
+      ms = IMaster(msg.sender);
+      masterAddress = msg.sender;
       governance = IGovernance(ms.getLatestAddress("GV"));
     }
 
@@ -329,12 +329,12 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @param _user The address who raises the dispute.
     */
     function createGovernanceProposal(string memory proposalTitle, string memory description, string memory solutionHash, bytes memory action, uint256 _stakeForDispute, address _user, uint256 _ethSentToPool, uint256 _tokenSentToPool, uint256 _proposedValue) public {
-      require(isMarket(_msgSender()));
+      require(isMarket(msg.sender));
       uint64 proposalId = uint64(governance.getProposalLength());
-      marketData[_msgSender()].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      disputeProposalId[proposalId] = _msgSender();
+      marketData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
+      disputeProposalId[proposalId] = msg.sender;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, action);
-      emit DisputeRaised(_msgSender(), _user, proposalId, _proposedValue);
+      emit DisputeRaised(msg.sender, _user, proposalId, _proposedValue);
     }
 
     /**
@@ -445,8 +445,8 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @param closeValue The closing value of the market currency.
     */
     function callMarketResultEvent(uint256[] calldata _totalReward, uint256 winningOption, uint256 closeValue, uint _roundId) external {
-      require(isMarket(_msgSender()));
-      emit MarketResult(_msgSender(), _totalReward, winningOption, closeValue, _roundId);
+      require(isMarket(msg.sender));
+      emit MarketResult(msg.sender, _totalReward, winningOption, closeValue, _roundId);
     }
     
     /**
@@ -459,17 +459,17 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @param _leverage The leverage selected by user at the time of place prediction.
     */
     function setUserGlobalPredictionData(address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction, uint256 _leverage) external {
-      require(isMarket(_msgSender()));
+      require(isMarket(msg.sender));
       if(_predictionAsset == ETH_ADDRESS) {
         userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
       } else {
         userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
       }
-      if(!userData[_user].marketsParticipatedFlag[_msgSender()]) {
-        userData[_user].marketsParticipated.push(_msgSender());
-        userData[_user].marketsParticipatedFlag[_msgSender()] = true;
+      if(!userData[_user].marketsParticipatedFlag[msg.sender]) {
+        userData[_user].marketsParticipated.push(msg.sender);
+        userData[_user].marketsParticipatedFlag[msg.sender] = true;
       }
-      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, _msgSender(),_leverage);
+      emit PlacePrediction(_user, _value, _predictionPoints, _predictionAsset, _prediction, msg.sender,_leverage);
     }
 
     /**
@@ -481,8 +481,8 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @param incentiveToken The incentive tokens of user.
     */
     function callClaimedEvent(address _user ,uint[] calldata _reward, address[] calldata predictionAssets, uint incentives, address incentiveToken) external {
-      require(isMarket(_msgSender()));
-      emit Claimed(_msgSender(), _user, _reward, predictionAssets, incentives, incentiveToken);
+      require(isMarket(msg.sender));
+      emit Claimed(msg.sender, _user, _reward, predictionAssets, incentives, incentiveToken);
     }
 
     /**
