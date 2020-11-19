@@ -4,6 +4,7 @@ const MemberRoles = artifacts.require("MockMemberRoles");
 const ProposalCategory = artifacts.require("ProposalCategory");
 const TokenController = artifacts.require("TokenController");
 const Master = artifacts.require("Master");
+const IERC1132 = artifacts.require("IERC1132");
 const PlotusToken = artifacts.require("MockPLOT");
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
@@ -196,6 +197,69 @@ describe('PlotxToken Test Cases', function() {
     assert.equal(user1BalAfter, user1BalBefore - 500);
     assert.equal(approvalAfter, approvalBefore/1 - 500);
   });
+
+  it("Should be able to call functions with onlyOperator via meta transaction", async function () {
+
+    let newPlotTok = await PlotusToken.new(toWei(200),user1);
+
+    // mint
+    let functionSignature = encode("mint(address,uint256)", user2, toWei(10));
+    let values = [new BN(await newPlotTok.getNonce(user1)), newPlotTok.address, new BN(await newPlotTok.getChainID()), ethutil.toBuffer(functionSignature)];
+    let types = ['uint256', 'address', 'uint256', 'bytes']
+
+    
+    let user2BalBefore = (await newPlotTok.balanceOf(user2))/1e18;
+    await signAndExecuteMetaTx(
+      "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",
+      types,
+      values,
+      user1,
+      functionSignature,
+      newPlotTok
+      );
+    
+    let user2BalAfter = (await newPlotTok.balanceOf(user2))/1e18;
+    assert.equal(user2BalAfter,  user2BalBefore/1 + 10);
+
+    //lockForGovernanceVote
+
+    functionSignature = encode("lockForGovernanceVote(address,uint256)", user3, 100000);
+    values = [new BN(await newPlotTok.getNonce(user1)), newPlotTok.address, new BN(await newPlotTok.getChainID()), ethutil.toBuffer(functionSignature)];
+    types = ['uint256', 'address', 'uint256', 'bytes']
+
+    
+    assert.equal(await newPlotTok.isLockedForGV(user3), false);
+    await signAndExecuteMetaTx(
+      "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",
+      types,
+      values,
+      user1,
+      functionSignature,
+      newPlotTok
+      );
+    
+    assert.equal(await newPlotTok.isLockedForGV(user3), true);
+
+    //changeOperator
+
+    functionSignature = encode("changeOperator(address)", user2);
+    values = [new BN(await newPlotTok.getNonce(user1)), newPlotTok.address, new BN(await newPlotTok.getChainID()), ethutil.toBuffer(functionSignature)];
+    types = ['uint256', 'address', 'uint256', 'bytes']
+
+    
+    assert.equal(await newPlotTok.operator(), user1);
+    await signAndExecuteMetaTx(
+      "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",
+      types,
+      values,
+      user1,
+      functionSignature,
+      newPlotTok
+      );
+    
+    assert.equal(await newPlotTok.operator(), user2);
+
+  });
 });
 
 describe('Token Controller Test Cases', function() {
@@ -224,7 +288,7 @@ describe('Token Controller Test Cases', function() {
     assert.equal(user2LockedAfter,  user2LockedBefore/1 + 10);
   });
 
-  it("Should be able to Lock plot via meta transaction", async function () {
+  it("Should be able to increase lock amount plot via meta transaction", async function () {
     let functionSignature = encode("increaseLockAmount(bytes32,uint256)", toHex("DR"), toWei(15));
     let values = [new BN(await tc.getNonce(user2)), tc.address, new BN(await tc.getChainID()), ethutil.toBuffer(functionSignature)];
     let types = ['uint256', 'address', 'uint256', 'bytes']
@@ -244,6 +308,26 @@ describe('Token Controller Test Cases', function() {
 
     assert.equal(user2BalAfter, user2BalBefore - 15);
     assert.equal(user2LockedAfter,  user2LockedBefore/1 + 15);
+  });
+
+  it("Should be able to extend Lock validity plot via meta transaction", async function () {
+    let functionSignature = encode("extendLock(bytes32,uint256)", toHex("DR"), 1000);
+    let values = [new BN(await tc.getNonce(user2)), tc.address, new BN(await tc.getChainID()), ethutil.toBuffer(functionSignature)];
+    let types = ['uint256', 'address', 'uint256', 'bytes']
+
+    let lockableTok = await IERC1132.at(tc.address);
+    let lcokedBefore = (await lockableTok.locked(user2, toHex("DR")));
+    await signAndExecuteMetaTx(
+      "7c85a1f1da3120c941b83d71a154199ee763307683f206b98ad92c3b4e0af13e",
+      types,
+      values,
+      user2,
+      functionSignature,
+      tc
+      );
+    let lcokedAfter = (await lockableTok.locked(user2, toHex("DR")));
+
+    assert.equal(lcokedAfter[1],  lcokedBefore[1]/1 + 1000);
   });
 
 });
