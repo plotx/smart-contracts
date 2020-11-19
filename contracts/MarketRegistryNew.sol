@@ -162,10 +162,10 @@ contract MarketRegistryNew is MarketRegistry {
     */
     function claimCreationRewardV2(uint256 _maxRecords) external {
       uint256 pendingPLOTReward = marketCreationRewardUserData[msg.sender].incentives;
-      require(pendingPLOTReward > 0);
       delete marketCreationRewardUserData[msg.sender].incentives;
       (uint256 ethIncentive, uint256 plotIncentive) = _getRewardPoolIncentives(_maxRecords);
       pendingPLOTReward = pendingPLOTReward.add(plotIncentive);
+      require(pendingPLOTReward > 0 || ethIncentive > 0, "No pending");
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       _transferAsset(ETH_ADDRESS, msg.sender, ethIncentive);
       emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
@@ -182,18 +182,16 @@ contract MarketRegistryNew is MarketRegistry {
       uint256 i;
       for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
         MarketCreationRewardData storage marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
-        if(marketData.ethIncentive > 0 || marketData.plotIncentive > 0) {
-          ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
-          if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
-            ethIncentive = ethIncentive.add(marketData.ethIncentive);
-            plotIncentive = plotIncentive.add(marketData.plotIncentive);
-            delete marketData.ethIncentive;
-            delete marketData.plotIncentive;
-            count++;
-          } else {
-            if(lastClaimed == len) {
-              lastClaimed = i;
-            }
+        ( , , , , , , , , uint _predictionStatus) = IMarket(rewardData.marketsCreated[i]).getData();
+        if(_predictionStatus == uint(IMarket.PredictionStatus.Settled)) {
+          ethIncentive = ethIncentive.add(marketData.ethIncentive);
+          plotIncentive = plotIncentive.add(marketData.plotIncentive);
+          delete marketData.ethIncentive;
+          delete marketData.plotIncentive;
+          count++;
+        } else {
+          if(lastClaimed == len) {
+            lastClaimed = i;
           }
         }
       }
