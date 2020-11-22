@@ -155,7 +155,7 @@ contract AllMarkets is Governed {
     }
 
     struct MarketCreationData {
-      uint64 initialStartTime;
+      uint32 initialStartTime;
       uint64 latestMarket;
       uint64 penultimateMarket;
       bool paused;
@@ -213,23 +213,23 @@ contract AllMarkets is Governed {
       marketCurrencies.push(MarketCurrency("ETH/USD", _ethMarketImplementation, 8, 1));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
           marketCreationData[i][0].initialStartTime = _marketStartTime;
-          createMarket(0, _marketStartTime, i);
+          createMarket(0, i);
       }
     }
 
      /**
     * @dev Initialize the market.
     * @param _marketCurrencyIndex The index of market currency feed
-    * @param _startTime The time at which market will create.
     * @param _marketTypeIndex The time duration of market.
     */
-    function createMarket(uint32 _marketCurrencyIndex,uint32 _startTime, uint32 _marketTypeIndex) public payable {
+    function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public payable {
       require(!marketCreationPaused && !marketCreationData[_marketTypeIndex][_marketCurrencyIndex].paused);
 
       _checkPreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // require(marketData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
       marketUtility.update();
+      uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
       uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint _optionRangePerc = marketTypeArray[_marketTypeIndex].optionRangePerc;
       _optionRangePerc = uint32(currentPrice.mul(_optionRangePerc.div(2)).div(10000));
@@ -241,6 +241,15 @@ contract AllMarkets is Governed {
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, uint64(marketData.length));
       marketsCreatedByUser[msg.sender]++;
+    }
+
+    function calculateStartTimeForMarket(uint32 _marketType, uint32 _marketCurrencyIndex) public view returns(uint32 _marketStartTime) {
+      _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
+      uint predictionTime = marketTypeArray[_marketType].predictionTime;
+      if(now > _marketStartTime.add(predictionTime)) {
+        uint noOfMarketsCycles = ((now).sub(_marketStartTime)).div(predictionTime);
+       _marketStartTime = uint32(_marketStartTime.add(noOfMarketsCycles.mul(predictionTime)));
+      }
     }
 
     /**
@@ -343,7 +352,7 @@ contract AllMarkets is Governed {
 
     function _checkPreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
       uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
-      if(marketData.length > 0) {
+      if(marketData.length > 1) {
         settleMarket(penultimateMarket);
       }
     }
