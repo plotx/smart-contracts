@@ -525,24 +525,27 @@ contract AllMarkets is Governed {
     }
 
     function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
-      uint[] memory params = new uint[](8);
-      params[0] = _prediction;
-      params[1] = marketData[_marketId].neutralMinValue;
-      params[2] = marketData[_marketId].neutralMaxValue;
-      params[3] = marketData[_marketId].startTime;
-      // params[4] = now + 1000;
-      params[4] = marketExpireTime(_marketId);
-      params[5] = getTotalPredictionPoints(_marketId);
-      params[6] = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
-      // params[7] = marketOptionsAvailable[_marketId][_prediction].assetStaked[ETH_ADDRESS];
-      // params[8] = marketOptionsAvailable[_marketId][_prediction].assetStaked[plotToken];
-      params[7] = _predictionStake;
-      bool checkMultiplier;
-      if(!userData[msg.sender][_marketId].multiplierApplied) {
-        checkMultiplier = true;
+      (uint256 minPredictionAmount, , , uint256 maxPredictionAmount) = marketUtility.getBasicMarketDetails();
+      uint _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
+      if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
+        return (0, isMultiplierApplied);
       }
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketCurrencies[marketData[_marketId].currency].marketFeed, checkMultiplier);
-      
+      uint256 totalPredictionPoints = getTotalPredictionPoints(_marketId);
+      uint256 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
+      uint _optionPrice = calculateOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+      predictionPoints = _stakeValue.div(_optionPrice);
+      if(!userData[msg.sender][_marketId].multiplierApplied) {
+        (predictionPoints, isMultiplierApplied) = marketUtility.checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
+      }
+    }
+
+    function calculateOptionPrice(uint256 predictionPointsOnOption, uint256 totalPredictionPoints) public view returns(uint256 _optionPrice) {
+      if(totalPredictionPoints > 0) {
+        _optionPrice = predictionPointsOnOption.mul((predictionPointsOnOption.mul(10)).div(totalPredictionPoints)) + 100;
+      } else {
+        _optionPrice = 100;
+      }
+
     }
     
 
@@ -580,7 +583,7 @@ contract AllMarkets is Governed {
       if(isMultiplierApplied) {
         userData[msg.sender][_marketId].multiplierApplied = true; 
       }
-      require(predictionPoints > 0);
+      require(predictionPoints > 0, "A");
 
       _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction);
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
