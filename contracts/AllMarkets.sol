@@ -259,7 +259,7 @@ contract AllMarkets is Governed {
     function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public payable {
       uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
-
+      require(marketStatus(marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) == PredictionStatus.InSettlement);
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // require(marketData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
@@ -433,7 +433,7 @@ contract AllMarkets is Governed {
 
     function _closePreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
       uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
-      if(marketData.length > 1) {
+      if(now >= marketSettleTime(penultimateMarket)) {
         settleMarket(penultimateMarket);
       }
     }
@@ -474,8 +474,8 @@ contract AllMarkets is Governed {
     * @dev Settle the market, setting the winning option
     */
     function settleMarket(uint256 _marketId) public {
-      (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketData[_marketId].currency].marketFeed, uint256(marketSettleTime(_marketId)));
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
+        (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketData[_marketId].currency].marketFeed, uint256(marketSettleTime(_marketId)));
         _postResult(_value, _roundId, _marketId);
       }
     }
