@@ -49,9 +49,9 @@ contract AllMarkets is Governed {
     IToken plt;
 
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
-    ITokenController tokenController;
+    ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
     IMarketUtility marketUtility;
-    IGovernance governance;
+    IGovernance internal governance = IGovernance(0xf192D77d9519e12df1b548bC2c02448f7585B3f3);
 
     // uint8[] constant roundOfToNearest = [25,1];
     uint constant totalOptions = 3;
@@ -193,12 +193,10 @@ contract AllMarkets is Governed {
     mapping(uint64 => uint32) marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) public marketCreationData;
 
-    function  initiate(address _plot, address _marketUtility, address _tc, address _gv) public {
+    function  initiate(address _plot, address _marketUtility) public {
       plotToken = _plot;
       plt = IToken(plotToken);
       marketUtility = IMarketUtility(_marketUtility);
-      tokenController = ITokenController(_tc);
-      governance = IGovernance(_gv);
     }
 
     function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) public onlyAuthorizedToGovern {
