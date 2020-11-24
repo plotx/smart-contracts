@@ -145,7 +145,7 @@ contract AllMarkets is Governed {
     event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     // event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets);
-    event Claimed(address indexed user, uint256 plotReward, uint256 ethReward);
+    event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
     event ClaimedIncentive(address indexed user, uint256 marketIndex, address incentiveTokenAddress, uint256 incentive);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId);
     event DisputeRaised(uint256 indexed marketId, address raisedBy, uint64 proposalId, uint256 proposedValue);
@@ -168,6 +168,7 @@ contract AllMarkets is Governed {
     struct MarketTypeData {
       uint32 predictionTime;
       uint32 optionRangePerc;
+      bool paused;
     }
 
     struct MarketCurrency {
@@ -200,32 +201,30 @@ contract AllMarkets is Governed {
     }
 
     function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) public onlyAuthorizedToGovern {
+      require(marketCurrencies[marketCurrency[_currencyName]].marketFeed == address(0));
+      require(decimals != 0);
+      require(roundOfToNearest != 0);
+      require(_marketFeed != address(0));
       marketCurrency[_currencyName] = marketCurrencies.length;
       marketCurrencies.push(MarketCurrency(_currencyName, _marketFeed, decimals, roundOfToNearest));
       emit MarketCurrencies(marketCurrency[_currencyName], _marketFeed, _currencyName, true);
     }
 
     function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc) public onlyAuthorizedToGovern {
+      require(marketTypeArray[marketType[_predictionTime]].predictionTime == 0);
+      require(_predictionTime > 0);
+      require(_optionRangePerc > 0);
       uint32 index = uint32(marketTypeArray.length);
       marketType[_predictionTime] = index;
-      marketTypeArray.push(MarketTypeData(_predictionTime, _optionRangePerc));
+      marketTypeArray.push(MarketTypeData(_predictionTime, _optionRangePerc, false));
       emit MarketTypes(index, _predictionTime, _optionRangePerc, true);
-    }
-
-    function removeMarketType(uint32 _marketTypeIndex) public onlyAuthorizedToGovern {
-      delete marketType[marketTypeArray[_marketTypeIndex].predictionTime];
-      delete marketTypeArray[_marketTypeIndex];
-      // uint256 topIndex = marketTypeArray.length - 1;
-      // marketType[marketTypeArray[topIndex].predictionTime] = _marketTypeIndex; 
-      // marketTypeArray[_marketTypeIndex] = marketTypeArray[topIndex];
-      // marketTypeArray.pop();
-      emit MarketTypes(_marketTypeIndex, 0, 0, false);
     }
 
     /**
     * @dev Start the initial market.
     */
     function addInitialMarketTypesAndStart(uint32 _marketStartTime, address _ethFeed, address _clGasPriceAggregator) external {
+      require(marketTypeArray.length == 0);
       marketCreationIncentive = 50 ether;
       commissionPerc[ETH_ADDRESS] = 10;
       commissionPerc[plotToken] = 5;
@@ -235,9 +234,15 @@ contract AllMarkets is Governed {
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       plotStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 1 ether;
-      uint32 _predictionTime = 1 hours;
+      uint32 _predictionTime = 4 hours;
       marketType[_predictionTime] = uint32(marketTypeArray.length);
-      marketTypeArray.push(MarketTypeData(_predictionTime, 50));
+      marketTypeArray.push(MarketTypeData(_predictionTime, 100, false));
+      _predictionTime = 24 hours;
+      marketType[_predictionTime] = uint32(marketTypeArray.length);
+      marketTypeArray.push(MarketTypeData(_predictionTime, 200, false));
+      _predictionTime = 168 hours;
+      marketType[_predictionTime] = uint32(marketTypeArray.length);
+      marketTypeArray.push(MarketTypeData(_predictionTime, 500, false));
       marketCurrency["ETH/USD"] = marketCurrencies.length;
       marketCurrencies.push(MarketCurrency("ETH/USD", _ethFeed, 8, 1));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
@@ -253,9 +258,9 @@ contract AllMarkets is Governed {
     */
     function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public payable {
       uint256 gasProvided = gasleft();
-      require(!marketCreationPaused && !marketCreationData[_marketTypeIndex][_marketCurrencyIndex].paused);
+      require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
 
-      _checkPreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
+      _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // require(marketData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
       marketUtility.update();
@@ -426,7 +431,7 @@ contract AllMarkets is Governed {
       }
     }
 
-    function _checkPreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
+    function _closePreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
       uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
       if(marketData.length > 1) {
         settleMarket(penultimateMarket);
@@ -540,9 +545,9 @@ contract AllMarkets is Governed {
       marketCreationPaused = true;
     }
 
-    function pauseMarketCreationType(uint64 _predictionTime, uint64 _marketCurrencyIndex) external onlyAuthorizedToGovern {
-      require(!marketCreationData[_predictionTime][_marketCurrencyIndex].paused);
-      marketCreationData[_predictionTime][_marketCurrencyIndex].paused = true;
+    function pauseMarketCreationType(uint64 _marketTypeIndex) external onlyAuthorizedToGovern {
+      require(!marketTypeArray[_marketTypeIndex].paused);
+      marketTypeArray[_marketTypeIndex].paused = true;
     }
 
     function resumeMarketCreation() external onlyAuthorizedToGovern {
@@ -550,9 +555,9 @@ contract AllMarkets is Governed {
       marketCreationPaused = false;
     }
 
-    function resumeMarketCreationType(uint64 _predictionTime, uint64 _marketCurrencyIndex) external onlyAuthorizedToGovern {
-      require(marketCreationData[_predictionTime][_marketCurrencyIndex].paused);
-      marketCreationData[_predictionTime][_marketCurrencyIndex].paused = false;
+    function resumeMarketCreationType(uint64 _marketTypeIndex) external onlyAuthorizedToGovern {
+      require(marketTypeArray[_marketTypeIndex].paused);
+      marketTypeArray[_marketTypeIndex].paused = false;
     }
 
     function deposit(uint _amount) payable public {
@@ -719,7 +724,7 @@ contract AllMarkets is Governed {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      emit Claimed(msg.sender, plotReward, ethReward);
+      emit ReturnClaimed(msg.sender, plotReward, ethReward);
       userGlobalData[msg.sender].currencyUnusedBalance[plotToken] = userGlobalData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
       userGlobalData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userGlobalData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
       userGlobalData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
@@ -757,7 +762,7 @@ contract AllMarkets is Governed {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      emit Claimed(msg.sender, plotReward, ethReward);
+      emit ReturnClaimed(msg.sender, plotReward, ethReward);
       userGlobalData[msg.sender].currencyUnusedBalance[plotToken] = userGlobalData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
       userGlobalData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userGlobalData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
       userGlobalData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
