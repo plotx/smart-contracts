@@ -148,7 +148,6 @@ contract AllMarkets is Governed {
     mapping(uint256 => MarketDataExtended) public marketDataExtended;
     mapping(uint256 => MarketSettleData) public marketSettleData;
     mapping(address => UserData) internal userData;
-    
 
     mapping(uint =>mapping(uint=>PredictionData)) public marketOptionsAvailable;
     mapping(address => uint256) marketsCreatedByUser;
@@ -263,13 +262,13 @@ contract AllMarkets is Governed {
       marketCreationRewardUserData[msg.sender].marketsCreated.push(_marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
       uint256 gasUsed = gasProvided - gasleft();
-      _calculateIncentive(gasUsed, _marketTypeIndex, _marketCurrencyIndex, _marketIndex);
+      __calculateMarketCreationIncentive(gasUsed, _marketTypeIndex, _marketCurrencyIndex, _marketIndex);
     }
 
-    function _calculateOptionRange(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) internal view returns(uint64 _minValue, uint64 _maxValue) {
+    function _calculateOptionRange(uint64 _marketCurrencyIndex,uint64 _marketTypeIndex) internal view returns(uint64 _minValue, uint64 _maxValue) {
       uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint _optionRangePerc = marketTypeArray[_marketTypeIndex].optionRangePerc;
-      _optionRangePerc = uint32(currentPrice.mul(_optionRangePerc.div(2)).div(10000));
+      _optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
       uint64 _decimals = marketCurrencies[_marketCurrencyIndex].decimals;
       uint8 _roundOfToNearest = marketCurrencies[_marketCurrencyIndex].roundOfToNearest;
       _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
@@ -293,7 +292,7 @@ contract AllMarkets is Governed {
     /**
     * @dev internal function to calculate user incentive for market creation
     */
-    function _calculateIncentive(uint256 gasUsed, uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _marketIndex) internal{
+    function __calculateMarketCreationIncentive(uint256 gasUsed, uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _marketIndex) internal{
       //Adding buffer gas for below calculations
       gasUsed = gasUsed + 38500;
       uint256 gasPrice = _checkGasPrice();
