@@ -72,12 +72,12 @@ contract AllMarkets is Governed {
     struct MarketCreationRewardData {
       uint ethIncentive;
       uint plotIncentive;
-      uint rewardPoolSharePerc;
+      uint64 rewardPoolSharePerc;
       address createdBy;
     }
 
-    uint256 maxRewardPoolPercForMC;
-    uint256 minRewardPoolPercForMC;
+    uint64 maxRewardPoolPercForMC;
+    uint64 minRewardPoolPercForMC;
     uint256 plotStakeForRewardPoolShare;
     uint256 rewardPoolShareThreshold;
 
@@ -137,14 +137,14 @@ contract AllMarkets is Governed {
     // event Claimed(uint256 indexed marketId, address indexed user, uint256[] reward, address[] _predictionAssets);
     event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
     event ClaimedIncentive(address indexed user, uint256 marketIndex, address incentiveTokenAddress, uint256 incentive);
-    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketId);
-    event DisputeRaised(uint256 indexed marketId, address raisedBy, uint64 proposalId, uint256 proposedValue);
-    event DisputeResolved(uint256 indexed marketId, bool status);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex);
+    event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint64 proposalId, uint256 proposedValue);
+    event DisputeResolved(uint256 indexed marketIndex, bool status);
 
     MarketBasicData[] public marketBasicData;
 
     mapping(address => MarketCreationRewardUserData) internal marketCreationRewardUserData; //Of user
-    mapping(uint256 => MarketCreationRewardData) internal marketCreationRewardData; //Of user
+    mapping(uint256 => MarketCreationRewardData) internal marketCreationRewardData; //Of market
 
     mapping(uint256 => MarketDataExtended) public marketDataExtended;
     mapping(uint256 => MarketSettleData) public marketSettleData;
@@ -283,10 +283,10 @@ contract AllMarkets is Governed {
       marketCreationRewardData[_market].createdBy = msg.sender;
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_market].rewardPoolSharePerc
-       = Math.min(
+       = uint64(Math.min(
           maxRewardPoolPercForMC,
           minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
-        );
+        ));
     }
 
     /**
@@ -321,14 +321,75 @@ contract AllMarkets is Governed {
     }
 
     /**
-    * @dev function to reward user for initiating market creation calls
+    * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
-    function claimCreationReward() external {
-      require(marketsCreatedByUser[msg.sender] > 0);
-      uint256 pendingReward = marketCreationIncentive.mul(marketsCreatedByUser[msg.sender]);
-      require(IToken(plotToken).balanceOf(address(this)) > pendingReward);
-      delete marketsCreatedByUser[msg.sender];
-      _transferAsset(address(plotToken), msg.sender, pendingReward);
+    function claimCreationReward(uint256 _maxRecords) external {
+      uint256 pendingPLOTReward = marketCreationRewardUserData[msg.sender].incentives;
+      delete marketCreationRewardUserData[msg.sender].incentives;
+      (uint256 ethIncentive, uint256 plotIncentive) = _getRewardPoolIncentives(_maxRecords);
+      pendingPLOTReward = pendingPLOTReward.add(plotIncentive);
+      require(pendingPLOTReward > 0 || ethIncentive > 0, "No pending");
+      _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
+      _transferAsset(ETH_ADDRESS, msg.sender, ethIncentive);
+      emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
+    }
+
+    /**
+    * @dev internal function to calculate market reward pool share incentives for market creator
+    */
+    function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 ethIncentive, uint256 plotIncentive) {
+      MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[msg.sender];
+      uint256 len = rewardData.marketsCreated.length;
+      uint256 lastClaimed = len;
+      uint256 count;
+      uint256 i;
+      for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
+        MarketCreationRewardData storage marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+        if(marketStatus(rewardData.marketsCreated[i]) == PredictionStatus.Settled) {
+          ethIncentive = ethIncentive.add(marketData.ethIncentive);
+          plotIncentive = plotIncentive.add(marketData.plotIncentive);
+          delete marketData.ethIncentive;
+          delete marketData.plotIncentive;
+          count++;
+        } else {
+          if(lastClaimed == len) {
+            lastClaimed = i;
+          }
+        }
+      }
+      if(lastClaimed == len) {
+        lastClaimed = i;
+      }
+      rewardData.lastClaimedIndex = lastClaimed;
+    }
+
+    /**
+    * @dev function to get pending reward of user for initiating market creation calls as per the new incetive calculations
+    * @param _user Address of user for whom pending rewards to be checked
+    * @return plotIncentive Incentives given for creating market as per the gas consumed
+    * @return pendingPLOTReward PLOT Reward pool share of markets created by user
+    * @return pendingETHReward ETH Reward pool share of markets created by user
+    */
+    function getPendingMarketCreationRewards(address _user) external view returns(uint256 plotIncentive, uint256 pendingPLOTReward, uint256 pendingETHReward){
+      plotIncentive = marketCreationRewardUserData[_user].incentives;
+      (pendingETHReward, pendingPLOTReward) = _getPendingRewardPoolIncentives(_user);
+    }
+
+    /**
+    * @dev internal function to calculate market reward pool share incentives for market creator
+    */
+    function _getPendingRewardPoolIncentives(address _user) internal view returns(uint256 ethIncentive, uint256 plotIncentive) {
+      MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[_user];
+      uint256 len = rewardData.marketsCreated.length;
+      for(uint256 i = rewardData.lastClaimedIndex;i < len; i++) {
+        MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+        if(marketData.ethIncentive > 0 || marketData.plotIncentive > 0) {
+          if(marketStatus(rewardData.marketsCreated[i]) == PredictionStatus.Settled) {
+            ethIncentive = ethIncentive.add(marketData.ethIncentive);
+            plotIncentive = plotIncentive.add(marketData.plotIncentive);
+          }
+        }
+      }
     }
 
     /**
@@ -365,6 +426,8 @@ contract AllMarkets is Governed {
     function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
       uint256 stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
       address payable staker = address(uint160(marketDataExtended[_marketId].disputeRaisedBy));
+      delete marketCreationRewardData[_marketId].plotIncentive;
+      delete marketCreationRewardData[_marketId].ethIncentive;
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
       _transferAsset(plotToken, staker, stakedAmount);
@@ -478,8 +541,6 @@ contract AllMarkets is Governed {
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
       require(now >= marketSettleTime(_marketId),"Not reached");
       require(_value > 0);
-      uint256 tokenParticipation;
-      uint256 ethParticipation;
       if(marketDataExtended[_marketId].predictionStatus != PredictionStatus.InDispute) {
         marketSettleData[_marketId].settleTime = uint32(now);
       } else {
@@ -493,9 +554,40 @@ contract AllMarkets is Governed {
       } else {
         marketSettleData[_marketId].WinningOption = 2;
       }
-      uint[] memory totalReward = new uint256[](2);
-      uint256 _ethCommissionTotal;
-      uint256 _plotCommssionTotal;
+      uint64[] memory marketCreatorIncentive = new uint64[](2);
+      bool _thresholdReached = _checkIfThresholdReachedForRPS(_marketId);
+      (uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint256 _ethCommissionTotal, uint256 _plotCommssionTotal) = _calculateRewardTally(_marketId);
+
+      if(_thresholdReached) {
+        if(
+          marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].predictionPoints == 0
+        ){
+          marketCreatorIncentive[0] = _calculatePercentage(marketCreationRewardData[_marketId].rewardPoolSharePerc, tokenParticipation, 10000);
+          marketCreatorIncentive[1] = _calculatePercentage(marketCreationRewardData[_marketId].rewardPoolSharePerc, ethParticipation, 10000);
+          tokenParticipation = tokenParticipation.sub(marketCreatorIncentive[0]);
+          ethParticipation = ethParticipation.sub(marketCreatorIncentive[1]);
+        } else {
+          marketCreatorIncentive[0] = _calculatePercentage(marketCreationRewardData[_marketId].rewardPoolSharePerc, totalReward[0], 10000);
+          marketCreatorIncentive[1] = _calculatePercentage(marketCreationRewardData[_marketId].rewardPoolSharePerc, totalReward[1], 10000);
+          totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
+          totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
+        }
+      }
+      marketDataExtended[_marketId].rewardToDistribute = totalReward;
+      ethCommissionAmount = ethCommissionAmount.add(_ethCommissionTotal);
+      plotCommissionAmount = plotCommissionAmount.add(_plotCommssionTotal);
+      marketDataExtended[_marketId].ethAmountToPool = ethParticipation;
+      marketDataExtended[_marketId].tokenAmountToPool = tokenParticipation;
+
+      marketCreationRewardData[_marketId].plotIncentive = marketCreatorIncentive[0];
+      marketCreationRewardData[_marketId].ethIncentive = marketCreatorIncentive[1];
+      
+      emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, marketCreatorIncentive[0], marketCreatorIncentive[1]);
+      emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, marketSettleData[_marketId].WinningOption, _value, _roundId);
+    }
+
+    function _calculateRewardTally(uint256 _marketId) internal view returns(uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint256 _ethCommissionTotal, uint256 _plotCommssionTotal){
+      totalReward = new uint64[](2);
       for(uint i=1;i <= totalOptions;i++){
         uint64 _plotStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
         uint64 _ethStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
@@ -506,7 +598,6 @@ contract AllMarkets is Governed {
         ){
           tokenParticipation = tokenParticipation.add(_plotStakedOnOption).sub(_plotCommssion);
           ethParticipation = ethParticipation.add(_ethStakedOnOption).sub(_ethCommission);
-
         } else {
           if(i!=marketSettleData[_marketId].WinningOption) {
             totalReward[0] = totalReward[0].add(_plotStakedOnOption).sub(_plotCommssion);
@@ -516,11 +607,22 @@ contract AllMarkets is Governed {
         _ethCommissionTotal = _ethCommissionTotal.add(_ethCommission);
         _plotCommssionTotal = _plotCommssionTotal.add(_plotCommssion);
       }
-      ethCommissionAmount = ethCommissionAmount.add(_ethCommissionTotal);
-      plotCommissionAmount = plotCommissionAmount.add(_plotCommssionTotal);
-      marketDataExtended[_marketId].ethAmountToPool = ethParticipation;
-      marketDataExtended[_marketId].tokenAmountToPool = tokenParticipation;
-      emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, marketSettleData[_marketId].WinningOption, _value, _roundId);
+    }
+
+    /**
+    * @dev Check if threshold reached for reward pool share percent for market creator.
+    * Calculate total leveraged amount staked in market value in ETH
+    * @param _marketId Index of market to check threshold
+    */
+    function _checkIfThresholdReachedForRPS(uint256 _marketId) internal view returns(bool) {
+      uint256 ethStaked;
+      uint256 plotStaked;
+      for(uint256 i = 1; i<= totalOptions;i++) {
+        ethStaked = ethStaked.add(marketOptionsAvailable[_marketId][i].ethStaked);
+        plotStaked = plotStaked.add(marketOptionsAvailable[_marketId][i].plotStaked);
+      }
+      plotStaked = marketUtility.getAssetValueETH(plotToken, plotStaked.mul(1e15));
+      return (plotStaked.add(ethStaked.mul(1e15)) > rewardPoolShareThreshold);
     }
 
     function pauseMarketCreation() external onlyAuthorizedToGovern {
