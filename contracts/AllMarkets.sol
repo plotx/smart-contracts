@@ -476,8 +476,8 @@ contract AllMarkets is Governed {
     * @param _value The current price of market currency.
     */
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
-      require(now >= marketSettleTime(_marketId),"Time not reached");
-      require(_value > 0,"value should be greater than 0");
+      require(now >= marketSettleTime(_marketId),"Not reached");
+      require(_value > 0);
       uint256 tokenParticipation;
       uint256 ethParticipation;
       if(marketDataExtended[_marketId].predictionStatus != PredictionStatus.InDispute) {
@@ -539,6 +539,7 @@ contract AllMarkets is Governed {
     }
 
     function deposit(uint _amount) payable public {
+      require(_amount > 0 || msg.value > 0);
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
       if(_amount > 0) {
         IToken(plotToken).transferFrom (msg.sender,address(this), _amount);
@@ -552,7 +553,8 @@ contract AllMarkets is Governed {
       (uint _amountPlt, uint _amountEth) = getUserUnusedBalance(msg.sender);
       delete userData[msg.sender].currencyUnusedBalance[plotToken];
       delete userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      _trasnferAndLogWithdraw(_amountPlt, _amountEth);
+      require(_amountPlt > 0 || _amountEth > 0);
+      _transferAndLogWithdraw(_amountPlt, _amountEth);
     }
 
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
@@ -560,10 +562,11 @@ contract AllMarkets is Governed {
       (uint _amountPlt, uint _amountEth) = getUserUnusedBalance(msg.sender);
       userData[msg.sender].currencyUnusedBalance[plotToken] = _amountPlt.sub(_plot);
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = _amountEth.sub(_eth);
-      _trasnferAndLogWithdraw(_plot, _eth);
+      require(_plot > 0 || _eth > 0);
+      _transferAndLogWithdraw(_plot, _eth);
     }
 
-    function _trasnferAndLogWithdraw(uint _plot, uint256 _eth) internal {
+    function _transferAndLogWithdraw(uint _plot, uint256 _eth) internal {
       _transferAsset(plotToken, msg.sender, _plot);
       _transferAsset(ETH_ADDRESS, msg.sender, _eth);
       emit Withdrawn(msg.sender, _plot, _eth, now);
@@ -613,11 +616,10 @@ contract AllMarkets is Governed {
       uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
       uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
       if(totalPredictionPoints > 0) {
-        _optionPrice = predictionPointsOnOption.mul(predictionPointsOnOption).mul(10).div(totalPredictionPoints) + 100;
+        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
       } else {
         _optionPrice = 100;
       }
-      _optionPrice = _optionPrice.div(100);
     }
     
     function depositAndPlacePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public payable {
