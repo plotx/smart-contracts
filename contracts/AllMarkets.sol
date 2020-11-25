@@ -17,7 +17,7 @@ pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
-// import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMarketUtility.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
@@ -311,7 +311,7 @@ contract AllMarkets is Governed {
       return Math.min(Math.min(tx.gasprice,fastGasWithMaxDeviation), maxGasPrice);
     }
 
-    function calculateStartTimeForMarket(uint32 _marketType, uint32 _marketCurrencyIndex) public view returns(uint32 _marketStartTime) {
+    function calculateStartTimeForMarket(uint32 _marketCurrencyIndex, uint32 _marketType) public view returns(uint32 _marketStartTime) {
       _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
       uint predictionTime = marketTypeArray[_marketType].predictionTime;
       if(now > _marketStartTime.add(predictionTime)) {
