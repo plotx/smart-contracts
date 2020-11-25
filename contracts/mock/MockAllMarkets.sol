@@ -4,7 +4,7 @@ import "../AllMarkets.sol";
 
 contract MockAllMarkets is AllMarkets {
 
-	mapping(uint=>mapping(uint=>uint)) val;
+	mapping(uint=>mapping(uint=>uint64)) val;
 
 	// bool public mockFlag;
 
@@ -29,11 +29,11 @@ contract MockAllMarkets is AllMarkets {
     // }
 
     
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint256 _optionPrice) {
+    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint64 _optionPrice) {
         return val[_marketId][_prediction];
     }
 
-    function setOptionPrice(uint256 _marketId, uint256 _prediction, uint256 _val) public {
+    function setOptionPrice(uint256 _marketId, uint256 _prediction, uint64 _val) public {
     	val[_marketId][_prediction] = _val;
     }
 
