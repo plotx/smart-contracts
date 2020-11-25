@@ -45,7 +45,6 @@ contract AllMarkets is Governed {
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal plotToken;
-    IToken plt;
 
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
     ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
@@ -185,7 +184,6 @@ contract AllMarkets is Governed {
 
     function  initiate(address _plot, address _marketUtility) public {
       plotToken = _plot;
-      plt = IToken(plotToken);
       marketUtility = IMarketUtility(_marketUtility);
     }
 
@@ -328,7 +326,7 @@ contract AllMarkets is Governed {
     function claimCreationReward() external {
       require(marketsCreatedByUser[msg.sender] > 0);
       uint256 pendingReward = marketCreationIncentive.mul(marketsCreatedByUser[msg.sender]);
-      require(plt.balanceOf(address(this)) > pendingReward);
+      require(IToken(plotToken).balanceOf(address(this)) > pendingReward);
       delete marketsCreatedByUser[msg.sender];
       _transferAsset(address(plotToken), msg.sender, pendingReward);
     }
@@ -395,7 +393,7 @@ contract AllMarkets is Governed {
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
       uint _stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
-      plt.burn(_stakedAmount);
+      IToken(plotToken).burn(_stakedAmount);
     }
 
     function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
@@ -478,7 +476,7 @@ contract AllMarkets is Governed {
     * @param _value The current price of market currency.
     */
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
-      // require(now >= marketSettleTime(_marketId),"Time not reached");
+      require(now >= marketSettleTime(_marketId),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint256 tokenParticipation;
       uint256 ethParticipation;
@@ -498,33 +496,25 @@ contract AllMarkets is Governed {
       uint[] memory totalReward = new uint256[](2);
       uint256 _ethCommissionTotal;
       uint256 _plotCommssionTotal;
-      if(marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].ethStaked > 0 ||
-        marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].plotStaked > 0
-      ){
-        for(uint i=1;i <= totalOptions;i++){
-          uint64 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], marketOptionsAvailable[_marketId][i].ethStaked, 10000);
-          uint64 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], marketOptionsAvailable[_marketId][i].plotStaked, 10000);
-          if(i!=marketSettleData[_marketId].WinningOption) {
-            totalReward[0] = totalReward[0].add(marketOptionsAvailable[_marketId][i].plotStaked).sub(_plotCommssion);
-            totalReward[1] = totalReward[1].add(marketOptionsAvailable[_marketId][i].ethStaked).sub(_ethCommission);
-          }
-          _ethCommissionTotal = _ethCommissionTotal.add(_ethCommission);
-          _plotCommssionTotal = _plotCommssionTotal.add(_plotCommssion);
-        }
-        marketDataExtended[_marketId].rewardToDistribute = totalReward;
-      } else {
-        
-        for(uint i=1;i <= totalOptions;i++){
-          uint64 _assetStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
-          uint64 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], _assetStakedOnOption, 10000);
-          tokenParticipation = tokenParticipation.add(_assetStakedOnOption).sub(_plotCommssion);
+      for(uint i=1;i <= totalOptions;i++){
+        uint64 _plotStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
+        uint64 _ethStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
+        uint64 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], _plotStakedOnOption, 10000);
+        uint64 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], _ethStakedOnOption, 10000);
+        if(
+          marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].predictionPoints == 0
+        ){
+          tokenParticipation = tokenParticipation.add(_plotStakedOnOption).sub(_plotCommssion);
+          ethParticipation = ethParticipation.add(_ethStakedOnOption).sub(_ethCommission);
 
-          _assetStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
-          uint64 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], _assetStakedOnOption, 10000);
-          ethParticipation = ethParticipation.add(_assetStakedOnOption).sub(_ethCommission);
-          _ethCommissionTotal = _ethCommissionTotal.add(_ethCommission);
-          _plotCommssionTotal = _plotCommssionTotal.add(_plotCommssion);
+        } else {
+          if(i!=marketSettleData[_marketId].WinningOption) {
+            totalReward[0] = totalReward[0].add(_plotStakedOnOption).sub(_plotCommssion);
+            totalReward[1] = totalReward[1].add(_ethStakedOnOption).sub(_ethCommission);
+          }
         }
+        _ethCommissionTotal = _ethCommissionTotal.add(_ethCommission);
+        _plotCommssionTotal = _plotCommssionTotal.add(_plotCommssion);
       }
       ethCommissionAmount = ethCommissionAmount.add(_ethCommissionTotal);
       plotCommissionAmount = plotCommissionAmount.add(_plotCommssionTotal);
@@ -538,25 +528,20 @@ contract AllMarkets is Governed {
       marketCreationPaused = true;
     }
 
-    function pauseMarketCreationType(uint64 _marketTypeIndex) external onlyAuthorizedToGovern {
-      require(!marketTypeArray[_marketTypeIndex].paused);
-      marketTypeArray[_marketTypeIndex].paused = true;
-    }
-
     function resumeMarketCreation() external onlyAuthorizedToGovern {
       require(marketCreationPaused);
       marketCreationPaused = false;
     }
 
-    function resumeMarketCreationType(uint64 _marketTypeIndex) external onlyAuthorizedToGovern {
-      require(marketTypeArray[_marketTypeIndex].paused);
-      marketTypeArray[_marketTypeIndex].paused = false;
+    function toggleMarketCreationType(uint64 _marketTypeIndex, bool _flag) external onlyAuthorizedToGovern {
+      require(marketTypeArray[_marketTypeIndex].paused != _flag);
+      marketTypeArray[_marketTypeIndex].paused = _flag;
     }
 
     function deposit(uint _amount) payable public {
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
       if(_amount > 0) {
-        plt.transferFrom (msg.sender,address(this), _amount);
+        IToken(plotToken).transferFrom (msg.sender,address(this), _amount);
         userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
       }
       emit Deposited(msg.sender, _amount, msg.value, now);
@@ -564,28 +549,24 @@ contract AllMarkets is Governed {
 
     function withdrawMax(uint _maxRecords) public {
       withdrawReward(_maxRecords);
-      uint _amountPlt = userData[msg.sender].currencyUnusedBalance[plotToken];
-      uint _amountEth = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
+      (uint _amountPlt, uint _amountEth) = getUserUnusedBalance(msg.sender);
       delete userData[msg.sender].currencyUnusedBalance[plotToken];
       delete userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      _transferAsset(plotToken, msg.sender, _amountPlt);
-      _transferAsset(ETH_ADDRESS, msg.sender, _amountEth);
-      emit Withdrawn(msg.sender, _amountPlt, _amountEth, now);
+      _trasnferAndLogWithdraw(_amountPlt, _amountEth);
     }
 
-    function withdraw(uint _plot, uint256 _eth) public {
-      uint _amountPlt = userData[msg.sender].currencyUnusedBalance[plotToken];
-      uint _amountEth = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      if(_amountPlt < _plot || _amountEth < _eth) {
-        withdrawRewardUpto(_plot.sub(_amountPlt), _eth.sub(_amountEth));
-        _amountPlt = userData[msg.sender].currencyUnusedBalance[plotToken];
-        _amountEth = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS];
-      }
+    function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
+      withdrawReward(_maxRecords);
+      (uint _amountPlt, uint _amountEth) = getUserUnusedBalance(msg.sender);
       userData[msg.sender].currencyUnusedBalance[plotToken] = _amountPlt.sub(_plot);
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = _amountEth.sub(_eth);
+      _trasnferAndLogWithdraw(_plot, _eth);
+    }
+
+    function _trasnferAndLogWithdraw(uint _plot, uint256 _eth) internal {
       _transferAsset(plotToken, msg.sender, _plot);
       _transferAsset(ETH_ADDRESS, msg.sender, _eth);
-      emit Withdrawn(msg.sender, _amountPlt, _amountEth, now);
+      emit Withdrawn(msg.sender, _plot, _eth, now);
     }
 
     /**
@@ -726,46 +707,8 @@ contract AllMarkets is Governed {
       userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
     }
 
-    /**
-    * @dev Claim the pending return of the market.
-    * @param _plotUpto Maximum amount of plot to claim
-    * @param _ethUpto Maximum amount of eth to claim
-    */
-    function withdrawRewardUpto(uint256 _plotUpto, uint256 _ethUpto) public {
-      uint256 i;
-      uint len = userData[msg.sender].marketsParticipated.length;
-      uint lastClaimed = len;
-      uint count;
-      uint ethReward = 0;
-      uint plotReward =0 ;
-      require(!marketCreationPaused);
-      for(i = userData[msg.sender].lastClaimedIndex; i < len; i++) {
-        (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(msg.sender, userData[msg.sender].marketsParticipated[i]);
-        if(claimed > 0) {
-          delete userData[msg.sender].marketsParticipated[i];
-          ethReward = ethReward.add(tempEthReward);
-          plotReward = plotReward.add(tempPlotReward);
-        } else {
-          if(lastClaimed == len) {
-            lastClaimed = i;
-          }
-        }
-        if(_plotUpto >= plotReward || _ethUpto >= ethReward) {
-          i++;
-          break;
-        }
-      }
-      if(lastClaimed == len) {
-        lastClaimed = i;
-      }
-      emit ReturnClaimed(msg.sender, plotReward, ethReward);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(1e15));
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(1e15));
-      userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
-    }
-
-    function getUserUnusedBalance() public returns(uint256, uint256){
-      return (userData[msg.sender].currencyUnusedBalance[plotToken], userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS]);
+    function getUserUnusedBalance(address _user) public view returns(uint256, uint256){
+      return (userData[_user].currencyUnusedBalance[plotToken], userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS]);
     }
 
     /**
@@ -808,7 +751,7 @@ contract AllMarkets is Governed {
       require(marketDataExtended[_marketId].incentiveToken == address(0), "Already sponsored");
       marketDataExtended[_marketId].incentiveToken = _token;
       marketDataExtended[_marketId].incentiveToDistribute = _value;
-      plt.transferFrom(msg.sender, address(this), _value);
+      IToken(plotToken).transferFrom(msg.sender, address(this), _value);
       emit SponsoredIncentive(_marketId, _token, msg.sender, _value);
     }
 
