@@ -4,13 +4,13 @@ import "../AllMarkets.sol";
 
 contract MockAllMarkets is AllMarkets {
 
-	mapping(uint => uint) optionPrices;
+	mapping(uint=>mapping(uint=>uint)) val;
 
-	bool public mockFlag;
+	// bool public mockFlag;
 
-	function setMockPriceFlag(bool _flag) public {
-		mockFlag = _flag;
-	}
+	// function setMockPriceFlag(bool _flag) public {
+	// 	mockFlag = _flag;
+	// }
 
   // function setOptionRangesPublic(uint _midRangeMin, uint _midRangeMax) public{
   //     marketData.neutralMinValue = uint64(_midRangeMin*1e8);
@@ -23,21 +23,22 @@ contract MockAllMarkets is AllMarkets {
   //     // optionsAvailable[3].maxValue = ~uint256(0) ;
   //   }
 
-    function initiate(address _plot, address _marketUtility) public {
-      mockFlag = true;
-      super.initiate(_plot, _marketUtility);
+    // function initiate(address _plot, address _marketUtility) public {
+    //   mockFlag = true;
+    //   super.initiate(_plot, _marketUtility);
+    // }
+
+    
+    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint256 _optionPrice) {
+        return val[_marketId][_prediction];
     }
 
-    /**
-    * @dev Calculate the result of market.
-    * @param _value The current price of market currency.
-    */
-    function calculatePredictionResult(uint _value, uint  _marketId) public {
-      _postResult(_value, 0, _marketId);
+    function setOptionPrice(uint256 _marketId, uint256 _prediction, uint256 _val) public {
+    	val[_marketId][_prediction] = _val;
     }
 
-    function setOptionPrice(uint _option, uint _price) public {
-    	optionPrices[_option] = _price;
-    }
+    function postResultMock(uint _val, uint _marketId) public {
+        _postResult(_val, 0 , _marketId);
+    } 
 
 }
