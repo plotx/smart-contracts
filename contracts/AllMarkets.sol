@@ -234,6 +234,7 @@ contract AllMarkets is Governed {
       marketTypeArray.push(MarketTypeData(_predictionTime, 500, false));
       marketCurrency["ETH/USD"] = marketCurrencies.length;
       marketCurrencies.push(MarketCurrency("ETH/USD", _ethFeed, 8, 1));
+      marketBasicData.push(MarketBasicData(0,0,0, 0,0,0));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
           marketCreationData[i][0].initialStartTime = _marketStartTime;
           createMarket(0, i);
@@ -248,7 +249,6 @@ contract AllMarkets is Governed {
     function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public payable {
       uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
-      require(marketStatus(marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) == PredictionStatus.InSettlement);
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // require(marketBasicData.startTime == 0, "Already initialized");
       // require(_startTime.add(_predictionTime) > now);
@@ -421,9 +421,13 @@ contract AllMarkets is Governed {
     }
 
     function _closePreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
-      uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
-      if(now >= marketSettleTime(penultimateMarket)) {
-        settleMarket(penultimateMarket);
+      uint64 currentMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket;
+      if(currentMarket != 0) {
+        require(marketStatus(currentMarket) == PredictionStatus.InSettlement);
+        uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
+        if(penultimateMarket > 0 && now >= marketSettleTime(penultimateMarket)) {
+          settleMarket(penultimateMarket);
+        }
       }
     }
 
@@ -474,7 +478,7 @@ contract AllMarkets is Governed {
     * @param _value The current price of market currency.
     */
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
-      require(now >= marketSettleTime(_marketId),"Time not reached");
+      // require(now >= marketSettleTime(_marketId),"Time not reached");
       require(_value > 0,"value should be greater than 0");
       uint256 tokenParticipation;
       uint256 ethParticipation;
@@ -611,12 +615,12 @@ contract AllMarkets is Governed {
 
     function calculatePredictionValue(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset) internal view returns(uint64 predictionPoints, bool isMultiplierApplied) {
       (uint256 minPredictionAmount, , , uint256 maxPredictionAmount) = marketUtility.getBasicMarketDetails();
-      uint _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
+      uint _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake.mul(1e15));
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
       }
       uint64 _optionPrice = calculateOptionPrice(_marketId, _prediction);
-      predictionPoints = uint64(_stakeValue).div(_optionPrice);
+      predictionPoints = uint64(_stakeValue.div(1e15)).div(_optionPrice);
       if(!userData[msg.sender].userMarketData[_marketId].multiplierApplied) {
         uint256 _predictionPoints;
         (_predictionPoints, isMultiplierApplied) = marketUtility.checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
@@ -628,11 +632,11 @@ contract AllMarkets is Governed {
       uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
       uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
       if(totalPredictionPoints > 0) {
-        _optionPrice = predictionPointsOnOption.mul((predictionPointsOnOption.mul(10)).div(totalPredictionPoints)) + 100;
+        _optionPrice = predictionPointsOnOption.mul(predictionPointsOnOption).mul(10).div(totalPredictionPoints) + 100;
       } else {
         _optionPrice = 100;
       }
-
+      _optionPrice = _optionPrice.div(100);
     }
     
     function depositAndPlacePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public payable {
@@ -664,10 +668,11 @@ contract AllMarkets is Governed {
           withdrawReward(defaultMaxRecords);
           unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
         }
+        unusedBalance = unusedBalance/1e15;
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
         // ethCommissionAmount = ethCommissionAmount.add(_commissionStake);
-        userData[msg.sender].currencyUnusedBalance[_asset] = unusedBalance.sub(_predictionStake);
+        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(1e15);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[msg.sender].userMarketData[_marketId].predictedWithBlot);
@@ -716,8 +721,8 @@ contract AllMarkets is Governed {
         lastClaimed = i;
       }
       emit ReturnClaimed(msg.sender, plotReward, ethReward);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
+      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(1e15));
+      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(1e15));
       userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
     }
 
@@ -754,8 +759,8 @@ contract AllMarkets is Governed {
         lastClaimed = i;
       }
       emit ReturnClaimed(msg.sender, plotReward, ethReward);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward);
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward);
+      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(1e15));
+      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(1e15));
       userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
     }
 
