@@ -26,7 +26,9 @@ import "./interfaces/ITokenController.sol";
 import "./interfaces/IChainLinkOracle.sol";
 
 contract AllMarkets is Governed {
-    using SafeMath for *;
+    using SafeMath64 for uint64;
+    using SafeMath32 for uint32;
+    using SafeMath for uint;
 
     enum PredictionStatus {
       Live,
@@ -37,8 +39,8 @@ contract AllMarkets is Governed {
     }
 
     struct MarketSettleData {
-      uint64 WinningOption;
-      uint64 settleTime;
+      uint32 WinningOption;
+      uint32 settleTime;
     }
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -58,7 +60,7 @@ contract AllMarkets is Governed {
     uint internal plotCommissionAmount;
     uint256 internal maxGasPrice;
 
-    mapping(address => uint256) internal commissionPerc; //with 2 decimals
+    mapping(address => uint64) internal commissionPerc; //with 2 decimals
     
 
     IChainLinkOracle public clGasPriceAggregator;
@@ -314,9 +316,9 @@ contract AllMarkets is Governed {
     function calculateStartTimeForMarket(uint32 _marketCurrencyIndex, uint32 _marketType) public view returns(uint32 _marketStartTime) {
       _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
       uint predictionTime = marketTypeArray[_marketType].predictionTime;
-      if(now > _marketStartTime.add(predictionTime)) {
+      if(now > (predictionTime).add(_marketStartTime)) {
         uint noOfMarketsCycles = ((now).sub(_marketStartTime)).div(predictionTime);
-       _marketStartTime = uint32(_marketStartTime.add(noOfMarketsCycles.mul(predictionTime)));
+       _marketStartTime = uint32((noOfMarketsCycles.mul(predictionTime)).add(_marketStartTime));
       }
     }
 
@@ -429,11 +431,11 @@ contract AllMarkets is Governed {
     * @dev Get market settle time
     * @return the time at which the market result will be declared
     */
-    function marketSettleTime(uint256 _marketId) public view returns(uint64) {
+    function marketSettleTime(uint256 _marketId) public view returns(uint32) {
       if(marketSettleData[_marketId].settleTime > 0) {
         return marketSettleData[_marketId].settleTime;
       }
-      return uint64(marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime.mul(2)));
+      return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime.mul(2));
     }
 
     /**
@@ -462,7 +464,7 @@ contract AllMarkets is Governed {
     */
     function settleMarket(uint256 _marketId) public {
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
-        (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketBasicData[_marketId].currency].marketFeed, uint256(marketSettleTime(_marketId)));
+        (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketBasicData[_marketId].currency].marketFeed, marketSettleTime(_marketId));
         _postResult(_value, _roundId, _marketId);
       }
     }
@@ -477,7 +479,7 @@ contract AllMarkets is Governed {
       uint256 tokenParticipation;
       uint256 ethParticipation;
       if(marketDataExtended[_marketId].predictionStatus != PredictionStatus.InDispute) {
-        marketSettleData[_marketId].settleTime = uint64(now);
+        marketSettleData[_marketId].settleTime = uint32(now);
       } else {
         delete marketSettleData[_marketId].settleTime;
       }
@@ -496,8 +498,8 @@ contract AllMarkets is Governed {
         marketOptionsAvailable[_marketId][marketSettleData[_marketId].WinningOption].plotStaked > 0
       ){
         for(uint i=1;i <= totalOptions;i++){
-          uint256 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], marketOptionsAvailable[_marketId][i].ethStaked, 10000);
-          uint256 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], marketOptionsAvailable[_marketId][i].plotStaked, 10000);
+          uint64 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], marketOptionsAvailable[_marketId][i].ethStaked, 10000);
+          uint64 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], marketOptionsAvailable[_marketId][i].plotStaked, 10000);
           if(i!=marketSettleData[_marketId].WinningOption) {
             totalReward[0] = totalReward[0].add(marketOptionsAvailable[_marketId][i].plotStaked).sub(_plotCommssion);
             totalReward[1] = totalReward[1].add(marketOptionsAvailable[_marketId][i].ethStaked).sub(_ethCommission);
@@ -509,12 +511,12 @@ contract AllMarkets is Governed {
       } else {
         
         for(uint i=1;i <= totalOptions;i++){
-          uint256 _assetStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
-          uint256 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], _assetStakedOnOption, 10000);
+          uint64 _assetStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
+          uint64 _plotCommssion = _calculatePercentage(commissionPerc[plotToken], _assetStakedOnOption, 10000);
           tokenParticipation = tokenParticipation.add(_assetStakedOnOption).sub(_plotCommssion);
 
           _assetStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
-          uint256 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], _assetStakedOnOption, 10000);
+          uint64 _ethCommission = _calculatePercentage(commissionPerc[ETH_ADDRESS], _assetStakedOnOption, 10000);
           ethParticipation = ethParticipation.add(_assetStakedOnOption).sub(_ethCommission);
           _ethCommissionTotal = _ethCommissionTotal.add(_ethCommission);
           _plotCommssionTotal = _plotCommssionTotal.add(_plotCommssion);
@@ -590,7 +592,7 @@ contract AllMarkets is Governed {
       return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime);
     }
 
-    function _calculatePercentage(uint256 _percent, uint256 _value, uint256 _divisor) internal pure returns(uint256) {
+    function _calculatePercentage(uint64 _percent, uint64 _value, uint64 _divisor) internal pure returns(uint64) {
       return _percent.mul(_value).div(_divisor);
     }
 
@@ -601,28 +603,30 @@ contract AllMarkets is Governed {
       }
     }
 
-    function getTotalPredictionPoints(uint _marketId) public view returns(uint256 predictionPoints) {
+    function getTotalPredictionPoints(uint _marketId) public view returns(uint64 predictionPoints) {
       for(uint256 i = 1; i<= totalOptions;i++) {
         predictionPoints = predictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
       }
     }
 
-    function calculatePredictionValue(uint _marketId, uint _prediction, uint _predictionStake, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
+    function calculatePredictionValue(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset) internal view returns(uint64 predictionPoints, bool isMultiplierApplied) {
       (uint256 minPredictionAmount, , , uint256 maxPredictionAmount) = marketUtility.getBasicMarketDetails();
       uint _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake);
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
       }
-      uint _optionPrice = calculateOptionPrice(_marketId, _prediction);
-      predictionPoints = _stakeValue.div(_optionPrice);
+      uint64 _optionPrice = calculateOptionPrice(_marketId, _prediction);
+      predictionPoints = uint64(_stakeValue).div(_optionPrice);
       if(!userData[msg.sender].userMarketData[_marketId].multiplierApplied) {
-        (predictionPoints, isMultiplierApplied) = marketUtility.checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
+        uint256 _predictionPoints;
+        (_predictionPoints, isMultiplierApplied) = marketUtility.checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
+        predictionPoints = uint64(_predictionPoints);
       }
     }
 
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint256 _optionPrice) {
-      uint256 totalPredictionPoints = getTotalPredictionPoints(_marketId);
-      uint256 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
+    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint64 _optionPrice) {
+      uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
+      uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
       if(totalPredictionPoints > 0) {
         _optionPrice = predictionPointsOnOption.mul((predictionPointsOnOption.mul(10)).div(totalPredictionPoints)) + 100;
       } else {
@@ -631,7 +635,7 @@ contract AllMarkets is Governed {
 
     }
     
-    function depositAndPlacePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction) public payable {
+    function depositAndPlacePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public payable {
       uint256 plotDeposit;
       if(_asset == plotToken) {
         plotDeposit = _predictionStake;
@@ -649,10 +653,10 @@ contract AllMarkets is Governed {
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
     */
-    function placePrediction(uint _marketId, address _asset, uint256 _predictionStake, uint256 _prediction) public {
+    function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public {
       require(!marketCreationPaused && _prediction <= totalOptions);
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
-      uint256 _commissionStake;
+      uint64 _commissionStake;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
         uint256 unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
         if(_predictionStake > unusedBalance)
@@ -673,7 +677,7 @@ contract AllMarkets is Governed {
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
-      (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _asset);
+      (uint64 predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _asset);
       if(isMultiplierApplied) {
         userData[msg.sender].userMarketData[_marketId].multiplierApplied = true; 
       }
@@ -925,15 +929,15 @@ contract AllMarkets is Governed {
     * @param _asset The asset used by user during prediction.
     * @param predictionPoints The positions user got during prediction.
     */
-    function _storePredictionData(uint _marketId, uint _prediction, uint _predictionStake, address _asset, uint predictionPoints) internal {
-      userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = uint64(userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints));
+    function _storePredictionData(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset, uint64 predictionPoints) internal {
+      userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
       marketOptionsAvailable[_marketId][_prediction].predictionPoints = uint64(marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints));
       if(_asset == ETH_ADDRESS) {
-        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked = uint64(userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake));
-        marketOptionsAvailable[_marketId][_prediction].ethStaked = uint64(marketOptionsAvailable[_marketId][_prediction].ethStaked.add(_predictionStake));
+        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake);
+        marketOptionsAvailable[_marketId][_prediction].ethStaked = marketOptionsAvailable[_marketId][_prediction].ethStaked.add(_predictionStake);
       } else {
-        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked = uint64(userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake));
-        marketOptionsAvailable[_marketId][_prediction].plotStaked = uint64(marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake));
+        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
+        marketOptionsAvailable[_marketId][_prediction].plotStaked = marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake);
       }
       // userMarketData[msg.sender][_marketId].LeverageAsset[_asset][_prediction] = userMarketData[msg.sender][_marketId].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
       // marketOptionsAvailable[_marketId][_prediction].assetLeveraged[_asset] = marketOptionsAvailable[_prediction][_marketId].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
@@ -947,11 +951,11 @@ contract AllMarkets is Governed {
     * @param _predictionAsset The prediction assets user will get.
     * @param _prediction The option range on which user placed prediction.
     */
-    function _setUserGlobalPredictionData(uint256 _marketId, address _user,uint256 _value, uint256 _predictionPoints, address _predictionAsset, uint256 _prediction) internal {
+    function _setUserGlobalPredictionData(uint256 _marketId, address _user, uint64 _value, uint64 _predictionPoints, address _predictionAsset, uint256 _prediction) internal {
       if(_predictionAsset == ETH_ADDRESS) {
-        userData[_user].totalEthStaked = uint64(userData[_user].totalEthStaked.add(_value));
+        userData[_user].totalEthStaked = userData[_user].totalEthStaked.add(_value);
       } else {
-        userData[_user].totalPlotStaked = uint64(userData[_user].totalPlotStaked.add(_value));
+        userData[_user].totalPlotStaked = userData[_user].totalPlotStaked.add(_value);
       }
       if(!_hasUserParticipated(_marketId, _user)) {
         userData[_user].marketsParticipated.push(_marketId);
