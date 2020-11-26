@@ -151,15 +151,24 @@ contract AllMarkets is Governed {
     * @param _marketFeed Price Feed address of the currency
     * @param decimals Decimals of the price provided by feed address
     * @param roundOfToNearest Round of the price to nearest number
+    * @param _marketStartTime Start time of initial markets
     */
-    function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) external onlyAuthorizedToGovern {
+    function addMarketCurrency(bytes32 _currencyName, address _marketFeed, uint8 decimals, uint8 roundOfToNearest, uint32 _marketStartTime) external onlyAuthorizedToGovern {
       require(marketCurrencies[marketCurrency[_currencyName]].marketFeed == address(0));
       require(decimals != 0);
       require(roundOfToNearest != 0);
       require(_marketFeed != address(0));
-      marketCurrency[_currencyName] = marketCurrencies.length;
+      _addMarketCurrency(_currencyName, _marketFeed, decimals, roundOfToNearest, _marketStartTime);
+    }
+
+    function _addMarketCurrency(bytes32 _currencyName, address _marketFeed, uint8 decimals, uint8 roundOfToNearest, uint32 _marketStartTime) internal {
+      uint32 index = uint32(marketCurrencies.length);
+      marketCurrency[_currencyName] = index;
       marketCurrencies.push(MarketCurrency(_currencyName, _marketFeed, decimals, roundOfToNearest));
-      emit MarketCurrencies(marketCurrency[_currencyName], _marketFeed, _currencyName, true);
+      emit MarketCurrencies(index, _marketFeed, _currencyName, true);      
+      for(uint32 i = 0;i < marketTypeArray.length; i++) {
+          marketCreationData[i][index].initialStartTime = _marketStartTime;
+      }
     }
 
     /**
@@ -167,10 +176,18 @@ contract AllMarkets is Governed {
     * @param _predictionTime The time duration of market.
     * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
     */
-    function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc) external onlyAuthorizedToGovern {
+    function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc, uint32 _marketStartTime) external onlyAuthorizedToGovern {
       require(marketTypeArray[marketType[_predictionTime]].predictionTime == 0);
       require(_predictionTime > 0);
       require(_optionRangePerc > 0);
+      uint32 index = uint32(marketTypeArray.length);
+      _addMarketType(_predictionTime, _optionRangePerc);
+      for(uint32 i = 0;i < marketCurrencies.length; i++) {
+          marketCreationData[index][i].initialStartTime = _marketStartTime;
+      }
+    }
+
+    function _addMarketType(uint32 _predictionTime, uint32 _optionRangePerc) internal {
       uint32 index = uint32(marketTypeArray.length);
       marketType[_predictionTime] = index;
       marketTypeArray.push(MarketTypeData(_predictionTime, _optionRangePerc, false));
@@ -180,7 +197,7 @@ contract AllMarkets is Governed {
     /**
     * @dev Start the initial market and set initial variables.
     */
-    function addInitialMarketTypesAndStart(address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
+    function addInitialMarketTypesAndStart(address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _marketCreationRewards, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
       commissionPerc[ETH_ADDRESS] = 10;
       commissionPerc[plotToken] = 5;
@@ -192,20 +209,17 @@ contract AllMarkets is Governed {
       ETH_ADDRESS = _ethAddress;
       tokenController = ITokenController(_tc);
       governance = IGovernance(_gv);
+      marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
 
-      marketType[4 hours] = 0;
-      marketTypeArray.push(MarketTypeData(4 hours, 100, false));
-      marketType[24 hours] = 1;
-      marketTypeArray.push(MarketTypeData(24 hours, 200, false));
-      marketType[168 hours] = 2;
-      marketTypeArray.push(MarketTypeData(168 hours, 500, false));
-      marketCurrency["ETH/USD"] = 0;
-      marketCurrencies.push(MarketCurrency("ETH/USD", _ethFeed, 8, 1));
-      marketCurrency["BTC/USD"] = 1;
-      marketCurrencies.push(MarketCurrency("BTC/USD", _btcFeed, 8, 25));
+      _addMarketType(4 hours, 100);
+      _addMarketType(24 hours, 200);
+      _addMarketType(168 hours, 500);
+
+      _addMarketCurrency("ETH/USD", _ethFeed, 8, 1, _marketStartTime);
+      _addMarketCurrency("BTC/USD", _btcFeed, 25, 1, _marketStartTime);
+
       marketBasicData.push(MarketBasicData(0,0,0, 0,0,0));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
-          marketCreationData[i][0].initialStartTime = _marketStartTime;
           createMarket(0, i);
           createMarket(1, i);
       }
@@ -399,7 +413,7 @@ contract AllMarkets is Governed {
     * @param _value Amount to sponsor
     */
     function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
-      // require(master.isWhitelistedSponsor(msg.sender));
+      require(IMaster(masterAddress).whitelistedSponsor(msg.sender));
       require(marketStatus(_marketId) <= PredictionStatus.InSettlement);
       require(marketDataExtended[_marketId].incentiveToken == address(0));
       marketDataExtended[_marketId].incentiveToken = _token;
@@ -661,7 +675,6 @@ contract AllMarkets is Governed {
     * @param _marketId Index of market
     */
     function withdrawSponsoredIncentives(uint256 _marketId) external {
-      // require(master.isWhitelistedSponsor(msg.sender));
       require(marketStatus(_marketId) == PredictionStatus.Settled);
       require(getTotalPredictionPoints(_marketId) == 0);
       _transferAsset(marketDataExtended[_marketId].incentiveToken, marketDataExtended[_marketId].incentiveSponsoredBy, marketDataExtended[_marketId].incentiveToDistribute);

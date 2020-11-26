@@ -2,6 +2,8 @@ const Master = artifacts.require('Master');
 const Plotus = artifacts.require('MockMarketRegistry');
 const Governance = artifacts.require('MockGovernance');
 const ProposalCategory = artifacts.require('ProposalCategory');
+const AllMarkets = artifacts.require('MockAllMarkets');
+const MarketCreationRewards = artifacts.require('MarketCreationRewards');
 const MemberRoles = artifacts.require('MockMemberRoles');
 const PlotusToken = artifacts.require('MockPLOT');
 const MockWeth = artifacts.require('MockWeth');
@@ -66,6 +68,11 @@ module.exports = function(deployer, network, accounts){
       // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
       await plotusToken.transfer(plotus.address, "10000000000000000000000");
+      let allMarkets = await AllMarkets.new();
+      let mcr = await MarketCreationRewards.new();
+      let _marketUtility = await plotus.marketUtility();
+      await mcr.initialise(plotusToken.address, tc.address, _marketUtility, allMarkets.address, mockchainLinkAggregaror.address)
+      await allMarkets.addInitialMarketTypesAndStart(plotusToken.address, tc.address, gvAddress, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mcr.address, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
   });
 };
 
