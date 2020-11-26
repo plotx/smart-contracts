@@ -44,7 +44,16 @@ contract MarketCreationRewards is Governed {
     mapping(uint256 => MarketCreationRewardData) internal marketCreationRewardData; //Of market
     mapping(address => MarketCreationRewardUserData) internal marketCreationRewardUserData; //Of user
 
+    /**
+    * @dev Function to set inital parameters of contract
+    * @param _plotAddress PLOT token address
+    * @param _tcAddress Token Cntroller address
+    * @param _utility MarketUtility address
+    * @param _allMarkets AllMarkets address
+    * @param _clGasPriceAggregator Chainlink gas price aggregator address
+    */
     function initialise(address _plotAddress, address _tcAddress, address _utility, address _allMarkets, address _clGasPriceAggregator) external {
+      require(plotToken == address(0));
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
       tokenController = ITokenController(_tcAddress);
       marketUtility = IMarketUtility(_utility);
@@ -72,9 +81,12 @@ contract MarketCreationRewards is Governed {
     }
 
     /**
-    * @dev internal function to calculate user incentive for market creation
+    * @dev function to calculate user incentive for market creation
+    * @param _createdBy Address of market creator
+    * @param gasProvided Gas provided by user 
+    * @param _marketId Index of market
     */
-    function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint256 _marketType, uint256 _marketCurrencyIndex, uint64 _marketId) external {
+    function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external {
       _checkIfCreatorStaked(_createdBy, _marketId);
       marketCreationRewardUserData[msg.sender].marketsCreated.push(_marketId);
       uint256 gasUsed;
@@ -97,6 +109,12 @@ contract MarketCreationRewards is Governed {
       return Math.min(Math.min(tx.gasprice,fastGasWithMaxDeviation), maxGasPrice);
     }
 
+    /**
+    * @dev Function to deposit market reward pool share funds for market creator
+    * @param _marketId Index of market
+    * @param _plotShare PLOT reward pool share
+    * msg.value ETH reward pool share
+    */
     function depositMarketRewardPoolShare(uint256 _marketId, uint64 _plotShare) external payable {
     	uint256 _ethShare = msg.value;
     	marketCreationRewardData[_marketId].ethIncentive = _ethShare;
@@ -104,6 +122,10 @@ contract MarketCreationRewards is Governed {
      	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _plotShare, _ethShare);
     }
 
+    /**
+    * @dev Function to return the market reward pool share funds of market creator: To be used in case of dispute
+    * @param _marketId Index of market
+    */
     function returnMarketRewardPoolShare(uint256 _marketId) external {
     	_transferAsset(ETH_ADDRESS, msg.sender, marketCreationRewardData[_marketId].ethIncentive);
 		_transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive);

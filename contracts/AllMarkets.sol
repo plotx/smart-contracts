@@ -230,7 +230,7 @@ contract AllMarkets is Governed {
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
-      marketCreationRewards.calculateMarketCreationIncentive(msg.sender, gasProvided, _marketTypeIndex, _marketCurrencyIndex, _marketIndex);
+      marketCreationRewards.calculateMarketCreationIncentive(msg.sender, gasProvided, _marketIndex);
     }
 
     /**
@@ -348,7 +348,7 @@ contract AllMarkets is Governed {
 
     /**
     * @dev Withdraw maximum possible deposited and available assets
-    * @param _maxRecord Maximum number of records to check
+    * @param _maxRecords Maximum number of records to check
     */
     function withdrawMax(uint _maxRecords) public {
       (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
@@ -359,7 +359,7 @@ contract AllMarkets is Governed {
     * @dev Withdraw provided amount of deposited and available assets
     * @param _plot Amount of PLOT to withdraw
     * @param _eth Amount of ETH to withdraw
-    * @param _maxRecord Maximum number of records to check
+    * @param _maxRecords Maximum number of records to check
     */
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
       (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
@@ -370,7 +370,7 @@ contract AllMarkets is Governed {
     * @dev Internal function to withdraw deposited and available assets
     * @param _plot Amount of PLOT to withdraw
     * @param _eth Amount of ETH to withdraw
-    * @param _maxRecord Maximum number of records to check
+    * @param _maxRecords Maximum number of records to check
     * @param _plotLeft Amount of PLOT left unused for user
     * @param _ethLeft Amount of ETH left unused for user
     */
