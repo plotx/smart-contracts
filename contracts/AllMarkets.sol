@@ -365,7 +365,7 @@ contract AllMarkets is Governed {
     * @param _maxRecords Maximum number of records to check
     */
     function withdrawMax(uint _maxRecords) public {
-      (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
+      (uint _plotLeft, , uint _ethLeft, ) = getUserUnusedBalance(msg.sender);
       _withdraw(_plotLeft, _ethLeft, _maxRecords, _plotLeft, _ethLeft);
     }
 
@@ -376,7 +376,7 @@ contract AllMarkets is Governed {
     * @param _maxRecords Maximum number of records to check
     */
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
-      (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
+      (uint _plotLeft, , uint _ethLeft, ) = getUserUnusedBalance(msg.sender);
       _withdraw(_plot, _eth, _maxRecords, _plotLeft, _ethLeft);
     }
 
@@ -727,6 +727,7 @@ contract AllMarkets is Governed {
        return (returnAmount, incentive, marketDataExtended[_marketId].incentiveToken);
       }
       uint256 _winningOption = marketDataExtended[_marketId].WinningOption;
+      returnAmount = new uint256[](2);
       returnAmount[0] = userData[_user].userMarketData[_marketId].predictionData[_winningOption].plotStaked;
       returnAmount[1] = userData[_user].userMarketData[_marketId].predictionData[_winningOption].ethStaked;
       uint256 userPredictionPointsOnWinngOption = userData[_user].userMarketData[_marketId].predictionData[_winningOption].predictionPoints;
