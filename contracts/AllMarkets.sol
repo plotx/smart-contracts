@@ -145,6 +145,13 @@ contract AllMarkets is Governed {
     mapping(uint =>mapping(uint=>PredictionData)) internal marketOptionsAvailable;
     mapping(uint256 => uint256) internal disputeProposalId;
 
+    /**
+    * @dev Add new market currency.
+    * @param _currencyName name of the currency
+    * @param _marketFeed Price Feed address of the currency
+    * @param decimals Decimals of the price provided by feed address
+    * @param roundOfToNearest Round of the price to nearest number
+    */
     function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) external onlyAuthorizedToGovern {
       require(marketCurrencies[marketCurrency[_currencyName]].marketFeed == address(0));
       require(decimals != 0);
@@ -155,6 +162,11 @@ contract AllMarkets is Governed {
       emit MarketCurrencies(marketCurrency[_currencyName], _marketFeed, _currencyName, true);
     }
 
+    /**
+    * @dev Add new market type.
+    * @param _predictionTime The time duration of market.
+    * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
+    */
     function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc) external onlyAuthorizedToGovern {
       require(marketTypeArray[marketType[_predictionTime]].predictionTime == 0);
       require(_predictionTime > 0);
@@ -166,7 +178,7 @@ contract AllMarkets is Governed {
     }
 
     /**
-    * @dev Start the initial market.
+    * @dev Start the initial market and set initial variables.
     */
     function addInitialMarketTypesAndStart(address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
@@ -199,8 +211,8 @@ contract AllMarkets is Governed {
       }
     }
 
-     /**
-    * @dev Initialize the market.
+    /**
+    * @dev Create the market.
     * @param _marketCurrencyIndex The index of market currency feed
     * @param _marketTypeIndex The time duration of market.
     */
@@ -221,6 +233,9 @@ contract AllMarkets is Governed {
       marketCreationRewards.calculateMarketCreationIncentive(msg.sender, gasProvided, _marketTypeIndex, _marketCurrencyIndex, _marketIndex);
     }
 
+    /**
+    * @dev Calculate start time for next market of provided currency and market type indexes
+    */
     function calculateStartTimeForMarket(uint32 _marketCurrencyIndex, uint32 _marketType) public view returns(uint32 _marketStartTime) {
       _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
       uint predictionTime = marketTypeArray[_marketType].predictionTime;
@@ -246,6 +261,9 @@ contract AllMarkets is Governed {
       }
     }
 
+    /**
+    * @dev Internal function to settle the previous market 
+    */
     function _closePreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
       uint64 currentMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket;
       if(currentMarket != 0) {
@@ -289,21 +307,35 @@ contract AllMarkets is Governed {
       return marketDataExtended[_marketId].settleTime.add(marketBasicData[_marketId].predictionTime.div(4));
     }
 
+    /**
+    * @dev Updates Flag to pause creation of market.
+    */
     function pauseMarketCreation() external onlyAuthorizedToGovern {
       require(!marketCreationPaused);
       marketCreationPaused = true;
     }
 
+    /**
+    * @dev Updates Flag to resume creation of market.
+    */
     function resumeMarketCreation() external onlyAuthorizedToGovern {
       require(marketCreationPaused);
       marketCreationPaused = false;
     }
 
+    /**
+    * @dev Set the flag to pause/resume market creation of particular market type
+    */
     function toggleMarketCreationType(uint64 _marketTypeIndex, bool _flag) external onlyAuthorizedToGovern {
       require(marketTypeArray[_marketTypeIndex].paused != _flag);
       marketTypeArray[_marketTypeIndex].paused = _flag;
     }
 
+    /**
+    * @dev Function to deposit PLOT/ETH for participation in markets
+    * @param _amount Amount of PLOT to deposit
+    * msg.value => Amount of ETH to deposit
+    */
     function deposit(uint _amount) payable public {
       require(_amount > 0 || msg.value > 0);
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
@@ -314,16 +346,34 @@ contract AllMarkets is Governed {
       emit Deposited(msg.sender, _amount, msg.value, now);
     }
 
+    /**
+    * @dev Withdraw maximum possible deposited and available assets
+    * @param _maxRecord Maximum number of records to check
+    */
     function withdrawMax(uint _maxRecords) public {
       (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
       _withdraw(_plotLeft, _ethLeft, _maxRecords, _plotLeft, _ethLeft);
     }
 
+    /**
+    * @dev Withdraw provided amount of deposited and available assets
+    * @param _plot Amount of PLOT to withdraw
+    * @param _eth Amount of ETH to withdraw
+    * @param _maxRecord Maximum number of records to check
+    */
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
       (uint _plotLeft, uint _ethLeft, , ) = getUserUnusedBalance(msg.sender);
       _withdraw(_plot, _eth, _maxRecords, _plotLeft, _ethLeft);
     }
 
+    /**
+    * @dev Internal function to withdraw deposited and available assets
+    * @param _plot Amount of PLOT to withdraw
+    * @param _eth Amount of ETH to withdraw
+    * @param _maxRecord Maximum number of records to check
+    * @param _plotLeft Amount of PLOT left unused for user
+    * @param _ethLeft Amount of ETH left unused for user
+    */
     function _withdraw(uint _plot, uint256 _eth, uint _maxRecords, uint _plotLeft, uint _ethLeft) internal {
       withdrawReward(_maxRecords);
       userData[msg.sender].currencyUnusedBalance[plotToken] = _plotLeft.sub(_plot);
@@ -342,6 +392,12 @@ contract AllMarkets is Governed {
       return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime);
     }
 
+    /**
+    * @dev Sponsor Incentive for the market
+    * @param _marketId Index of market to sponsor
+    * @param _token Address of token to sponsor
+    * @param _value Amount to sponsor
+    */
     function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
       // require(master.isWhitelistedSponsor(msg.sender));
       require(marketStatus(_marketId) <= PredictionStatus.InSettlement);
@@ -412,9 +468,12 @@ contract AllMarkets is Governed {
       emit PlacePrediction(msg.sender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, commissionPerc[_asset]);
     }
 
-    function _calculatePredictionPointsAndMultiplier(uint256 _marketId, uint256 _prediction, address _asset, uint64 _commissionStake) internal returns(uint64 predictionPoints){
+    /**
+    * @dev Internal function to calculate prediction points  and multiplier
+    */
+    function _calculatePredictionPointsAndMultiplier(uint256 _marketId, uint256 _prediction, address _asset, uint64 _stake) internal returns(uint64 predictionPoints){
       bool isMultiplierApplied;
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(userData[msg.sender].userMarketData[_marketId].multiplierApplied, _marketId, _prediction, _commissionStake, _asset, getTotalPredictionPoints(_marketId), marketOptionsAvailable[_marketId][_prediction].predictionPoints);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(userData[msg.sender].userMarketData[_marketId].multiplierApplied, _marketId, _prediction, _stake, _asset, getTotalPredictionPoints(_marketId), marketOptionsAvailable[_marketId][_prediction].predictionPoints);
       if(isMultiplierApplied) {
         userData[msg.sender].userMarketData[_marketId].multiplierApplied = true; 
       }
@@ -433,6 +492,8 @@ contract AllMarkets is Governed {
     /**
     * @dev Calculate the result of market.
     * @param _value The current price of market currency.
+    * @param _roundId Chainlink round Id
+    * @param _marketId Index of market
     */
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
       require(now >= marketSettleTime(_marketId),"Not reached");
@@ -477,6 +538,10 @@ contract AllMarkets is Governed {
       emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, marketDataExtended[_marketId].WinningOption, _value, _roundId);
     }
 
+    /**
+    * @dev Internal function to calculate the reward.
+    * @param _marketId Index of market
+    */
     function _calculateRewardTally(uint256 _marketId) internal view returns(uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation){
       totalReward = new uint64[](2);
       for(uint i=1;i <= totalOptions;i++){
@@ -525,6 +590,14 @@ contract AllMarkets is Governed {
       userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
     }
 
+    /**
+    * @dev FUnction to return users unused deposited balance including the return earned in markets
+    * @param _user Address of user
+    * return PLOT Unused in deposit
+    * return PLOT Return from market
+    * return ETH Unused in deposit
+    * return ETH Return from market
+    */
     function getUserUnusedBalance(address _user) public view returns(uint256, uint256, uint256, uint256){
       uint ethReward;
       uint plotReward;
@@ -541,12 +614,26 @@ contract AllMarkets is Governed {
     /**
     * @dev Gets number of positions user got in prediction
     * @param _user Address of user
+    * @param _marketId Index of market
     * @param _option Option Id
+    * return Number of positions user got in prediction
     */
     function getUserPredictionPoints(address _user, uint256 _marketId, uint256 _option) external view returns(uint64) {
       return userData[_user].userMarketData[_marketId].predictionData[_option].predictionPoints;
     }
 
+    /**
+    * @dev Gets the market data.
+    * @return _marketCurrency returns the currency name of the market.
+    * @return neutralMinValue Neutral min value deciding the option ranges of market
+    * @return neutralMaxValue Neutral max value deciding the option ranges of market
+    * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
+    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
+    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
+    * @return _predictionTime uint representing the type of market.
+    * @return _expireTime uint representing the time at which market closes for prediction
+    * @return _predictionStatus uint representing the status of the market.
+    */
     function getMarketData(uint256 _marketId) external view returns
        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue,
         uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
@@ -569,6 +656,10 @@ contract AllMarkets is Governed {
        }
     }
 
+    /**
+    * @dev Allows the incentive sponsorer of market to claim back his incentives incase of zero participation in market
+    * @param _marketId Index of market
+    */
     function withdrawSponsoredIncentives(uint256 _marketId) external {
       // require(master.isWhitelistedSponsor(msg.sender));
       require(marketStatus(_marketId) == PredictionStatus.Settled);
@@ -578,8 +669,9 @@ contract AllMarkets is Governed {
 
     /**
     * @dev Claim the return amount of the specified address.
-    * @param _user The address to query the claim return amount of.
-    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed
+    * @param _user User address
+    * @param _marketId Index of market
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed; Return in PLOT; Return in ETH
     */
     function claimReturn(address payable _user, uint _marketId) internal returns(uint256, uint256, uint256) {
 
@@ -595,6 +687,11 @@ contract AllMarkets is Governed {
       return (2, _returnAmount[0], _returnAmount[1]);
     }
 
+    /** 
+    * @dev Allows users to claim sponsored incentives of market
+    * @param _user User address
+    * @param _marketId Index of market
+    */
     function claimIncentive(address payable _user, uint256 _marketId) external {
       ( , uint _incentive, ) = getReturn(_user, _marketId);
       _transferAsset(marketDataExtended[_marketId].incentiveToken, _user, _incentive);
@@ -604,6 +701,7 @@ contract AllMarkets is Governed {
     /** 
     * @dev Gets the return amount of the specified address.
     * @param _user The address to specify the return of
+    * @param _marketId Index of market
     * @return returnAmount uint[] memory representing the return amount.
     * @return incentive uint[] memory representing the amount incentive.
     * @return _incentiveTokens address[] memory representing the incentive tokens.
@@ -646,7 +744,6 @@ contract AllMarkets is Governed {
     /**
     * @dev Calculate the return of the specified address.
     * @param _user The address to query the return of.
-    * @return _return uint[] memory representing the return amount owned by the passed address.
     * @return _totalUserPredictionPoints uint representing the positions owned by the passed address.
     * @return _totalPredictionPoints uint representing the total positions of winners.
     */
@@ -657,10 +754,19 @@ contract AllMarkets is Governed {
       }
     }
 
+    /**
+    * @dev Basic function to calculate percentage of given values
+    */
     function _calculatePercentage(uint64 _percent, uint64 _value, uint64 _divisor) internal pure returns(uint64) {
       return _percent.mul(_value).div(_divisor);
     }
 
+    /**
+    * @dev Returns total assets staked in market by users
+    * @param _marketId Index of market
+    * @return ethStaked Total eth staked on market
+    * @return plotStaked Total PLOT staked on market
+    */
     function getTotalAssetsStaked(uint _marketId) external view returns(uint256 ethStaked, uint256 plotStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
         ethStaked = ethStaked.add(marketOptionsAvailable[_marketId][i].ethStaked);
@@ -668,6 +774,11 @@ contract AllMarkets is Governed {
       }
     }
 
+    /**
+    * @dev Returns total prediction points allocated to users
+    * @param _marketId Index of market
+    * @return predictionPoints total prediction points allocated to users
+    */
     function getTotalPredictionPoints(uint _marketId) public view returns(uint64 predictionPoints) {
       for(uint256 i = 1; i<= totalOptions;i++) {
         predictionPoints = predictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
@@ -698,6 +809,11 @@ contract AllMarkets is Governed {
       }
     }
 
+    /**
+    * @dev Function to check if user had participated in given market
+    * @param _marketId Index of market
+    * @param _user Address of user
+    */
     function _hasUserParticipated(uint256 _marketId, address _user) internal view returns(bool _hasParticipated) {
       for(uint i = 1;i <= totalOptions; i++) {
         if(userData[_user].userMarketData[_marketId].predictionData[i].predictionPoints > 0) {
@@ -773,6 +889,13 @@ contract AllMarkets is Governed {
       IToken(plotToken).burn(_stakedAmount);
     }
 
+    /**
+    * @dev Get flags set for user
+    * @param _marketId Index of market.
+    * @param _user User address
+    * @return Flag defining if user had availed multiplier
+    * @return Flag defining if user had predicted with bPLOT
+    */
     function getUserFlags(uint256 _marketId, address _user) external view returns(bool, bool) {
       return (
               userData[_user].userMarketData[_marketId].predictedWithBlot,
@@ -780,11 +903,24 @@ contract AllMarkets is Governed {
       );
     }
 
+    /**
+    * @dev Gets the result of the market.
+    * @param _marketId Index of market.
+    * @return uint256 representing the winning option of the market.
+    * @return uint256 Value of market currently at the time closing market.
+    * @return uint256 representing the positions of the winning option.
+    * @return uint[] memory representing the reward to be distributed.
+    * @return uint256 representing the Eth staked on winning option.
+    * @return uint256 representing the PLOT staked on winning option.
+    */
     function getMarketResults(uint256 _marketId) external view returns(uint256 _winningOption, uint256, uint256[] memory, uint256, uint256) {
       _winningOption = marketDataExtended[_marketId].WinningOption;
       return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].ethStaked, marketOptionsAvailable[_marketId][_winningOption].plotStaked);
     }
 
+    /**
+    * @dev Patayble Fallback function to recieve funds
+    */
     function () external payable {
     }
 
