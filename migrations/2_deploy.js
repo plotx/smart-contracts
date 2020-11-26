@@ -68,7 +68,7 @@ module.exports = function(deployer, network, accounts){
       // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
       await plotusToken.transfer(plotus.address, "10000000000000000000000");
-      let allMarkets = await AllMarkets.new();
+      let allMarkets = await deployer.deploy(AllMarkets);
       let mcr = await MarketCreationRewards.new();
       let _marketUtility = await plotus.marketUtility();
       await mcr.initialise(plotusToken.address, tc.address, _marketUtility, allMarkets.address, mockchainLinkAggregaror.address)
