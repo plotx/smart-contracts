@@ -158,14 +158,14 @@ contract AllMarkets is Governed {
     mapping(uint64 => uint32) marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) internal marketCreationData;
 
-    MarketBasicData[] public marketBasicData;
+    MarketBasicData[] internal marketBasicData;
 
     mapping(uint256 => MarketCreationRewardData) internal marketCreationRewardData; //Of market
 
     mapping(uint256 => MarketDataExtended) internal marketDataExtended;
     mapping(address => UserData) internal userData;
 
-    mapping(uint =>mapping(uint=>PredictionData)) public marketOptionsAvailable;
+    mapping(uint =>mapping(uint=>PredictionData)) internal marketOptionsAvailable;
     mapping(uint256 => uint256) disputeProposalId;
 
     function  initiate(address _plot, address _marketUtility) public {
@@ -732,11 +732,11 @@ contract AllMarkets is Governed {
 
     function getMarketData(uint256 _marketId) public view returns
        (bytes32 _marketCurrency,uint[] memory minvalue,uint[] memory maxvalue,
-        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, uint _predictionStatus){
+        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
         _marketCurrency = marketCurrencies[marketBasicData[_marketId].currency].currencyName;
         _predictionTime = marketBasicData[_marketId].predictionTime;
         _expireTime =marketExpireTime(_marketId);
-        _predictionStatus = uint(marketStatus(_marketId));
+        _predictionStatus = marketStatus(_marketId);
         minvalue = new uint[](totalOptions);
         minvalue[1] = marketBasicData[_marketId].neutralMinValue;
         minvalue[2] = marketBasicData[_marketId].neutralMaxValue.add(1);
@@ -896,7 +896,7 @@ contract AllMarkets is Governed {
     */
     function _storePredictionData(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset, uint64 predictionPoints) internal {
       userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
-      marketOptionsAvailable[_marketId][_prediction].predictionPoints = uint64(marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints));
+      marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints);
       if(_asset == ETH_ADDRESS) {
         userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake);
         marketOptionsAvailable[_marketId][_prediction].ethStaked = marketOptionsAvailable[_marketId][_prediction].ethStaked.add(_predictionStake);
@@ -945,7 +945,7 @@ contract AllMarkets is Governed {
     * @param solutionHash The ipfs solution hash.
     */
     function raiseDispute(uint256 _marketId, uint256 _proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
-      require(getTotalStakedValueInPLOT(_marketId) > 0, "No participation");
+      require(getTotalPredictionPoints(_marketId) > 0, "No participation");
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       tokenController.transferFrom(plotToken, msg.sender, address(this), _stakeForDispute);
