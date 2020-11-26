@@ -19,87 +19,44 @@ import "./MarketUtility.sol";
 
 contract MarketUtilityNew is MarketUtility {
 
+  using SafeMath64 for uint64;
+
   function setAuthorizedAddress(address _allMarketsContract) external {
     require(msg.sender == initiater);
     authorizedAddress = _allMarketsContract;
   }
 
-  /**
-    * @dev Calculate the option price for given params
-    * params
-    * 0 _option
-    * 1 neutralMinValue
-    * 2 neutralMaxValue
-    * 3 startTime
-    * 4 expireTime
-    * 5 total positions
-    * 6 positions OnOption
-    */
-    function calculateOptionPrice(uint[] memory params, address marketFeedAddress) public view returns(uint _optionPrice) {
-      // uint _totalStaked = params[5].add(getAssetValueETH(plotToken, params[6]));
-      uint _totalStaked = params[5];
-      uint _assetStakedOnOption = params[6];
-      _optionPrice = 0;
-      uint currentPriceOption = 0;
-      uint256 currentPrice = getAssetPriceUSD(
-          marketFeedAddress
-      );
-      uint stakeWeightage = STAKE_WEIGHTAGE;
-      uint predictionWeightage = 100 - stakeWeightage;
-      uint predictionTime = params[4].sub(params[3]);
-      uint minTimeElapsed = (predictionTime).div(minTimeElapsedDivisor);
-      if(now > params[4]) {
-        return 0;
-      }
-      if(_totalStaked > STAKE_WEIGHTAGE_MIN_AMOUNT) {
-        _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
-      }
+  function calculateOptionRange(uint64 _marketCurrencyIndex,uint64 _marketTypeIndex, uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
+    uint currentPrice = getAssetPriceUSD(_marketFeed);
+    uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
+    _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+    _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+  }
 
-      uint maxDistance;
-      if(currentPrice < params[1]) {
-        currentPriceOption = 1;
-        maxDistance = 2;
-      } else if(currentPrice > params[2]) {
-        currentPriceOption = 3;
-        maxDistance = 2;
-      } else {
-        currentPriceOption = 2;
-        maxDistance = 1;
-      }
-      uint distance = _getAbsoluteDifference(currentPriceOption, params[0]);
-      uint timeElapsed = now > params[3] ? now.sub(params[3]) : 0;
-      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
-      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
-      _optionPrice = _optionPrice.div(100);
-    }
-
-    /**
-    * @dev Calculate the prediction value, passing all the required params
-    * params index
-    * 0 _prediction
-    * 1 neutralMinValue
-    * 2 neutralMaxValue
-    * 3 startTime
-    * 4 expireTime
-    * 5 totalStakedETH
-    * 6 totalStakedToken
-    * 7 ethStakedOnOption
-    * 8 plotStakedOnOption
-    * 9 _stake
-    * 10 _leverage
-    */
-    function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
-      uint _stakeValue = getAssetValueETH(asset, params[7]);
+  function calculatePredictionPoints(bool multiplierApplied, uint _marketId, uint _prediction, uint64 _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
+      uint _stakeValue = getAssetValueETH(_asset, _predictionStake.mul(1e15));
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
-        return (_predictionValue, _multiplierApplied);
+        return (0, isMultiplierApplied);
       }
-      uint optionPrice;
-      
-      optionPrice = calculateOptionPrice(params, marketFeedAddress);
-      _predictionValue = _stakeValue.mul(positionDecimals).div(optionPrice);
-      if(_checkMultiplier) {
-        return checkMultiplier(asset, user, params[7],  _predictionValue, _stakeValue);
+      uint64 _optionPrice = calculateOptionPrice(_marketId, _prediction, totalPredictionPoints, predictionPointsOnOption);
+      predictionPoints = uint64(_stakeValue.div(1e15)).div(_optionPrice);
+      if(!multiplierApplied) {
+        uint256 _predictionPoints;
+        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
+        predictionPoints = uint64(_predictionPoints);
       }
-      return (_predictionValue, _multiplierApplied);
     }
+
+    function calculateOptionPrice(uint256 _marketId, uint256 _prediction, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
+      if(totalPredictionPoints > 0) {
+        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
+      } else {
+        _optionPrice = 100;
+      }
+    }
+
+    function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
+        return ((a + m - 1) / m) * m;
+    }
+
 }
