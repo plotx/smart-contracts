@@ -129,33 +129,33 @@ contract AllMarkets is Governed {
       bool paused;
     }
 
-    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+    address internal ETH_ADDRESS;
     address internal plotToken;
 
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
-    ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
-    IMarketUtility marketUtility;
-    IGovernance constant governance = IGovernance(0xf192D77d9519e12df1b548bC2c02448f7585B3f3);
-    IChainLinkOracle public clGasPriceAggregator;
+    ITokenController internal tokenController;
+    IMarketUtility internal marketUtility;
+    IGovernance internal governance;
+    IChainLinkOracle internal clGasPriceAggregator;
 
     // uint8[] constant roundOfToNearest = [25,1];
-    uint constant totalOptions = 3;
-    uint constant defaultMaxRecords = 20;
+    uint internal totalOptions;
+    uint internal defaultMaxRecords;
     uint internal ethCommissionAmount;
     uint internal plotCommissionAmount;
     uint256 internal maxGasPrice;
-    uint64 maxRewardPoolPercForMC;
-    uint64 minRewardPoolPercForMC;
-    uint256 plotStakeForRewardPoolShare;
-    uint256 rewardPoolShareThreshold;
+    uint64 internal maxRewardPoolPercForMC;
+    uint64 internal minRewardPoolPercForMC;
+    uint256 internal plotStakeForRewardPoolShare;
+    uint256 internal rewardPoolShareThreshold;
 
-    bool public marketCreationPaused;
-    MarketCurrency[] marketCurrencies;
-    MarketTypeData[] marketTypeArray;
-    mapping(bytes32 => uint) marketCurrency;
+    bool internal marketCreationPaused;
+    MarketCurrency[] internal marketCurrencies;
+    MarketTypeData[] internal marketTypeArray;
+    mapping(bytes32 => uint) internal marketCurrency;
     mapping(address => uint64) internal commissionPerc; //with 2 decimals
 
-    mapping(uint64 => uint32) marketType;
+    mapping(uint64 => uint32) internal marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) internal marketCreationData;
 
     MarketBasicData[] internal marketBasicData;
@@ -166,12 +166,7 @@ contract AllMarkets is Governed {
     mapping(address => UserData) internal userData;
 
     mapping(uint =>mapping(uint=>PredictionData)) internal marketOptionsAvailable;
-    mapping(uint256 => uint256) disputeProposalId;
-
-    function  initiate(address _plot, address _marketUtility) public {
-      plotToken = _plot;
-      marketUtility = IMarketUtility(_marketUtility);
-    }
+    mapping(uint256 => uint256) internal disputeProposalId;
 
     function addMarketCurrency(bytes32 _currencyName,  address _marketFeed, uint8 decimals, uint8 roundOfToNearest) public onlyAuthorizedToGovern {
       require(marketCurrencies[marketCurrency[_currencyName]].marketFeed == address(0));
@@ -196,7 +191,7 @@ contract AllMarkets is Governed {
     /**
     * @dev Start the initial market.
     */
-    function addInitialMarketTypesAndStart(uint32 _marketStartTime, address _ethFeed, address _clGasPriceAggregator) external {
+    function addInitialMarketTypesAndStart(address _plot, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _clGasPriceAggregator) external {
       require(marketTypeArray.length == 0);
       commissionPerc[ETH_ADDRESS] = 10;
       commissionPerc[plotToken] = 5;
@@ -206,6 +201,15 @@ contract AllMarkets is Governed {
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       plotStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 1 ether;
+      
+      totalOptions = 3;
+      defaultMaxRecords = 20;
+      plotToken = _plot;
+      marketUtility = IMarketUtility(_marketUtility);
+      ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
+      tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
+      governance = IGovernance(0xf192D77d9519e12df1b548bC2c02448f7585B3f3);
+
       uint32 _predictionTime = 4 hours;
       marketType[_predictionTime] = uint32(marketTypeArray.length);
       marketTypeArray.push(MarketTypeData(_predictionTime, 100, false));
@@ -237,7 +241,7 @@ contract AllMarkets is Governed {
       // require(_startTime.add(_predictionTime) > now);
       marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
-      (uint64 _minValue, uint64 _maxValue) = _calculateOptionRange(_marketCurrencyIndex, _marketTypeIndex);
+      (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(_marketCurrencyIndex, _marketTypeIndex, marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
@@ -247,16 +251,6 @@ contract AllMarkets is Governed {
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
       uint256 gasUsed = gasProvided - gasleft();
       __calculateMarketCreationIncentive(gasUsed, _marketTypeIndex, _marketCurrencyIndex, _marketIndex);
-    }
-
-    function _calculateOptionRange(uint64 _marketCurrencyIndex,uint64 _marketTypeIndex) internal view returns(uint64 _minValue, uint64 _maxValue) {
-      uint currentPrice = marketUtility.getAssetPriceUSD(marketCurrencies[_marketCurrencyIndex].marketFeed);
-      uint _optionRangePerc = marketTypeArray[_marketTypeIndex].optionRangePerc;
-      _optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
-      uint64 _decimals = marketCurrencies[_marketCurrencyIndex].decimals;
-      uint8 _roundOfToNearest = marketCurrencies[_marketCurrencyIndex].roundOfToNearest;
-      _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
-      _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
     }
 
     /**
@@ -546,39 +540,19 @@ contract AllMarkets is Governed {
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
-      (uint64 predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_marketId, _prediction, _commissionStake, _asset);
-      if(isMultiplierApplied) {
-        userData[msg.sender].userMarketData[_marketId].multiplierApplied = true; 
-      }
+      
+      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_marketId, _prediction, _asset, _commissionStake);
       require(predictionPoints > 0);
 
       _setUserGlobalPredictionData(_marketId, msg.sender,_predictionStake, predictionPoints, _asset, _prediction);
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
     }
 
-
-    function calculatePredictionValue(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset) internal view returns(uint64 predictionPoints, bool isMultiplierApplied) {
-      (uint256 minPredictionAmount, , , uint256 maxPredictionAmount) = marketUtility.getBasicMarketDetails();
-      uint _stakeValue = marketUtility.getAssetValueETH(_asset, _predictionStake.mul(1e15));
-      if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
-        return (0, isMultiplierApplied);
-      }
-      uint64 _optionPrice = calculateOptionPrice(_marketId, _prediction);
-      predictionPoints = uint64(_stakeValue.div(1e15)).div(_optionPrice);
-      if(!userData[msg.sender].userMarketData[_marketId].multiplierApplied) {
-        uint256 _predictionPoints;
-        (_predictionPoints, isMultiplierApplied) = marketUtility.checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
-        predictionPoints = uint64(_predictionPoints);
-      }
-    }
-
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint64 _optionPrice) {
-      uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
-      uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][_prediction].predictionPoints;
-      if(totalPredictionPoints > 0) {
-        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
-      } else {
-        _optionPrice = 100;
+    function _calculatePredictionPointsAndMultiplier(uint256 _marketId, uint256 _prediction, address _asset, uint64 _commissionStake) internal returns(uint64 predictionPoints){
+      bool isMultiplierApplied;
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(userData[msg.sender].userMarketData[_marketId].multiplierApplied, _marketId, _prediction, _commissionStake, _asset, getTotalPredictionPoints(_marketId), marketOptionsAvailable[_marketId][_prediction].predictionPoints);
+      if(isMultiplierApplied) {
+        userData[msg.sender].userMarketData[_marketId].multiplierApplied = true; 
       }
     }
 
@@ -748,10 +722,12 @@ contract AllMarkets is Governed {
         _optionPrice = new uint[](totalOptions);
         _ethStaked = new uint[](totalOptions);
         _plotStaked = new uint[](totalOptions);
+        uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
         _ethStaked[i] = marketOptionsAvailable[_marketId][i+1].ethStaked;
         _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
-        _optionPrice[i] = calculateOptionPrice(_marketId, i+1);
+        uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
+        _optionPrice[i] = marketUtility.calculateOptionPrice(_marketId, i+1, totalPredictionPoints, predictionPointsOnOption);
        }
     }
 
@@ -1002,15 +978,5 @@ contract AllMarkets is Governed {
       emit DisputeResolved(_marketId, false);
       uint _stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
       IToken(plotToken).burn(_stakedAmount);
-    }
-
-    function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
-      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
-      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
-      return plotStaked.add(ethStaked);
-    }
-
-    function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
-        return ((a + m - 1) / m) * m;
     }
 }
