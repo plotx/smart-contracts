@@ -166,7 +166,6 @@ contract AllMarkets is Governed {
     mapping(address => UserData) internal userData;
 
     mapping(uint =>mapping(uint=>PredictionData)) public marketOptionsAvailable;
-    mapping(address => uint256) marketsCreatedByUser;
     mapping(uint64 => uint256) disputeProposalId;
 
     function  initiate(address _plot, address _marketUtility) public {
@@ -243,7 +242,6 @@ contract AllMarkets is Governed {
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
-      // marketsCreatedByUser[msg.sender]++;
       _checkIfCreatorStaked(_marketIndex);
       userData[msg.sender].marketsCreated.push(_marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
