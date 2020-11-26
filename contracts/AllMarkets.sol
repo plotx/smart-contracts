@@ -51,7 +51,7 @@ contract AllMarkets is Governed {
     event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
     event ClaimedIncentive(address indexed user, uint256 marketIndex, address incentiveTokenAddress, uint256 incentive);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex);
-    event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint64 proposalId, uint256 proposedValue);
+    event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
 
     struct PredictionData {
@@ -135,7 +135,7 @@ contract AllMarkets is Governed {
     // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
     ITokenController constant tokenController = ITokenController(0x3A3d9ca9d9b25AF1fF7eB9d8a1ea9f61B5892Ee9);
     IMarketUtility marketUtility;
-    IGovernance internal governance = IGovernance(0xf192D77d9519e12df1b548bC2c02448f7585B3f3);
+    IGovernance constant governance = IGovernance(0xf192D77d9519e12df1b548bC2c02448f7585B3f3);
     IChainLinkOracle public clGasPriceAggregator;
 
     // uint8[] constant roundOfToNearest = [25,1];
@@ -166,7 +166,7 @@ contract AllMarkets is Governed {
     mapping(address => UserData) internal userData;
 
     mapping(uint =>mapping(uint=>PredictionData)) public marketOptionsAvailable;
-    mapping(uint64 => uint256) disputeProposalId;
+    mapping(uint256 => uint256) disputeProposalId;
 
     function  initiate(address _plot, address _marketUtility) public {
       plotToken = _plot;
@@ -951,7 +951,7 @@ contract AllMarkets is Governed {
       tokenController.transferFrom(plotToken, msg.sender, address(this), _stakeForDispute);
       marketDataExtended[_marketId].lockedForDispute = true;
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
-      uint64 proposalId = uint64(governance.getProposalLength());
+      uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
       marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
       marketDataExtended[_marketId].disputeStakeAmount = _stakeForDispute;
@@ -997,7 +997,7 @@ contract AllMarkets is Governed {
     * @param _proposalId Id of dispute resolution proposal
     */
     function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
-      uint256 _marketId = disputeProposalId[uint64(_proposalId)];
+      uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
       uint _stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
