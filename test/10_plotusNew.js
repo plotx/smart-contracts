@@ -140,34 +140,34 @@ contract("Market", async function(users) {
 
 			}
 
-			await marketConfig.setPrice(toWei(0.001));
-			await allMarkets.placePrediction(7, plotusToken.address, 100000, 2, { from: users[1] });
-			await marketConfig.setPrice(toWei(0.002));
-			await allMarkets.placePrediction(7, plotusToken.address, 400000, 2, { from: users[2] });
-			await marketConfig.setPrice(toWei(0.001));
-			await allMarkets.placePrediction(7, plotusToken.address, 210000, 2, { from: users[3] });
-			await marketConfig.setPrice(toWei(0.015));
-			await allMarkets.placePrediction(7, plotusToken.address, 123000, 3, { from: users[4] });
-			await marketConfig.setPrice(toWei(0.012));
-			await allMarkets.placePrediction(7, ethAddress, 1000, 1, { from: users[5] });
-			await marketConfig.setPrice(toWei(0.014));
-			await allMarkets.placePrediction(7, ethAddress, 2000, 1, { from: users[6] });
-			await marketConfig.setPrice(toWei(0.01));
-			await allMarkets.placePrediction(7, ethAddress, 1000, 2, { from: users[7] });
-			await marketConfig.setPrice(toWei(0.045));
-			await allMarkets.placePrediction(7, ethAddress, 3000, 3, { from: users[8] });
-			await marketConfig.setPrice(toWei(0.051));
-			await allMarkets.placePrediction(7, ethAddress, 1000, 3, { from: users[9] });
-			await marketConfig.setPrice(toWei(0.012));
-			await allMarkets.placePrediction(7, ethAddress, 2000, 2, { from: users[10] });
+			await marketConfig.setNextOptionPrice(toWei(0.001));
+			await allMarkets.placePrediction(7, plotusToken.address, 100*1e8, 2, { from: users[1] });
+			await marketConfig.setNextOptionPrice(toWei(0.002));
+			await allMarkets.placePrediction(7, plotusToken.address, 400*1e8, 2, { from: users[2] });
+			await marketConfig.setNextOptionPrice(toWei(0.001));
+			await allMarkets.placePrediction(7, plotusToken.address, 210*1e8, 2, { from: users[3] });
+			await marketConfig.setNextOptionPrice(toWei(0.015));
+			await allMarkets.placePrediction(7, plotusToken.address, 123*1e8, 3, { from: users[4] });
+			await marketConfig.setNextOptionPrice(toWei(0.012));
+			await allMarkets.placePrediction(7, ethAddress, 1e8, 1, { from: users[5] });
+			await marketConfig.setNextOptionPrice(toWei(0.014));
+			await allMarkets.placePrediction(7, ethAddress, 2*1e8, 1, { from: users[6] });
+			await marketConfig.setNextOptionPrice(toWei(0.01));
+			await allMarkets.placePrediction(7, ethAddress, 1e8, 2, { from: users[7] });
+			await marketConfig.setNextOptionPrice(toWei(0.045));
+			await allMarkets.placePrediction(7, ethAddress, 3*1e8, 3, { from: users[8] });
+			await marketConfig.setNextOptionPrice(toWei(0.051));
+			await allMarkets.placePrediction(7, ethAddress, 1e8, 3, { from: users[9] });
+			await marketConfig.setNextOptionPrice(toWei(0.012));
+			await allMarkets.placePrediction(7, ethAddress, 2*1e8, 2, { from: users[10] });
 
 			let options=[2,2,2,3,1,1,2,3,3,2];
 
 			for(i=1;i<11;i++)
 			{
 				console.log("user "+i+" bet points: ",(await allMarkets.getUserPredictionPoints(users[i],7,options[i-1]))/1);
-				// let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
-				// console.log("user "+i+" unused balance: ",unusedBal[0]/1e18, "   ", unusedBal[2]/1e18);
+				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				console.log("user "+i+" unused balance: ",unusedBal[0]/1e18, "   ", unusedBal[2]/1e18);
 			}
 
 			await increaseTime(5*60*60);
@@ -179,11 +179,9 @@ contract("Market", async function(users) {
 			for(i=1;i<11;i++)
 			{
 				let reward = await allMarkets.getReturn(users[i],7);
-				console.log("====>", reward[0]);
 				console.log("User "+i+" rewards: "+ reward[0][0]/1e3+ "  "+reward[0][1]/1e3);
 			}
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			console.log("====>", marketCreatorReward);
 			console.log("Market creator reward: ", marketCreatorReward[1]/1e18,"  ",marketCreatorReward[2]/1e18);
 		});
 	});
