@@ -199,8 +199,6 @@ contract AllMarkets is Governed {
     */
     function addInitialMarketTypesAndStart(address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _marketCreationRewards, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
-      commissionPerc[ETH_ADDRESS] = 10;
-      commissionPerc[plotToken] = 5;
       
       totalOptions = 3;
       defaultMaxRecords = 20;
@@ -211,6 +209,9 @@ contract AllMarkets is Governed {
       governance = IGovernance(_gv);
       marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
 
+      commissionPerc[ETH_ADDRESS] = 10;
+      commissionPerc[plotToken] = 5;
+      
       _addMarketType(4 hours, 100);
       _addMarketType(24 hours, 200);
       _addMarketType(168 hours, 500);
@@ -365,7 +366,9 @@ contract AllMarkets is Governed {
     * @param _maxRecords Maximum number of records to check
     */
     function withdrawMax(uint _maxRecords) public {
-      (uint _plotLeft, , uint _ethLeft, ) = getUserUnusedBalance(msg.sender);
+      (uint _plotLeft, uint _plotReward, uint _ethLeft, uint _ethReward) = getUserUnusedBalance(msg.sender);
+      _plotLeft = _plotLeft.add(_plotReward);
+      _ethLeft = _ethLeft.add(_ethReward);
       _withdraw(_plotLeft, _ethLeft, _maxRecords, _plotLeft, _ethLeft);
     }
 
@@ -376,7 +379,9 @@ contract AllMarkets is Governed {
     * @param _maxRecords Maximum number of records to check
     */
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
-      (uint _plotLeft, , uint _ethLeft, ) = getUserUnusedBalance(msg.sender);
+      (uint _plotLeft, uint _plotReward, uint _ethLeft, uint _ethReward) = getUserUnusedBalance(msg.sender);
+      _plotLeft = _plotLeft.add(_plotReward);
+      _ethLeft = _ethLeft.add(_ethReward);
       _withdraw(_plot, _eth, _maxRecords, _plotLeft, _ethLeft);
     }
 
@@ -623,7 +628,7 @@ contract AllMarkets is Governed {
         ethReward = ethReward.add(_returnAmount[1]);
         plotReward = plotReward.add(_returnAmount[0]);
       }
-      return (userData[_user].currencyUnusedBalance[plotToken], plotReward, userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward);
+      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(1e15), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(1e15));
     }
 
     /**
