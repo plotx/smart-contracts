@@ -13,6 +13,7 @@ const MarketConfig = artifacts.require('MockConfig');
 const Market = artifacts.require('MockMarket');
 const MarketBTC = artifacts.require('MockBTCMarket');
 const MockchainLink = artifacts.require('MockChainLinkAggregator');
+const MockchainLinkGas = artifacts.require('MockChainLinkGasPriceAgg');
 const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
@@ -71,7 +72,8 @@ module.exports = function(deployer, network, accounts){
       let allMarkets = await deployer.deploy(AllMarkets);
       let mcr = await deployer.deploy(MarketCreationRewards);
       let _marketUtility = await plotus.marketUtility();
-      await mcr.initialise(plotusToken.address, tc.address, _marketUtility, allMarkets.address, mockchainLinkAggregaror.address)
+      let mockchainLinkGas = await deployer.deploy(MockchainLinkGas);
+      await mcr.initialise(plotusToken.address, tc.address, _marketUtility, allMarkets.address, mockchainLinkGas.address)
       await allMarkets.addInitialMarketTypesAndStart(plotusToken.address, tc.address, gvAddress, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mcr.address, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
   });
 };
