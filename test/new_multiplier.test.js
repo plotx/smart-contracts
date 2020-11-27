@@ -1045,12 +1045,12 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await allMarkets.deposit(toWei(400), { from: user2 });
             await allMarkets.deposit(0, { value: toWei(4), from: user3 });
 
-            await mockMarketConfig.setNextOptionPrice(9);
+            await mockMarketConfig.setNextOptionPrice(90);
             await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
             await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 1, { from: user3 });
-            await mockMarketConfig.setNextOptionPrice(18);
+            await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 2, { from: user1 });
-            await mockMarketConfig.setNextOptionPrice(27);
+            await mockMarketConfig.setNextOptionPrice(270);
             await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) /  1e5;
@@ -1060,7 +1060,7 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
 
             console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            await allMarkets.createMarket(0, 1);
+            await allMarkets.createMarket(1, 0);
             marketId++;
             const scenario8MarketId = marketId;
            
@@ -1074,14 +1074,14 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await allMarkets.deposit(toWei(400), { from: user2 });
             await allMarkets.deposit(0, { value: toWei(4), from: user3 });
 
-            await mockMarketConfig.setNextOptionPrice(9);
+            await mockMarketConfig.setNextOptionPrice(90);
             await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
             await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 1, { from: user3 });
 
-            await mockMarketConfig.setNextOptionPrice(18);
+            await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 2, { from: user1 });
 
-            await mockMarketConfig.setNextOptionPrice(27);
+            await mockMarketConfig.setNextOptionPrice(270);
             await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
 
 
@@ -1096,9 +1096,9 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let neutralMinValue = (await allMarkets.getMarketData(scenario7MarketId)).neutralMinValue / 1;
             let neutralMaxValue = (await allMarkets.getMarketData(scenario7MarketId)).neutralMaxValue / 1;
             let betweenNeutral = neutralMaxValue + neutralMinValue / 2;
-            await allMarkets.postResultMock(betweenNeutral, scenario7MarketId);
+            await allMarkets.postResultMock(String(betweenNeutral), scenario7MarketId);
             neutralMaxValue = (await allMarkets.getMarketData(scenario8MarketId)).neutralMaxValue / 1;
-            await allMarkets.postResultMock(neutralMaxValue + 1, scenario8MarketId);
+            await allMarkets.postResultMock(String(neutralMaxValue + 1), scenario8MarketId);
             await increaseTime(8 * 60 * 60);
 
             console.log(
