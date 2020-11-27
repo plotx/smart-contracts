@@ -41,7 +41,7 @@ contract IMarketUtility {
 
     function calculateOptionRange(uint64 _marketCurrencyIndex,uint64 _marketTypeIndex, uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue);
     
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice);
+    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice);
     
     function getPriceFeedDecimals(address _priceFeed) public view returns(uint8);
 

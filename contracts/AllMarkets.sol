@@ -667,7 +667,7 @@ contract AllMarkets is Governed {
         _ethStaked[i] = marketOptionsAvailable[_marketId][i+1].ethStaked;
         _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
         uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
-        _optionPrice[i] = marketUtility.calculateOptionPrice(_marketId, i+1, totalPredictionPoints, predictionPointsOnOption);
+        _optionPrice[i] = marketUtility.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
        }
     }
 

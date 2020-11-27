@@ -38,16 +38,16 @@ contract MarketUtilityNew is MarketUtility {
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
       }
-      uint64 _optionPrice = calculateOptionPrice(_marketId, _prediction, totalPredictionPoints, predictionPointsOnOption);
-      predictionPoints = uint64(_stakeValue.div(1e15)).div(_optionPrice);
+      uint64 _optionPrice = getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+      predictionPoints = uint64(_stakeValue.div(1e15).mul(1e3)).div(_optionPrice);
       if(!multiplierApplied) {
         uint256 _predictionPoints;
-        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_asset, msg.sender, _predictionStake,  predictionPoints, _stakeValue);
+        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_asset, msg.sender, _predictionStake.mul(1e15),  predictionPoints, _stakeValue);
         predictionPoints = uint64(_predictionPoints);
       }
     }
 
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
+    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
       if(totalPredictionPoints > 0) {
         _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
       } else {
