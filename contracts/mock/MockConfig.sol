@@ -69,6 +69,11 @@ contract MockConfig is MarketUtilityNew {
     }
 
     function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
-        return nextOptionPrice;
+        if(mockFlag) {
+            return nextOptionPrice;
+        }
+        else  {
+            return super.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+        }
     }
 }

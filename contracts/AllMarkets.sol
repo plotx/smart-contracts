@@ -282,7 +282,7 @@ contract AllMarkets is Governed {
     function _closePreviousMarket(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex) internal {
       uint64 currentMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket;
       if(currentMarket != 0) {
-        require(marketStatus(currentMarket) == PredictionStatus.InSettlement);
+        require(marketStatus(currentMarket) >= PredictionStatus.InSettlement);
         uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
         if(penultimateMarket > 0 && now >= marketSettleTime(penultimateMarket)) {
           settleMarket(penultimateMarket);
