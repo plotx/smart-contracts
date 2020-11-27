@@ -98,14 +98,11 @@ describe('Sheet- New Pricing.', () => {
             marketId++;
         });
         it("Test Case 1", async () => {
+            await marketConfig.setMockPriceFlag(false); 
 
             console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
             console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
             console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
-
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
             await MockUniswapRouterInstance.setPrice(toWei(0.01));
             await marketConfig.setPrice(toWei(0.01));
             
@@ -123,9 +120,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 3", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("100") });
@@ -135,9 +132,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 4", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("0.01") });
@@ -147,9 +144,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 5", async () => {
             await allMarkets.deposit(toWei("100"), { from: user1 });
@@ -159,9 +156,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 6", async () => {
             await allMarkets.deposit(toWei("10000000000"), { from: user1 });
@@ -171,9 +168,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 7", async () => {
             await allMarkets.deposit(toWei("978546.56"), { from: user1 });
@@ -183,9 +180,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
         it("Test Case 8", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("1456.98") });
@@ -195,9 +192,9 @@ describe('Sheet- New Pricing.', () => {
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
             console.log("User prediction points on option 3", await allMarkets.getUserPredictionPoints(user1, marketId, 3) / 1);
             
-            console.log("Option Price 1", parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
-            console.log("Option Price 2", parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
-            console.log("Option Price 3", parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1 , "Should be 100");
+            console.log((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1 , "Should be 100");
         })
     })
 })
