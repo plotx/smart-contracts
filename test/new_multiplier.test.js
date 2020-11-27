@@ -134,11 +134,11 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("10"), 3, { from: user5 });
             console.error("*** One more case commented!! please uncomment ***");
 
-            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
-            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 2)) / 1000;
-            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) / 1000;
-            predictionPointsBeforeUser4 = parseFloat(await allMarkets.getUserPredictionPoints(user4, marketId, 3)) / 1000;
-            predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 3)) / 1000;
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2));
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 2));
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1));
+            predictionPointsBeforeUser4 = parseFloat(await allMarkets.getUserPredictionPoints(user4, marketId, 3));
+            predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 3));
             console.log(
                 predictionPointsBeforeUser1,
                 predictionPointsBeforeUser2,
@@ -146,11 +146,19 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser4,
                 predictionPointsBeforeUser5
             );
-
-            await increaseTime(4 * 60 * 60);
+            
+            await increaseTime(8 * 60 * 60);
             await allMarkets.postResultMock(1, marketId);
-            await increaseTime(60 * 60);
+            await increaseTime(8 * 60 * 60);
 
+            // console.log((await allMarkets.getReturn(user1, marketId)));
+            // console.log((await allMarkets.getReturn(user1, marketId)).returnAmount);
+            // console.log((await allMarkets.getReturn(user2, marketId)).returnAmount);
+            // console.log((await allMarkets.getReturn(user3, marketId)).returnAmount);
+            // console.log((await allMarkets.getReturn(user4, marketId)).returnAmount);
+            // console.log((await allMarkets.getReturn(user5, marketId)).returnAmount);
+            // console.log(await allMarkets.getReturn(user1, marketId).returnAmount[0] / 1e18);
+            // console.log(await allMarkets.getReturn(user1, marketId).returnAmount[1] / 1e18);
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]) / 1e18;
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]) / 1e18;
             let returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][0]) / 1e18;
@@ -163,13 +171,6 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][1]) / 1e18;
             returnUser4 = parseFloat((await allMarkets.getReturn(user4, marketId))[0][1]) / 1e18;
             returnUser5 = parseFloat((await allMarkets.getReturn(user5, marketId))[0][1]) / 1e18;
-            console.log(returnUser1, returnUser2, returnUser3, returnUser4, returnUser5);
-
-            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[2]) / 1e18;
-            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[2]) / 1e18;
-            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[2]) / 1e18;
-            returnUser4 = parseFloat((await allMarkets.getReturn(user4, marketId))[2]) / 1e18;
-            returnUser5 = parseFloat((await allMarkets.getReturn(user5, marketId))[2]) / 1e18;
             console.log(returnUser1, returnUser2, returnUser3, returnUser4, returnUser5);
 
             console.log(
@@ -187,11 +188,12 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 (await web3.eth.getBalance(user5)) / 1e18
             );
 
-            await allMarkets.withdrawMax(10, { from: user1 });
-            await allMarkets.withdrawMax(10, { from: user2 });
+            await assertRevert(allMarkets.withdrawMax(10, { from: user1 }));
+            await assertRevert(allMarkets.withdrawMax(10, { from: user2 }));
+            await assertRevert(allMarkets.withdrawMax(10, { from: user4 }));
+            await assertRevert(allMarkets.withdrawMax(10, { from: user5 }));
+            console.error("*** One more case commented!! please uncomment ***");
             await allMarkets.withdrawMax(10, { from: user3 });
-            await allMarkets.withdrawMax(10, { from: user4 });
-            await allMarkets.withdrawMax(10, { from: user5 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -260,7 +262,7 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user2 });
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user3 });
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 3, { from: user4 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("10"), 3, { from: user5 });
+            // await allMarkets.placePrediction(marketId, plotusToken.address, toWei("10"), 3, { from: user5 });
             console.error("*** One more case commented!! please uncomment ***");
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
@@ -276,7 +278,7 @@ describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser5
             );
 
-            await increaseTime(2 * 60 * 60);
+            await increaseTime(8 * 60 * 60);
             await allMarkets.postResultMock(1, marketId);
             await increaseTime(60 * 60);
 
