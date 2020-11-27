@@ -25,8 +25,9 @@ import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketCreationRewards.sol";
 
 contract AllMarkets is Governed {
-    using SafeMath64 for uint64;
     using SafeMath32 for uint32;
+    using SafeMath64 for uint64;
+    using SafeMath128 for uint128;
     using SafeMath for uint;
 
     enum PredictionStatus {
@@ -64,8 +65,8 @@ contract AllMarkets is Governed {
     }
 
     struct UserData {
-      uint64 totalEthStaked;
-      uint64 totalPlotStaked;
+      uint128 totalEthStaked;
+      uint128 totalPlotStaked;
       uint128 lastClaimedIndex;
       uint[] marketsParticipated;
       mapping(address => uint) currencyUnusedBalance;
@@ -126,6 +127,7 @@ contract AllMarkets is Governed {
 
     // uint8[] constant roundOfToNearest = [25,1];
     uint internal totalOptions;
+    uint internal predictionDecimals;
     uint internal defaultMaxRecords;
 
     bool internal marketCreationPaused;
@@ -201,6 +203,7 @@ contract AllMarkets is Governed {
       require(marketTypeArray.length == 0);
       
       totalOptions = 3;
+      predictionDecimals = 8;
       defaultMaxRecords = 20;
       plotToken = _plot;
       marketUtility = IMarketUtility(_marketUtility);
@@ -461,16 +464,16 @@ contract AllMarkets is Governed {
       uint64 _commissionStake;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
         uint256 unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
-        unusedBalance = unusedBalance.div(1e15);
+        unusedBalance = unusedBalance.div(10**predictionDecimals);
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
           unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
-          unusedBalance = unusedBalance.div(1e15);
+          unusedBalance = unusedBalance.div(10**predictionDecimals);
         }
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
-        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(1e15);
+        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(10**predictionDecimals);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[msg.sender].userMarketData[_marketId].predictedWithBlot);
@@ -605,8 +608,8 @@ contract AllMarkets is Governed {
         lastClaimed = i;
       }
       emit ReturnClaimed(msg.sender, plotReward, ethReward);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(1e15));
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(1e15));
+      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(10**predictionDecimals));
+      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(10**predictionDecimals));
       userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
     }
 
@@ -628,7 +631,7 @@ contract AllMarkets is Governed {
         ethReward = ethReward.add(_returnAmount[1]);
         plotReward = plotReward.add(_returnAmount[0]);
       }
-      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(1e15), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(1e15));
+      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(10**predictionDecimals), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(10**predictionDecimals));
     }
 
     /**
