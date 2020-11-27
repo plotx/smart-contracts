@@ -61,4 +61,14 @@ contract MockConfig is MarketUtilityNew {
           }
         return super.calculateOptionPrice(params, marketFeedAddress);
     }
+
+    uint64 public nextOptionPrice;
+
+    function setNextOptionPrice(uint64 _price) public {
+        nextOptionPrice = _price;
+    }
+
+    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
+        return nextOptionPrice;
+    }
 }
