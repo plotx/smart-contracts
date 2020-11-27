@@ -33,7 +33,7 @@ contract MarketUtilityNew is MarketUtility {
     _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
   }
 
-  function calculatePredictionPoints(bool multiplierApplied, uint _marketId, uint _prediction, uint64 _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
+  function calculatePredictionPoints(bool multiplierApplied, uint _marketId, uint _prediction, uint _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
       uint _stakeValue = getAssetValueETH(_asset, _predictionStake.mul(1e15));
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
