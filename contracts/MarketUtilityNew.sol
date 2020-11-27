@@ -49,9 +49,9 @@ contract MarketUtilityNew is MarketUtility {
 
     function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
       if(totalPredictionPoints > 0) {
-        _optionPrice = (predictionPointsOnOption).div(totalPredictionPoints) + 1;
+        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
       } else {
-        _optionPrice = 1;
+        _optionPrice = 100;
       }
     }
 
