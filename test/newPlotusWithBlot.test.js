@@ -101,9 +101,6 @@ describe("newPlotusWithBlot", () => {
             BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
         });
         it("1. Place Prediction", async () => {
-            // await allMarkets.setOptionPrice(marketId, 1, 9);
-            // await allMarkets.setOptionPrice(marketId, 2, 18);
-            // await allMarkets.setOptionPrice(marketId, 3, 27);
             await mockMarketConfig.setNextOptionPrice(9);
             // user5
             await MockUniswapRouterInstance.setPrice(toWei("0.012"));
@@ -156,7 +153,7 @@ describe("newPlotusWithBlot", () => {
             await mockMarketConfig.setPrice(toWei("0.015"));
             await plotusToken.approve(BLOTInstance.address, toWei("124"));
             await BLOTInstance.mint(user4, toWei("124"));
-            await allMarkets.placePrediction(marketId, BLOTInstance.address, toWei("123"), 3, { from: user4 });
+            await allMarkets.placePrediction(marketId, BLOTInstance.address, to8Power("123"), 3, { from: user4 });
             await assertRevert(allMarkets.placePrediction(marketId, BLOTInstance.address, to8Power("1"), 2, { from: user4 })); // should revert as prediction amount is less than min required prediction
             // user8
             await MockUniswapRouterInstance.setPrice(toWei("0.045"));
@@ -181,49 +178,34 @@ describe("newPlotusWithBlot", () => {
 
             for (let index = 0; index < 10; index++) {
                 let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
-                PredictionPoints = PredictionPoints / 1000;
-                PredictionPoints = PredictionPoints.toFixed(1);
-                // assert.equal(PredictionPoints, PredictionPointsExpected[index].toFixed(1));
+                PredictionPoints = PredictionPoints / 1e5;
+                // try{
+                //     assert.equal(PredictionPoints.toFixed(1), PredictionPointsExpected[index].toFixed(1));
+                // }catch(e){
+                //     console.log(`Not equal!! -> Sheet: ${PredictionPointsExpected[index]} Got: ${PredictionPoints[index]}`);
+                // }
                 // commented by parv (as already added assert above)
                 console.log(`Prediction points : ${PredictionPoints} expected : ${PredictionPointsExpected[index].toFixed(1)} `);
             }
             // console.log(await plotusToken.balanceOf(user1));
 
             // close market
-            await increaseTime(36001);
+            await increaseTime(8 * 60 * 60);
             await allMarkets.postResultMock(1, marketId);
-            await increaseTime(36001);
-            // console.log((await web3.eth.getBalance(allMarkets.address))/1)
-            // plotus contract balance eth balance
+            await increaseTime(8 * 60 * 60);
             plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
             console.log(parseFloat(plotusBalanceBefore), "10000000000000000");
-            // lotBalanceBefore = await plotusToken.balanceOf(allMarkets["_allMarkets"][0]);
-            // console.log(parseFloat(web3.utils.fromWei(lotBalanceBefore)).toFixed(2), (832.5835).toFixed(2));
-
-            // lot supply , lot balance of market
             await MockUniswapRouterInstance.setPrice(toWei("0.01"));
             await mockMarketConfig.setPrice(toWei("0.01"));
-
             plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
             console.log(parseFloat(plotusBalanceAfter), 10000000000000000);
-            // lotBalanceAfter = await plotusToken.balanceOf(allMarkets["_allMarkets"][0]);
-            // console.log(parseFloat(web3.utils.fromWei(lotBalanceAfter)).toFixed(2), (832.5835).toFixed(2));
-            // assert.equal(parseFloat(web3.utils.fromWei(String(parseFloat(lotBalanceAfter) - parseFloat(lotBalanceBefore)))).toFixed(2), (4.5835).toFixed(2));
-            // commented by Parv (as asserts already added above)
-            // lotBalanceBefore = lotBalanceBefore / 1;
-            // lotBalanceAfter = lotBalanceAfter / 1;
-            // console.log(`plotus eth balance before commision : ${plotusBalanceBefore}`);
-            // console.log(`plotus balance after commision : ${plotusBalanceAfter}`);
-            // console.log(`Lot Balance of market before commision : ${lotBalanceBefore}`);
-            // console.log(`Lot Balance of market before commision : ${lotBalanceAfter}`);
-            // console.log(`Difference : ${lotBalanceAfter - lotBalanceBefore}`);
         });
         it("1.3 Check total return for each user Prediction values in eth", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
             options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
             getReturnsInEth = async (user) => {
                 const response = await allMarkets.getReturn(user, marketId);
-                let returnAmountInEth = response[0][1] / 1e18;
+                let returnAmountInEth = response[0][1] / 1e8;
                 return returnAmountInEth;
             };
 
@@ -231,6 +213,11 @@ describe("newPlotusWithBlot", () => {
 
             for (let index = 0; index < 10; index++) {
                 let returns = await getReturnsInEth(accounts[index]);
+                // try{
+                //     assert.equal(returnInEthExpected[index].toFixed(2), returns[i].toFixed(2));
+                // }catch(e){
+                //     console.log(`Not equal!! -> Sheet: ${returnInEthExpected[index]} Got: ${returns[index]}`);
+                // }
                 // assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
                 // commented by Parv (as assert already added above)
                 console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
@@ -241,7 +228,7 @@ describe("newPlotusWithBlot", () => {
             options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
             getReturnsInPLOT = async (user) => {
                 const response = await allMarkets.getReturn(user, marketId);
-                let returnAmountInPLOT = response[0][0] / 1e18;
+                let returnAmountInPLOT = response[0][0] / 1e8;
                 return returnAmountInPLOT;
             };
 
@@ -249,19 +236,25 @@ describe("newPlotusWithBlot", () => {
 
             for (let index = 0; index < 10; index++) {
                 let returns = await getReturnsInPLOT(accounts[index]);
-                // assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
+                // try{
+                //     assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
+                // }catch(e){
+                //     console.log(`Not equal!! -> Sheet: ${returnInPLOTExpected[index]} Got: ${returns[index]}`);
+                // }
                 // commented by Parv (as assert already added above)
                 console.log(`return : ${returns} Expected :${returnInPLOTExpected[index]}`);
             }
         });
         it("1.4 Check User Received The appropriate amount", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
-            const totalReturnLotExpexted = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
-            const returnInEthExpected = [0, 0, 0, 0, 277.5278333, 555.0556667, 0, 0, 0, 0];
+            const totalReturnLotExpexted = [0, 0, 0, 0, 276.1401942, 552.2803883, 0, 0, 0, 0];
+            const returnInEthExpected = [0, 0, 0, 0, 4.31235, 8.6247, 0, 0, 0, 0];
             for (let account of accounts) {
                 beforeClaim = await web3.eth.getBalance(account);
                 beforeClaimToken = await plotusToken.balanceOf(account);
-                await allMarkets.withdrawReward(5, { from: account });
+                try {
+                    await allMarkets.withdrawMax(10, { from: account });
+                } catch (e) {}
                 afterClaim = await web3.eth.getBalance(account);
                 afterClaimToken = await plotusToken.balanceOf(account);
                 diff = afterClaim - beforeClaim;
@@ -270,14 +263,19 @@ describe("newPlotusWithBlot", () => {
                 diff = diff / conv;
                 diff = diff.toFixed(2);
                 expectedInEth = returnInEthExpected[accounts.indexOf(account)].toFixed(2);
-                // assert.equal(diff, expectedInEth);
 
                 diffToken = afterClaimToken - beforeClaimToken;
                 diffToken = diffToken / conv;
                 diffToken = diffToken.toFixed(2);
                 expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(2);
                 // assert.equal(diffToken, expectedInLot);
-
+                // try{
+                //     assert.equal(diff, expectedInEth);
+                //     assert.equal(diffToken, expectedInLot);
+                // }catch(e){
+                //     console.log(`Not equal!! -> Sheet: ${expectedInEth} Got: ${diff}`);
+                //     console.log(`Not equal!! -> Sheet: ${expectedInLot} Got: ${diffToken}`);
+                // }
                 // commented by Parv (as assert already added above)
                 // console.log(`User ${accounts.indexOf(account) + 1}`);
                 console.log(`Returned in Eth : ${diff}  Expected : ${expectedInEth} `);
