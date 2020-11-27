@@ -140,25 +140,35 @@ contract("Market", async function(users) {
 
 			}
 
-			await marketConfig.setNextOptionPrice(toWei(0.001));
+			await marketConfig.setPrice(toWei(0.001));
+			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.placePrediction(7, plotusToken.address, 100*1e8, 2, { from: users[1] });
-			await marketConfig.setNextOptionPrice(toWei(0.002));
+			await marketConfig.setPrice(toWei(0.002));
+			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.placePrediction(7, plotusToken.address, 400*1e8, 2, { from: users[2] });
-			await marketConfig.setNextOptionPrice(toWei(0.001));
+			await marketConfig.setPrice(toWei(0.001));
+			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.placePrediction(7, plotusToken.address, 210*1e8, 2, { from: users[3] });
-			await marketConfig.setNextOptionPrice(toWei(0.015));
+			await marketConfig.setPrice(toWei(0.015));
+			await marketConfig.setNextOptionPrice(27);
 			await allMarkets.placePrediction(7, plotusToken.address, 123*1e8, 3, { from: users[4] });
-			await marketConfig.setNextOptionPrice(toWei(0.012));
+			await marketConfig.setPrice(toWei(0.012));
+			await marketConfig.setNextOptionPrice(9);
 			await allMarkets.placePrediction(7, ethAddress, 1e8, 1, { from: users[5] });
-			await marketConfig.setNextOptionPrice(toWei(0.014));
+			await marketConfig.setPrice(toWei(0.014));
+			await marketConfig.setNextOptionPrice(9);
 			await allMarkets.placePrediction(7, ethAddress, 2*1e8, 1, { from: users[6] });
-			await marketConfig.setNextOptionPrice(toWei(0.01));
+			await marketConfig.setPrice(toWei(0.01));
+			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.placePrediction(7, ethAddress, 1e8, 2, { from: users[7] });
-			await marketConfig.setNextOptionPrice(toWei(0.045));
+			await marketConfig.setPrice(toWei(0.045));
+			await marketConfig.setNextOptionPrice(27);
 			await allMarkets.placePrediction(7, ethAddress, 3*1e8, 3, { from: users[8] });
-			await marketConfig.setNextOptionPrice(toWei(0.051));
+			await marketConfig.setPrice(toWei(0.051));
+			await marketConfig.setNextOptionPrice(27);
 			await allMarkets.placePrediction(7, ethAddress, 1e8, 3, { from: users[9] });
-			await marketConfig.setNextOptionPrice(toWei(0.012));
+			await marketConfig.setPrice(toWei(0.012));
+			await marketConfig.setNextOptionPrice(9);
 			await allMarkets.placePrediction(7, ethAddress, 2*1e8, 2, { from: users[10] });
 
 			let options=[2,2,2,3,1,1,2,3,3,2];
