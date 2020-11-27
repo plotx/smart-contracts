@@ -179,13 +179,13 @@ describe("newPlotusWithBlot", () => {
             for (let index = 0; index < 10; index++) {
                 let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
                 PredictionPoints = PredictionPoints / 1e5;
-                // try{
-                //     assert.equal(PredictionPoints.toFixed(1), PredictionPointsExpected[index].toFixed(1));
-                // }catch(e){
-                //     console.log(`Not equal!! -> Sheet: ${PredictionPointsExpected[index]} Got: ${PredictionPoints[index]}`);
-                // }
+                try{
+                    assert.equal(PredictionPoints.toFixed(1), PredictionPointsExpected[index].toFixed(1));
+                }catch(e){
+                    console.log(`Not equal!! -> Sheet: ${PredictionPointsExpected[index]} Got: ${PredictionPoints}`);
+                }
                 // commented by parv (as already added assert above)
-                console.log(`Prediction points : ${PredictionPoints} expected : ${PredictionPointsExpected[index].toFixed(1)} `);
+                // console.log(`Prediction points : ${PredictionPoints} expected : ${PredictionPointsExpected[index].toFixed(1)} `);
             }
             // console.log(await plotusToken.balanceOf(user1));
 
@@ -193,12 +193,6 @@ describe("newPlotusWithBlot", () => {
             await increaseTime(8 * 60 * 60);
             await allMarkets.postResultMock(1, marketId);
             await increaseTime(8 * 60 * 60);
-            plotusBalanceBefore = await web3.eth.getBalance(plotusNewAddress);
-            console.log(parseFloat(plotusBalanceBefore), "10000000000000000");
-            await MockUniswapRouterInstance.setPrice(toWei("0.01"));
-            await mockMarketConfig.setPrice(toWei("0.01"));
-            plotusBalanceAfter = await web3.eth.getBalance(plotusNewAddress);
-            console.log(parseFloat(plotusBalanceAfter), 10000000000000000);
         });
         it("1.3 Check total return for each user Prediction values in eth", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
@@ -209,21 +203,21 @@ describe("newPlotusWithBlot", () => {
                 return returnAmountInEth;
             };
 
-            const returnInEthExpected = [0, 0, 0, 0, 4.329, 8.658, 0, 0, 0, 0];
+            const returnInEthExpected = [0, 0, 0, 0, 4.31235, 8.6247, 0, 0, 0, 0];
 
             for (let index = 0; index < 10; index++) {
-                let returns = await getReturnsInEth(accounts[index]);
-                // try{
-                //     assert.equal(returnInEthExpected[index].toFixed(2), returns[i].toFixed(2));
-                // }catch(e){
-                //     console.log(`Not equal!! -> Sheet: ${returnInEthExpected[index]} Got: ${returns[index]}`);
-                // }
+                let returns = await getReturnsInEth(accounts[index]) / 1;
+                try{
+                    assert.equal(returnInEthExpected[index].toFixed(2), returns.toFixed(2));
+                }catch(e){
+                    console.log(`Not equal!! -> Sheet: ${returnInEthExpected[index].toFixed(2)} Got: ${returns.toFixed(2)}`);
+                }
                 // assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
                 // commented by Parv (as assert already added above)
-                console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
+                // console.log(`return : ${returns} Expected :${returnInEthExpected[index]}`);
             }
         });
-        it("1.3 Check total return for each user Prediction values in eth", async () => {
+        it("1.4 Check total return for each user Prediction values in plot", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
             options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
             getReturnsInPLOT = async (user) => {
@@ -232,20 +226,20 @@ describe("newPlotusWithBlot", () => {
                 return returnAmountInPLOT;
             };
 
-            const returnInPLOTExpected = [0, 0, 0, 0, 277.5278333, 555.0556667, 0, 0, 0, 0];
+            const returnInPLOTExpected = [0, 0, 0, 0, 276.1401942, 552.2803883, 0, 0, 0, 0];
 
             for (let index = 0; index < 10; index++) {
-                let returns = await getReturnsInPLOT(accounts[index]);
-                // try{
-                //     assert.equal(parseFloat(returns).toFixed(2), returnInEthExpected[index].toFixed(2));
-                // }catch(e){
-                //     console.log(`Not equal!! -> Sheet: ${returnInPLOTExpected[index]} Got: ${returns[index]}`);
-                // }
+                let returns = await getReturnsInPLOT(accounts[index]) / 1;
+                try{
+                    assert.equal(returnInPLOTExpected[index].toFixed(2), returns.toFixed(2), );
+                }catch(e){
+                    console.log(`Not equal!! -> Sheet: ${returnInPLOTExpected[index].toFixed(2)} Got: ${returns.toFixed(2)}`);
+                }
                 // commented by Parv (as assert already added above)
-                console.log(`return : ${returns} Expected :${returnInPLOTExpected[index]}`);
+                // console.log(`return : ${returns} Expected :${returnInPLOTExpected[index]}`);
             }
         });
-        it("1.4 Check User Received The appropriate amount", async () => {
+        it("1.5 Check User Received The appropriate amount", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
             const totalReturnLotExpexted = [0, 0, 0, 0, 276.1401942, 552.2803883, 0, 0, 0, 0];
             const returnInEthExpected = [0, 0, 0, 0, 4.31235, 8.6247, 0, 0, 0, 0];
@@ -269,17 +263,20 @@ describe("newPlotusWithBlot", () => {
                 diffToken = diffToken.toFixed(2);
                 expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(2);
                 // assert.equal(diffToken, expectedInLot);
-                // try{
-                //     assert.equal(diff, expectedInEth);
-                //     assert.equal(diffToken, expectedInLot);
-                // }catch(e){
-                //     console.log(`Not equal!! -> Sheet: ${expectedInEth} Got: ${diff}`);
-                //     console.log(`Not equal!! -> Sheet: ${expectedInLot} Got: ${diffToken}`);
-                // }
+                try{
+                    assert.equal(diff, expectedInEth);
+                }catch(e){
+                    console.log(`Not equal!! -> Sheet: ${expectedInEth} Got: ${diff}`);
+                }
+                try{
+                    assert.equal(diffToken, expectedInLot);
+                }catch(e){
+                    console.log(`Not equal!! -> Sheet: ${expectedInLot} Got: ${diffToken}`);
+                }
                 // commented by Parv (as assert already added above)
                 // console.log(`User ${accounts.indexOf(account) + 1}`);
-                console.log(`Returned in Eth : ${diff}  Expected : ${expectedInEth} `);
-                console.log(`Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `);
+                // console.log(`Returned in Eth : ${diff}  Expected : ${expectedInEth} `);
+                // console.log(`Returned in Lot : ${diffToken}  Expected : ${expectedInLot} `);
             }
         });
     });
