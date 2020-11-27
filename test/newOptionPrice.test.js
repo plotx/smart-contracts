@@ -24,7 +24,7 @@ const latestTime = require("./utils/latestTime").latestTime;
 const encode = require("./utils/encoder.js").encode;
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 const { toHex, toWei, toChecksumAddress } = require("./utils/ethTools");
-const to3Power = (number) => String(parseFloat(number)*1e3)
+const to8Power = (number) => String(parseFloat(number)*1e8)
 
 describe('Sheet- New Pricing.', () => {
     let masterInstance, plotusToken, marketConfig, MockUniswapRouterInstance, tokenControllerAdd, tokenController, plotusNewAddress, plotusNewInstance, governance, mockUniswapV2Pair, mockUniswapFactory, weth, allMarkets, mockChainLinkAggregator;
@@ -114,7 +114,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 2", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("1") });
-            await allMarkets.placePrediction(marketId, ethAddress, to3Power("1"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, to8Power("1"), 2, { from: user1 });
 
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -126,7 +126,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 3", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("100") });
-            await allMarkets.placePrediction(marketId, ethAddress, to3Power("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, to8Power("100"), 1, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -138,7 +138,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 4", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("0.01") });
-            await allMarkets.placePrediction(marketId, ethAddress, to3Power("0.01"), 3, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, to8Power("0.01"), 3, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -150,7 +150,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 5", async () => {
             await allMarkets.deposit(toWei("100"), { from: user1 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -162,7 +162,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 6", async () => {
             await allMarkets.deposit(toWei("10000000000"), { from: user1 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("10000000000"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("10000000000"), 2, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -174,7 +174,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 7", async () => {
             await allMarkets.deposit(toWei("978546.56"), { from: user1 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("978546.56"), 3, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("978546.56"), 3, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
@@ -186,7 +186,7 @@ describe('Sheet- New Pricing.', () => {
         })
         it("Test Case 8", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("1456.98") });
-            await allMarkets.placePrediction(marketId, ethAddress, to3Power("1456.98"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, to8Power("1456.98"), 1, { from: user1 });
             
             console.log("User prediction points on option 1", await allMarkets.getUserPredictionPoints(user1, marketId, 1) / 1);
             console.log("User prediction points on option 2", await allMarkets.getUserPredictionPoints(user1, marketId, 2) / 1);
