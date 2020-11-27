@@ -728,6 +728,7 @@ contract AllMarkets is Governed {
     function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount, uint incentive, address _incentiveToken){
       uint256 _totalUserPredictionPoints = 0;
       uint256 _totalPredictionPoints = 0;
+      returnAmount = new uint256[](2);
       (_totalUserPredictionPoints, _totalPredictionPoints) = _calculatePredictionPoints(_user, _marketId);
       if(marketStatus(_marketId) != PredictionStatus.Settled || _totalPredictionPoints == 0) {
        return (returnAmount, incentive, marketDataExtended[_marketId].incentiveToken);
