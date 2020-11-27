@@ -15,6 +15,7 @@ const AllMarkets = artifacts.require("MockAllMarkets");
 const MarketUtility = artifacts.require("MockConfig"); //mock
 const MockChainLinkGasPriceAgg = artifacts.require("MockChainLinkGasPriceAgg");
 const MemberRoles = artifacts.require("MemberRoles");
+const MarketCreationRewards = artifacts.require('MarketCreationRewards');
 const BigNumber = require("bignumber.js");
 const { increaseTimeTo } = require("./utils/increaseTime.js");
 
@@ -40,7 +41,8 @@ let timeNow,
 	option3RangeMIX,
 	marketStatus,
 	option3RangeMAX, governance,
-	marketETHBalanceBeforeDispute;
+	marketETHBalanceBeforeDispute,
+	marketIncentives;
 
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
@@ -63,6 +65,9 @@ contract("Market", async function(users) {
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			timeNow = await latestTime();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
+
+			allMarkets = await AllMarkets.deployed();
+			marketIncentives = await MarketCreationRewards.deployed();
 
 			marketData = await marketInstance.getData();
 			// expireTme = parseFloat(marketData._expireTime);
@@ -87,8 +92,6 @@ contract("Market", async function(users) {
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             marketConfig = await MarketUtility.at(marketConfig.address);
-            allMarkets = await AllMarkets.new();
-            await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);
             date = Math.round(date);
@@ -98,8 +101,10 @@ contract("Market", async function(users) {
             await utility.setAuthorizedAddress(allMarkets.address);
             // await mockUniswapV2Pair.sync();
             let mockChainLinkGasPriceAgg = await MockChainLinkGasPriceAgg.new();
-            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a", mockChainLinkGasPriceAgg.address);
-            await increaseTime(3610);
+            await increaseTime(5 * 3600);
+            await plotusToken.transfer(users[11],toWei(100000));
+            await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
+            await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
             await allMarkets.createMarket(0, 0,{from:users[11]});
 		});
 
@@ -122,9 +127,9 @@ contract("Market", async function(users) {
 
 		it("Scenario 1", async () => {
 			// setting option price in eth
-			await allMarkets.setOptionPrice(1, 1, 9);
-			await allMarkets.setOptionPrice(1, 2, 18);
-			await allMarkets.setOptionPrice(1, 3, 27);
+			await allMarkets.setOptionPrice(7, 1, 9);
+			await allMarkets.setOptionPrice(7, 2, 18);
+			await allMarkets.setOptionPrice(7, 3, 27);
 			let i;
 			for(i=1; i<11;i++){
 
@@ -136,46 +141,50 @@ contract("Market", async function(users) {
 			}
 
 			await marketConfig.setPrice(toWei(0.001));
-			await allMarkets.placePrediction(1, plotusToken.address, toWei("100"), 2, { from: users[1] });
+			await allMarkets.placePrediction(7, plotusToken.address, 100000, 2, { from: users[1] });
 			await marketConfig.setPrice(toWei(0.002));
-			await allMarkets.placePrediction(1, plotusToken.address, toWei("400"), 2, { from: users[2] });
+			await allMarkets.placePrediction(7, plotusToken.address, 400000, 2, { from: users[2] });
 			await marketConfig.setPrice(toWei(0.001));
-			await allMarkets.placePrediction(1, plotusToken.address, toWei("210"), 2, { from: users[3] });
+			await allMarkets.placePrediction(7, plotusToken.address, 210000, 2, { from: users[3] });
 			await marketConfig.setPrice(toWei(0.015));
-			await allMarkets.placePrediction(1, plotusToken.address, toWei("123"), 3, { from: users[4] });
+			await allMarkets.placePrediction(7, plotusToken.address, 123000, 3, { from: users[4] });
 			await marketConfig.setPrice(toWei(0.012));
-			await allMarkets.placePrediction(1, ethAddress, toWei("1"), 1, { from: users[5] });
+			await allMarkets.placePrediction(7, ethAddress, 1000, 1, { from: users[5] });
 			await marketConfig.setPrice(toWei(0.014));
-			await allMarkets.placePrediction(1, ethAddress, toWei("2"), 1, { from: users[6] });
+			await allMarkets.placePrediction(7, ethAddress, 2000, 1, { from: users[6] });
 			await marketConfig.setPrice(toWei(0.01));
-			await allMarkets.placePrediction(1, ethAddress, toWei("1"), 2, { from: users[7] });
+			await allMarkets.placePrediction(7, ethAddress, 1000, 2, { from: users[7] });
 			await marketConfig.setPrice(toWei(0.045));
-			await allMarkets.placePrediction(1, ethAddress, toWei("3"), 3, { from: users[8] });
+			await allMarkets.placePrediction(7, ethAddress, 3000, 3, { from: users[8] });
 			await marketConfig.setPrice(toWei(0.051));
-			await allMarkets.placePrediction(1, ethAddress, toWei("1"), 3, { from: users[9] });
+			await allMarkets.placePrediction(7, ethAddress, 1000, 3, { from: users[9] });
 			await marketConfig.setPrice(toWei(0.012));
-			await allMarkets.placePrediction(1, ethAddress, toWei("2"), 2, { from: users[10] });
+			await allMarkets.placePrediction(7, ethAddress, 2000, 2, { from: users[10] });
 
 			let options=[2,2,2,3,1,1,2,3,3,2];
 
 			for(i=1;i<11;i++)
 			{
-				console.log("user "+i+" bet points: ",(await allMarkets.getUserPredictionPoints(users[i],1,options[i-1]))/1e18);
-				let unusedBal = await allMarkets.getUserUnusedBalance({from:users[i]});
-				console.log("user "+i+" unused balance: ",unusedBal[0]/1e18, "   ", unusedBal[1]/1e18);
+				console.log("user "+i+" bet points: ",(await allMarkets.getUserPredictionPoints(users[i],7,options[i-1]))/1);
+				// let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				// console.log("user "+i+" unused balance: ",unusedBal[0]/1e18, "   ", unusedBal[2]/1e18);
 			}
 
-			await increaseTime(2*60*60);
+			await increaseTime(5*60*60);
 
-			await allMarkets.postResultMock(1,1);
+			await allMarkets.postResultMock(1,7);
 
 			await increaseTime(60*60);
 
 			for(i=1;i<11;i++)
 			{
-				let reward = await allMarkets.getReturn(users[i],1);
-				console.log("User "+i+" rewards: "+ reward[0][0]/1e18+ "  "+reward[0][1]/1e18 );
+				let reward = await allMarkets.getReturn(users[i],7);
+				console.log("====>", reward[0]);
+				console.log("User "+i+" rewards: "+ reward[0][0]/1e3+ "  "+reward[0][1]/1e3);
 			}
+			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
+			console.log("====>", marketCreatorReward);
+			console.log("Market creator reward: ", marketCreatorReward[1]/1e18,"  ",marketCreatorReward[2]/1e18);
 		});
 	});
 });
