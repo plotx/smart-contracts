@@ -145,7 +145,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let tx = await allMarkets.createMarket(0,1, {gasPrice:300000});
       let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
  
-    eventData = findByTxHash(events,tx.tx);
+      eventData = findByTxHash(events,tx.tx);
 
     });
 
@@ -175,8 +175,8 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     });
 
     it("If gas is provided more than 125% of fast gas, reward should be as per 125% fast gas", async function() {
-      await increaseTime(3610);
-      let tx = await allMarkets.createMarket(0,1, {gasPrice:1000000});
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:1000000});
       let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
       eventData = findByTxHash(events,tx.tx);
       let gasUsed = eventData.gasUsed;
@@ -190,8 +190,8 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided more than 125% of fast gas and maxGas price, reward should be as per minimum of 125% of fast gas or max gasprice", async function() {
       await chainlinkGasAgg.setLatestAnswer(1250000);
-      await increaseTime(3610);
-      let tx = await allMarkets.createMarket(0,1, {gasPrice:2000000});
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:2000000});
       let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
       eventData = findByTxHash(events,tx.tx);
       let gasUsed = eventData.gasUsed;
