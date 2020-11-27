@@ -426,19 +426,20 @@ contract AllMarkets is Governed {
     /**
     * @dev Deposit and Place prediction on the available options of the market.
     * @param _marketId Index of the market
+    * @param _plotDeposit PLOT amount to deposit
+    * @param _ethDeposit ETH amount to deposit
     * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
     */
-    function depositAndPlacePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
+    function depositAndPlacePrediction(uint _plotDeposit, uint _ethDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
       uint256 plotDeposit;
       if(_asset == plotToken) {
-        plotDeposit = _predictionStake.mul(1e15);
         require(msg.value == 0);
       } else {
-        require(msg.value == _predictionStake);
+        require(msg.value == _ethDeposit);
       }
-      deposit(plotDeposit);
+      deposit(_plotDeposit);
       placePrediction(_marketId, _asset, _predictionStake, _prediction);
     }
 
@@ -615,14 +616,14 @@ contract AllMarkets is Governed {
     function getUserUnusedBalance(address _user) public view returns(uint256, uint256, uint256, uint256){
       uint ethReward;
       uint plotReward;
-      uint len = userData[msg.sender].marketsParticipated.length;
+      uint len = userData[_user].marketsParticipated.length;
       uint[] memory _returnAmount = new uint256[](2);
-      for(uint i = userData[msg.sender].lastClaimedIndex; i < len; i++) {
-        (_returnAmount, , ) = getReturn(msg.sender, userData[msg.sender].marketsParticipated[i]);
+      for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
+        (_returnAmount, , ) = getReturn(_user, userData[_user].marketsParticipated[i]);
         ethReward = ethReward.add(_returnAmount[1]);
         plotReward = plotReward.add(_returnAmount[0]);
       }
-      return (userData[_user].currencyUnusedBalance[plotToken], plotReward, userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS], ethReward);
+      return (userData[_user].currencyUnusedBalance[plotToken], plotReward, userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward);
     }
 
     /**
