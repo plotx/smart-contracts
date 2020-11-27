@@ -481,7 +481,7 @@ contract AllMarkets is Governed {
       }
       _commissionStake = _predictionStake.sub(_commissionStake);
       
-      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_marketId, _prediction, _asset, _commissionStake);
+      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(msg.sender, _marketId, _prediction, _asset, _commissionStake);
       require(predictionPoints > 0);
 
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
@@ -491,11 +491,11 @@ contract AllMarkets is Governed {
     /**
     * @dev Internal function to calculate prediction points  and multiplier
     */
-    function _calculatePredictionPointsAndMultiplier(uint256 _marketId, uint256 _prediction, address _asset, uint64 _stake) internal returns(uint64 predictionPoints){
+    function _calculatePredictionPointsAndMultiplier(address _user, uint256 _marketId, uint256 _prediction, address _asset, uint64 _stake) internal returns(uint64 predictionPoints){
       bool isMultiplierApplied;
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(userData[msg.sender].userMarketData[_marketId].multiplierApplied, _marketId, _prediction, _stake, _asset, getTotalPredictionPoints(_marketId), marketOptionsAvailable[_marketId][_prediction].predictionPoints);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(_user, userData[_user].userMarketData[_marketId].multiplierApplied, _stake, _asset, getTotalPredictionPoints(_marketId), marketOptionsAvailable[_marketId][_prediction].predictionPoints);
       if(isMultiplierApplied) {
-        userData[msg.sender].userMarketData[_marketId].multiplierApplied = true; 
+        userData[_user].userMarketData[_marketId].multiplierApplied = true; 
       }
     }
 
