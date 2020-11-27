@@ -478,7 +478,7 @@ contract AllMarkets is Governed {
         require(_asset == tokenController.bLOTToken());
         require(!userData[msg.sender].userMarketData[_marketId].predictedWithBlot);
         userData[msg.sender].userMarketData[_marketId].predictedWithBlot = true;
-        tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
+        tokenController.swapBLOT(msg.sender, address(this), (10**predictionDecimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
       }
