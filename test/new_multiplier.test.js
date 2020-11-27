@@ -14,7 +14,8 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
-// const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
+const MockChainLinkAggregator = artifacts.require("MockChainLinkAggregator");
+
 const web3 = Market.web3;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
@@ -23,9 +24,10 @@ const latestTime = require("./utils/latestTime").latestTime;
 const encode = require("./utils/encoder.js").encode;
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 const { toHex, toWei, toChecksumAddress } = require("./utils/ethTools");
+const to3Power = (number) => String(parseFloat(number)*1e3)
 
 // Multiplier Sheet
-describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
+describe.only("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
     let masterInstance,
         plotusToken,
         marketConfig,
@@ -39,11 +41,12 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
         mockUniswapFactory,
         weth,
         allMarkets,
-        marketUtility;
+        marketUtility,
+        mockChainLinkAggregator;
     let marketId = 1;
     let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
 
-    contract("AllMarkets", async function([user1, user2, user3, user4, user5]) {
+    contract("AllMarkets", async function([user1, user2, user3, user4, user5, userMarketCreator]) {
         before(async () => {
             masterInstance = await OwnedUpgradeabilityProxy.deployed();
             masterInstance = await Master.at(masterInstance.address);
@@ -83,8 +86,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             marketConfig = await MarketUtility.at(marketConfig.address);
-            allMarkets = await AllMarkets.new();
-            await allMarkets.initiate(plotusToken.address, marketConfig.address);
+            allMarkets = await AllMarkets.deployed();
+            // await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);
             date = Math.round(date);
@@ -93,15 +96,19 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             let utility = await MarketUtility.at("0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2");
             await utility.setAuthorizedAddress(allMarkets.address);
             await mockUniswapV2Pair.sync();
-            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a");
-            await increaseTime(3610);
-            await allMarkets.createMarket(0, 0);
+            // mockChainLinkAggregator = await MockChainLinkAggregator.new();
+            // address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _marketCreationRewards, address _ethFeed, address _btcFeed
+            // await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a", mockChainLinkAggregator.address);
+            marketId = 6;
+            await increaseTime(4*60*60+1);
+            await allMarkets.createMarket(0, 0, { from: userMarketCreator });
+            marketId++;
         });
         it("1.1 Position without locking PLOT tokens", async () => {
-            // await allMarkets.setMockPriceFlag(false);
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            console.log(`MarketId: ${marketId}`);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
             await plotusToken.transfer(user2, toWei("400"));
             await plotusToken.transfer(user3, toWei("100"));
@@ -120,11 +127,11 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             await allMarkets.deposit(toWei(100), { from: user4 });
             await allMarkets.deposit(toWei(10), { from: user5 });
 
-            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 2, { from: user1 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user2 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user3 });
-            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 3, { from: user4 });
-            // await allMarkets.placePrediction(marketId, plotusToken.address, toWei("10"), 3, { from: user5 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("100"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("400"), 2, { from: user2 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("100"), 1, { from: user3 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("100"), 3, { from: user4 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, to3Power("10"), 3, { from: user5 });
             console.error("*** One more case commented!! please uncomment ***");
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
@@ -140,9 +147,9 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser5
             );
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(4 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]) / 1e18;
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]) / 1e18;
@@ -180,11 +187,11 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 (await web3.eth.getBalance(user5)) / 1e18
             );
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+            await allMarkets.withdrawMax(10, { from: user4 });
+            await allMarkets.withdrawMax(10, { from: user5 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -200,19 +207,26 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 (await web3.eth.getBalance(user4)) / 1e18,
                 (await web3.eth.getBalance(user5)) / 1e18
             );
+            
+            // const marketCreatorBalanceBefore = (await plotusToken.balanceOf(userMarketCreator)) / 1e18;
+            // console.log(`Market creator balance before: ${marketCreatorBalanceBefore}`);
+            // await allMarkets.claimCreationReward({from: userMarketCreator})
+            // const marketCreatorBalanceAfter = (await plotusToken.balanceOf(userMarketCreator)) / 1e18;
+            // console.log(`Market creator balance after: ${marketCreatorBalanceAfter}`);
             // assert.equal(predictionPointsBeforeUser1.toFixed(1), (55.5138941).toFixed(1));
             // assert.equal(predictionPointsBeforeUser2.toFixed(1), (932.6334208).toFixed(1));
             // assert.equal(predictionPointsBeforeUser3.toFixed(1), (366.391701).toFixed(1));
             // assert.equal(predictionPointsBeforeUser4.toFixed(1), (170.2426086).toFixed(1));
             // assert.equal(predictionPointsBeforeUser5.toFixed(1), (5.383543979).toFixed(1));
+
         });
         it("1.2 Positions After locking PLOT tokens", async () => {
             await allMarkets.createMarket(0, 0);
             marketId++;
 
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
             await plotusToken.transfer(user2, toWei(400 + 1600));
             await plotusToken.transfer(user3, toWei(100 + 1100));
@@ -246,7 +260,7 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user2 });
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user3 });
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 3, { from: user4 });
-            // await allMarkets.placePrediction(marketId, plotusToken.address, toWei("10"), 3, { from: user5 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("10"), 3, { from: user5 });
             console.error("*** One more case commented!! please uncomment ***");
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
@@ -262,9 +276,9 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser5
             );
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
@@ -322,11 +336,11 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 (await web3.eth.getBalance(user4)) / 1e18,
                 (await web3.eth.getBalance(user5)) / 1e18;
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+            await allMarkets.withdrawMax(10, { from: user4 });
+            await allMarkets.withdrawMax(10, { from: user5 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -415,17 +429,21 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
             let utility = await MarketUtility.at("0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2");
             await utility.setAuthorizedAddress(allMarkets.address);
             await mockUniswapV2Pair.sync();
-            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a");
+            let mockChainLinkAggregator = await MockChainLinkAggregator.new();
+            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a",mockChainLinkAggregator.address);
             await increaseTime(3610);
             await allMarkets.createMarket(0, 0);
             await MockUniswapRouterInstance.setPrice("1000000000000000");
             await marketConfig.setPrice("1000000000000000");
         });
         it("2.1 Position without locking PLOT tokens", async () => {
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
             await allMarkets.deposit(0, { from: user1, value: toWei("10") });
             await allMarkets.deposit(0, { from: user2, value: toWei("10") });
             await allMarkets.deposit(0, { from: user3, value: toWei("10") });
@@ -438,8 +456,12 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
             await allMarkets.placePrediction(marketId, ethAddress, toWei("10"), 1, { from: user3 });
             await allMarkets.placePrediction(marketId, ethAddress, toWei("10"), 3, { from: user4 });
             await allMarkets.placePrediction(marketId, ethAddress, toWei("10"), 3, { from: user5 });
-            // await allMarkets.placePrediction(marketId, ethAddress, toWei("0.2"), 3, { from: user6 });
-            console.error("*** One more case commented!! please uncomment ***");
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("0.2"), 3, { from: user6 });
+            // console.error("*** One more case commented!! please uncomment ***");
+
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 1)));
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 2)));
+            console.log(parseInt(await allMarkets.calculateOptionPrice(marketId, 3)));
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 2)) / 1000;
@@ -456,9 +478,9 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
                 predictionPointsBeforeUser6
             );
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]) / 1e18;
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]) / 1e18;
@@ -501,12 +523,12 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
                 (await web3.eth.getBalance(user6)) / 1e18
             );
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
-            await allMarkets.withdraw(10, { from: user6 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+            await allMarkets.withdrawMax(10, { from: user4 });
+            await allMarkets.withdrawMax(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user6 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -534,9 +556,9 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
             await allMarkets.createMarket(0, 0);
             marketId++;
 
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
             await plotusToken.transfer(user2, toWei(110000));
             await plotusToken.transfer(user3, toWei(1000));
@@ -549,13 +571,13 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
             await plotusToken.approve(tokenController.address, toWei("1000000"), { from: user3 });
             await plotusToken.approve(tokenController.address, toWei("1000000"), { from: user4 });
             await plotusToken.approve(tokenController.address, toWei("1000000"), { from: user5 });
-            await plotusToken.approve(tokenController.address, toWei("1000000"), { from: user5 });
+            await plotusToken.approve(tokenController.address, toWei("1000000"), { from: user6 });
             await tokenController.lock("0x534d", toWei("110000"), 86400 * 30, { from: user1 });
             await tokenController.lock("0x534d", toWei("110000"), 86400 * 30, { from: user2 });
             await tokenController.lock("0x534d", toWei("1000"), 86400 * 30, { from: user3 });
             await tokenController.lock("0x534d", toWei("100000"), 86400 * 30, { from: user4 });
             await tokenController.lock("0x534d", toWei("200000"), 86400 * 30, { from: user5 });
-            // await tokenController.lock("0x534d", toWei("11000"), 86400 * 30, { from: user6 });
+            await tokenController.lock("0x534d", toWei("11000"), 86400 * 30, { from: user6 });
             console.error("*** One more lock commented!! please uncomment ***");
 
             await allMarkets.deposit(0, { from: user1, value: toWei("10") });
@@ -589,9 +611,9 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
                 predictionPointsBeforeUser6
             );
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]) / 1e18;
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]) / 1e18;
@@ -634,12 +656,12 @@ describe("new_Multiplier 2. Multiplier Sheet ETH Prediction", () => {
                 (await web3.eth.getBalance(user6)) / 1e18
             );
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
-            await allMarkets.withdraw(10, { from: user6 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+            await allMarkets.withdrawMax(10, { from: user4 });
+            await allMarkets.withdrawMax(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user6 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -729,15 +751,15 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let utility = await MarketUtility.at("0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2");
             await utility.setAuthorizedAddress(allMarkets.address);
             await mockUniswapV2Pair.sync();
-            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a");
+            let mockChainLinkAggregator = await MockChainLinkAggregator.new();
+            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a",mockChainLinkAggregator.address);
             await increaseTime(3610);
             await allMarkets.createMarket(0, 0);
         });
         it("3.1 Scenario 1: player purchase 2 position in same option, in same currency and wins", async () => {
-
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
             await plotusToken.transfer(user2, toWei("400"));
             await plotusToken.transfer(user3, toWei("400"));
@@ -760,9 +782,9 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
 
             console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
@@ -803,11 +825,11 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
                 (await web3.eth.getBalance(user5)) / 1e18
             );
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+            await allMarkets.withdrawMax(10, { from: user4 });
+            await allMarkets.withdrawMax(10, { from: user5 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
@@ -834,9 +856,9 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await allMarkets.createMarket(0, 0);
             marketId++;
 
-            await marketConfig.setOptionPrice(1, 9);
-            await marketConfig.setOptionPrice(2, 18);
-            await marketConfig.setOptionPrice(3, 27);
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
 
             await plotusToken.transfer(user2, toWei("400"));
             await plotusToken.transfer(user3, toWei("400"));
@@ -853,15 +875,15 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 1, { from: user2 });
             await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user3 });
 
-            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) / 1000;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) / 1000;
 
             console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            await increaseTime(36001);
-            await allMarkets.calculatePredictionResult(1, marketId);
-            await increaseTime(36001);
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
 
             let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
             let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
@@ -890,37 +912,423 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
                 (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
+                (await plotusToken.balanceOf(user3)) / 1e18
             );
             console.log(
                 (await web3.eth.getBalance(user1)) / 1e18,
                 (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
+                (await web3.eth.getBalance(user3)) / 1e18
             );
 
-            await allMarkets.withdraw(10, { from: user1 });
-            await allMarkets.withdraw(10, { from: user2 });
-            await allMarkets.withdraw(10, { from: user3 });
-            await allMarkets.withdraw(10, { from: user4 });
-            await allMarkets.withdraw(10, { from: user5 });
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
 
             console.log(
                 (await plotusToken.balanceOf(user1)) / 1e18,
                 (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
+                (await plotusToken.balanceOf(user3)) / 1e18
             );
             console.log(
                 (await web3.eth.getBalance(user1)) / 1e18,
                 (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+        });
+        it("3.3. Scenario 3", async () => {
+            await allMarkets.createMarket(0, 0);
+            marketId++;
+
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+            await plotusToken.transfer(user3, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
+            await allMarkets.deposit(toWei(500), { from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(toWei(400), { from: user3 });
+
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 1, { from: user2 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
+
+            let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
+            let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
+            let returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][0]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][1]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][1]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][1]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[2]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[2]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[2]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+        });
+        it("3.4. Scenario 4", async () => {
+            await allMarkets.createMarket(0, 0);
+            marketId++;
+
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+            await plotusToken.transfer(user3, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(toWei(400), { from: user3 });
+
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 3, { from: user2 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 2, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
+
+            let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
+            let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
+            let returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][0]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][1]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][1]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][1]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[2]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[2]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[2]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+        });
+        it("3.5. Scenario 5", async () => {
+            await allMarkets.createMarket(0, 0);
+            marketId++;
+
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+            await plotusToken.transfer(user3, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
+            await allMarkets.deposit(toWei(100), { from: user1 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(toWei(400), { from: user3 });
+
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 3, { from: user2 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 1, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await increaseTime(2 * 60 * 60);
+            await allMarkets.postResultMock(1, marketId);
+            await increaseTime(60 * 60);
+
+            let returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][0]);
+            let returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][0]);
+            let returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][0]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[0][1]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[0][1]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[0][1]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            returnUser1 = parseFloat((await allMarkets.getReturn(user1, marketId))[2]);
+            returnUser2 = parseFloat((await allMarkets.getReturn(user2, marketId))[2]);
+            returnUser3 = parseFloat((await allMarkets.getReturn(user3, marketId))[2]);
+            returnUser1 = returnUser1 / 1e18;
+            returnUser2 = returnUser2 / 1e18;
+            returnUser3 = returnUser3 / 1e18;
+            console.log(returnUser1, returnUser2, returnUser3);
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+        });
+        it("3.6. Scenario 6,7 and 8", async () => {
+            await allMarkets.createMarket(0, 2);
+            marketId++;
+            const scenario6MarketId = marketId;
+
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+            await plotusToken.transfer(user3, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
+            await allMarkets.deposit(toWei(100), { from: user1 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(toWei(400), { from: user3 });
+
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("4"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 3, { from: user2 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 1, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await allMarkets.createMarket(0, 0);
+            marketId++;
+            const scenario7MarketId = marketId;
+
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await allMarkets.deposit(toWei(100), { from: user1 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user3 });
+
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 3, { from: user2 });
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 1, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await allMarkets.createMarket(0, 1);
+            marketId++;
+            const scenario8MarketId = marketId;
+            await allMarkets.setOptionPrice(marketId, 1, 9);
+            await allMarkets.setOptionPrice(marketId, 2, 18);
+            await allMarkets.setOptionPrice(marketId, 3, 27);
+
+            await plotusToken.transfer(user2, toWei("400"));
+
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
+            await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
+            await allMarkets.deposit(toWei(100), { from: user1 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user1 });
+            await allMarkets.deposit(toWei(400), { from: user2 });
+            await allMarkets.deposit(0, { value: toWei(4), from: user3 });
+
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("100"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 2, { from: user1 });
+            await allMarkets.placePrediction(marketId, plotusToken.address, toWei("400"), 3, { from: user2 });
+            await allMarkets.placePrediction(marketId, ethAddress, toWei("4"), 1, { from: user3 });
+
+            predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1000;
+            predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1000;
+            predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) / 1000;
+            predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) / 1000;
+
+            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+
+            await increaseTime(3601);
+            let neutralMinValue = (await allMarkets.marketData(scenario8MarketId)).neutralMinValue / 1;
+            let neutralMaxValue = (await allMarkets.marketData(scenario8MarketId)).neutralMaxValue / 1;
+            let betweenNeutral = neutralMaxValue + neutralMinValue / 2;
+            await allMarkets.postResultMock(1, scenario7MarketId);
+            neutralMaxValue = (await allMarkets.marketData(scenario8MarketId)).neutralMaxValue / 1;
+            await allMarkets.postResultMock(neutralMaxValue + 1, scenario8MarketId);
+            await increaseTime(3601);
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
+            );
+
+            await increaseTime(60 * 60 * 24 * 2);
+            await allMarkets.postResultMock(1, scenario6MarketId);
+            await increaseTime(60 * 60 * 24 * 2);
+
+            await allMarkets.withdrawMax(10, { from: user1 });
+            await allMarkets.withdrawMax(10, { from: user2 });
+            await allMarkets.withdrawMax(10, { from: user3 });
+
+            console.log(
+                (await plotusToken.balanceOf(user1)) / 1e18,
+                (await plotusToken.balanceOf(user2)) / 1e18,
+                (await plotusToken.balanceOf(user3)) / 1e18
+            );
+            console.log(
+                (await web3.eth.getBalance(user1)) / 1e18,
+                (await web3.eth.getBalance(user2)) / 1e18,
+                (await web3.eth.getBalance(user3)) / 1e18
             );
         });
     });
