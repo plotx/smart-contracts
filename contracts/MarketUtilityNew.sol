@@ -39,7 +39,7 @@ contract MarketUtilityNew is MarketUtility {
         return (0, isMultiplierApplied);
       }
       uint64 _optionPrice = getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
-      predictionPoints = uint64(_stakeValue.div(1e10).mul(1e3)).div(_optionPrice);
+      predictionPoints = uint64(_stakeValue.div(1e10)).div(_optionPrice);
       if(!multiplierApplied) {
         uint256 _predictionPoints;
         (_predictionPoints, isMultiplierApplied) = checkMultiplier(_asset, _user, _predictionStake.mul(1e10),  predictionPoints, _stakeValue);
@@ -49,9 +49,9 @@ contract MarketUtilityNew is MarketUtility {
 
     function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
       if(totalPredictionPoints > 0) {
-        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
+        _optionPrice = (predictionPointsOnOption).div(totalPredictionPoints) + 1;
       } else {
-        _optionPrice = 100;
+        _optionPrice = 1;
       }
     }
 
