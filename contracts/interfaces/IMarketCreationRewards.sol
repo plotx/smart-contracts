@@ -4,7 +4,7 @@ contract IMarketCreationRewards {
 
     function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external;    
 
-    function depositMarketRewardPoolShare(uint256 _marketId, uint64 _plotShare) external payable;
+    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _plotShare) external payable;
 
     function returnMarketRewardPoolShare(uint256 _marketId) external;
 

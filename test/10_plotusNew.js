@@ -105,7 +105,7 @@ contract("Market", async function(users) {
             await plotusToken.transfer(users[11],toWei(100000));
             await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
             await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
-            await allMarkets.createMarket(0, 0,{from:users[11]});
+            await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
 		});
 
 		it("0.1 Assert values from getData()", async () => {
@@ -184,15 +184,15 @@ contract("Market", async function(users) {
 
 			await allMarkets.postResultMock(1,7);
 
-			await increaseTime(60*60);
+			await increaseTime(60*61);
 
 			for(i=1;i<11;i++)
 			{
 				let reward = await allMarkets.getReturn(users[i],7);
-				console.log("User "+i+" rewards: "+ reward[0][0]/1e3+ "  "+reward[0][1]/1e3);
+				console.log("User "+i+" rewards: "+ (reward[0][0])/1e8+ "  "+reward[0][1]);
 			}
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			console.log("Market creator reward: ", marketCreatorReward[1]/1e18,"  ",marketCreatorReward[2]/1e18);
+			console.log("Market creator reward: ",marketCreatorReward[0],  marketCreatorReward[1]/1e18,"  ",marketCreatorReward[2]/1e18);
 		});
 	});
 });

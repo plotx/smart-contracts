@@ -545,19 +545,24 @@ contract AllMarkets is Governed {
           marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, ethParticipation, 10000);
           tokenParticipation = tokenParticipation.sub(marketCreatorIncentive[0]);
           ethParticipation = ethParticipation.sub(marketCreatorIncentive[1]);
-          marketDataExtended[_marketId].ethAmountToPool = ethParticipation;
-          marketDataExtended[_marketId].tokenAmountToPool = tokenParticipation;
         } else {
           marketCreatorIncentive[0] = _calculatePercentage(_rewardPoolShare, totalReward[0], 10000);
           marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, totalReward[1], 10000);
           totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
           totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
         }
+      } else {
+        if(
+          marketOptionsAvailable[_marketId][marketDataExtended[_marketId].WinningOption].predictionPoints == 0
+        ){
+          marketDataExtended[_marketId].ethAmountToPool = ethParticipation;
+          marketDataExtended[_marketId].tokenAmountToPool = tokenParticipation;
+        }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
 
       _transferAsset(plotToken, address(marketCreationRewards), marketCreatorIncentive[0]);
-      marketCreationRewards.depositMarketRewardPoolShare.value(marketCreatorIncentive[1])(_marketId, marketCreatorIncentive[0]);
+      marketCreationRewards.depositMarketRewardPoolShare.value((10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1]))(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0]));
       emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, marketDataExtended[_marketId].WinningOption, _value, _roundId);
     }
 

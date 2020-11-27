@@ -88,7 +88,7 @@ contract MarketCreationRewards is Governed {
     */
     function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external {
       _checkIfCreatorStaked(_createdBy, _marketId);
-      marketCreationRewardUserData[msg.sender].marketsCreated.push(_marketId);
+      marketCreationRewardUserData[_createdBy].marketsCreated.push(_marketId);
       uint256 gasUsed;
       //Adding buffer gas for below calculations
       gasUsed = 38500;
@@ -96,8 +96,8 @@ contract MarketCreationRewards is Governed {
       uint256 gasPrice = _checkGasPrice();
       uint256 gasCost = gasUsed.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
-      marketCreationRewardUserData[msg.sender].incentives = marketCreationRewardUserData[msg.sender].incentives.add(incentive);
-      emit MarketCreationReward(msg.sender, _marketId, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice, marketCreationRewardData[_marketId].rewardPoolSharePerc);
+      marketCreationRewardUserData[_createdBy].incentives = marketCreationRewardUserData[_createdBy].incentives.add(incentive);
+      emit MarketCreationReward(_createdBy, _marketId, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice, marketCreationRewardData[_marketId].rewardPoolSharePerc);
     }
 
     /**
@@ -115,7 +115,7 @@ contract MarketCreationRewards is Governed {
     * @param _plotShare PLOT reward pool share
     * msg.value ETH reward pool share
     */
-    function depositMarketRewardPoolShare(uint256 _marketId, uint64 _plotShare) external payable {
+    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _plotShare) external payable {
     	uint256 _ethShare = msg.value;
     	marketCreationRewardData[_marketId].ethIncentive = _ethShare;
     	marketCreationRewardData[_marketId].plotIncentive = _plotShare;
@@ -128,7 +128,7 @@ contract MarketCreationRewards is Governed {
     */
     function returnMarketRewardPoolShare(uint256 _marketId) external {
     	_transferAsset(ETH_ADDRESS, msg.sender, marketCreationRewardData[_marketId].ethIncentive);
-		_transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive);
+		  _transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive);
     }
 
     /**
@@ -199,10 +199,9 @@ contract MarketCreationRewards is Governed {
     * @param _marketId Index of market to check threshold
     */
     function _checkIfThresholdReachedForRPS(uint256 _marketId, uint256 plotStaked, uint256 ethStaked) internal view returns(bool) {
-      uint256 ethStaked;
-      uint256 plotStaked;
-      plotStaked = marketUtility.getAssetValueETH(plotToken, plotStaked.mul(1e15));
-      return (plotStaked.add(ethStaked.mul(1e15)) > rewardPoolShareThreshold);
+      uint256 _plotStaked;
+      _plotStaked = marketUtility.getAssetValueETH(plotToken, plotStaked.mul(1e10));
+      return (_plotStaked.add(ethStaked.mul(1e10)) > rewardPoolShareThreshold);
     }
 
     /**
