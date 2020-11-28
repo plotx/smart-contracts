@@ -76,4 +76,8 @@ contract MockConfig is MarketUtilityNew {
             return super.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
         }
     }
+
+    function setMaxPredictionValue(uint256 _maxPredictionAmount) public {
+        maxPredictionAmount = _maxPredictionAmount;
+    }
 }

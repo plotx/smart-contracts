@@ -1,5 +1,6 @@
 pragma solidity 0.5.7;
 
+import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
 import "./external/govblocks-protocol/Governed.sol";
@@ -16,6 +17,11 @@ contract MarketCreationRewards is Governed {
 	event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 plotIncentive, uint256 ethIncentive);
     event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
     event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
+
+    modifier onlyInternal() {
+      IMaster(masterAddress).isInternal(msg.sender);
+      _;
+    }
     
     struct MarketCreationRewardData {
       uint ethIncentive;
@@ -30,7 +36,7 @@ contract MarketCreationRewards is Governed {
       uint256[] marketsCreated;
     }
 	
-	uint64 internal maxRewardPoolPercForMC;
+	  uint64 internal maxRewardPoolPercForMC;
     uint64 internal minRewardPoolPercForMC;
     uint256 internal maxGasPrice;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
@@ -45,25 +51,58 @@ contract MarketCreationRewards is Governed {
     mapping(address => MarketCreationRewardUserData) internal marketCreationRewardUserData; //Of user
 
     /**
+     * @dev Changes the master address and update it's instance
+     */
+    function setMasterAddress() public {
+      OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+      require(msg.sender == proxy.proxyOwner(),"not owner.");
+      IMaster ms = IMaster(msg.sender);
+      masterAddress = msg.sender;
+      plotToken = ms.dAppToken();
+      tokenController = ITokenController(ms.getLatestAddress("TC"));
+      allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
+    }
+
+    /**
     * @dev Function to set inital parameters of contract
-    * @param _plotAddress PLOT token address
-    * @param _tcAddress Token Cntroller address
     * @param _utility MarketUtility address
-    * @param _allMarkets AllMarkets address
     * @param _clGasPriceAggregator Chainlink gas price aggregator address
     */
-    function initialise(address _plotAddress, address _tcAddress, address _utility, address _allMarkets, address _clGasPriceAggregator) external {
-      require(plotToken == address(0));
+    function initialise(address _utility, address _clGasPriceAggregator) external {
+      require(address(clGasPriceAggregator) == address(0));
       clGasPriceAggregator = IChainLinkOracle(_clGasPriceAggregator);
-      tokenController = ITokenController(_tcAddress);
       marketUtility = IMarketUtility(_utility);
-      allMarkets = IAllMarkets(_allMarkets);
-      plotToken = _plotAddress;
       maxGasPrice = 100 * 10**9;
       maxRewardPoolPercForMC = 500; // Raised by 2 decimals
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       plotStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 1 ether;
+    }
+
+    /**
+    * @dev function to update integer parameters of market
+    */
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
+        maxGasPrice = value;
+      } else if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
+        maxRewardPoolPercForMC = uint64(value);
+      } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
+        minRewardPoolPercForMC = uint64(value);
+      } else if(code == "PSFRPS") { // Reward Pool percent for market creator
+        plotStakeForRewardPoolShare = value;
+      } else if(code == "RPSTH") { // Reward Pool percent for market creator
+        rewardPoolShareThreshold = value;
+      }
+    }
+
+    /**
+    * @dev function to update address parameters of market
+    */
+    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
+      if(code == "GASAGG") { // Incentive to be distributed to user for market creation
+        clGasPriceAggregator = IChainLinkOracle(value);
+      }
     }
 
     /**
@@ -86,7 +125,7 @@ contract MarketCreationRewards is Governed {
     * @param gasProvided Gas provided by user 
     * @param _marketId Index of market
     */
-    function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external {
+    function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external onlyInternal {
       _checkIfCreatorStaked(_createdBy, _marketId);
       marketCreationRewardUserData[_createdBy].marketsCreated.push(_marketId);
       uint256 gasUsed;
@@ -115,7 +154,7 @@ contract MarketCreationRewards is Governed {
     * @param _plotShare PLOT reward pool share
     * msg.value ETH reward pool share
     */
-    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _plotShare) external payable {
+    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _plotShare) external payable onlyInternal {
     	uint256 _ethShare = msg.value;
     	marketCreationRewardData[_marketId].ethIncentive = _ethShare;
     	marketCreationRewardData[_marketId].plotIncentive = _plotShare;

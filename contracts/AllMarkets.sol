@@ -197,20 +197,31 @@ contract AllMarkets is Governed {
     }
 
     /**
+     * @dev Changes the master address and update it's instance
+     */
+    function setMasterAddress() public {
+      OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+      require(msg.sender == proxy.proxyOwner(),"not owner.");
+      IMaster ms = IMaster(msg.sender);
+      masterAddress = msg.sender;
+      plotToken = ms.dAppToken();
+      governance = IGovernance(ms.getLatestAddress("GV"));
+      tokenController = ITokenController(ms.getLatestAddress("TC"));
+    }
+
+    /**
     * @dev Start the initial market and set initial variables.
     */
-    function addInitialMarketTypesAndStart(address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _marketCreationRewards, address _ethFeed, address _btcFeed) external {
+    function addInitialMarketTypesAndStart(address _marketCreationRewards,address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
+      
+      marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
       
       totalOptions = 3;
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
-      plotToken = _plot;
       marketUtility = IMarketUtility(_marketUtility);
       ETH_ADDRESS = _ethAddress;
-      tokenController = ITokenController(_tc);
-      governance = IGovernance(_gv);
-      marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
 
       commissionPerc[ETH_ADDRESS] = 10;
       commissionPerc[plotToken] = 5;
