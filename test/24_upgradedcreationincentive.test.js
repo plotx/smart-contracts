@@ -72,6 +72,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
     chainlinkGasAgg =  await MockChainLinkGasPriceAgg.deployed();
 
+    await plotusToken.transfer(allMarkets.address, toWei(100000));
     newUtility = await MarketUtility.new();
     existingMarkets = await plotusNewInstance.getOpenMarkets();
     actionHash = encode("upgradeContractImplementation(address,address)", marketConfig.address, newUtility.address);
@@ -176,6 +177,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 
     it("If gas is provided more than 125% of fast gas, reward should be as per 125% fast gas", async function() {
       await increaseTime(4*3600);
+      await chainlinkGasAgg.setLatestAnswer(450000);
       let tx = await allMarkets.createMarket(0,0, {gasPrice:1000000});
       let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
       eventData = findByTxHash(events,tx.tx);
@@ -195,7 +197,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
       eventData = findByTxHash(events,tx.tx);
       let gasUsed = eventData.gasUsed;
-      let maxGas = 100;
+      let maxGas = 100*10**9;
       let gasPrice = Math.min(maxGas, 1250000*1.25);
       estimatedGasCost = gasPrice*gasUsed;
       let costInETH = estimatedGasCost;
