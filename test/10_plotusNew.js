@@ -66,8 +66,8 @@ contract("Market", async function(users) {
 			timeNow = await latestTime();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
 
-			allMarkets = await AllMarkets.deployed();
-			marketIncentives = await MarketCreationRewards.deployed();
+			allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+			marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
 
 			marketData = await marketInstance.getData();
 			// expireTme = parseFloat(marketData._expireTime);
