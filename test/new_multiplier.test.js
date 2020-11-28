@@ -81,7 +81,7 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
-            allMarkets = await AllMarkets.deployed();
+            allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             // await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);
@@ -286,7 +286,7 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
             actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
-            allMarkets = await AllMarkets.deployed();
+            allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             // await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);
@@ -480,7 +480,7 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
-            allMarkets = await AllMarkets.deployed();
+            allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             // await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);
@@ -1020,7 +1020,7 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 1, { from: user3 });
             
             await mockMarketConfig.setNextOptionPrice(180);
-            await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 1, { from: user1 });
+            await allMarkets.placePrediction(marketId, ethAddress, to8Power("4"), 2, { from: user1 });
 
             await mockMarketConfig.setNextOptionPrice(270);
             await allMarkets.placePrediction(marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
@@ -1072,72 +1072,69 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             await increaseTime(8 * 60 * 60);
             let neutralMinValue = (await allMarkets.getMarketData(scenario7MarketId)).neutralMinValue / 1;
             let neutralMaxValue = (await allMarkets.getMarketData(scenario7MarketId)).neutralMaxValue / 1;
-            let betweenNeutral = neutralMaxValue + neutralMinValue / 2;
+            let betweenNeutral = neutralMaxValue - 100;
             await allMarkets.postResultMock(String(betweenNeutral), scenario7MarketId);
             neutralMaxValue = (await allMarkets.getMarketData(scenario8MarketId)).neutralMaxValue / 1;
             await allMarkets.postResultMock(String(neutralMaxValue + 1), scenario8MarketId);
             await increaseTime(8 * 60 * 60);
 
 
-            let ethBalanceBeforeUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
-            let ethBalanceBeforeUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
-            let ethBalanceBeforeUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
+            let plotBalanceBeforeUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
+            let plotBalanceBeforeUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
+            let plotBalanceBeforeUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
 
-            let plotBalanceBeforeUser1 = (await web3.eth.getBalance(user1)) / 1e18;
-            let plotBalanceBeforeUser2 = (await web3.eth.getBalance(user2)) / 1e18;
-            let plotBalanceBeforeUser3 = (await web3.eth.getBalance(user3)) / 1e18;
+            let ethBalanceBeforeUser1 = (await web3.eth.getBalance(user1)) / 1e18;
+            let ethBalanceBeforeUser2 = (await web3.eth.getBalance(user2)) / 1e18;
+            let ethBalanceBeforeUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
             await allMarkets.withdrawMax(10, { from: user1 });
             await allMarkets.withdrawMax(10, { from: user2 });
             await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            let ethBalanceAfterUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
-            let ethBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
-            let ethBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
+            let plotBalanceAfterUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
+            let plotBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
+            let plotBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
 
-            let plotBalanceAfterUser1 = (await web3.eth.getBalance(user1)) / 1e18;
-            let plotBalanceAfterUser2 = (await web3.eth.getBalance(user2)) / 1e18;
-            let plotBalanceAfterUser3 = (await web3.eth.getBalance(user3)) / 1e18;
+            let ethBalanceAfterUser1 = (await web3.eth.getBalance(user1)) / 1e18;
+            let ethBalanceAfterUser2 = (await web3.eth.getBalance(user2)) / 1e18;
+            let ethBalanceAfterUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
             assert.equal((ethBalanceAfterUser1 - ethBalanceBeforeUser1).toFixed(2), (7.97202).toFixed(2));
             assert.equal((ethBalanceAfterUser2 - ethBalanceBeforeUser2).toFixed(2), (7.95204).toFixed(2));
-            assert.equal((ethBalanceAfterUser3 - ethBalanceBeforeUser3).toFixed(2), (0).toFixed(2));
             assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (497.25125).toFixed(2))
             assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (499.25025).toFixed(2))
-            assert.equal((plotBalanceAfterUser3-plotBalanceBeforeUser3).toFixed(2), (0).toFixed(2))
 
-            await increaseTime(60 * 60 * 24 * 2);
+            await increaseTime(60 * 60 * 24 * 14);
             await allMarkets.postResultMock(1, scenario6MarketId);
-            await increaseTime(60 * 60 * 24 * 2);
+            await increaseTime(60 * 60 * 24 * 6);
+
+            plotBalanceBeforeUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
+            plotBalanceBeforeUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
+            plotBalanceBeforeUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
+            ethBalanceBeforeUser1 = (await web3.eth.getBalance(user1)) / 1e18;
+            ethBalanceBeforeUser2 = (await web3.eth.getBalance(user2)) / 1e18;
+            ethBalanceBeforeUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
             await allMarkets.withdrawMax(10, { from: user1 });
             await assertRevert( allMarkets.withdrawMax(10, { from: user2 }));
             await allMarkets.withdrawMax(10, { from: user3 });
 
-            ethBalanceBeforeUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
-            ethBalanceBeforeUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
-            ethBalanceBeforeUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
-            plotBalanceBeforeUser1 = (await web3.eth.getBalance(user1)) / 1e18;
-            plotBalanceBeforeUser2 = (await web3.eth.getBalance(user2)) / 1e18;
-            plotBalanceBeforeUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
-            await allMarkets.withdrawMax(10, { from: user1 });
-            await allMarkets.withdrawMax(10, { from: user2 });
-            await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
+            // await allMarkets.withdrawMax(10, { from: user1 });
+            // await allMarkets.withdrawMax(10, { from: user2 });
+            // await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            ethBalanceAfterUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
-            ethBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
-            ethBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
+            plotBalanceAfterUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
+            plotBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
+            plotBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
 
-            plotBalanceAfterUser1 = (await web3.eth.getBalance(user1)) / 1e18;
-            plotBalanceAfterUser2 = (await web3.eth.getBalance(user2)) / 1e18;
-            plotBalanceAfterUser3 = (await web3.eth.getBalance(user3)) / 1e18;
+            ethBalanceAfterUser1 = (await web3.eth.getBalance(user1)) / 1e18;
+            ethBalanceAfterUser2 = (await web3.eth.getBalance(user2)) / 1e18;
+            ethBalanceAfterUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
             assert.equal((ethBalanceAfterUser1 - ethBalanceBeforeUser1).toFixed(2), (0.7955223681).toFixed(2));
-            assert.equal((ethBalanceAfterUser2 - ethBalanceBeforeUser2).toFixed(2), (0).toFixed(2));
-            assert.equal((ethBalanceAfterUser3 - ethBalanceBeforeUser3).toFixed(2), (0.7955223681).toFixed(2));
+            assert.equal((ethBalanceAfterUser3 - ethBalanceBeforeUser3).toFixed(2), (7.176497632).toFixed(2));
             assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (179.5420527).toFixed(2))
-            assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (0).toFixed(2))
             assert.equal((plotBalanceAfterUser3-plotBalanceBeforeUser3).toFixed(2), (318.2089473).toFixed(2))
 
         });

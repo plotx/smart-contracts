@@ -18,6 +18,8 @@ const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const Vesting = artifacts.require('Vesting');
+const { assert } = require("chai");
+const encode1 = require('../test/utils/encoder.js').encode1;
 const BN = web3.utils.BN;
 
 module.exports = function(deployer, network, accounts){
@@ -73,8 +75,90 @@ module.exports = function(deployer, network, accounts){
       let mcr = await deployer.deploy(MarketCreationRewards);
       let _marketUtility = await plotus.marketUtility();
       let mockchainLinkGas = await deployer.deploy(MockchainLinkGas);
-      await mcr.initialise(plotusToken.address, tc.address, _marketUtility, allMarkets.address, mockchainLinkGas.address)
-      await allMarkets.addInitialMarketTypesAndStart(plotusToken.address, tc.address, gvAddress, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mcr.address, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+
+      let gv = await Governance.at(gvAddress);
+      // Creating proposal for adding new proxy internal contract
+      let actionHash = encode1(
+        ['bytes2','address'],
+        [web3.utils.toHex('AM'),
+        allMarkets.address]
+      );
+
+      let p = await gv.getProposalLength();
+      await gv.createProposal("proposal", "proposal", "proposal", 0);
+      let canClose = await gv.canCloseProposal(p);
+      assert.equal(parseFloat(canClose),0);
+      await gv.categorizeProposal(p, 9, 0);
+      await gv.submitProposalWithSolution(p, "proposal", actionHash);
+      await gv.submitVote(p, 1)
+      await increaseTime(604800);
+      await gv.closeProposal(p);
+      await increaseTime(604800);
+      await gv.triggerAction(p);
+
+      actionHash = encode1(
+        ['bytes2','address'],
+        [web3.utils.toHex('MC'),
+        mcr.address]
+      );
+
+      p = await gv.getProposalLength();
+      await gv.createProposal("proposal", "proposal", "proposal", 0);
+      canClose = await gv.canCloseProposal(p);
+      assert.equal(parseFloat(canClose),0);
+      await gv.categorizeProposal(p, 9, 0);
+      await gv.submitProposalWithSolution(p, "proposal", actionHash);
+      await gv.submitVote(p, 1)
+      await increaseTime(604800);
+      await gv.closeProposal(p);
+      await increaseTime(604800);
+      await gv.triggerAction(p);
+
+      let allMarketsProxy = await OwnedUpgradeabilityProxy.at(
+        await master.getLatestAddress(web3.utils.toHex('AM'))
+      );
+      assert.equal(allMarkets.address, await allMarketsProxy.implementation());
+
+      let mcrProxy = await OwnedUpgradeabilityProxy.at(
+        await master.getLatestAddress(web3.utils.toHex('MC'))
+      );
+      assert.equal(mcr.address, await mcrProxy.implementation());
+
+      allMarkets = await AllMarkets.at(allMarketsProxy.address);
+      mcr = await MarketCreationRewards.at(mcrProxy.address);
+
+      assert.equal(await master.isInternal(allMarkets.address), true);
+      assert.equal(await master.isInternal(mcr.address), true);
+      await mcr.initialise(_marketUtility, mockchainLinkGas.address)
+      await allMarkets.addInitialMarketTypesAndStart(mcr.address, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
   });
 };
 
+function increaseTime(duration) {
+  const id = Date.now();
+
+  return new Promise((resolve, reject) => {
+    web3.currentProvider.send(
+      {
+        jsonrpc: '2.0',
+        method: 'evm_increaseTime',
+        params: [duration],
+        id: id
+      },
+      err1 => {
+        if (err1) return reject(err1);
+
+        web3.currentProvider.send(
+          {
+            jsonrpc: '2.0',
+            method: 'evm_mine',
+            id: id + 1
+          },
+          (err2, res) => {
+            return err2 ? reject(err2) : resolve(res);
+          }
+        );
+      }
+    );
+  });
+}
