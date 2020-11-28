@@ -59,7 +59,8 @@ contract("AllMarket", async function([user1, user2, user3, user4]) {
         marketConfig = await plotusNewInstance.marketUtility();
         marketConfig = await MockConfig.at(marketConfig);
         weth = await MockWeth.deployed();
-        allMarkets = await AllMarkets.deployed();
+        allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+        
         await marketConfig.setWeth(weth.address);
 
         newUtility = await MarketUtility.new();

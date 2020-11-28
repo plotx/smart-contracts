@@ -87,8 +87,9 @@ contract("Market", async function(users) {
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             marketConfig = await MarketUtility.at(marketConfig.address);
-            allMarkets = await AllMarkets.new();
-            await allMarkets.initiate(plotusToken.address, marketConfig.address);
+            
+			allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+
             let date = await latestTime();
             await increaseTime(3610);
             date = Math.round(date);
@@ -98,7 +99,6 @@ contract("Market", async function(users) {
             await utility.setAuthorizedAddress(allMarkets.address);
             // await mockUniswapV2Pair.sync();
             let mockChainLinkGasPriceAgg = await MockChainLinkGasPriceAgg.new();
-            await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a", mockChainLinkGasPriceAgg.address);
             await increaseTime(3610);
             await allMarkets.createMarket(0, 0,{from:users[11]});
 		});

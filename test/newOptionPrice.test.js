@@ -82,7 +82,7 @@ describe("Sheet- New Pricing.", () => {
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             marketConfig = await MockConfig.at(marketConfig.address);
-            allMarkets = await AllMarkets.new();
+            allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             var date = Date.now();
             date = Math.round(date / 1000) + 10000;
             await marketConfig.setInitialCummulativePrice();

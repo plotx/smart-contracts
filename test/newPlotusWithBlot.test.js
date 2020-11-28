@@ -83,7 +83,7 @@ describe("newPlotusWithBlot", () => {
             actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
-            allMarkets = await AllMarkets.deployed();
+            allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")))
             // await allMarkets.initiate(plotusToken.address, marketConfig.address);
             let date = await latestTime();
             await increaseTime(3610);

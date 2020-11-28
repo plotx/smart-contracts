@@ -68,8 +68,8 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
 		marketConfig = await MockConfig.at(marketConfig);
 		weth = await MockWeth.deployed();
 		await marketConfig.setWeth(weth.address);
-    allMarkets = await AllMarkets.deployed();
-    marketIncentives = await MarketCreationRewards.deployed();
+    allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+    marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
     chainlinkGasAgg =  await MockChainLinkGasPriceAgg.deployed();
 
     newUtility = await MarketUtility.new();
