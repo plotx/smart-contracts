@@ -185,11 +185,11 @@ describe("Sheet- New Pricing.", () => {
 
             assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1e3), 100402);
             assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1e3), 99950999);
-            assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 3)) / 1e3), 9780582);
+            assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 3)) / 1e3), Math.round(9780582.859));
 
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1, (Math.round(1.000922791 * 1e2) / 1e2) * 1e2);
-            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1, (Math.round(1.90 * 1e2) / 1e2) * 1e2);
-            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1, (Math.round(1.089847958 * 1e2) / 1e2) * 1e2);
+            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1, (Math.round(1.91 * 1e2) / 1e2) * 1e2);
+            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1, (Math.round(1.08 * 1e2) / 1e2) * 1e2);
         });
         it("Test Case 8", async () => {
             await allMarkets.deposit(0, { from: user1, value: toWei("1456.98") });
@@ -197,9 +197,9 @@ describe("Sheet- New Pricing.", () => {
 
             assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 1)) / 1e3), 1554583);
             assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1e3), 99950999);
-            assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 3)) / 1e3), 9780582);
+            assert.equal(Math.round((await allMarkets.getUserPredictionPoints(user1, marketId, 3)) / 1e3), Math.round(9780582.859));
 
-            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1, (Math.round(1.014099663 * 1e2) / 1e2) * 1e2);
+            assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[0] / 1, (Math.round(1.01 * 1e2) / 1e2) * 1e2);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1, (Math.round(1.89 * 1e2) / 1e2) * 1e2);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1, (Math.round(1.08 * 1e2) / 1e2) * 1e2);
         });
