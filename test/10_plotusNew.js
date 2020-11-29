@@ -46,8 +46,8 @@ let timeNow,
 
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
-contract("Market", async function(users) {
-	describe("Place the predictions with ether", async () => {
+contract("Rewards-Market", async function(users) {
+	describe("Scenario1", async () => {
 		it("0.0", async () => {
 			masterInstance = await OwnedUpgradeabilityProxy.deployed();
 			masterInstance = await Master.at(masterInstance.address);
@@ -61,7 +61,6 @@ contract("Market", async function(users) {
 			plotusNewInstance = await Plotus.at(plotusNewAddress);
 			marketConfig = await plotusNewInstance.marketUtility();
 			marketConfig = await MarketConfig.at(marketConfig);
-			// console.log(await plotusNewInstance.getOpenMarkets());
 			openMarkets = await plotusNewInstance.getOpenMarkets();
 			timeNow = await latestTime();
 			marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
@@ -70,9 +69,6 @@ contract("Market", async function(users) {
 			marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
 
 			marketData = await marketInstance.getData();
-			// expireTme = parseFloat(marketData._expireTime);
-			// console.log("expireTme", expireTme);
-			// console.log("timeNow", timeNow);
 
 			priceOption1 = parseFloat(await marketInstance.getOptionPrice(1));
 			priceOption2 = parseFloat(await marketInstance.getOptionPrice(2));
@@ -102,10 +98,12 @@ contract("Market", async function(users) {
             // await mockUniswapV2Pair.sync();
             let mockChainLinkGasPriceAgg = await MockChainLinkGasPriceAgg.new();
             await increaseTime(5 * 3600);
+            await plotusToken.transfer(marketIncentives.address,toWei(100000));
             await plotusToken.transfer(users[11],toWei(100000));
             await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
             await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
+            await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
 
 		it("0.1 Assert values from getData()", async () => {
@@ -125,19 +123,23 @@ contract("Market", async function(users) {
 			assert.equal(parseFloat(marketData._predictionTime), 3600);
 		});
 
-		it("Scenario 1", async () => {
+		it("Scenario 1: Few user wins", async () => {
 			// setting option price in eth
 			await allMarkets.setOptionPrice(7, 1, 9);
 			await allMarkets.setOptionPrice(7, 2, 18);
 			await allMarkets.setOptionPrice(7, 3, 27);
 			let i;
+			let unusedEth = [""];
+			let unusedPlot = [""];
 			for(i=1; i<11;i++){
 
 				await plotusToken.transfer(users[i], toWei(2000));
 			    await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[i] });
 			    await allMarkets.deposit(toWei(1000), { value: toWei("3"), from: users[i] });
 			    await plotusToken.approve(tokenController.address, toWei(100000), { from: users[i] });
-
+			    let _unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+			    unusedPlot.push(_unusedBal[0]/1e18);
+			    unusedEth.push(_unusedBal[2]/1e18);
 			}
 
 			await marketConfig.setPrice(toWei(0.001));
@@ -168,16 +170,23 @@ contract("Market", async function(users) {
 			await marketConfig.setNextOptionPrice(27);
 			await allMarkets.placePrediction(7, ethAddress, 1e8, 3, { from: users[9] });
 			await marketConfig.setPrice(toWei(0.012));
-			await marketConfig.setNextOptionPrice(9);
+			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.placePrediction(7, ethAddress, 2*1e8, 2, { from: users[10] });
 
 			let options=[2,2,2,3,1,1,2,3,3,2];
 
+			let betpoints = [5.55277,44.42222,11.66083,68.29916,111,222,55.5,111,37,111];
+
+			let usedEth = [0,0,0,0,1,2,1,3,1,2];
+			let usedPlot = [100,400,210,123,0,0,0,0,0,0];
+
 			for(i=1;i<11;i++)
 			{
-				console.log("user "+i+" bet points: ",(await allMarkets.getUserPredictionPoints(users[i],7,options[i-1]))/1);
+				let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],7,options[i-1]))/1e5;
+				assert.equal(betPointUser,betpoints[i-1]);
 				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
-				console.log("user "+i+" unused balance: ",unusedBal[0]/1e18, "   ", unusedBal[2]/1e18);
+				assert.equal(unusedPlot[i]-unusedBal[0]/1e18,usedPlot[i-1]);
+				assert.equal(unusedEth[i]-unusedBal[2]/1e18,usedEth[i-1]);
 			}
 
 			await increaseTime(5*60*60);
@@ -186,13 +195,45 @@ contract("Market", async function(users) {
 
 			await increaseTime(60*61);
 
+			let userRewardEth = [0,0,0,0,3.271725,6.54345,0,0,0,0];
+			let userRewardPlot = [0,0,0,0,270.5896375,541.179275,0,0,0,0];
+
 			for(i=1;i<11;i++)
 			{
 				let reward = await allMarkets.getReturn(users[i],7);
-				console.log("User "+i+" rewards: "+ (reward[0][0])/1e8+ "  "+reward[0][1]);
+				assert.equal(reward[0][0]/1e8,userRewardPlot[i-1]);
+				assert.equal(reward[0][1]/1e8,userRewardEth[i-1]);
+				let ethBalBefore = await web3.eth.getBalance(users[i]);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+				await allMarkets.withdrawMax(100,{from:users[i]});
+				let ethBalAfter = await web3.eth.getBalance(users[i]);
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((ethBalAfter-ethBalBefore)/1e18),Math.round((unusedEth[i]-usedEth[i-1])/1+reward[0][1]/1e8));
+				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((unusedPlot[i]-usedPlot[i-1])/1+reward[0][0]/1e8));
 			}
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			console.log("Market creator reward: ",marketCreatorReward[0],  marketCreatorReward[1]/1e18,"  ",marketCreatorReward[2]/1e18);
+			assert.equal(0.174825,marketCreatorReward[2]/1e18);
+			assert.equal(208145875,Math.round(marketCreatorReward[1]/1e11));
+
+			let ethBalBeforeCreator = await web3.eth.getBalance(users[11]);
+			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
+
+			let _gasPrice = 15000000000;
+
+			let tx1 = await marketIncentives.claimCreationReward(100,{from:users[11],gasPrice:_gasPrice});
+
+			let gasUsed = tx1.receipt.gasUsed;
+
+			let gascost = _gasPrice * gasUsed;
+
+
+			let ethBalAfterCreator = await web3.eth.getBalance(users[11]);
+			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
+
+			assert.equal(Math.round((ethBalAfterCreator-ethBalBeforeCreator/1+gascost)/1e12),174825);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),208145875);
+
+				
 		});
 	});
 });
