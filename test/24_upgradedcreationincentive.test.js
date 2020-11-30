@@ -786,7 +786,7 @@ contract("Market Creation Incentive", async function([
         await increaseTime(8 * 60 * 60);
         let tx = await allMarkets.createMarket(0, 0, { gasPrice: 450000, from: user2 });
         marketId++;
-        market1 = 1;
+        market1 = marketId;
         await marketIncentives.claimCreationReward(5, { from: user2 });
 
         await plotusToken.transfer(user7, toWei(1000));
@@ -898,7 +898,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.raiseDispute(market2, 1400000000000, "raise dispute", "this is description", "this is solution hash", { from: user10 });
     });
     it("Should be able to claim market 1 rewards", async function() {
-        await increaseTime(8 * 60 * 60);
+        await increaseTime(2 * 60 * 60);
         let oldBalance = parseFloat(await plotusToken.balanceOf(user2));
         let oldBalanceEth = parseFloat(await web3.eth.getBalance(user2));
         tx = await marketIncentives.claimCreationReward(100, { from: user2 });
@@ -910,7 +910,6 @@ contract("Market Creation Incentive", async function([
     });
     it("Create Market 4", async function() {
         await chainlinkGasAgg.setLatestAnswer(450000);
-        await increaseTime(3600);
         let tx = await allMarkets.createMarket(0, 0, { gasPrice: 450000, from: user2 });
         await marketIncentives.claimCreationReward(5, { from: user2 });
         marketId++;
@@ -942,8 +941,9 @@ contract("Market Creation Incentive", async function([
         ethExpectedForMarket4 = (rewardPoolEth * rewardPoolSharePerc) / 10000;
     });
     it("Should be able to claim market 4 rewards", async function() {
-        await increaseTime(7200);
-        await increaseTime(3600);
+		await increaseTime(8*60*60);
+        await allMarkets.postResultMock(1, market4);
+		await increaseTime(2*60*60);
         let oldBalance = parseFloat(await plotusToken.balanceOf(user2));
         let oldBalanceEth = parseFloat(await web3.eth.getBalance(user2));
         tx = await marketIncentives.claimCreationReward(100, { from: user2 });
@@ -992,9 +992,9 @@ contract("Market Creation Incentive", async function([
     });
 
     it("Should be able to claim market 3 rewards", async function() {
-        await increaseTime(604800);
-        let openMarkets = await plotusNewInstance.getOpenMarkets();
-        await increaseTime(604800);
+        await increaseTime(2*24*60*60);
+		await allMarkets.postResultMock(1, market3);
+        await increaseTime(2*24*60*60);
         let oldBalance = parseFloat(await plotusToken.balanceOf(user2));
         let oldBalanceEth = parseFloat(await web3.eth.getBalance(user2));
         tx = await marketIncentives.claimCreationReward(100, { from: user2 });
