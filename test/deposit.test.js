@@ -15,6 +15,7 @@ const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
 const ProposalCategory = artifacts.require("ProposalCategory");
+const MarketCreationRewards = artifacts.require('MarketCreationRewards');
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const assertRevert = require("./utils/assertRevert").assertRevert;
@@ -43,7 +44,8 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         mockUniswapV2Pair,
         mockUniswapFactory,
         weth,
-        allMarkets;
+        allMarkets,
+        marketIncentives;
     before(async () => {
         masterInstance = await OwnedUpgradeabilityProxy.deployed();
         masterInstance = await Master.at(masterInstance.address);
@@ -62,6 +64,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         marketConfig = await MockConfig.at(marketConfig);
         weth = await MockWeth.deployed();
         allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+        marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
         
         await marketConfig.setWeth(weth.address);
 
@@ -253,15 +256,15 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
 
         await allMarkets.createMarket(0, 0,{from:user4});
 
-        await allMarkets.placePrediction(9, ethAddress, 0.1*1e8, 2, { from: user2 });
-        await allMarkets.placePrediction(9, plotusToken.address, 200*1e8, 1, { from: user5 });
+        await allMarkets.placePrediction(9, ethAddress, 0.1*1e8, 1, { from: user2 });
+        await allMarkets.placePrediction(9, plotusToken.address, 200*1e8, 2, { from: user5 });
 
         await increaseTime(4 * 3600);
 
         await allMarkets.createMarket(1, 0,{from:user4});
 
-        await allMarkets.placePrediction(10, plotusToken.address, 500*1e8, 1, { from: user2 });
-        await allMarkets.placePrediction(10, ethAddress, 1e8, 2, { from: user5 });
+        await allMarkets.placePrediction(10, plotusToken.address, 500*1e8, 2, { from: user2 });
+        await allMarkets.placePrediction(10, ethAddress, 1e8, 1, { from: user5 });
 
 
         await allMarkets.createMarket(0, 0,{from:user4});
@@ -311,24 +314,23 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         await increaseTime(4 * 3600);
 
         await allMarkets.postResultMock(1,8);
-        await allMarkets.postResultMock(2,9);
+        await allMarkets.postResultMock(1,9);
 
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
-        assert.equal(unusedBal[0]/1+unusedBal[2],0);
-        assert.equal(unusedBal[1]/1+unusedBal[3],0);
+        assert.equal(unusedBal[0]/1+unusedBal[1],0);
+        assert.equal(unusedBal[2]/1+unusedBal[3],0);
 
 
         await governance.setAllMarketsAddress();
 
         await plotusToken.approve(allMarkets.address,toWei(500));
         let proposalId = await governance.getProposalLength();
-        await allMarkets.raiseDispute(9, "1","","","");
+        await allMarkets.raiseDispute(9, "10000000000000000000000000","","","");
 
         await increaseTime(3610);
-
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
-        assert.equal(unusedBal[0]/1+unusedBal[2],toWei(99.9));
-        assert.equal(unusedBal[1]/1+unusedBal[3],toWei(0.9));
+        assert.equal(unusedBal[0]/1+unusedBal[1]/1,toWei(99.95));
+        assert.equal(unusedBal[2]/1+unusedBal[3]/1,toWei(0.994005));
 
         ethBalBefore = await web3.eth.getBalance(user2);
         plotBalBefore = await plotusToken.balanceOf(user2);
@@ -342,24 +344,28 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         ethBalAfter = await web3.eth.getBalance(user2);
         plotBalAfter = await plotusToken.balanceOf(user2);
 
-        assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.9*1e13);
-        assert.equal(plotBalAfter-plotBalBefore,toWei(99.9));
+        assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.994005*1e13);
+        assert.equal(plotBalAfter-plotBalBefore,toWei(99.95));
 
         await assertRevert(allMarkets.withdrawMax(100,{from:user2}));
 
         await increaseTime(5*3600);
 
-        await allMarkets.postResultMock(2,10);
+        await allMarkets.postResultMock(1,10);
+
+        await increaseTime(3610);
 
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
-        assert.equal(unusedBal[0]/1+unusedBal[2],0);
-        assert.equal(unusedBal[1]/1+unusedBal[3],0);
+        assert.equal(unusedBal[0]/1+unusedBal[1]/1,0);
+        assert.equal(unusedBal[2]/1+unusedBal[3]/1,0);
 
         await allMarkets.postResultMock(1,11);
 
+        await increaseTime(3610);
+
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
-        assert.equal(unusedBal[0]/1+unusedBal[2],toWei(199.8));
-        assert.equal(unusedBal[1]/1+unusedBal[3],toWei(0.4995));
+        assert.equal(unusedBal[0]/1+unusedBal[1]/1,toWei(199.9));
+        assert.equal(unusedBal[2]/1+unusedBal[3]/1,toWei(0.4995));
 
         ethBalBefore = await web3.eth.getBalance(user2);
         plotBalBefore = await plotusToken.balanceOf(user2);
@@ -374,7 +380,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         plotBalAfter = await plotusToken.balanceOf(user2);
 
         assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.4995*1e13);
-        assert.equal(plotBalAfter-plotBalBefore,toWei(199.8));
+        assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e17),1999);
 
 
         await plotusToken.transfer(user6, "20000000000000000000000");
@@ -394,13 +400,13 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         await increaseTime(604800);
         await governance.closeProposal(proposalId);
         await increaseTime(86401);
-        assert.equal((await allMarkets.getMarketResults(7))[0]/1, 3);
+        assert.equal((await allMarkets.getMarketResults(9))[0]/1, 3);
 
 
 
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
-        assert.equal(unusedBal[0]/1+unusedBal[2],0);
-        assert.equal(unusedBal[1]/1+unusedBal[3],0);
+        assert.equal(unusedBal[0]/1+unusedBal[1]/1,0);
+        assert.equal(unusedBal[2]/1+unusedBal[3]/1,0);
 
     });
 
