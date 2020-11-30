@@ -169,7 +169,7 @@ contract("Rewards-Market", async function(users) {
 
 			await allMarkets.postResultMock(1,7);
 
-			await increaseTime(60*60);
+			await increaseTime(60*60 +1);
 
 			let userRewardEth = [0,0,0,0,0.999,1.998,0.999,2.997,0.999,1.998];
 			let userRewardPlot = [99.95,399.8,209.895,122.9385,0,0,0,0,0,0];
@@ -263,7 +263,7 @@ contract("Rewards-Market", async function(users) {
 
 			await allMarkets.postResultMock(1,8);
 
-			await increaseTime(60*60);
+			await increaseTime(60*60+1);
 
 			let userRewardEth = [0,0,0,0,0,0];
 			let userRewardPlot = [0,0,0,0,0,0];
@@ -276,7 +276,10 @@ contract("Rewards-Market", async function(users) {
 
 				let ethBalBefore = await web3.eth.getBalance(users[i]);
 				let plotBalBefore = await plotusToken.balanceOf(users[i]);
-				await allMarkets.withdrawMax(100,{from:users[i]});
+
+				let pendingData = await allMarkets.getUserUnusedBalance(users[i]);
+				if(pendingData[0]/1+pendingData[1]>0 || pendingData[2]/1+pendingData[3]>0)
+					await allMarkets.withdrawMax(100,{from:users[i]});
 				let ethBalAfter = await web3.eth.getBalance(users[i]);
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((ethBalAfter-ethBalBefore)/1e18),Math.round((unusedEth[i]-usedEth[i-1]/10)/1+reward[0][1]/1e8));
