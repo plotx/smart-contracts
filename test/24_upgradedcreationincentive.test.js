@@ -670,12 +670,13 @@ contract("Market Creation Incentive", async function([
 
         await plotusToken.transfer(user10, toWei(10000));
         await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user10 });
+        p1 = await governance.getProposalLength();
 
         await allMarkets.raiseDispute(marketId, String(1400000000000), "raise dispute", "this is description", "this is solution hash", {
             from: user10,
         });
         await increaseTime(604800);
-        await governance.closeProposal((await governance.getProposalLength()) / 1);
+        await governance.closeProposal(p1);
         await increaseTime(10000);
         let oldBalance = parseFloat(await plotusToken.balanceOf(user10));
         let oldBalanceEth = parseFloat(await web3.eth.getBalance(user10));
@@ -703,7 +704,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.deposit(0, { from: user12, value: toWei(1.1) });
         await allMarkets.deposit(toWei(200), { from: user7 });
 
-        await allMarkets.placePrediction(marketId, ethAddress, to8Power(0.1), 1, { from: user12 });
+        await allMarkets.placePrediction(marketId, ethAddress, to8Power(0.1), 3, { from: user12 });
         await allMarkets.placePrediction(marketId, ethAddress, to8Power(1), 1, { from: user12 });
         await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 3, { from: user7 });
         await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
@@ -829,11 +830,11 @@ contract("Market Creation Incentive", async function([
         await allMarkets.deposit(toWei(100), { from: user7, value: toWei(0.1) });
         await allMarkets.deposit(toWei(100), { from: user12, value: toWei(1) });
 
-        await allMarkets.placePrediction(marketId, ethAddress, to8Power(0.1), 3, { from: user7 });
-        await allMarkets.placePrediction(marketId, ethAddress, to8Power(1), 1, { from: user12 });
-        await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 3, { from: user7 });
-        await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 1, { from: user12 });
-        let rewardPoolEth = 0.99;
+        await allMarkets.placePrediction(marketId, ethAddress, to8Power(0.1), 3, { from: user12 });
+        await allMarkets.placePrediction(marketId, ethAddress, to8Power(1), 1, { from: user7 });
+        await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 3, { from: user12 });
+        await allMarkets.placePrediction(marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
+        let rewardPoolEth = 0.999;
         let rewardPoolPlot = 99.95;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
@@ -895,7 +896,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.postResultMock(1, market1);
         await allMarkets.postResultMock(1, market2);
         let proposalId = await governance.getProposalLength();
-        await allMarkets.raiseDispute(market2, 1400000000000, "raise dispute", "this is description", "this is solution hash", { from: user10 });
+        await allMarkets.raiseDispute(market2, "1690897978359414786", "raise dispute", "this is description", "this is solution hash", { from: user10 });
     });
     it("Should be able to claim market 1 rewards", async function() {
         await increaseTime(2 * 60 * 60);
@@ -986,9 +987,10 @@ contract("Market Creation Incentive", async function([
 
     it("should be able to claim market participation rewards", async function() {
         let reward = await allMarkets.getReturn(user7, market2);
+        reward = await allMarkets.getReturn(user12, market2);
         await allMarkets.withdrawMax(100, { from: user7 });
         let perc = await marketIncentives.getMarketCreatorRPoolShareParams(market2 , 0, 0);
-        assert.equal(reward[0][0] / 1e18, 99.95 + 99.95 - (perc[0] * 1 * 99.95) / 10000);
+        assert.equal(reward[0][0] / 1e8, 99.95 + 99.95 - (perc[0] * 1 * 99.95) / 10000);
     });
 
     it("Should be able to claim market 3 rewards", async function() {
