@@ -106,10 +106,6 @@ contract("Rewards-Market", async function(users) {
 		});
 
 		it("Scenario 3: All winners, no losers", async () => {
-			// setting option price in eth
-			await allMarkets.setOptionPrice(1, 1, 9);
-			await allMarkets.setOptionPrice(1, 2, 9);
-			await allMarkets.setOptionPrice(1, 3, 9);
 			let i;
 			let unusedEth = [""];
 			let unusedPlot = [""];
