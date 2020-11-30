@@ -72,7 +72,7 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
     marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
     chainlinkGasAgg =  await MockChainLinkGasPriceAgg.deployed();
 
-    await plotusToken.transfer(allMarkets.address, toWei(100000));
+    await plotusToken.transfer(marketIncentives.address, toWei(100000));
     newUtility = await MarketUtility.new();
     existingMarkets = await plotusNewInstance.getOpenMarkets();
     actionHash = encode("upgradeContractImplementation(address,address)", marketConfig.address, newUtility.address);
@@ -213,380 +213,379 @@ contract("MarketUtility", async function([user1, user2, user3, user4, user5, use
       assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18).toFixed(2));
     });
 
-    // it("Scenario 1: Should be able to get reward pool share of market", async function() {
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user2});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await increaseTime(100);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user7,
-    //   });
-    //   await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
-    //     value: "1000000000000000000",
-    //     from: user7,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   eventData = tx.logs[tx.logs.length-1].args;
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 50)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user2));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user2));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user2});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user2));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user2));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 1: Should be able to get reward pool share of market", async function() {
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:450000, from:user2});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await increaseTime(100);
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(allMarkets.address, toWei(1000000000000000000), {from: user7});
+      await allMarkets.deposit("100000000000000000000",{from:user7,value:200000000000000000});
+      await allMarkets.placePrediction(11, ethAddress, 100000000000000000/1e10, 3, {
+        from: user7,
+      });
+      await allMarkets.placePrediction(11, ethAddress, 1000000000000000000/1e10, 1, {
+        from: user7,
+      });
+      await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
+      await marketInstance.placePrediction(11, plotusToken.address, 100000000000000000000/1e10, 3, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
+      eventData = findByTxHash(events,tx.tx);
+      let gasUsed = eventData.gasUsed;
+      let maxGas = 100*10**9;
+      let gasPrice = Math.min(maxGas, 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 50)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket(11);
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user2));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user2));
+      tx = await marketIncentives.claimCreationReward(100, {from:user2});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user2));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user2));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 2: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user12, toWei(25000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user12 });
-    //   await tokenController.lock("0x534d", toWei(25000), 86400 * 30, { from: user12 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user12});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user13,
-    //   });
-    //   await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
-    //     value: "1000000000000000000",
-    //     from: user13,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   eventData = tx.logs[tx.logs.length-1].args;
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 100)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user12));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user12));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user12});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user12));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user12));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 2: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user12, toWei(25000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user12 });
+      await tokenController.lock("0x534d", toWei(25000), 86400 * 30, { from: user12 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:450000, from:user12});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await plotusToken.approve(allMarkets.address, toWei(1000000000000000000), {from: user13});
+      await allMarkets.deposit(0,{from:user13,value:2000000000000000000});
+      await allMarkets.placePrediction(12,ethAddress, 100000000000000000/1e10, 3, {
+        from: user13,
+      });
+      await allMarkets.placePrediction(12,ethAddress, 1000000000000000000/1e10, 1, {
+        from: user13,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
+      await plotusToken.approve(allMarkets.address, toWei(1000000000000000000), {from: user7});
+      await allMarkets.deposit(100000000000000000000,{from:user7});
+      await allMarkets.placePrediction(12,plotusToken.address, 100000000000000000000/1e10, 3, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
+      eventData = findByTxHash(events,tx.tx);
+      let gasUsed = eventData.gasUsed;
+      let maxGas = 100*10**9;
+      let gasPrice = Math.min(maxGas, 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 100)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket(12);
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user12));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user12));
+      tx = await marketIncentives.claimCreationReward(100, {from:user12});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user12));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user12));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 3: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user3, toWei(50000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user3 });
-    //   await tokenController.lock("0x534d", toWei(50000), 86400 * 30, { from: user3 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user3});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await increaseTime(100);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user12,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 9.95;
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 150)
-    //   //As market participation is less than 1 ETH reward pool share will zero
-    //   rewardPoolSharePerc = 0;
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user3));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user3));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user3});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user3));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user3));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 3: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user3, toWei(50000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user3 });
+      await tokenController.lock("0x534d", toWei(50000), 86400 * 30, { from: user3 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:450000, from:user3});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await increaseTime(100);
+      await allMarkets.deposit(0,{from:user12,value:100000000000000000});
+      await allMarkets.placePrediction(13, ethAddress, 100000000000000000/1e10, 3, {
+        from: user12,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(allMarkets.address, toWei(1000000000000000000), {from: user7});
+      await allMarkets.deposit(10000000000000000000,{from:user7});
+      await marketInstance.placePrediction(13,plotusToken.address, 10000000000000000000/1e10, 3, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 9.95;
+      let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
+      eventData = findByTxHash(events,tx.tx);
+      let gasUsed = eventData.gasUsed;
+      let maxGas = 100*10**9;
+      let gasPrice = Math.min(maxGas, 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 150)
+      //As market participation is less than 1 ETH reward pool share will zero
+      rewardPoolSharePerc = 0;
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket(13);
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user3));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user3));
+      tx = await marketIncentives.claimCreationReward(100, {from:user3});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user3));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user3));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 4: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user4, toWei(60000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user4 });
-    //   await tokenController.lock("0x534d", toWei(60000), 86400 * 30, { from: user4 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user4});
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user13,
-    //   });
-    //   await marketInstance.placePrediction(ethAddress, "1000000000000000000", 1, 5, {
-    //     value: "1000000000000000000",
-    //     from: user13,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 150)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user4));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user4));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user4});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user4));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user4));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 4: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user4, toWei(60000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user4 });
+      await tokenController.lock("0x534d", toWei(60000), 86400 * 30, { from: user4 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await allMarkets.createMarket(0,0, {gasPrice:450000, from:user4});
+      let events = await marketIncentives.getPastEvents("allEvents", {fromBlock: 0, toBlock: "latest"});
+      eventData = findByTxHash(events,tx.tx);
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await allMarkets.deposit(0,{from:user13,value:2000000000000000000});
+      await allMarkets.placePrediction(14,ethAddress, 100000000000000000/1e10, 3, {
+        from: user13,
+      });
+      await allMarkets.placePrediction(14,ethAddress, 1000000000000000000/1e10, 1, {
+        from: user13,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(allMarkets.address, toWei(1000000000000000000), {from: user7});
+      await allMarkets.deposit(100000000000000000000,{from:user7});
+      await marketInstance.placePrediction(14, plotusToken.address, "100000000000000000000", 3, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      let gasUsed = eventData.gasUsed;
+      let maxGas = 100*10**9;
+      let gasPrice = Math.min(maxGas, 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 150)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await allMarkets.settleMarket(14);
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user4));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user4));
+      tx = await marketIncentives.claimCreationReward(100, {from:user4});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user4));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user4));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 5: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user5, toWei(100000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user5 });
-    //   await tokenController.lock("0x534d", toWei(100000), 86400 * 30, { from: user5 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user5});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await increaseTime(100);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user12,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 250)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user5));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user5));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user5});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user5));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user5));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 5: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user5, toWei(100000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user5 });
+      await tokenController.lock("0x534d", toWei(100000), 86400 * 30, { from: user5 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4 * 3600);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user5});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await increaseTime(100);
+      await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
+        value: "100000000000000000",
+        from: user12,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
+      await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      try {
+        eventData = tx.logs[tx.logs.length-1].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
+      let gasUsed = eventData.gasUsed.toNumber();
+      let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
+      let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 250)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket();
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user5));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user5));
+      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user5});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user5));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user5));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 6: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user6, toWei(150000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user6 });
-    //   await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user6 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user6});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await increaseTime(100);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user7,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 350)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user6));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user6));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user6});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user6));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user6));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 6: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user6, toWei(150000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user6 });
+      await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user6 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user6});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await increaseTime(100);
+      await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
+        value: "100000000000000000",
+        from: user7,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
+      await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      try {
+        eventData = tx.logs[tx.logs.length-1].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
+      let gasUsed = eventData.gasUsed.toNumber();
+      let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
+      let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 350)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket();
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user6));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user6));
+      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user6});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user6));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user6));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 7: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
-    //   await plotusToken.transfer(user8, toWei(150000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user8 });
-    //   await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user8 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user8});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   let rewardPoolEth = 0;
-    //   let rewardPoolPlot = 0;
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 350)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user8));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user8));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user8});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user8));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user8));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 7: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
+      await plotusToken.transfer(user8, toWei(150000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user8 });
+      await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user8 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user8});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      let rewardPoolEth = 0;
+      let rewardPoolPlot = 0;
+      try {
+        eventData = tx.logs[tx.logs.length-1].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
+      let gasUsed = eventData.gasUsed.toNumber();
+      let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
+      let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 350)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket();
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user8));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user8));
+      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user8});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user8));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user8));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
-    // it("Scenario 8: Should not be able to get reward pool share of market more than max cap of 5%", async function() {
-    //   await plotusToken.transfer(user14, toWei(500000));
-    //   await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user14 });
-    //   await tokenController.lock("0x534d", toWei(500000), 86400 * 30, { from: user14 });
-    //   await chainlinkGasAgg.setLatestAnswer(450000);
-    //   await increaseTime(3610);
-    //   let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user14});
-    //   let openMarkets = await plotusNewInstance.getOpenMarkets();
-    //   let marketInstance = await MarketNew.at(openMarkets[0][1]);
-    //   await increaseTime(100);
-    //   await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
-    //     value: "100000000000000000",
-    //     from: user7,
-    //   });
-    //   await plotusToken.transfer(user7, toWei(10000));
-    //   await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
-    //   await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
-    //     from: user7,
-    //   });
-    //   let rewardPoolEth = 0.1;
-    //   let rewardPoolPlot = 99.95;
-    //   try {
-    //     eventData = tx.logs[tx.logs.length-1].args;
-    //   } catch(e) {
-    //     eventData = tx.logs[1].args;
-    //   }
-    //   let gasUsed = eventData.gasUsed.toNumber();
-    //   let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
-    //   let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
-    //   estimatedGasCost = gasPrice*gasUsed;
-    //   let costInETH = estimatedGasCost;
-    //   let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
-    //   incentivesGained = eventData.plotIncentive/1; 
-    //   let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
-    //   assert.equal(rewardPoolSharePerc/1, 500)
-    //   assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
-    //   await increaseTime(10000);
-    //   await marketInstance.settleMarket();
-    //   await increaseTime(10000);
-    //   let oldBalance = parseFloat(await plotusToken.balanceOf(user14));
-    //   let oldBalanceEth = parseFloat(await web3.eth.getBalance(user14));
-    //   tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user14});
-    //   let newBalance = parseFloat(await plotusToken.balanceOf(user14));
-    //   let newBalanceEth = parseFloat(await web3.eth.getBalance(user14));
-    //   assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
-    //   assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
-    // });
+    it("Scenario 8: Should not be able to get reward pool share of market more than max cap of 5%", async function() {
+      await plotusToken.transfer(user14, toWei(500000));
+      await plotusToken.approve(tokenController.address, "1000000000000000000000000", { from: user14 });
+      await tokenController.lock("0x534d", toWei(500000), 86400 * 30, { from: user14 });
+      await chainlinkGasAgg.setLatestAnswer(450000);
+      await increaseTime(4*3600);
+      let tx = await plotusNewInstance.createMarket(0,1, {gasPrice:450000, from:user14});
+      let openMarkets = await plotusNewInstance.getOpenMarkets();
+      let marketInstance = await MarketNew.at(openMarkets[0][1]);
+      await increaseTime(100);
+      await marketInstance.placePrediction(ethAddress, "100000000000000000", 3, 5, {
+        value: "100000000000000000",
+        from: user7,
+      });
+      await plotusToken.transfer(user7, toWei(10000));
+      await plotusToken.approve(tokenController.address, toWei(1000000000000000000), {from: user7});
+      await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 3, 5, {
+        from: user7,
+      });
+      let rewardPoolEth = 0.1;
+      let rewardPoolPlot = 99.95;
+      try {
+        eventData = tx.logs[tx.logs.length-1].args;
+      } catch(e) {
+        eventData = tx.logs[1].args;
+      }
+      let gasUsed = eventData.gasUsed.toNumber();
+      let maxGas = await plotusNewInstance.getUintParameters(toHex("MAXGAS"));
+      let gasPrice = Math.min(maxGas[1].toNumber(), 450000*1.25);
+      estimatedGasCost = gasPrice*gasUsed;
+      let costInETH = estimatedGasCost;
+      let worthInPLOT = await marketConfig.getValueAndMultiplierParameters(ethAddress, costInETH + "");
+      incentivesGained = eventData.plotIncentive/1; 
+      let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
+      assert.equal(rewardPoolSharePerc/1, 500)
+      assert.equal(eventData.plotIncentive/1, worthInPLOT[1]/1);
+      await increaseTime(10000);
+      await marketInstance.settleMarket();
+      await increaseTime(10000);
+      let oldBalance = parseFloat(await plotusToken.balanceOf(user14));
+      let oldBalanceEth = parseFloat(await web3.eth.getBalance(user14));
+      tx = await plotusNewInstance.claimCreationRewardV2(100, {from:user14});
+      let newBalance = parseFloat(await plotusToken.balanceOf(user14));
+      let newBalanceEth = parseFloat(await web3.eth.getBalance(user14));
+      assert.equal((newBalance/1e18).toFixed(2), (oldBalance/1e18 + incentivesGained/1e18 + rewardPoolPlot*rewardPoolSharePerc/10000).toFixed(2));
+      assert.equal((newBalanceEth/1e18).toFixed(2), (oldBalanceEth/1e18 + rewardPoolEth*rewardPoolSharePerc/10000).toFixed(2));
+    });
 
     // it("Raise Dispute and reject: Scenario 2: Should be able to get more reward pool share of market if market creator had staked tokens", async function() {
     //   await plotusToken.transfer(user10, toWei(250000));
