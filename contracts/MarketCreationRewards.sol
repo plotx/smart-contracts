@@ -165,7 +165,9 @@ contract MarketCreationRewards is Governed {
     * @dev Function to return the market reward pool share funds of market creator: To be used in case of dispute
     * @param _marketId Index of market
     */
-    function returnMarketRewardPoolShare(uint256 _marketId) external {
+    function returnMarketRewardPoolShare(uint256 _marketId) external onlyInternal{
+      delete marketCreationRewardData[_marketId].ethIncentive;
+      delete marketCreationRewardData[_marketId].plotIncentive;
     	_transferAsset(ETH_ADDRESS, msg.sender, marketCreationRewardData[_marketId].ethIncentive);
 		  _transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive);
     }
