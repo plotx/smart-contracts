@@ -121,28 +121,57 @@ contract("AllMarket", async function([user1, user2, user3, user4]) {
 
     });
 
-    it("Should be able to predict with max deposit after depositing eth", async function() {
+    it("Should be able to predict with max deposit after depositing eth and should recv 0 on withdraw", async function() {
 
         await allMarkets.createMarket(0, 0,{from:user4});
 
-        await allMarkets.setOptionPrice(7, 1, 9);
-        await allMarkets.setOptionPrice(7, 2, 18);
-        await allMarkets.setOptionPrice(7, 3, 27);
-        await marketConfig.setNextOptionPrice(toWei(0.001));
+        await marketConfig.setPrice(toWei(0.001));  
+        await marketConfig.setNextOptionPrice(2);
 
-        tx = await allMarkets.deposit(0,{from:user2,value:toWei(0.001)});
+        await allMarkets.deposit(0,{from:user2,value:toWei(0.002)});    
+        await allMarkets.deposit(0,{from:user3,value:toWei(1)});
 
         let ethBalbefore = await web3.eth.getBalance(user2);
 
-        await allMarkets.placePrediction(7, ethAddress, 1, 1e5, { from: user2 });
+        await allMarkets.placePrediction(7, ethAddress, 2*1e5, 1, { from: user2 });
+
+        let unusedBal = await allMarkets.getUserUnusedBalance(user2);   
+        assert.equal(unusedBal[0],0);
+
+        await assertRevert(allMarkets.withdrawMax(10,{from:user2}));    
+        unusedBal = await allMarkets.getUserUnusedBalance(user2); 
+        assert.equal(unusedBal[0],0);
+
+        await allMarkets.placePrediction(7, ethAddress, 1e8, 2, { from: user3 });
+
+    });
+
+    it("Should not be able to withdraw even after user predicted correctly if market is still in cooling", async function() {
+
+        await increaseTime(8*60*60);
+
+        await allMarkets.postResultMock(1,7);
+
+
+        await assertRevert(allMarkets.withdrawMax(10,{from:user2}));
+
         let unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0],0);
 
-        await allMarkets.withdrawMax(10,{from:user2});
+    });
 
+    it("Should be able to withdraw reward and deposited after cooling period is over", async function() {
+
+        await increaseTime(60*60);
+        let ethBalBefore = await web3.eth.getBalance(user2);
+        await allMarkets.withdrawMax(10,{from:user2});
         let ethBalAfter = await web3.eth.getBalance(user2);
 
-        assert.equal(Math.round((ethBalAfter - ethBalbefore)/1e15),1);
+        // assert.equal(Math.round((ethBalAfter2 - ethBalAfter)/1e18),1);
+
+        let unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0],0);
 
     });
+
 });
