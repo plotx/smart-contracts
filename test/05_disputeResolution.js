@@ -6,7 +6,8 @@ const Master = artifacts.require("Master");
 const PlotusToken = artifacts.require("MockPLOT");
 const TokenController = artifacts.require("MockTokenController");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
-const Governance = artifacts.require("Governance");
+const Governance = artifacts.require("GovernanceNew");
+const AllMarkets = artifacts.require("MockAllMarkets");
 const MarketConfig = artifacts.require("MockConfig");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const ProposalCategory = artifacts.require('ProposalCategory');
@@ -17,6 +18,7 @@ const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTo
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const latestTime = require("./utils/latestTime.js").latestTime;
 const encode = require("./utils/encoder.js").encode;
+const encode1 = require("./utils/encoder.js").encode1;
 const {toHex, toWei, toChecksumAddress} = require('./utils/ethTools');
 const { assertRevert } = require('./utils/assertRevert');
 let gv,masterInstance, tokenController, mr;
@@ -29,21 +31,76 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
     MockUniswapRouterInstance = await MockUniswapRouter.deployed();
-    const openMarkets = await plotusNewInstance.getOpenMarkets();
     marketConfig = await plotusNewInstance.marketUtility();
     marketConfig = await MarketConfig.at(marketConfig);
-    marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-    await marketConfig.setOptionPrice(1, 9);
-    await marketConfig.setOptionPrice(2, 18);
-    await marketConfig.setOptionPrice(3, 27);
+    governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+    governance = await Governance.at(governance);
+      
+    let allMarkets = await masterInstance.getLatestAddress(web3.utils.toHex("AM"));
+    allMarkets = await AllMarkets.at(allMarkets);
+
+    let nullAddress = "0x0000000000000000000000000000";
+    let pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+    pc = await ProposalCategory.at(pc);
+    let newGV = await Governance.new()
+    actionHash = encode1(
+      ['bytes2[]', 'address[]'],
+      [
+        [toHex('GV')],
+        [newGV.address]
+      ]
+    );
+
+    let p = await governance.getProposalLength();
+    await governance.createProposal("proposal", "proposal", "proposal", 0);
+    let canClose = await governance.canCloseProposal(p);
+    assert.equal(parseFloat(canClose),0);
+    await governance.categorizeProposal(p, 7, 0);
+    await governance.submitProposalWithSolution(p, "proposal", actionHash);
+    await governance.submitVote(p, 1)
+    await increaseTime(604800);
+    await governance.closeProposal(p);
+    await increaseTime(604800);
+    await governance.triggerAction(p);
+    await assertRevert(governance.triggerAction(p));
+    await increaseTime(604800);
+
+    let c1 = await pc.totalCategories();
+    //proposal to add category
+    actionHash = encode1(
+      ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+      [
+        10,
+        "ResolveDispute",
+        3,
+        50,
+        50,
+        [2],
+        86400,
+        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+        nullAddress,
+        toHex("AM"),
+        [0, 0],
+        "resolveDispute(uint256,uint256)",
+      ]
+    );
+    let p1 = await governance.getProposalLength();
+    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+    await governance.submitVote(p1.toNumber(), 1);
+    await governance.closeProposal(p1.toNumber());
+    let cat2 = await pc.totalCategories();
+    await increaseTime(604800);
+    await governance.setAllMarketsAddress();
+
+
     await increaseTime(10001);
-    assert.ok(marketInstance);
+    await allMarkets.createMarket(0,0);
     let nxmToken = await PlotusToken.deployed();
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
-    let pc = await ProposalCategory.at(address);
+    pc = await ProposalCategory.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
     mr = await MemberRoles.at(address);
     let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
@@ -58,30 +115,33 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await MockUniswapRouterInstance.setPrice("1000000000000000");
     await marketConfig.setPrice("1000000000000000");
     await plotusToken.approve(tokenController.address, "100000000000000000000");
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
     // Cannot raise dispute if there is no participation
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
+    await marketConfig.setNextOptionPrice(9);
+    await marketConfig.setPrice(toWei(0.01));
+    await allMarkets.depositAndPlacePrediction("10000000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
     // cannot raise dispute if market is open
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     
     await increaseTime(3601);
     // cannot raise dispute if market is closed but result is not out
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
    
-    await increaseTime(3600);
-    await marketInstance.calculatePredictionResult(100000000000);
+    await increaseTime(8*3600);
+    await allMarkets.postResultMock(100000000000, 7);
      // cannot raise dispute with less than minimum stake
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
     //can raise dispute in cooling period and stake
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await allMarkets.raiseDispute(7,1400000000000,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    await assertRevert(marketInstance.resolveDispute(true, 100));
-    let winningOption_af = await marketInstance.getMarketResults()
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
+    await assertRevert(allMarkets.resolveDispute(7, 100));
+    let winningOption_af = await allMarkets.getMarketResults(7)
     console.log("winningOption",winningOption_af[0]/1)
     let proposalId = await gv.getProposalLength()-1;
     console.log("proposalId",proposalId/1)
@@ -114,7 +174,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     assert.equal(proposalActionStatus/1, 3);
     let userBalAfter = await plotusToken.balanceOf(ab1);
     console.log("balance before accept proposal",userBalAfter/1)
-    let winningOption_afterVote = await marketInstance.getMarketResults()
+    let winningOption_afterVote = await allMarkets.getMarketResults(7)
     assert.notEqual(winningOption_af[0]/1, winningOption_afterVote[0]/1);
     console.log("winningOption After accept proposal",winningOption_afterVote[0]/1);
   });
@@ -128,21 +188,79 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
     MockUniswapRouterInstance = await MockUniswapRouter.deployed();
-    const openMarkets = await plotusNewInstance.getOpenMarkets();
     marketConfig = await plotusNewInstance.marketUtility();
     marketConfig = await MarketConfig.at(marketConfig);
-    marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
+    governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+    governance = await Governance.at(governance);
+      
+    let allMarkets = await masterInstance.getLatestAddress(web3.utils.toHex("AM"));
+    allMarkets = await AllMarkets.at(allMarkets);
+
+    let nullAddress = "0x0000000000000000000000000000";
+    let pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+    pc = await ProposalCategory.at(pc);
+    let newGV = await Governance.new()
+    actionHash = encode1(
+      ['bytes2[]', 'address[]'],
+      [
+        [toHex('GV')],
+        [newGV.address]
+      ]
+    );
+
+    let p = await governance.getProposalLength();
+    await governance.createProposal("proposal", "proposal", "proposal", 0);
+    let canClose = await governance.canCloseProposal(p);
+    assert.equal(parseFloat(canClose),0);
+    await governance.categorizeProposal(p, 7, 0);
+    await governance.submitProposalWithSolution(p, "proposal", actionHash);
+    await governance.submitVote(p, 1)
+    await increaseTime(604800);
+    await governance.closeProposal(p);
+    await increaseTime(604800);
+    await governance.triggerAction(p);
+    await assertRevert(governance.triggerAction(p));
+    await increaseTime(604800);
+
+    let c1 = await pc.totalCategories();
+    //proposal to add category
+    actionHash = encode1(
+      ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+      [
+        10,
+        "ResolveDispute",
+        3,
+        50,
+        50,
+        [2],
+        86400,
+        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+        nullAddress,
+        toHex("AM"),
+        [0, 0],
+        "resolveDispute(uint256,uint256)",
+      ]
+    );
+    let p1 = await governance.getProposalLength();
+    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+    await governance.submitVote(p1.toNumber(), 1);
+    await governance.closeProposal(p1.toNumber());
+    let cat2 = await pc.totalCategories();
+    await increaseTime(604800);
+    await governance.setAllMarketsAddress();
+
+
     await marketConfig.setOptionPrice(1, 9);
     await marketConfig.setOptionPrice(2, 18);
     await marketConfig.setOptionPrice(3, 27);
     await increaseTime(10001);
-    assert.ok(marketInstance);
+    await allMarkets.createMarket(0,0);
     let nxmToken = await PlotusToken.deployed();
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
-    let pc = await ProposalCategory.at(address);
+    pc = await ProposalCategory.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
     mr = await MemberRoles.at(address);
     let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
@@ -156,29 +274,30 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await plotusToken.transfer(dr3, "50000000000000000000000");
     await MockUniswapRouterInstance.setPrice("1000000000000000");
     await marketConfig.setPrice("1000000000000000");
-    await plotusToken.approve(tokenController.address, "100000000000000000000");
-    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
+    await marketConfig.setNextOptionPrice(2);
+    await plotusToken.approve(allMarkets.address, "100000000000000000000");
+    await allMarkets.depositAndPlacePrediction("100000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
     // cannot raise dispute if market is open
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     
     await increaseTime(3601);
     // cannot raise dispute if market is closed but result is not out
     await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
    
-    await increaseTime(3600);
-    await marketInstance.calculatePredictionResult(100000000000);
+    await increaseTime(3600*8);
+    await allMarkets.postResultMock(100000000000, 7);
      // cannot raise dispute with less than minimum stake
     await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
     //can raise dispute in cooling period and stake
     await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    await allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
-    await assertRevert(marketInstance.resolveDispute(true, 100));
-    let winningOption_af = await marketInstance.getMarketResults()
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
+    await assertRevert(allMarkets.resolveDispute(7, 100));
+    let winningOption_af = await allMarkets.getMarketResults(7)
     console.log("winningOption",winningOption_af[0]/1)
     let proposalId = await gv.getProposalLength()-1;
     console.log("proposalId",proposalId/1)
@@ -207,7 +326,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 
     let userBalAfter = await plotusToken.balanceOf(ab1);
     console.log("balance before accept proposal",userBalAfter/1)
-    let winningOption_afterVote = await marketInstance.getMarketResults()
+    let winningOption_afterVote = await allMarkets.getMarketResults(7)
     assert.equal(winningOption_af[0]/1, winningOption_afterVote[0]/1);
     console.log("winningOption After accept proposal",winningOption_afterVote[0]/1);
   });
@@ -221,21 +340,75 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let plotusNewAddress = await masterInstance.getLatestAddress(web3.utils.toHex("PL"));
     let plotusNewInstance = await Plotus.at(plotusNewAddress);
     MockUniswapRouterInstance = await MockUniswapRouter.deployed();
-    const openMarkets = await plotusNewInstance.getOpenMarkets();
     marketConfig = await plotusNewInstance.marketUtility();
     marketConfig = await MarketConfig.at(marketConfig);
-    marketInstance = await Market.at(openMarkets["_openMarkets"][0]);
-    await marketConfig.setOptionPrice(1, 9);
-    await marketConfig.setOptionPrice(2, 18);
-    await marketConfig.setOptionPrice(3, 27);
+        governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+    governance = await Governance.at(governance);
+      
+    let allMarkets = await masterInstance.getLatestAddress(web3.utils.toHex("AM"));
+    allMarkets = await AllMarkets.at(allMarkets);
+
+    let nullAddress = "0x0000000000000000000000000000";
+    let pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+    pc = await ProposalCategory.at(pc);
+    let newGV = await Governance.new()
+    actionHash = encode1(
+      ['bytes2[]', 'address[]'],
+      [
+        [toHex('GV')],
+        [newGV.address]
+      ]
+    );
+
+    let p = await governance.getProposalLength();
+    await governance.createProposal("proposal", "proposal", "proposal", 0);
+    let canClose = await governance.canCloseProposal(p);
+    assert.equal(parseFloat(canClose),0);
+    await governance.categorizeProposal(p, 7, 0);
+    await governance.submitProposalWithSolution(p, "proposal", actionHash);
+    await governance.submitVote(p, 1)
+    await increaseTime(604800);
+    await governance.closeProposal(p);
+    await increaseTime(604800);
+    await governance.triggerAction(p);
+    await assertRevert(governance.triggerAction(p));
+    await increaseTime(604800);
+
+    let c1 = await pc.totalCategories();
+    //proposal to add category
+    actionHash = encode1(
+      ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+      [
+        10,
+        "ResolveDispute",
+        3,
+        50,
+        50,
+        [2],
+        86400,
+        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+        nullAddress,
+        toHex("AM"),
+        [0, 0],
+        "resolveDispute(uint256,uint256)",
+      ]
+    );
+    let p1 = await governance.getProposalLength();
+    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+    await governance.submitVote(p1.toNumber(), 1);
+    await governance.closeProposal(p1.toNumber());
+    let cat2 = await pc.totalCategories();
+    await increaseTime(604800);
+    await governance.setAllMarketsAddress();
+
     await increaseTime(10001);
-    assert.ok(marketInstance);
+    await allMarkets.createMarket(0,0);
     let nxmToken = await PlotusToken.deployed();
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
-    let pc = await ProposalCategory.at(address);
+    pc = await ProposalCategory.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("MR"));
     mr = await MemberRoles.at(address);
     let tc = await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("MR")));
@@ -250,21 +423,22 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await plotusToken.transfer(dr3, "50000000000000000000000");
     await MockUniswapRouterInstance.setPrice("1000000000000000");
     await marketConfig.setPrice("1000000000000000");
-    await plotusToken.approve(tokenController.address, "100000000000000000000");
-    await marketInstance.placePrediction(plotusToken.address, "100000000000000000000", 1, 1);
+    await marketConfig.setNextOptionPrice(2);
+    await plotusToken.approve(allMarkets.address, "100000000000000000000");
+    await allMarkets.depositAndPlacePrediction("100000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
     
-    await increaseTime(7201);
-    await marketInstance.calculatePredictionResult(100000000000);
+    await increaseTime(3600*8);
+    await allMarkets.postResultMock(100000000000, 7);
     //can raise dispute in cooling period and stake
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash");
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash");
     await increaseTime(901);
      // cannot raise dispute if market cool time is over
-    await plotusToken.approve(tokenController.address, "10000000000000000000000");
-    await assertRevert(marketInstance.raiseDispute(1400000000000,"raise dispute","this is description","this is solution hash"));
+    await plotusToken.approve(allMarkets.address, "10000000000000000000000");
+    await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     
-    let plotusContractBalanceBefore = await plotusToken.balanceOf(plotusNewInstance.address);
-    let winningOption_before = await marketInstance.getMarketResults()
+    let plotusContractBalanceBefore = await plotusToken.balanceOf(allMarkets.address);
+    let winningOption_before = await allMarkets.getMarketResults(7)
     console.log("winningOption",winningOption_before[0]/1)
     let proposalId = await gv.getProposalLength()-1;
     console.log("proposalId",proposalId/1)
@@ -286,12 +460,12 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await increaseTime(86401);
     let proposal = await gv.proposal(proposalId);
     assert.isAbove((proposal[2])/1,3);
-    let plotusContractBalanceAfter = await plotusToken.balanceOf(plotusNewInstance.address);
+    let plotusContractBalanceAfter = await plotusToken.balanceOf(allMarkets.address);
     // assert.isAbove(plotusContractBalanceBefore/1, plotusContractBalanceAfter/1);
     //InIncentives will be transferred to governance 100 tokens i.e 100000000000000000000
     assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 500000000000000000000, "Tokens staked for dispute not burned");
 
-    let winningOption_afterVote = await marketInstance.getMarketResults();
+    let winningOption_afterVote = await allMarkets.getMarketResults(7);
     assert.equal(winningOption_before[0]/1, winningOption_afterVote[0]/1);
     console.log("winningOption After reject proposal",winningOption_afterVote[0]/1);
   });
