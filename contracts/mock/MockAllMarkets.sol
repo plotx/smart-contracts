@@ -28,16 +28,7 @@ contract MockAllMarkets is AllMarkets {
     //   super.initiate(_plot, _marketUtility);
     // }
 
-    
-    function calculateOptionPrice(uint256 _marketId, uint256 _prediction) public view returns(uint64 _optionPrice) {
-        return val[_marketId][_prediction];
-    }
-
-    function setOptionPrice(uint256 _marketId, uint256 _prediction, uint64 _val) public {
-    	val[_marketId][_prediction] = _val;
-    }
-
-    function postResultMock(uint _val, uint _marketId) public {
+    function postResultMock(uint _val, uint _marketId) external {
         _postResult(_val, 0 , _marketId);
     } 
 

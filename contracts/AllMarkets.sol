@@ -736,6 +736,13 @@ contract AllMarkets is Governed {
       emit ClaimedIncentive(_user, _marketId, marketDataExtended[_marketId].incentiveToken, _incentive);
     }
 
+    /**
+    * @dev Transfer `_amount` number of market registry assets contract to `_to` address
+    */
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
+      _transferAsset(_asset, _to, _amount);
+    }
+
     /** 
     * @dev Gets the return amount of the specified address.
     * @param _user The address to specify the return of
