@@ -814,7 +814,7 @@ contract AllMarkets is Governed {
     * @return ethStaked Total eth staked on market
     * @return plotStaked Total PLOT staked on market
     */
-    function getTotalAssetsStaked(uint _marketId) external view returns(uint256 ethStaked, uint256 plotStaked) {
+    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 ethStaked, uint256 plotStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
         ethStaked = ethStaked.add(marketOptionsAvailable[_marketId][i].ethStaked);
         plotStaked = plotStaked.add(marketOptionsAvailable[_marketId][i].plotStaked);
@@ -888,7 +888,7 @@ contract AllMarkets is Governed {
       marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
       marketDataExtended[_marketId].disputeStakeAmount = _stakeForDispute;
       disputeProposalId[proposalId] = _marketId;
-      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(address(this), _proposedValue));
+      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
       delete marketDataExtended[_marketId].ethAmountToPool;
       delete marketDataExtended[_marketId].tokenAmountToPool;
@@ -928,7 +928,7 @@ contract AllMarkets is Governed {
     * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
     * @param _proposalId Id of dispute resolution proposal
     */
-    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
+    function burnDisputedProposalTokens(uint _proposalId) external {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
@@ -963,6 +963,17 @@ contract AllMarkets is Governed {
     function getMarketResults(uint256 _marketId) external view returns(uint256 _winningOption, uint256, uint256[] memory, uint256, uint256) {
       _winningOption = marketDataExtended[_marketId].WinningOption;
       return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].ethStaked, marketOptionsAvailable[_marketId][_winningOption].plotStaked);
+    }
+
+    /**
+    * @dev Returns total assets value in PLOT staked on market
+    * @param _marketId Index of market
+    * @return plotStaked Total staked value in PLOT on market
+    */
+    function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
+      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
+      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
+      return plotStaked.add(ethStaked);
     }
 
     /**

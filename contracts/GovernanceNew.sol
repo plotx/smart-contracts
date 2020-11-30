@@ -21,13 +21,134 @@ import "./Governance.sol";
 contract GovernanceNew is Governance {
 
     IAllMarkets internal allMarkets;
-    
+    bytes32 constant resolveDisputeHashV2 = keccak256(abi.encodeWithSignature("resolveDispute(uint256,uint256)"));
+
     /**
      * @dev Updates all dependency addresses to latest ones from Master
      */
     function setAllMarketsAddress() public {
         require(address(allMarkets) == address(0));
         allMarkets = IAllMarkets(address(uint160(ms.getLatestAddress("AM"))));
+    }
+
+    /**
+     * @dev Internal call to create proposal
+     * @param _proposalTitle of proposal
+     * @param _proposalSD is short description of proposal
+     * @param _proposalDescHash IPFS hash value of propsal
+     * @param _categoryId of proposal
+     */
+    function _createProposal(
+        string memory _proposalTitle,
+        string memory _proposalSD,
+        string memory _proposalDescHash,
+        uint256 _categoryId
+    ) internal {
+        uint256 _proposalId = totalProposals;
+        allProposalData[_proposalId].owner = msg.sender;
+        allProposalData[_proposalId].dateUpd = now;
+        allProposalSolutions[_proposalId].push("");
+        totalProposals++;
+
+        emit Proposal(
+            msg.sender,
+            _proposalId,
+            now,
+            _proposalTitle,
+            _proposalSD,
+            _proposalDescHash
+        );
+
+        if (_categoryId > 0) {
+            (, , , uint defaultIncentive, bytes memory _functionHash) = proposalCategory
+            .categoryActionDetails(_categoryId);
+            require(allowedToCategorize() ||
+                keccak256(_functionHash) ==
+                 resolveDisputeHashV2 ||
+                keccak256(_functionHash) == swapABMemberHash
+            );
+            if(keccak256(_functionHash) == swapABMemberHash) {
+                defaultIncentive = 0;
+            }
+            _categorizeProposal(_proposalId, _categoryId, defaultIncentive, _functionHash);
+        }
+    }
+
+
+    /**
+     * @dev Internal call to categorize a proposal
+     * @param _proposalId of proposal
+     * @param _categoryId of proposal
+     * @param _incentive is commonIncentive
+     */
+    function _categorizeProposal(
+        uint256 _proposalId,
+        uint256 _categoryId,
+        uint256 _incentive,
+        bytes memory _functionHash
+    ) internal {
+        require(
+            _categoryId > 0 && _categoryId < proposalCategory.totalCategories(),
+            "Invalid category"
+        );
+        if(keccak256(_functionHash) == resolveDisputeHashV2) {
+            require(msg.sender == address(allMarkets));
+        }
+        allProposalData[_proposalId].category = _categoryId;
+        allProposalData[_proposalId].commonIncentive = _incentive;
+        allProposalData[_proposalId].propStatus = uint256(
+            ProposalStatus.AwaitingSolution
+        );
+
+        if (_incentive > 0) {
+            allMarkets.transferAssets(
+                address(tokenInstance),
+                address(this),
+                _incentive
+            );
+        }
+
+        emit ProposalCategorized(_proposalId, msg.sender, _categoryId);
+    }
+
+        /**
+     * @dev Called when vote majority is reached
+     * @param _proposalId of proposal in concern
+     * @param _status of proposal in concern
+     * @param category of proposal in concern
+     * @param max vote value of proposal in concern
+     */
+    function _callIfMajReached(
+        uint256 _proposalId,
+        uint256 _status,
+        uint256 category,
+        uint256 max,
+        uint256 role
+    ) internal {
+        allProposalData[_proposalId].finalVerdict = max;
+        _updateProposalStatus(_proposalId, _status);
+        emit ProposalAccepted(_proposalId);
+        if (
+            proposalActionStatus[_proposalId] != uint256(ActionStatus.NoAction)
+        ) {
+            if (role == actionRejectAuthRole) {
+                _triggerAction(_proposalId, category);
+            } else {
+                proposalActionStatus[_proposalId] = uint256(
+                    ActionStatus.Accepted
+                );
+                bytes memory functionHash = proposalCategory.categoryActionHashes(category);
+                if(keccak256(functionHash)
+                    == swapABMemberHash ||
+                    keccak256(functionHash)
+                    == resolveDisputeHashV2 
+                ) {
+                    _triggerAction(_proposalId, category);
+                } else {
+                    proposalExecutionTime[_proposalId] = actionWaitingTime.add(now);
+                }
+            }
+        }
     }
 
     /**
@@ -51,42 +172,6 @@ contract GovernanceNew is Governance {
             require(canCloseProposal(_proposalId) == 1);
             _closeVote(_proposalId, category);
         }
-    }
-
-    /**
-     * @dev Internal call to categorize a proposal
-     * @param _proposalId of proposal
-     * @param _categoryId of proposal
-     * @param _incentive is commonIncentive
-     */
-    function _categorizeProposal(
-        uint256 _proposalId,
-        uint256 _categoryId,
-        uint256 _incentive,
-        bytes memory _functionHash
-    ) internal {
-        require(
-            _categoryId > 0 && _categoryId < proposalCategory.totalCategories(),
-            "Invalid category"
-        );
-        if(keccak256(_functionHash) == resolveDisputeHash) {
-            require(msg.sender == address(allMarkets));
-        }
-        allProposalData[_proposalId].category = _categoryId;
-        allProposalData[_proposalId].commonIncentive = _incentive;
-        allProposalData[_proposalId].propStatus = uint256(
-            ProposalStatus.AwaitingSolution
-        );
-
-        if (_incentive > 0) {
-            allMarkets.transferAssets(
-                address(tokenInstance),
-                address(this),
-                _incentive
-            );
-        }
-
-        emit ProposalCategorized(_proposalId, msg.sender, _categoryId);
     }
 
     /**
@@ -125,7 +210,7 @@ contract GovernanceNew is Governance {
                 );
             }
         } else {
-            if ((keccak256(_functionHash) != resolveDisputeHash) &&
+            if ((keccak256(_functionHash) != resolveDisputeHashV2) &&
              (mrSequence != uint(IMemberRoles.Role.AdvisoryBoard)) &&
              proposalVoteTally[_proposalId].abVoteValue[1].mul(100)
                 .div(memberRole.numberOfMembers(uint(IMemberRoles.Role.AdvisoryBoard))) >= advisoryBoardMajority
@@ -142,7 +227,7 @@ contract GovernanceNew is Governance {
             }
         }
         if(allProposalData[_proposalId].propStatus > uint256(ProposalStatus.Accepted)) {
-            if(keccak256(_functionHash) == resolveDisputeHash) {
+            if(keccak256(_functionHash) == resolveDisputeHashV2) {
                 allMarkets.burnDisputedProposalTokens(_proposalId);
             }
         }
@@ -152,6 +237,43 @@ contract GovernanceNew is Governance {
                 address(allMarkets),
                 allProposalData[_proposalId].commonIncentive
             );
+        }
+    }
+
+    /**
+     * @dev Checks if the vote count against any solution passes the threshold value or not.
+     */
+    function _checkForThreshold(uint256 _proposalId, uint256 _category)
+        internal
+        view
+        returns (bool check)
+    {
+        uint256 categoryQuorumPerc;
+        uint256 roleAuthorized;
+        (, roleAuthorized, , categoryQuorumPerc, , , ) = proposalCategory
+            .category(_category);
+        if (roleAuthorized == uint256(IMemberRoles.Role.TokenHolder)) {
+            check =
+                (allProposalData[_proposalId].totalVoteValue).mul(100).div(
+                    tokenController.totalSupply()
+                ) >=
+                categoryQuorumPerc;
+        } else if (roleAuthorized == uint256(IMemberRoles.Role.DisputeResolution)) {
+            (uint256 marketId, ) = abi.decode(allProposalSolutions[_proposalId][1], (uint256, uint256));
+            uint256 totalStakeValueInPlot = allMarkets.getTotalStakedValueInPLOT(marketId);
+            if(allProposalData[_proposalId].totalVoteValue > 0) {
+                check =
+                    (allProposalData[_proposalId].totalVoteValue) >=
+                    (_minOf(totalStakeValueInPlot.mul(drQuorumMulitplier), (tokenController.totalSupply()).mul(100).div(totalSupplyCapForDRQrm)));
+            } else {
+                check = false;
+            }
+        } else {
+            check =
+                (proposalVoteTally[_proposalId].voters).mul(100).div(
+                    memberRole.numberOfMembers(roleAuthorized)
+                ) >=
+                categoryQuorumPerc;
         }
     }
 
