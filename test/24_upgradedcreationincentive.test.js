@@ -986,9 +986,8 @@ contract("Market Creation Incentive", async function([
 
     it("should be able to claim market participation rewards", async function() {
         let reward = await allMarkets.getReturn(user7, market2);
-        await market2.claimReturn(user7, { from: user7 });
-        let balance = await plotusToken.balanceOf(market2.address);
-        let perc = await allMarkets.getMarketCreatorRPoolShareParams(market2.address);
+        await allMarkets.withdrawMax(100, { from: user7 });
+        let perc = await marketIncentives.getMarketCreatorRPoolShareParams(market2 , 0, 0);
         assert.equal(reward[0][0] / 1e18, 99.95 + 99.95 - (perc[0] * 1 * 99.95) / 10000);
     });
 
