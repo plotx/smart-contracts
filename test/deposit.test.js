@@ -8,17 +8,19 @@ const PlotusToken = artifacts.require("MockPLOT");
 const MockWeth = artifacts.require("MockWeth");
 const MarketUtility = artifacts.require("MockConfig");
 const MockConfig = artifacts.require("MockConfig");
-const Governance = artifacts.require("Governance");
+const Governance = artifacts.require("GovernanceNew");
 const AllMarkets = artifacts.require("MockAllMarkets");
 const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
+const ProposalCategory = artifacts.require("ProposalCategory");
 const web3 = Market.web3;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const assertRevert = require("./utils/assertRevert").assertRevert;
 const latestTime = require("./utils/latestTime").latestTime;
 const encode = require("./utils/encoder.js").encode;
+const encode1 = require('./utils/encoder.js').encode1;
 const { toHex, toWei, toChecksumAddress } = require("./utils/ethTools");
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 
@@ -28,7 +30,7 @@ const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 var nullAddress = "0x0000000000000000000000000000000000000000";
 let marketId= 0;
 
-contract("AllMarket", async function([user1, user2, user3, user4]) {
+contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, user7, user8]) {
     let masterInstance,
         plotusToken,
         marketConfig,
@@ -79,9 +81,63 @@ contract("AllMarket", async function([user1, user2, user3, user4]) {
 
         await plotusToken.transfer(user2,toWei(1000));
         await plotusToken.transfer(user3,toWei(1000));
+        await plotusToken.transfer(user5,toWei(1000));
 
         await plotusToken.approve(allMarkets.address,toWei(10000),{from:user2});
-        await plotusToken.approve(allMarkets.address,toWei(10000),{from:user3});        
+        await plotusToken.approve(allMarkets.address,toWei(10000),{from:user3});
+        await plotusToken.approve(allMarkets.address,toWei(10000),{from:user5}); 
+
+        let nullAddress = "0x0000000000000000000000000000";
+        let pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+        pc = await ProposalCategory.at(pc);
+          let newGV = await Governance.new()
+          actionHash = encode1(
+            ['bytes2[]', 'address[]'],
+            [
+              [toHex('GV')],
+              [newGV.address]
+            ]
+          );
+
+          let p = await governance.getProposalLength();
+          await governance.createProposal("proposal", "proposal", "proposal", 0);
+          let canClose = await governance.canCloseProposal(p);
+          assert.equal(parseFloat(canClose),0);
+          await governance.categorizeProposal(p, 7, 0);
+          await governance.submitProposalWithSolution(p, "proposal", actionHash);
+          await governance.submitVote(p, 1)
+          await increaseTime(604800);
+          await governance.closeProposal(p);
+          await increaseTime(604800);
+          await governance.triggerAction(p);
+          await assertRevert(governance.triggerAction(p));
+          await increaseTime(604800);
+
+          let c1 = await pc.totalCategories();
+          //proposal to add category
+          actionHash = encode1(
+            ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+            [
+              10,
+              "ResolveDispute",
+              3,
+              50,
+              50,
+              [2],
+              86400,
+              "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+              nullAddress,
+              toHex("AM"),
+              [0, 0],
+              "resolveDispute(uint256,uint256)",
+            ]
+          );
+          let p1 = await governance.getProposalLength();
+          await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+          await governance.submitVote(p1.toNumber(), 1);
+          await governance.closeProposal(p1.toNumber());
+          let cat2 = await pc.totalCategories();
+          await increaseTime(604800);       
     });
 
     it("Should be able to withdraw deposited ETH even without paerticipating", async function() {
@@ -164,13 +220,187 @@ contract("AllMarket", async function([user1, user2, user3, user4]) {
 
         await increaseTime(60*60);
         let ethBalBefore = await web3.eth.getBalance(user2);
-        await allMarkets.withdrawMax(10,{from:user2});
+        let _gasPrice = 15000000000;
+
+        let tx= await allMarkets.withdrawMax(10,{from:user2,gasPrice:_gasPrice});
+
+        let gasUsed = tx.receipt.gasUsed;
+
+        let gascost = _gasPrice * gasUsed;
         let ethBalAfter = await web3.eth.getBalance(user2);
 
-        // assert.equal(Math.round((ethBalAfter2 - ethBalAfter)/1e18),1);
+        let user3Lost = 1e18 - 1e17/100;
+
+        let rewardAmt = user3Lost - user3Lost*0.5/100 + (0.002 *1e18 - 0.0002*1e18/100);
+
+        assert.equal(Math.round((ethBalAfter - ethBalBefore)/1e4),Math.round((rewardAmt-gascost)/1e4));
 
         let unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0],0);
+
+    });
+
+    it("Integrated test case", async function() {
+
+        await allMarkets.deposit(toWei(1000),{from:user2,value:toWei(1)}); 
+        await allMarkets.deposit(toWei(400),{from:user5,value:toWei(2)}); 
+
+        await allMarkets.createMarket(1, 0,{from:user4});
+
+        await allMarkets.placePrediction(8, plotusToken.address, 100*1e8, 1, { from: user2 });
+        await allMarkets.placePrediction(8, ethAddress, 1e8, 2, { from: user5 });
+
+
+        await allMarkets.createMarket(0, 0,{from:user4});
+
+        await allMarkets.placePrediction(9, ethAddress, 0.1*1e8, 2, { from: user2 });
+        await allMarkets.placePrediction(9, plotusToken.address, 200*1e8, 1, { from: user5 });
+
+        await increaseTime(4 * 3600);
+
+        await allMarkets.createMarket(1, 0,{from:user4});
+
+        await allMarkets.placePrediction(10, plotusToken.address, 500*1e8, 1, { from: user2 });
+        await allMarkets.placePrediction(10, ethAddress, 1e8, 2, { from: user5 });
+
+
+        await allMarkets.createMarket(0, 0,{from:user4});
+
+        await allMarkets.placePrediction(11, ethAddress, 0.5*1e8, 1, { from: user2 });
+        await allMarkets.placePrediction(11, plotusToken.address, 200*1e8, 2, { from: user5 });
+
+        let unusedBal = await allMarkets.getUserUnusedBalance(user2);
+
+        assert.equal(unusedBal[0],toWei(400));
+        assert.equal(unusedBal[2],toWei(0.4));
+
+        let ethBalBefore = await web3.eth.getBalance(user2);
+        let plotBalBefore = await plotusToken.balanceOf(user2);
+
+        let _gasPrice = 15000000000;
+
+        let tx = await allMarkets.withdraw(toWei(100),toWei(0.1),100,{from:user2,gasPrice:_gasPrice});
+
+        let gasUsed = tx.receipt.gasUsed;
+
+        let gascost = _gasPrice * gasUsed;
+
+        let ethBalAfter = await web3.eth.getBalance(user2);
+        let plotBalAfter = await plotusToken.balanceOf(user2);
+
+        assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.1*1e13);
+        assert.equal(plotBalAfter-plotBalBefore,toWei(100));
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+
+        assert.equal(unusedBal[0],toWei(300));
+        assert.equal(unusedBal[2],toWei(0.3));
+
+        tx = await allMarkets.withdrawMax(100,{from:user2,gasPrice:_gasPrice});
+
+        gasUsed = tx.receipt.gasUsed;
+
+        gascost = _gasPrice * gasUsed;
+
+        let ethBalAfter2 = await web3.eth.getBalance(user2);
+        let plotBalAfter2 = await plotusToken.balanceOf(user2);
+
+        assert.equal(Math.round((ethBalAfter2-ethBalAfter/1 + gascost)/1e5),0.3*1e13);
+        assert.equal(plotBalAfter2-plotBalAfter,toWei(300));
+
+        await increaseTime(4 * 3600);
+
+        await allMarkets.postResultMock(1,8);
+        await allMarkets.postResultMock(2,9);
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0]/1+unusedBal[2],0);
+        assert.equal(unusedBal[1]/1+unusedBal[3],0);
+
+
+        await governance.setAllMarketsAddress();
+
+        await plotusToken.approve(allMarkets.address,toWei(500));
+        let proposalId = await governance.getProposalLength();
+        await allMarkets.raiseDispute(9, "1","","","");
+
+        await increaseTime(3610);
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0]/1+unusedBal[2],toWei(99.9));
+        assert.equal(unusedBal[1]/1+unusedBal[3],toWei(0.9));
+
+        ethBalBefore = await web3.eth.getBalance(user2);
+        plotBalBefore = await plotusToken.balanceOf(user2);
+
+        tx = await allMarkets.withdrawMax(100,{from:user2,gasPrice:_gasPrice});
+
+        gasUsed = tx.receipt.gasUsed;
+
+        gascost = _gasPrice * gasUsed;
+
+        ethBalAfter = await web3.eth.getBalance(user2);
+        plotBalAfter = await plotusToken.balanceOf(user2);
+
+        assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.9*1e13);
+        assert.equal(plotBalAfter-plotBalBefore,toWei(99.9));
+
+        await assertRevert(allMarkets.withdrawMax(100,{from:user2}));
+
+        await increaseTime(5*3600);
+
+        await allMarkets.postResultMock(2,10);
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0]/1+unusedBal[2],0);
+        assert.equal(unusedBal[1]/1+unusedBal[3],0);
+
+        await allMarkets.postResultMock(1,11);
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0]/1+unusedBal[2],toWei(199.8));
+        assert.equal(unusedBal[1]/1+unusedBal[3],toWei(0.4995));
+
+        ethBalBefore = await web3.eth.getBalance(user2);
+        plotBalBefore = await plotusToken.balanceOf(user2);
+
+        tx = await allMarkets.withdrawMax(100,{from:user2,gasPrice:_gasPrice});
+
+        gasUsed = tx.receipt.gasUsed;
+
+        gascost = _gasPrice * gasUsed;
+
+        ethBalAfter = await web3.eth.getBalance(user2);
+        plotBalAfter = await plotusToken.balanceOf(user2);
+
+        assert.equal(Math.round((ethBalAfter-ethBalBefore/1 + gascost)/1e5),0.4995*1e13);
+        assert.equal(plotBalAfter-plotBalBefore,toWei(199.8));
+
+
+        await plotusToken.transfer(user6, "20000000000000000000000");
+        await plotusToken.transfer(user7, "20000000000000000000000");
+        await plotusToken.transfer(user8, "20000000000000000000000");
+        await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : user6});
+        await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : user6});
+        await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : user7});
+        await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : user7});
+        await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : user8});
+        await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : user8});
+
+
+        await governance.submitVote(proposalId, 1, {from:user6});
+        await governance.submitVote(proposalId, 1, {from:user7});
+        await governance.submitVote(proposalId, 1, {from:user8});
+        await increaseTime(604800);
+        await governance.closeProposal(proposalId);
+        await increaseTime(86401);
+        assert.equal((await allMarkets.getMarketResults(7))[0]/1, 3);
+
+
+
+        unusedBal = await allMarkets.getUserUnusedBalance(user2);
+        assert.equal(unusedBal[0]/1+unusedBal[2],0);
+        assert.equal(unusedBal[1]/1+unusedBal[3],0);
 
     });
 
