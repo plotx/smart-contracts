@@ -6,7 +6,8 @@ const Plotus = artifacts.require("MarketRegistry");
 const Master = artifacts.require("Master");
 const MarketConfig = artifacts.require("MockConfig");
 const PlotusToken = artifacts.require("MockPLOT");
-const Governance = artifacts.require("Governance");
+const Governance = artifacts.require("GovernanceNew");
+const ProposalCategory = artifacts.require("ProposalCategory");
 const TokenController = artifacts.require("TokenController");
 const MockchainLinkBTC = artifacts.require("MockChainLinkAggregator");
 const BLOT = artifacts.require("BLOT");
@@ -18,6 +19,7 @@ const MemberRoles = artifacts.require("MemberRoles");
 const MarketCreationRewards = artifacts.require('MarketCreationRewards');
 const BigNumber = require("bignumber.js");
 const { increaseTimeTo } = require("./utils/increaseTime.js");
+const encode1 = require('./utils/encoder.js').encode1;
 
 const web3 = Market.web3;
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
@@ -84,7 +86,7 @@ contract("Rewards-Market", async function(users) {
 			
             newUtility = await MarketUtility.new();
             existingMarkets = await plotusNewInstance.getOpenMarkets();
-            actionHash = encode("upgradeContractImplementation(address,address)", marketConfig.address, newUtility.address);
+            let actionHash = encode("upgradeContractImplementation(address,address)", marketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             marketConfig = await MarketUtility.at(marketConfig.address);
@@ -100,8 +102,62 @@ contract("Rewards-Market", async function(users) {
             await increaseTime(5 * 3600);
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
             await plotusToken.transfer(users[11],toWei(100000));
+            await plotusToken.transfer(users[12],toWei(100000));
             await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
             await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
+
+			let nullAddress = "0x0000000000000000000000000000";
+            let pc = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
+			pc = await ProposalCategory.at(pc);
+		      let newGV = await Governance.new()
+		      actionHash = encode1(
+		        ['bytes2[]', 'address[]'],
+		        [
+		          [toHex('GV')],
+		          [newGV.address]
+		        ]
+		      );
+
+		      let p = await governance.getProposalLength();
+		      await governance.createProposal("proposal", "proposal", "proposal", 0);
+		      let canClose = await governance.canCloseProposal(p);
+		      assert.equal(parseFloat(canClose),0);
+		      await governance.categorizeProposal(p, 7, 0);
+		      await governance.submitProposalWithSolution(p, "proposal", actionHash);
+		      await governance.submitVote(p, 1)
+		      await increaseTime(604800);
+		      await governance.closeProposal(p);
+		      await increaseTime(604800);
+		      await governance.triggerAction(p);
+		      await assertRevert(governance.triggerAction(p));
+		      await increaseTime(604800);
+
+		      let c1 = await pc.totalCategories();
+		      //proposal to add category
+		      actionHash = encode1(
+		        ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+		        [
+		          10,
+		          "ResolveDispute",
+		          3,
+		          50,
+		          50,
+		          [2],
+		          86400,
+		          "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+		          nullAddress,
+		          toHex("AM"),
+		          [0, 0],
+		          "resolveDispute(uint256,uint256)",
+		        ]
+		      );
+		      let p1 = await governance.getProposalLength();
+		      await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
+		      await governance.submitVote(p1.toNumber(), 1);
+		      await governance.closeProposal(p1.toNumber());
+		      let cat2 = await pc.totalCategories();
+		      await increaseTime(604800);
+
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
             await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
@@ -188,6 +244,19 @@ contract("Rewards-Market", async function(users) {
 			await increaseTime(5*60*60);
 
 			await allMarkets.postResultMock(1,7);
+			await governance.setAllMarketsAddress();
+			await plotusToken.transfer(users[12], "700000000000000000000");
+			await plotusToken.approve(allMarkets.address, "500000000000000000000", {
+				from: users[12],
+			});
+			let proposalId = await governance.getProposalLength();
+			let marketETHBalanceBeforeDispute = await web3.eth.getBalance(marketInstance.address);
+			let registryBalanceBeforeDispute = await web3.eth.getBalance(plotusNewInstance.address);
+			await allMarkets.raiseDispute(7, "500000000000000000000","","","", {from: users[12]});
+			await increaseTime(604810);
+			await governance.closeProposal(proposalId/1);
+			let balanceAfterClosingDispute = await web3.eth.getBalance(marketInstance.address);
+			assert.equal(marketETHBalanceBeforeDispute/1, balanceAfterClosingDispute/1);
 
 			await increaseTime(60*61);
 
