@@ -169,7 +169,7 @@ contract("Rewards-Market", async function(users) {
 
 			await allMarkets.postResultMock(1,7);
 
-			await increaseTime(60*60);
+			await increaseTime(60*60 +1);
 
 			let userRewardEth = [0,0,0,0,0.999,1.998,0.999,2.997,0.999,1.998];
 			let userRewardPlot = [99.95,399.8,209.895,122.9385,0,0,0,0,0,0];
@@ -196,6 +196,103 @@ contract("Rewards-Market", async function(users) {
 
 
 			let tx1 = await assertRevert(marketIncentives.claimCreationReward(100,{from:users[11]}));
+
+		});
+	});
+
+	describe("Scenario5", async () => {
+		it("Create new market", async () => {
+			await plotusToken.transfer(users[12],toWei(300000));
+            await plotusToken.approve(tokenController.address,toWei(300000),{from:users[12]});
+            await tokenController.lock(toHex("SM"),toWei(300000),30*3600*24,{from:users[12]});
+            await allMarkets.createMarket(0, 0,{from:users[12]});
+            await plotusToken.transfer(marketIncentives.address,toWei(100000));
+			await marketIncentives.claimCreationReward(100,{from:users[12]});
+		});
+
+		it("Scenario 5: All losers, no winners and Staked less than 1 ETH", async () => {
+			let i;
+			let unusedEth = [""];
+			let unusedPlot = [""];
+			for(i=1; i<7;i++){
+
+			    await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[i] });
+			    await allMarkets.deposit(0, { value: toWei(0.2), from: users[i] });
+			    await plotusToken.approve(tokenController.address, toWei(100000), { from: users[i] });
+			    let _unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+			    unusedPlot.push(_unusedBal[0]/1e18);
+			    unusedEth.push(_unusedBal[2]/1e18);
+			}
+
+			await marketConfig.setPrice(toWei(0.012));
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.placePrediction(8, ethAddress, 0.1*1e8, 2, { from: users[1] });
+			await marketConfig.setPrice(toWei(0.014));
+			await marketConfig.setNextOptionPrice(27);
+			await allMarkets.placePrediction(8, ethAddress, 0.2*1e8, 3, { from: users[2] });
+			await marketConfig.setPrice(toWei(0.01));
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.placePrediction(8, ethAddress, 0.1*1e8, 2, { from: users[3] });
+			await marketConfig.setPrice(toWei(0.045));
+			await marketConfig.setNextOptionPrice(27);
+			await allMarkets.placePrediction(8, ethAddress, 0.1*1e8, 3, { from: users[4] });
+			await marketConfig.setPrice(toWei(0.051));
+			await marketConfig.setNextOptionPrice(27);
+			await allMarkets.placePrediction(8, ethAddress, 0.1*1e8, 3, { from: users[5] });
+			await marketConfig.setPrice(toWei(0.012));
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.placePrediction(8, ethAddress, 0.2*1e8, 2, { from: users[6] });
+
+			let options=[2,3,2,3,3,2];
+
+			let betpoints = [5.55,7.4,5.55,3.7,3.7,11.1];
+
+			let usedEth = [1,2,1,1,1,2];
+			let usedPlot = [0,0,0,0,0,0];
+
+			for(i=1;i<7;i++)
+			{
+				let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],8,options[i-1]))/1e5;
+				assert.equal(betPointUser,betpoints[i-1]);
+				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				assert.equal(Math.round((unusedPlot[i]-unusedBal[0]/1e18)),usedPlot[i-1]);
+				assert.equal(Math.round((unusedEth[i]-unusedBal[2]/1e18)*10),usedEth[i-1]);
+			}
+
+			await increaseTime(8*60*60);
+
+			await allMarkets.postResultMock(1,8);
+
+			await increaseTime(60*60+1);
+
+			let userRewardEth = [0,0,0,0,0,0];
+			let userRewardPlot = [0,0,0,0,0,0];
+
+			for(i=1;i<7;i++)
+			{
+				let reward = await allMarkets.getReturn(users[i],8);
+				assert.equal(reward[0][0]/1e8,userRewardPlot[i-1]);
+				assert.equal(reward[0][1]/1e8,userRewardEth[i-1]);
+
+				let ethBalBefore = await web3.eth.getBalance(users[i]);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+
+				let pendingData = await allMarkets.getUserUnusedBalance(users[i]);
+				if(pendingData[0]/1+pendingData[1]>0 || pendingData[2]/1+pendingData[3]>0)
+					await allMarkets.withdrawMax(100,{from:users[i]});
+				let ethBalAfter = await web3.eth.getBalance(users[i]);
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((ethBalAfter-ethBalBefore)/1e18),Math.round((unusedEth[i]-usedEth[i-1]/10)/1+reward[0][1]/1e8));
+				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((unusedPlot[i]-usedPlot[i-1])/1+reward[0][0]/1e8));
+			}
+
+			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[12]);	
+			assert.equal(0,marketCreatorReward[2]);
+			assert.equal(0,marketCreatorReward[1]);
+
+
+
+			let tx1 = await assertRevert(marketIncentives.claimCreationReward(100,{from:users[12]}));
 
 		});
 	});
