@@ -17,7 +17,7 @@ pragma solidity 0.5.7;
 
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./interfaces/IMarketUtility.sol";
+import "./interfaces/IMarketUtility.sol";   
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./interfaces/IToken.sol";
@@ -470,7 +470,7 @@ contract AllMarkets is Governed {
     * @param _prediction The option on which user placed prediction.
     */
     function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public {
-      require(!marketCreationPaused && _prediction <= totalOptions);
+      require(!marketCreationPaused && _prediction <= totalOptions && _prediction >0);
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint64 _commissionStake;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
