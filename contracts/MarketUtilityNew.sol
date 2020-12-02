@@ -26,7 +26,7 @@ contract MarketUtilityNew is MarketUtility {
     authorizedAddress = _allMarketsContract;
   }
 
-  function calculateOptionRange(uint64 _marketCurrencyIndex,uint64 _marketTypeIndex, uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
+  function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
     uint currentPrice = getAssetPriceUSD(_marketFeed);
     uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
     _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));

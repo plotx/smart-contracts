@@ -231,7 +231,7 @@ contract AllMarkets is Governed {
       _addMarketType(168 hours, 500);
 
       _addMarketCurrency("ETH/USD", _ethFeed, 8, 1, _marketStartTime);
-      _addMarketCurrency("BTC/USD", _btcFeed, 25, 1, _marketStartTime);
+      _addMarketCurrency("BTC/USD", _btcFeed, 8, 25, _marketStartTime);
 
       marketBasicData.push(MarketBasicData(0,0,0, 0,0,0));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
@@ -253,7 +253,7 @@ contract AllMarkets is Governed {
       // require(_startTime.add(_predictionTime) > now);
       marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
-      (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(_marketCurrencyIndex, _marketTypeIndex, marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
+      (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
