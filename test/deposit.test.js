@@ -143,6 +143,10 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
           await increaseTime(604800);       
     });
 
+    it("Should revert if tries to deposit 0 amount", async function() {
+        await assertRevert(allMarkets.deposit(0,{from:user2,value:0}));
+    });
+
     it("Should be able to withdraw deposited ETH even without paerticipating", async function() {
         let ethBalBefore = await web3.eth.getBalance(user2);
         tx = await allMarkets.deposit(0,{from:user2,value:toWei(1)});
@@ -188,7 +192,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         await marketConfig.setNextOptionPrice(2);
 
         await allMarkets.deposit(0,{from:user2,value:toWei(0.002)});    
-        await allMarkets.deposit(0,{from:user3,value:toWei(1)});
+        // await allMarkets.deposit(0,{from:user3,value:toWei(1)});
 
         let ethBalbefore = await web3.eth.getBalance(user2);
 
@@ -201,14 +205,25 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         unusedBal = await allMarkets.getUserUnusedBalance(user2); 
         assert.equal(unusedBal[0],0);
 
-        await allMarkets.placePrediction(7, ethAddress, 1e8, 2, { from: user3 });
+        await allMarkets.depositAndPlacePrediction(0, toWei(1), 7, ethAddress, 1e8, 2, { from: user3, value:toWei(1) });
 
+    });
+
+    it("Should revert if tries to bet on incorrect option or with more than deposit amount", async function() {
+
+        await assertRevert(allMarkets.placePrediction(7, ethAddress, 2*1e5, 10, { from: user2 })); // wrong option
+        await assertRevert(allMarkets.placePrediction(7, ethAddress, 2*1e6, 1, { from: user2 })); // insuffecient deposit
     });
 
     it("Should not be able to withdraw even after user predicted correctly if market is still in cooling", async function() {
 
+        await assertRevert(allMarkets.postResultMock(1,7)); // can't call before closing time
+
         await increaseTime(8*60*60);
 
+        await assertRevert(allMarkets.placePrediction(7, ethAddress, 0, 1, { from: user2 })); // should not be able to predict after market expires
+
+        await assertRevert(allMarkets.postResultMock(0,7)); // closing values should not be 0
         await allMarkets.postResultMock(1,7);
 
 
@@ -216,7 +231,6 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
 
         let unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0],0);
-
     });
 
     it("Should be able to withdraw reward and deposited after cooling period is over", async function() {
@@ -240,7 +254,6 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
 
         let unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0],0);
-
     });
 
     it("Integrated test case", async function() {
@@ -397,7 +410,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         await governance.submitVote(proposalId, 1, {from:user6});
         await governance.submitVote(proposalId, 1, {from:user7});
         await governance.submitVote(proposalId, 1, {from:user8});
-        await increaseTime(604800);
+        await increaseTime(605800);
         await governance.closeProposal(proposalId);
         await increaseTime(86401);
         assert.equal((await allMarkets.getMarketResults(9))[0]/1, 3);
@@ -407,7 +420,14 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0]/1+unusedBal[1]/1,0);
         assert.equal(unusedBal[2]/1+unusedBal[3]/1,0);
+    });
 
+    it("Should revert if tries to deposit both eth and plot with depositAndPlacePrediction()", async function() {
+        await assertRevert(allMarkets.depositAndPlacePrediction(toWei(1),toWei(1),7,plotusToken.address,1e8,1,{from:user2,value:toWei(1)}));
+    });
+
+    it("Should revert if tries to pay wrong amount in eth while deposit", async function() {
+        await assertRevert(allMarkets.depositAndPlacePrediction(toWei(1),toWei(1),7,ethAddress,1e8,1,{from:user2,value:toWei(2)}));
     });
 
 });
