@@ -153,10 +153,20 @@ contract("Market Creation Incentive", async function([
         }
     }
 
+    it("Should revert if non proxy owner tries to call setMasterAddress()", async function() {
+        await assertRevert(allMarkets.setMasterAddress());
+    });
+
+    it("Should revert if tries to call addInitialMarketTypesAndStart() after initialization", async function() {
+        await assertRevert(allMarkets.addInitialMarketTypesAndStart(marketIncentives.address,ethAddress,"0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2",0,user1,user1));
+    });
+
     it("Should create Markets", async function() {
         console.log("-====>", allMarkets.address);
         await increaseTime(8 * 60 * 60);
         let tx = await allMarkets.createMarket(0, 0, { gasPrice: 300000 });
+
+        await assertRevert(allMarkets.createMarket(0, 0, { gasPrice: 300000 })); // Multiple same kind of markets can't exist at same time
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
     });
