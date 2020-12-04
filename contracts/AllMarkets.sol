@@ -201,7 +201,7 @@ contract AllMarkets is Governed {
      */
     function setMasterAddress() public {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-      require(msg.sender == proxy.proxyOwner(),"not owner.");
+      require(msg.sender == proxy.proxyOwner());
       IMaster ms = IMaster(msg.sender);
       masterAddress = msg.sender;
       plotToken = ms.dAppToken();
@@ -452,7 +452,6 @@ contract AllMarkets is Governed {
     * @param _prediction The option on which user placed prediction.
     */
     function depositAndPlacePrediction(uint _plotDeposit, uint _ethDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
-      uint256 plotDeposit;
       if(_asset == plotToken) {
         require(msg.value == 0);
       } else {
@@ -766,7 +765,7 @@ contract AllMarkets is Governed {
       returnAmount[1] = userData[_user].userMarketData[_marketId].predictionData[_winningOption].ethStaked;
       uint256 userPredictionPointsOnWinngOption = userData[_user].userMarketData[_marketId].predictionData[_winningOption].predictionPoints;
       if(userPredictionPointsOnWinngOption > 0) {
-        returnAmount = _addUserReward(_marketId, _user, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
+        returnAmount = _addUserReward(_marketId, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
       }
       if(marketDataExtended[_marketId].incentiveToDistribute > 0) {
         incentive = _totalUserPredictionPoints.mul((marketDataExtended[_marketId].incentiveToDistribute).div(_totalPredictionPoints));
@@ -780,7 +779,7 @@ contract AllMarkets is Governed {
     * @param returnAmount The return amount.
     * @return uint[] memory representing the return amount after adding reward.
     */
-    function _addUserReward(uint256 _marketId, address _user, uint[] memory returnAmount, uint256 _winningOption, uint256 _userPredictionPointsOnWinngOption) internal view returns(uint[] memory){
+    function _addUserReward(uint256 _marketId, uint[] memory returnAmount, uint256 _winningOption, uint256 _userPredictionPointsOnWinngOption) internal view returns(uint[] memory){
       for(uint j = 0; j< returnAmount.length; j++) {
         returnAmount[j] = returnAmount[j].add(
             _userPredictionPointsOnWinngOption.mul(marketDataExtended[_marketId].rewardToDistribute[j]).div(marketOptionsAvailable[_marketId][_winningOption].predictionPoints)
@@ -902,13 +901,11 @@ contract AllMarkets is Governed {
     * @param _result The final result of the market.
     */
     function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
-      uint256 stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
-      address staker = marketDataExtended[_marketId].disputeRaisedBy;
       // delete marketCreationRewardData[_marketId].plotIncentive;
       // delete marketCreationRewardData[_marketId].ethIncentive;
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
-      _transferAsset(plotToken, staker, stakedAmount);
+      _transferAsset(plotToken, marketDataExtended[_marketId].disputeRaisedBy, marketDataExtended[_marketId].disputeStakeAmount);
     }
 
     /**
@@ -929,12 +926,11 @@ contract AllMarkets is Governed {
     * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
     * @param _proposalId Id of dispute resolution proposal
     */
-    function burnDisputedProposalTokens(uint _proposalId) external {
+    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      uint _stakedAmount = marketDataExtended[_marketId].disputeStakeAmount;
-      IToken(plotToken).burn(_stakedAmount);
+      IToken(plotToken).burn(marketDataExtended[_marketId].disputeStakeAmount);
     }
 
     /**
