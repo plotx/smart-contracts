@@ -929,7 +929,7 @@ contract AllMarkets is Governed {
     * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
     * @param _proposalId Id of dispute resolution proposal
     */
-    function burnDisputedProposalTokens(uint _proposalId) external {
+    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
