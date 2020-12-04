@@ -61,8 +61,6 @@ module.exports = function(deployer, network, accounts){
       // await mockchainLinkAggregaror.setLatestAnswer(934999802346);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
-      let hash = await plotus.addInitialMarketTypesAndStart(date, deployMarket.address, deployMarketBTC.address);
-      console.log(hash.receipt.gasUsed);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate([accounts[0]]);
@@ -131,6 +129,10 @@ module.exports = function(deployer, network, accounts){
       assert.equal(await master.isInternal(mcr.address), true);
       await mcr.initialise(_marketUtility, mockchainLinkGas.address)
       await allMarkets.addInitialMarketTypesAndStart(mcr.address, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+
+      date = (await web3.eth.getBlock('latest')).timestamp + 10000;
+      let hash = await plotus.addInitialMarketTypesAndStart(date, deployMarket.address, deployMarketBTC.address);
+      console.log(hash.receipt.gasUsed);
   });
 };
 
