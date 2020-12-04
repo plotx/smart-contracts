@@ -17,7 +17,7 @@ pragma solidity 0.5.7;
 
 import "./MarketUtility.sol";
 
-contract MarketUtilityNew is MarketUtility {
+contract MarketUtilityV2 is MarketUtility {
 
   using SafeMath64 for uint64;
 

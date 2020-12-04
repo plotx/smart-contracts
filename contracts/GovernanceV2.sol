@@ -18,7 +18,7 @@ pragma solidity 0.5.7;
 import "./interfaces/IAllMarkets.sol";
 import "./Governance.sol";
 
-contract GovernanceNew is Governance {
+contract GovernanceV2 is Governance {
 
     IAllMarkets internal allMarkets;
     bytes32 constant resolveDisputeHashV2 = keccak256(abi.encodeWithSignature("resolveDispute(uint256,uint256)"));

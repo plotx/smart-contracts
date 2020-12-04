@@ -1,5 +1,5 @@
 const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
-const Governance = artifacts.require("GovernanceNew");
+const Governance = artifacts.require("GovernanceV2");
 const MemberRoles = artifacts.require("MemberRoles");
 const ProposalCategory = artifacts.require("ProposalCategory");
 const TokenController = artifacts.require("TokenController");

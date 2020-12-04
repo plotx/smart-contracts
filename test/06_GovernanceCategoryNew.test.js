@@ -1,4 +1,4 @@
-const Governance = artifacts.require('GovernanceNew');
+const Governance = artifacts.require('GovernanceV2');
 const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const Master = artifacts.require('Master');

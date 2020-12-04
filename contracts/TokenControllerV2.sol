@@ -17,7 +17,7 @@ pragma solidity  0.5.7;
 
 import "./TokenController.sol";
 
-contract TokenControllerNew is TokenController {
+contract TokenControllerV2 is TokenController {
 
     modifier onlyAuthorized {
         require(marketRegistry.isMarket(msg.sender) || IMaster(masterAddress).isInternal(msg.sender), "Not authorized");

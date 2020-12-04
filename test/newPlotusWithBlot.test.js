@@ -15,7 +15,7 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
-const TokenControllerNew = artifacts.require("TokenControllerNew");
+const TokenControllerNew = artifacts.require("TokenControllerV2");
 const MockChainLinkAggregator = artifacts.require("MockChainLinkAggregator");
 const BigNumber = require("bignumber.js");
 
