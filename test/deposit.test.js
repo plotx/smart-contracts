@@ -235,9 +235,9 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
 
     it("Should be able to withdraw reward and deposited after cooling period is over", async function() {
 
-        await increaseTime(60*60);
+        await increaseTime(60*61);
         let ethBalBefore = await web3.eth.getBalance(user2);
-        let _gasPrice = 15000000000;
+        let _gasPrice = 1500;
 
         let tx= await allMarkets.withdrawMax(10,{from:user2,gasPrice:_gasPrice});
 
