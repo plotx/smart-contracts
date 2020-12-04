@@ -80,7 +80,7 @@ contract MarketCreationRewards is Governed {
     }
 
     /**
-    * @dev function to update integer parameters of market
+    * @dev function to update integer parameters
     */
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
       if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
@@ -97,11 +97,39 @@ contract MarketCreationRewards is Governed {
     }
 
     /**
-    * @dev function to update address parameters of market
+    * @dev function to update address parameters
     */
-    function updateConfigAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
+    function updateAddressParameters(bytes8 code, address payable value) external onlyAuthorizedToGovern {
       if(code == "GASAGG") { // Incentive to be distributed to user for market creation
         clGasPriceAggregator = IChainLinkOracle(value);
+      }
+    }
+
+    /**
+    * @dev function to get integer parameters
+    */
+    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
+      codeVal = code;
+      if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
+        value = maxGasPrice;
+      } else if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
+        value = maxRewardPoolPercForMC;
+      } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
+        value = minRewardPoolPercForMC;
+      } else if(code == "PSFRPS") { // Reward Pool percent for market creator
+        value = plotStakeForRewardPoolShare;
+      } else if(code == "RPSTH") { // Reward Pool percent for market creator
+        value = rewardPoolShareThreshold;
+      }
+    }
+
+    /**
+    * @dev function to get address parameters
+    */
+    function getAddressParameters(bytes8 code) external view returns(bytes8 codeVal, address value) {
+      codeVal = code;
+      if(code == "GASAGG") { // Incentive to be distributed to user for market creation
+        value = address(clGasPriceAggregator);
       }
     }
 
