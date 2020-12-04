@@ -156,7 +156,7 @@ contract AllMarkets is Governed {
     * @param _marketStartTime Start time of initial markets
     */
     function addMarketCurrency(bytes32 _currencyName, address _marketFeed, uint8 decimals, uint8 roundOfToNearest, uint32 _marketStartTime) external onlyAuthorizedToGovern {
-      require(marketCurrencies[marketCurrency[_currencyName]].marketFeed == address(0));
+      require((marketCurrencies[marketCurrency[_currencyName]].currencyName != _currencyName));
       require(decimals != 0);
       require(roundOfToNearest != 0);
       require(_marketFeed != address(0));
@@ -179,7 +179,7 @@ contract AllMarkets is Governed {
     * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
     */
     function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc, uint32 _marketStartTime) external onlyAuthorizedToGovern {
-      require(marketTypeArray[marketType[_predictionTime]].predictionTime == 0);
+      require(marketTypeArray[marketType[_predictionTime]].predictionTime != _predictionTime);
       require(_predictionTime > 0);
       require(_optionRangePerc > 0);
       uint32 index = uint32(marketTypeArray.length);
@@ -732,6 +732,7 @@ contract AllMarkets is Governed {
     */
     function claimIncentive(address payable _user, uint256 _marketId) external {
       ( , uint _incentive, ) = getReturn(_user, _marketId);
+      require(_incentive > 0);
       _transferAsset(marketDataExtended[_marketId].incentiveToken, _user, _incentive);
       emit ClaimedIncentive(_user, _marketId, marketDataExtended[_marketId].incentiveToken, _incentive);
     }
