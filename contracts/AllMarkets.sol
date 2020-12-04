@@ -259,7 +259,7 @@ contract AllMarkets is Governed {
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
-      marketCreationRewards.calculateMarketCreationIncentive(msg.sender, gasProvided, _marketIndex);
+      marketCreationRewards.calculateMarketCreationIncentive(msg.sender, gasProvided - gasleft(), _marketIndex);
     }
 
     /**

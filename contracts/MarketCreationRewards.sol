@@ -14,7 +14,7 @@ contract MarketCreationRewards is Governed {
 
     using SafeMath for uint;
 
-	event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 plotIncentive, uint256 ethIncentive);
+	  event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 plotIncentive, uint256 ethIncentive);
     event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
     event ClaimedMarketCreationReward(address indexed user, uint256 ethIncentive, uint256 plotIncentive);
 
@@ -26,18 +26,18 @@ contract MarketCreationRewards is Governed {
     struct MarketCreationRewardData {
       uint ethIncentive;
       uint plotIncentive;
-      uint64 rewardPoolSharePerc;
+      uint16 rewardPoolSharePerc;
       address createdBy;
     }
 
     struct MarketCreationRewardUserData {
       uint incentives;
       uint128 lastClaimedIndex;
-      uint256[] marketsCreated;
+      uint64[] marketsCreated;
     }
 	
-	  uint64 internal maxRewardPoolPercForMC;
-    uint64 internal minRewardPoolPercForMC;
+	  uint16 internal maxRewardPoolPercForMC;
+    uint16 internal minRewardPoolPercForMC;
     uint256 internal maxGasPrice;
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     address internal plotToken;
@@ -86,9 +86,9 @@ contract MarketCreationRewards is Governed {
       if(code == "MAXGAS") { // Maximum gas upto which is considered while calculating market creation incentives
         maxGasPrice = value;
       } else if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
-        maxRewardPoolPercForMC = uint64(value);
+        maxRewardPoolPercForMC = uint16(value);
       } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
-        minRewardPoolPercForMC = uint64(value);
+        minRewardPoolPercForMC = uint16(value);
       } else if(code == "PSFRPS") { // Reward Pool percent for market creator
         plotStakeForRewardPoolShare = value;
       } else if(code == "RPSTH") { // Reward Pool percent for market creator
@@ -141,7 +141,7 @@ contract MarketCreationRewards is Governed {
       marketCreationRewardData[_marketId].createdBy = _createdBy;
       //Intentionally performed mul operation after div, to get absolute value instead of decimals
       marketCreationRewardData[_marketId].rewardPoolSharePerc
-       = uint64(Math.min(
+       = uint16(Math.min(
           maxRewardPoolPercForMC,
           minRewardPoolPercForMC + tokensLocked.div(plotStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
         ));
@@ -150,21 +150,20 @@ contract MarketCreationRewards is Governed {
     /**
     * @dev function to calculate user incentive for market creation
     * @param _createdBy Address of market creator
-    * @param gasProvided Gas provided by user 
+    * @param _gasCosumed Gas consumed by the transaction till now 
     * @param _marketId Index of market
     */
-    function calculateMarketCreationIncentive(address _createdBy, uint256 gasProvided, uint64 _marketId) external onlyInternal {
+    function calculateMarketCreationIncentive(address _createdBy, uint256 _gasCosumed, uint64 _marketId) external onlyInternal {
       _checkIfCreatorStaked(_createdBy, _marketId);
       marketCreationRewardUserData[_createdBy].marketsCreated.push(_marketId);
-      uint256 gasUsed;
+      uint256 gasUsedTotal;
       //Adding buffer gas for below calculations
-      gasUsed = 38500;
-      gasUsed = gasProvided - gasleft();
+      gasUsedTotal = _gasCosumed + 84000;
       uint256 gasPrice = _checkGasPrice();
-      uint256 gasCost = gasUsed.mul(gasPrice);
+      uint256 gasCost = gasUsedTotal.mul(gasPrice);
       (, uint256 incentive) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, gasCost);
       marketCreationRewardUserData[_createdBy].incentives = marketCreationRewardUserData[_createdBy].incentives.add(incentive);
-      emit MarketCreationReward(_createdBy, _marketId, incentive, gasUsed, gasCost, gasPrice, tx.gasprice, maxGasPrice, marketCreationRewardData[_marketId].rewardPoolSharePerc);
+      emit MarketCreationReward(_createdBy, _marketId, incentive, gasUsedTotal, gasCost, gasPrice, tx.gasprice, maxGasPrice, marketCreationRewardData[_marketId].rewardPoolSharePerc);
     }
 
     /**
@@ -258,7 +257,7 @@ contract MarketCreationRewards is Governed {
     /**
     * @dev Get market reward pool share percent to be rewarded to market creator
     */
-    function getMarketCreatorRPoolShareParams(uint256 _market, uint256 plotStaked, uint256 ethStaked) external view returns(uint64, bool) {
+    function getMarketCreatorRPoolShareParams(uint256 _market, uint256 plotStaked, uint256 ethStaked) external view returns(uint16, bool) {
       return (marketCreationRewardData[_market].rewardPoolSharePerc, _checkIfThresholdReachedForRPS(_market, plotStaked, ethStaked));
     }
 
