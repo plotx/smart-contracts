@@ -15,6 +15,7 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
+const TokenControllerNew = artifacts.require("TokenControllerNew");
 const MockChainLinkAggregator = artifacts.require("MockChainLinkAggregator");
 const BigNumber = require("bignumber.js");
 
@@ -24,6 +25,7 @@ const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const assertRevert = require("./utils/assertRevert").assertRevert;
 const latestTime = require("./utils/latestTime").latestTime;
 const encode = require("./utils/encoder.js").encode;
+const encode1 = require("./utils/encoder.js").encode1;
 const gvProposal = require("./utils/gvProposal.js").gvProposalWithIncentiveViaTokenHolder;
 const { toHex, toWei, toChecksumAddress } = require("./utils/ethTools");
 const to8Power = (number) => String(parseFloat(number) * 1e8);
@@ -66,8 +68,32 @@ describe("newPlotusWithBlot", () => {
             mockMarketConfig = await MockConfig.at(mockMarketConfig);
             weth = await MockWeth.deployed();
             await mockMarketConfig.setWeth(weth.address);
+            let newTC = await TokenControllerNew.new()
+            let actionHash = encode1(
+              ['bytes2[]', 'address[]'],
+              [
+                [toHex('TC')],
+                [newTC.address]
+              ]
+            );
+
+            let p = await governance.getProposalLength();
+            await governance.createProposal("proposal", "proposal", "proposal", 0);
+            let canClose = await governance.canCloseProposal(p);
+            assert.equal(parseFloat(canClose),0);
+            await governance.categorizeProposal(p, 7, 0);
+            await governance.submitProposalWithSolution(p, "proposal", actionHash);
+            await governance.submitVote(p, 1)
+            await increaseTime(604800);
+            await governance.closeProposal(p);
+            await increaseTime(604800);
+            await governance.triggerAction(p);
+            await assertRevert(governance.triggerAction(p));
+            await increaseTime(604800);
+
+            await assertRevert(tokenController.swapBLOT(user1, user2, toWei(10)));
             let newUtility = await MockConfig.new();
-            let actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
+            actionHash = encode("upgradeContractImplementation(address,address)", mockMarketConfig.address, newUtility.address);
             await gvProposal(6, actionHash, await MemberRoles.at(await masterInstance.getLatestAddress(toHex("MR"))), governance, 2, 0);
             await increaseTime(604800);
             mockUniswapV2Pair = await MockUniswapV2Pair.new();
