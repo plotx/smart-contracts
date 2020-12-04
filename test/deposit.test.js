@@ -250,7 +250,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
 
         let rewardAmt = user3Lost - user3Lost*0.5/100 + (0.002 *1e18 - 0.0002*1e18/100);
 
-        assert.equal(Math.round((ethBalAfter - ethBalBefore)/1e4),Math.round((rewardAmt-gascost)/1e4));
+        assert.equal(Math.round((ethBalAfter - ethBalBefore)/1e10),Math.round((rewardAmt-gascost)/1e10));
 
         let unusedBal = await allMarkets.getUserUnusedBalance(user2);
         assert.equal(unusedBal[0],0);
