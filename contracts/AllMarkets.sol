@@ -775,7 +775,6 @@ contract AllMarkets is Governed {
 
     /**
     * @dev Adds the reward in the total return of the specified address.
-    * @param _user The address to specify the return of.
     * @param returnAmount The return amount.
     * @return uint[] memory representing the return amount after adding reward.
     */
