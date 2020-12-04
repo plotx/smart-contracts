@@ -742,6 +742,7 @@ contract("Market Creation Incentive", async function([
         await governance.submitVote(proposalId, 1, { from: user3 });
         await governance.submitVote(proposalId, 1, { from: user4 });
         await increaseTime(604800);
+        pendingRewards = await marketIncentives.getPendingMarketCreationRewards(user10, { from: user10 });
         await governance.closeProposal(proposalId);
         await increaseTime(10000);
 
