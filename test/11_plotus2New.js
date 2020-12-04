@@ -194,7 +194,7 @@ contract("Rewards-Market", async function(users) {
 			let ethBalBeforeCreator = await web3.eth.getBalance(users[11]);
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
-			let _gasPrice = 15000000000;
+			let _gasPrice = 15;
 
 			let tx1 = await marketIncentives.claimCreationReward(100,{from:users[11],gasPrice:_gasPrice});
 
@@ -447,7 +447,7 @@ contract("Rewards-Market", async function(users) {
 			let ethBalBeforeCreator = await web3.eth.getBalance(users[11]);
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
-			let _gasPrice = 15000000000;
+			let _gasPrice = 15;
 
 			let tx1 = await marketIncentives.claimCreationReward(100,{from:users[11],gasPrice:_gasPrice});
 

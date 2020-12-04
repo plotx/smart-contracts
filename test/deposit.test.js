@@ -293,7 +293,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         let ethBalBefore = await web3.eth.getBalance(user2);
         let plotBalBefore = await plotusToken.balanceOf(user2);
 
-        let _gasPrice = 15000000000;
+        let _gasPrice = 15;
 
         let tx = await allMarkets.withdraw(toWei(100),toWei(0.1),100,{from:user2,gasPrice:_gasPrice});
 
