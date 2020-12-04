@@ -100,7 +100,7 @@ contract("Rewards-Market", async function(users) {
             await plotusToken.transfer(users[11],toWei(25001));	
             await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});	
             await tokenController.lock(toHex("SM"),toWei(25001),30*3600*24,{from:users[11]});	
-            await allMarkets.createMarket(0, 0,{from:users[11]});
+            await allMarkets.createMarket(0, 0,{from:users[11], gasPrice:10});
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
 			await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
@@ -205,7 +205,7 @@ contract("Rewards-Market", async function(users) {
 			await plotusToken.transfer(users[12],toWei(300000));
             await plotusToken.approve(tokenController.address,toWei(300000),{from:users[12]});
             await tokenController.lock(toHex("SM"),toWei(300000),30*3600*24,{from:users[12]});
-            await allMarkets.createMarket(0, 0,{from:users[12]});
+            await allMarkets.createMarket(0, 0,{from:users[12], gasPrice:10});
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
 			await marketIncentives.claimCreationReward(100,{from:users[12]});
 		});

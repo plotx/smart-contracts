@@ -99,7 +99,7 @@ contract("Rewards-Market", async function(users) {
             await utility.setAuthorizedAddress(allMarkets.address);
             let mockChainLinkGasPriceAgg = await MockChainLinkGasPriceAgg.new();
             await increaseTime(5 * 3600);
-            await allMarkets.createMarket(0, 0,{from:users[11]});
+            await allMarkets.createMarket(0, 0,{from:users[11], gasPrice:10});
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
 			await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
@@ -317,7 +317,7 @@ contract("Rewards-Market", async function(users) {
 		      let cat2 = await pc.totalCategories();
 		      await increaseTime(604800);
 
-            await allMarkets.createMarket(0, 0,{from:users[11]});
+            await allMarkets.createMarket(0, 0,{from:users[11], gasPrice:10});
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
 			await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
