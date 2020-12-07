@@ -136,7 +136,6 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             predictionPointsBeforeUser5 = (await allMarkets.getUserPredictionPoints(user5, marketId, 3)) / 1e5;
             // console.log( //     predictionPointsBeforeUser1, //     predictionPointsBeforeUser2, //     predictionPointsBeforeUser3, //     predictionPointsBeforeUser4, //     predictionPointsBeforeUser5 // );
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [55.52777778, 222.1111111, 111.0555556, 37.01851852, 3.701851852];
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
@@ -146,11 +145,7 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser5,
             ];
             for (let i = 0; i < 5; i++) {
-                try {
                     assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                }
             }
 
             await increaseTime(8 * 60 * 60);
@@ -207,7 +202,6 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 3)) / 1e5;
             // console.log( //     predictionPointsBeforeUser1, //     predictionPointsBeforeUser2, //     predictionPointsBeforeUser3, //     predictionPointsBeforeUser4, //     predictionPointsBeforeUser5 // );
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [116.6083333, 310.9555556, 233.2166667, 77.73888889, 3.701851852];
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
@@ -217,11 +211,7 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
                 predictionPointsBeforeUser5,
             ];
             for (let i = 0; i < 5; i++) {
-                try {
                     assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                }
             }
 
             await increaseTime(8 * 60 * 60);
@@ -332,7 +322,6 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
             predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 2)) / 1e5;
             // console.log( //     predictionPointsBeforeUser1, //     predictionPointsBeforeUser1_2, //     predictionPointsBeforeUser2, //     predictionPointsBeforeUser3, //     predictionPointsBeforeUser4, //     predictionPointsBeforeUser5 // );
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [1110, 55.5, 55.5, 37, 111, 11.1];
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
@@ -343,11 +332,7 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
                 predictionPointsBeforeUser5,
             ];
             for (let i = 0; i < 5; i++) {
-                try {
                     assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                }
             }
 
             await increaseTime(8 * 60 * 60);
@@ -400,7 +385,6 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
             predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 2)) /  1e5;
             // console.log( //     predictionPointsBeforeUser1, //     predictionPointsBeforeUser1_2, //     predictionPointsBeforeUser2, //     predictionPointsBeforeUser3, //     predictionPointsBeforeUser4, //     predictionPointsBeforeUser5 // );
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [2331, 55.5, 61.05, 407, 2331, 11.1];
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
@@ -411,11 +395,7 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
                 predictionPointsBeforeUser5,
             ];
             for (let i = 0; i < 5; i++) {
-                try {
-                    assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                }
+                assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
             }
 
             await increaseTime(8 * 60 * 60);
@@ -518,9 +498,8 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
-            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+            // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [11.10555556 + 44.42222222, 44.42222222, 22.21111111];
             const expectedPLOTReturn = [144.1501111 + 576.6004444, 576.6004444, 0];
             const expectedETHReturn = [0, 0, 0];
@@ -545,50 +524,18 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let returnETHUser3 = (await allMarkets.getReturn(user3, marketId))[0][1] / 1e8;
             const ethReturn = [returnETHUser1, returnETHUser2, returnETHUser3]
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             await allMarkets.withdrawMax(10, { from: user1 });
             await allMarkets.withdrawMax(10, { from: user2 });
             await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             for (let i = 0; i < 3; i++) {
-                try {
-                    assert.equal(expectedPredictionPoints[i], predictionPointArray[i]);
-                    assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
-                    assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedPLOTReturn[i]} Got: ${plotReturn[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedETHReturn[i]} Got: ${ethReturn[i]}`);
-                }
+                assert.equal(expectedPredictionPoints[i].toFixed(1), predictionPointArray[i].toFixed(1));
+                assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
+                assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
             }
         });
         it("3.2. Scenario 2", async () => {
@@ -616,9 +563,8 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
-            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+            // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [5.552777778 + 22.21111111, 44.42222222, 22.21111111];
             const expectedPLOTReturn = [0 + 0, 1294.85225, 0];
             const expectedETHReturn = [0, 0, 0];
@@ -643,50 +589,18 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let returnETHUser3 = (await allMarkets.getReturn(user3, marketId))[0][1] / 1e8;
             const ethReturn = [returnETHUser1, returnETHUser2, returnETHUser3]
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             await allMarkets.withdrawMax(10, { from: user2 });
             await assertRevert(allMarkets.withdrawMax(10, { from: user1 }));
             await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             for (let i = 0; i < 3; i++) {
-                try {
-                    assert.equal(expectedPredictionPoints[i], predictionPointArray[i]);
-                    assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
-                    assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedPLOTReturn[i]} Got: ${plotReturn[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedETHReturn[i]} Got: ${ethReturn[i]}`);
-                }
+                assert.equal(expectedPredictionPoints[i].toFixed(1), predictionPointArray[i].toFixed(1));
+                assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
+                assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
             }
         });
         it("3.3. Scenario 3", async () => {
@@ -716,9 +630,8 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
-            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+            // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [11.10555556, 22.21111111, 44.42222222, 22.21111111];
             const expectedETHReturn = [0, 0, 0];
             const expectedPLOTReturn = [259.0704, 1036.2816, 0];
@@ -744,55 +657,20 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let returnETHUser3 = (await allMarkets.getReturn(user3, marketId))[0][1] / 1e8;
             const ethReturn = [returnETHUser1, returnETHUser2, returnETHUser3]
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             await allMarkets.withdrawMax(10, { from: user1 });
             await allMarkets.withdrawMax(10, { from: user2 });
             await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
             for (let i = 0; i < 4; i++) {
-                try {
-                    assert.equal(expectedPredictionPoints[i], predictionPointArray[i]);
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${i} ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                }
+                assert.equal(expectedPredictionPoints[i].toFixed(1), predictionPointArray[i].toFixed(1));
             }
 
             for (let i = 0; i < 3; i++) {
-                try {
-                    assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
-                    assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${i} ${expectedPLOTReturn[i]} Got: ${plotReturn[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${i} ${expectedETHReturn[i]} Got: ${ethReturn[i]}`);
-                }
+                assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
+                assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
             }
         });
         it("3.4. Scenario 4", async () => {
@@ -825,9 +703,8 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
-            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+            // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [44.4 + 44.42222222, 14.80740741, 22.21111111];
             const expectedETHReturn = [3.996 + 0, 0, 0];
             const expectedPLOTReturn = [397.7014751 + 797.7005249, 0, 0];
@@ -852,50 +729,18 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let returnETHUser3 = (await allMarkets.getReturn(user3, marketId))[0][1] / 1e8;
             const ethReturn = [returnETHUser1, returnETHUser2, returnETHUser3]
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             await allMarkets.withdrawMax(10, { from: user1 });
             await assertRevert(allMarkets.withdrawMax(10, { from: user2 }));
             await assertRevert(allMarkets.withdrawMax(10, { from: user3 }));
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             for (let i = 0; i < 3; i++) {
-                try {
-                    assert.equal(expectedPredictionPoints[i], predictionPointArray[i]);
-                    assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
-                    assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedPLOTReturn[i]} Got: ${plotReturn[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedETHReturn[i]} Got: ${ethReturn[i]}`);
-                }
+                assert.equal(expectedPredictionPoints[i].toFixed(1), predictionPointArray[i].toFixed(1));
+                assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
+                assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
             }
         });
         it("3.5. Scenario 5", async () => {
@@ -927,9 +772,8 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 3)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 1)) /  1e5;
 
-            console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
+            // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
 
-            console.log("\t*** Only decimal accuracy ***\t");
             const expectedPredictionPoints = [5.552777778 + 22.2, 14.80740741, 44.42222222];
             const expectedETHReturn = [0 + 0, 0, 3.97602];
             const expectedPLOTReturn = [0 + 0, 0, 897.05125];
@@ -954,50 +798,18 @@ describe("new_Multiplier 3. Bets Multiple options sheet", () => {
             let returnETHUser3 = (await allMarkets.getReturn(user3, marketId))[0][1] / 1e8;
             const ethReturn = [returnETHUser1, returnETHUser2, returnETHUser3]
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             await assertRevert(allMarkets.withdrawMax(10, { from: user1 }));
             await assertRevert(allMarkets.withdrawMax(10, { from: user2 }));
             await allMarkets.withdrawMax(10, { from: user3 });
 
-            console.log(
-                (await plotusToken.balanceOf(user1)) / 1e18,
-                (await plotusToken.balanceOf(user2)) / 1e18,
-                (await plotusToken.balanceOf(user3)) / 1e18,
-                (await plotusToken.balanceOf(user4)) / 1e18,
-                (await plotusToken.balanceOf(user5)) / 1e18
-            );
-            console.log(
-                (await web3.eth.getBalance(user1)) / 1e18,
-                (await web3.eth.getBalance(user2)) / 1e18,
-                (await web3.eth.getBalance(user3)) / 1e18,
-                (await web3.eth.getBalance(user4)) / 1e18,
-                (await web3.eth.getBalance(user5)) / 1e18
-            );
+            // console.log( //     (await plotusToken.balanceOf(user1)) / 1e18, //     (await plotusToken.balanceOf(user2)) / 1e18, //     (await plotusToken.balanceOf(user3)) / 1e18, //     (await plotusToken.balanceOf(user4)) / 1e18, //     (await plotusToken.balanceOf(user5)) / 1e18 // ); // console.log( //     (await web3.eth.getBalance(user1)) / 1e18, //     (await web3.eth.getBalance(user2)) / 1e18, //     (await web3.eth.getBalance(user3)) / 1e18, //     (await web3.eth.getBalance(user4)) / 1e18, //     (await web3.eth.getBalance(user5)) / 1e18 // );
 
             for (let i = 0; i < 3; i++) {
-                try {
-                    assert.equal(expectedPredictionPoints[i], predictionPointArray[i]);
-                    assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
-                    assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
-                } catch (e) {
-                    console.log(`Not equal!! -> Sheet: ${expectedPredictionPoints[i]} Got: ${predictionPointArray[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedPLOTReturn[i]} Got: ${plotReturn[i]}`);
-                    console.log(`Not equal!! -> Sheet: ${expectedETHReturn[i]} Got: ${ethReturn[i]}`);
-                }
+                assert.equal(expectedPredictionPoints[i].toFixed(1), predictionPointArray[i].toFixed(1));
+                assert.equal(expectedPLOTReturn[i].toFixed(3), plotReturn[i].toFixed(3))
+                assert.equal(expectedETHReturn[i].toFixed(3), ethReturn[i].toFixed(3))
             }
         });
         it("3.6. Scenario 6,7 and 8", async () => {
