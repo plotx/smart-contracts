@@ -385,7 +385,7 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
             predictionPointsBeforeUser5 = parseFloat(await allMarkets.getUserPredictionPoints(user5, marketId, 2)) /  1e5;
             // console.log( //     predictionPointsBeforeUser1, //     predictionPointsBeforeUser1_2, //     predictionPointsBeforeUser2, //     predictionPointsBeforeUser3, //     predictionPointsBeforeUser4, //     predictionPointsBeforeUser5 // );
 
-            const expectedPredictionPoints = [2331, 55.5, 61.05, 407, 2331, 11.1];
+            const expectedPredictionPoints = [2331, 55.5, 61.05, 407, 2333.222222, 11.1];
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
                 predictionPointsBeforeUser1_2,
