@@ -450,6 +450,8 @@ contract AllMarkets is Governed {
     * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
+    * _plotDeposit, _ethDeposit should be passed with 18 decimals
+    * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
     function depositAndPlacePrediction(uint _plotDeposit, uint _ethDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
       if(_asset == plotToken) {
@@ -467,6 +469,7 @@ contract AllMarkets is Governed {
     * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
+    * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
     function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) public {
       require(!marketCreationPaused && _prediction <= totalOptions && _prediction >0);
@@ -492,6 +495,7 @@ contract AllMarkets is Governed {
         _asset = plotToken;
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
       }
+      //Storing prediction stake value in _commissionStake variable after deducting commission fee
       _commissionStake = _predictionStake.sub(_commissionStake);
       
       uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(msg.sender, _marketId, _prediction, _asset, _commissionStake);
