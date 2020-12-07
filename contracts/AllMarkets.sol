@@ -18,11 +18,30 @@ pragma solidity 0.5.7;
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMarketUtility.sol";   
-import "./external/govblocks-protocol/Governed.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketCreationRewards.sol";
+
+contract IMaster {
+    mapping(address => bool) public whitelistedSponsor;
+    function dAppToken() public view returns(address);
+    function getLatestAddress(bytes2 _module) public view returns(address);
+}
+
+
+contract Governed {
+
+    address public masterAddress; // Name of the dApp, needs to be set by contracts inheriting this contract
+
+    /// @dev modifier that allows only the authorized addresses to execute the function
+    modifier onlyAuthorizedToGovern() {
+        IMaster ms = IMaster(masterAddress);
+        require(ms.getLatestAddress("GV") == msg.sender, "Not authorized");
+        _;
+    }
+
+}
 
 contract AllMarkets is Governed {
     using SafeMath32 for uint32;
@@ -46,7 +65,7 @@ contract AllMarkets is Governed {
     event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
-    event ClaimedIncentive(address indexed user, uint256 marketIndex, address incentiveTokenAddress, uint256 incentive);
+    event ClaimedIncentive(address indexed user, uint256[] marketsClaimed, address incentiveTokenAddress, uint256 incentive);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
@@ -61,6 +80,7 @@ contract AllMarkets is Governed {
       bool claimedReward;
       bool predictedWithBlot;
       bool multiplierApplied;
+      bool incentiveClaimed;
       mapping(uint => PredictionData) predictionData;
     }
 
@@ -89,8 +109,6 @@ contract AllMarkets is Governed {
       address incentiveToken;
       address incentiveSponsoredBy;
       uint disputeStakeAmount;
-      uint ethAmountToPool;
-      uint tokenAmountToPool;
       uint incentiveToDistribute;
       uint[] rewardToDistribute;
       PredictionStatus predictionStatus;
@@ -119,7 +137,6 @@ contract AllMarkets is Governed {
     address internal ETH_ADDRESS;
     address internal plotToken;
 
-    // IMarketRegistry constant marketRegistry = IMarketRegistry(0x309D36e5887EA8863A721680f728487F8d70DD09);
     ITokenController internal tokenController;
     IMarketUtility internal marketUtility;
     IGovernance internal governance;
@@ -249,8 +266,6 @@ contract AllMarkets is Governed {
       uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
-      // require(marketBasicData.startTime == 0, "Already initialized");
-      // require(_startTime.add(_predictionTime) > now);
       marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
@@ -312,7 +327,7 @@ contract AllMarkets is Governed {
       if(marketDataExtended[_marketId].settleTime > 0) {
         return marketDataExtended[_marketId].settleTime;
       }
-      return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime.mul(2));
+      return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime * 2);
     }
 
     /**
@@ -333,7 +348,7 @@ contract AllMarkets is Governed {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime(uint256 _marketId) public view returns(uint256) {
-      return marketDataExtended[_marketId].settleTime.add(marketBasicData[_marketId].predictionTime.div(4));
+      return marketDataExtended[_marketId].settleTime.add(marketBasicData[_marketId].predictionTime / 4);
     }
 
     /**
@@ -367,10 +382,13 @@ contract AllMarkets is Governed {
     */
     function deposit(uint _amount) payable public {
       require(_amount > 0 || msg.value > 0);
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
+      address _plotToken = plotToken;
+      if(msg.value > 0) {
+        userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
+      }
       if(_amount > 0) {
-        IToken(plotToken).transferFrom (msg.sender,address(this), _amount);
-        userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(_amount);
+        IToken(_plotToken).transferFrom (msg.sender,address(this), _amount);
+        userData[msg.sender].currencyUnusedBalance[_plotToken] = userData[msg.sender].currencyUnusedBalance[_plotToken].add(_amount);
       }
       emit Deposited(msg.sender, _amount, msg.value, now);
     }
@@ -438,7 +456,7 @@ contract AllMarkets is Governed {
       marketDataExtended[_marketId].incentiveToken = _token;
       marketDataExtended[_marketId].incentiveToDistribute = _value;
       marketDataExtended[_marketId].incentiveSponsoredBy = msg.sender;
-      IToken(plotToken).transferFrom(msg.sender, address(this), _value);
+      IToken(_token).transferFrom(msg.sender, address(this), _value);
       emit SponsoredIncentive(_marketId, _token, msg.sender, _value);
     }
 
@@ -446,18 +464,15 @@ contract AllMarkets is Governed {
     * @dev Deposit and Place prediction on the available options of the market.
     * @param _marketId Index of the market
     * @param _plotDeposit PLOT amount to deposit
-    * @param _ethDeposit ETH amount to deposit
     * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
-    * _plotDeposit, _ethDeposit should be passed with 18 decimals
+    * _plotDeposit should be passed with 18 decimals, amount of ETH to deposit should be sent as msg.value
     * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
-    function depositAndPlacePrediction(uint _plotDeposit, uint _ethDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
+    function depositAndPlacePrediction(uint _plotDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
       if(_asset == plotToken) {
         require(msg.value == 0);
-      } else {
-        require(msg.value == _ethDeposit);
       }
       deposit(_plotDeposit);
       placePrediction(_marketId, _asset, _predictionStake, _prediction);
@@ -475,23 +490,24 @@ contract AllMarkets is Governed {
       require(!marketCreationPaused && _prediction <= totalOptions && _prediction >0);
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint64 _commissionStake;
+      uint decimalMultiplier = 10**predictionDecimalMultiplier;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
         uint256 unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
-        unusedBalance = unusedBalance.div(10**predictionDecimalMultiplier);
+        unusedBalance = unusedBalance.div(decimalMultiplier);
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
           unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
-          unusedBalance = unusedBalance.div(10**predictionDecimalMultiplier);
+          unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
-        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(10**predictionDecimalMultiplier);
+        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[msg.sender].userMarketData[_marketId].predictedWithBlot);
         userData[msg.sender].userMarketData[_marketId].predictedWithBlot = true;
-        tokenController.swapBLOT(msg.sender, address(this), (10**predictionDecimalMultiplier).mul(_predictionStake));
+        tokenController.swapBLOT(msg.sender, address(this), (decimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
         _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
       }
@@ -540,7 +556,7 @@ contract AllMarkets is Governed {
       } else {
         delete marketDataExtended[_marketId].settleTime;
       }
-      marketDataExtended[_marketId].predictionStatus = PredictionStatus.Settled;
+      _setMarketStatus(_marketId, PredictionStatus.Settled);
       if(_value < marketBasicData[_marketId].neutralMinValue) {
         marketDataExtended[_marketId].WinningOption = 1;
       } else if(_value > marketBasicData[_marketId].neutralMaxValue) {
@@ -557,20 +573,11 @@ contract AllMarkets is Governed {
         ){
           marketCreatorIncentive[0] = _calculatePercentage(_rewardPoolShare, tokenParticipation, 10000);
           marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, ethParticipation, 10000);
-          tokenParticipation = tokenParticipation.sub(marketCreatorIncentive[0]);
-          ethParticipation = ethParticipation.sub(marketCreatorIncentive[1]);
         } else {
           marketCreatorIncentive[0] = _calculatePercentage(_rewardPoolShare, totalReward[0], 10000);
           marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, totalReward[1], 10000);
           totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
           totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
-        }
-      } else {
-        if(
-          marketOptionsAvailable[_marketId][marketDataExtended[_marketId].WinningOption].predictionPoints == 0
-        ){
-          marketDataExtended[_marketId].ethAmountToPool = ethParticipation;
-          marketDataExtended[_marketId].tokenAmountToPool = tokenParticipation;
         }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
@@ -691,10 +698,10 @@ contract AllMarkets is Governed {
         _plotStaked = new uint[](totalOptions);
         uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
-        _ethStaked[i] = marketOptionsAvailable[_marketId][i+1].ethStaked;
-        _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
-        uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
-        _optionPrice[i] = marketUtility.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+          _ethStaked[i] = marketOptionsAvailable[_marketId][i+1].ethStaked;
+          _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
+          uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
+          _optionPrice[i] = marketUtility.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
        }
     }
 
@@ -731,13 +738,28 @@ contract AllMarkets is Governed {
     /** 
     * @dev Allows users to claim sponsored incentives of market
     * @param _user User address
-    * @param _marketId Index of market
+    * @param _markets Indexes of markets which user want to claim incentive for
+    * @param _incentiveToken Incentive token to check rewards for
+    * User will pass a list of market id's to check for incentive of given token address,
+    * Incentive will be transferred to user if user had any and the incentive token of market is same as the one user had passed
     */
-    function claimIncentive(address payable _user, uint256 _marketId) external {
-      ( , uint _incentive, ) = getReturn(_user, _marketId);
-      require(_incentive > 0);
-      _transferAsset(marketDataExtended[_marketId].incentiveToken, _user, _incentive);
-      emit ClaimedIncentive(_user, _marketId, marketDataExtended[_marketId].incentiveToken, _incentive);
+    function claimIncentives(address payable _user, uint64[] calldata _markets, address _incentiveToken) external {
+      uint totalIncentive;
+      uint _index;
+      uint[] memory _marketsClaimed = new uint[](_markets.length);
+      for(uint64 i = 0; i < _markets.length; i++) {
+        ( , uint incentive, address incentiveToken) = getReturn(_user, _markets[i]);
+        if(incentive > 0 && incentiveToken == _incentiveToken && !userData[_user].userMarketData[_markets[i]].incentiveClaimed) {
+          userData[_user].userMarketData[_markets[i]].incentiveClaimed = true;
+          totalIncentive = totalIncentive.add(incentive);
+          _marketsClaimed[_index] = i;
+          _index++;
+        }
+
+      }
+      require(totalIncentive > 0);
+      _transferAsset(_incentiveToken, _user, totalIncentive);
+      emit ClaimedIncentive(_user, _marketsClaimed, _incentiveToken, totalIncentive);
     }
 
     /**
@@ -893,15 +915,13 @@ contract AllMarkets is Governed {
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
-      delete marketDataExtended[_marketId].ethAmountToPool;
-      delete marketDataExtended[_marketId].tokenAmountToPool;
-      marketDataExtended[_marketId].predictionStatus = PredictionStatus.InDispute;
+      _setMarketStatus(_marketId, PredictionStatus.InDispute);
     }
 
     /**
     * @dev Resolve the dispute if wrong value passed at the time of market result declaration.
     * @param _marketId Index of market.
-    * @param _result The final result of the market.
+    * @param _result The final proposed result of the market.
     */
     function resolveDispute(uint256 _marketId, uint256 _result) external onlyAuthorizedToGovern {
       // delete marketCreationRewardData[_marketId].plotIncentive;
@@ -913,6 +933,7 @@ contract AllMarkets is Governed {
 
     /**
     * @dev Resolve the dispute
+    * @param _marketId Index of market.
     * @param accepted Flag mentioning if dispute is accepted or not
     * @param finalResult The final correct value of market currency.
     */
@@ -922,7 +943,7 @@ contract AllMarkets is Governed {
         marketCreationRewards.returnMarketRewardPoolShare(_marketId);
         _postResult(finalResult, 0, _marketId);
       }
-      marketDataExtended[_marketId].predictionStatus = PredictionStatus.Settled;
+      _setMarketStatus(_marketId, PredictionStatus.Settled);
     }
 
     /**
@@ -940,8 +961,8 @@ contract AllMarkets is Governed {
     * @dev Get flags set for user
     * @param _marketId Index of market.
     * @param _user User address
-    * @return Flag defining if user had availed multiplier
     * @return Flag defining if user had predicted with bPLOT
+    * @return Flag defining if user had availed multiplier
     */
     function getUserFlags(uint256 _marketId, address _user) external view returns(bool, bool) {
       return (
@@ -977,7 +998,16 @@ contract AllMarkets is Governed {
     }
 
     /**
-    * @dev Patayble Fallback function to recieve funds
+    * @dev Internal function set market status
+    * @param _marketId Index of market
+    * @param _status Status of market to set
+    */    
+    function _setMarketStatus(uint256 _marketId, PredictionStatus _status) internal {
+      marketDataExtended[_marketId].predictionStatus = _status;
+    }
+
+    /**
+    * @dev Payable Fallback function to receive funds
     */
     function () external payable {
     }
