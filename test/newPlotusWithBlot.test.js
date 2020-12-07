@@ -200,7 +200,7 @@ describe("newPlotusWithBlot", () => {
                 predictionPoints = predictionPoints / 1;
                 return predictionPoints;
             };
-            PredictionPointsExpected = [5.552777778, 22.21111111, 11.66083333, 4.553277778, 111, 222, 55.5, 111, 37, 111];
+            PredictionPointsExpected = [5.552777778, 44.42222222, 11.66083333, 68.29916667, 111, 222, 55.5, 111, 37, 111];
 
             for (let index = 0; index < 10; index++) {
                 let PredictionPoints = await getPredictionPoints(accounts[index], options[index]);
@@ -229,7 +229,7 @@ describe("newPlotusWithBlot", () => {
                 return returnAmountInEth;
             };
 
-            const returnInEthExpected = [0, 0, 0, 0, 4.31235, 8.6247, 0, 0, 0, 0];
+            const returnInEthExpected = [0, 0, 0, 0, 3.3183, 6.6366, 0, 0, 0, 0];
 
             for (let index = 0; index < 10; index++) {
                 let returns = await getReturnsInEth(accounts[index]) / 1;
@@ -268,7 +268,7 @@ describe("newPlotusWithBlot", () => {
         it("1.5 Check User Received The appropriate amount", async () => {
             accounts = [user1, user2, user3, user4, user5, user6, user7, user8, user9, user10];
             const totalReturnLotExpexted = [0, 0, 0, 0, 276.1401942, 552.2803883, 0, 0, 0, 0];
-            const returnInEthExpected = [0, 0, 0, 0, 4.31235, 8.6247, 0, 0, 0, 0];
+            const returnInEthExpected = [0, 0, 0, 0, 3.3183, 6.64, 0, 0, 0, 0];
             for (let account of accounts) {
                 beforeClaim = await web3.eth.getBalance(account);
                 beforeClaimToken = await plotusToken.balanceOf(account);
