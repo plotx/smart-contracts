@@ -120,7 +120,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     await marketConfig.setNextOptionPrice(9);
     await marketConfig.setPrice(toWei(0.01));
-    await allMarkets.depositAndPlacePrediction("10000000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
+    await allMarkets.depositAndPlacePrediction("10000000000000000000000", 7, plotusToken.address, 100*1e8, 1);
     // cannot raise dispute if market is open
     await plotusToken.approve(allMarkets.address, "10000000000000000000000");
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
@@ -142,11 +142,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     await assertRevert(allMarkets.resolveDispute(7, 100));
     let winningOption_af = await allMarkets.getMarketResults(7)
-    console.log("winningOption",winningOption_af[0]/1)
     let proposalId = await gv.getProposalLength()-1;
-    console.log("proposalId",proposalId/1)
     let userBalBefore = await plotusToken.balanceOf(ab1);
-    console.log("balance before accept proposal",userBalBefore/1)
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr1});
@@ -173,10 +170,10 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let proposalActionStatus = await gv.proposalActionStatus(proposalId);
     assert.equal(proposalActionStatus/1, 3);
     let userBalAfter = await plotusToken.balanceOf(ab1);
-    console.log("balance before accept proposal",userBalAfter/1)
-    let winningOption_afterVote = await allMarkets.getMarketResults(7)
+    assert.equal(userBalAfter/1e18, userBalBefore/1e18+500);
+    let winningOption_afterVote = await allMarkets.getMarketResults(7);
     assert.notEqual(winningOption_af[0]/1, winningOption_afterVote[0]/1);
-    console.log("winningOption After accept proposal",winningOption_afterVote[0]/1);
+    assert.equal(winningOption_afterVote[0]/1, 3);
   });
 });
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
@@ -276,7 +273,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await marketConfig.setPrice("1000000000000000");
     await marketConfig.setNextOptionPrice(2);
     await plotusToken.approve(allMarkets.address, "100000000000000000000");
-    await allMarkets.depositAndPlacePrediction("100000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
+    await allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 1);
     // cannot raise dispute if market is open
     await plotusToken.approve(allMarkets.address, "10000000000000000000000");
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
@@ -298,11 +295,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash"));
     await assertRevert(allMarkets.resolveDispute(7, 100));
     let winningOption_af = await allMarkets.getMarketResults(7)
-    console.log("winningOption",winningOption_af[0]/1)
     let proposalId = await gv.getProposalLength()-1;
-    console.log("proposalId",proposalId/1)
     let userBalBefore = await plotusToken.balanceOf(ab1);
-    console.log("balance before accept proposal",userBalBefore/1)
     
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","30000000000000000000000",(86400*20),{from : dr1});
@@ -325,10 +319,9 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     // assert.equal(marketDetails[7]/1, 3, "status not updated");
 
     let userBalAfter = await plotusToken.balanceOf(ab1);
-    console.log("balance before accept proposal",userBalAfter/1)
     let winningOption_afterVote = await allMarkets.getMarketResults(7)
+    assert.equal(userBalAfter/1e18, userBalBefore/1e18, "Tokens not burnt");
     assert.equal(winningOption_af[0]/1, winningOption_afterVote[0]/1);
-    console.log("winningOption After accept proposal",winningOption_afterVote[0]/1);
   });
 });
 contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
@@ -425,7 +418,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await marketConfig.setPrice("1000000000000000");
     await marketConfig.setNextOptionPrice(2);
     await plotusToken.approve(allMarkets.address, "100000000000000000000");
-    await allMarkets.depositAndPlacePrediction("100000000000000000000", 0, 7, plotusToken.address, 100*1e8, 1);
+    await allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 1);
     
     await increaseTime(3600*8);
     await allMarkets.postResultMock(100000000000, 7);
@@ -439,11 +432,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     
     let plotusContractBalanceBefore = await plotusToken.balanceOf(allMarkets.address);
     let winningOption_before = await allMarkets.getMarketResults(7)
-    console.log("winningOption",winningOption_before[0]/1)
     let proposalId = await gv.getProposalLength()-1;
-    console.log("proposalId",proposalId/1)
     let userBalBefore = await plotusToken.balanceOf(ab1);
-    console.log("balance before reject proposal",userBalBefore/1)
     await plotusToken.approve(tokenController.address, "100000000000000000000000",{from : dr1});
     await tokenController.lock("0x4452","5000000000000000000000",(86400*20),{from : dr1});
     
@@ -465,9 +455,11 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     //InIncentives will be transferred to governance 100 tokens i.e 100000000000000000000
     assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 500000000000000000000, "Tokens staked for dispute not burned");
 
+    let userBalAfter = await plotusToken.balanceOf(ab1);
+
+    assert.equal(userBalAfter/1e18, userBalBefore/1e18, "Tokens not burnt");
     let winningOption_afterVote = await allMarkets.getMarketResults(7);
     assert.equal(winningOption_before[0]/1, winningOption_afterVote[0]/1);
-    console.log("winningOption After reject proposal",winningOption_afterVote[0]/1);
   });
 
   it("Should not burn DR member's tokens if invalid code is passed in proposal", async function() {

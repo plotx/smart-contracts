@@ -438,18 +438,18 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(allMarkets.sponsorIncentives(7, nullAddress, "1000000000000000000", {from:mem1}));
 		await allMarkets.sponsorIncentives(7, plotusToken.address, "1000000000000000000");
 		await assertRevert(allMarkets.sponsorIncentives(7, plotusToken.address, "1000000000000000000"));
-    	await allMarkets.depositAndPlacePrediction("1000000000000000000000", 0, 7, plotusToken.address, 1000*1e8, 1);
+    	await allMarkets.depositAndPlacePrediction("1000000000000000000000", 7, plotusToken.address, 1000*1e8, 1);
 		// await allMarkets.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
 		let totalStaked = await allMarkets.getUserFlags(7, ab1);
 		assert.equal(totalStaked[0], false);
-    	await allMarkets.depositAndPlacePrediction("8000000000000000000000", 0, 7, plotusToken.address, 8000*1e8, 2);
-    	await allMarkets.depositAndPlacePrediction("8000000000000000000000", 0, 7, plotusToken.address, 8000*1e8, 3);
+    	await allMarkets.depositAndPlacePrediction("8000000000000000000000", 7, plotusToken.address, 8000*1e8, 2);
+    	await allMarkets.depositAndPlacePrediction("8000000000000000000000", 7, plotusToken.address, 8000*1e8, 3);
 		// await assertRevert(marketInstance.placePrediction("0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", "10000000000000000000", 1, 1, { value: 1000 }));
 		// await assertRevert(allMarkets.settleMarket(7));
 		await assertRevert(allMarkets.withdrawSponsoredIncentives(7));
 		await assertRevert(allMarkets.postResultMock(0,7));
 		await increaseTime(604810);
-		await assertRevert(allMarkets.claimIncentive(ab1, 7));
+		await assertRevert(allMarkets.claimIncentives(ab1, [7], plotusToken.address));
 		// await allMarkets.withdrawMax(100);
 		// await marketInstance.claimReturn(ab1);
 		await allMarkets.postResultMock(1, 7);
@@ -457,8 +457,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// await assertRevert(marketInstance.placePrediction(plotusToken.address, "10000000000000000000", 1, 1));
 		await increaseTime(604800);
 		await assertRevert(allMarkets.withdrawSponsoredIncentives(7));
-		await assertRevert(allMarkets.claimIncentive(mem1, 7));
-		await allMarkets.claimIncentive(ab1, 7);
+		await assertRevert(allMarkets.claimIncentives(mem1, [7], plotusToken.address));
+		await allMarkets.claimIncentives(ab1, [7], plotusToken.address);
 		await allMarkets.withdrawMax(100);
 		// await marketInstance.claimReturn(ab1);
 		await increaseTime(604800);
@@ -590,7 +590,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// set price lot
 		await marketConfig.setPrice("1000000000000000");
 		await plotusToken.approve(allMarkets.address, "100000000000000000000");
-    	await allMarkets.depositAndPlacePrediction("10000000000000000000", 0, 8, plotusToken.address, 10*1e8, 1);
+    	await allMarkets.depositAndPlacePrediction("10000000000000000000", 8, plotusToken.address, 10*1e8, 1);
 		let reward = await allMarkets.getReturn(ab1, 8);
 		assert.equal(reward[0][0], 0);
 		await increaseTime(3650);

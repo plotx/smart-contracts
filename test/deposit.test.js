@@ -205,7 +205,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
         unusedBal = await allMarkets.getUserUnusedBalance(user2); 
         assert.equal(unusedBal[0],0);
 
-        await allMarkets.depositAndPlacePrediction(0, toWei(1), 7, ethAddress, 1e8, 2, { from: user3, value:toWei(1) });
+        await allMarkets.depositAndPlacePrediction(0, 7, ethAddress, 1e8, 2, { from: user3, value:toWei(1) });
 
     });
 
@@ -423,11 +423,7 @@ contract("AllMarket", async function([user1, user2, user3, user4, user5, user6, 
     });
 
     it("Should revert if tries to deposit both eth and plot with depositAndPlacePrediction()", async function() {
-        await assertRevert(allMarkets.depositAndPlacePrediction(toWei(1),toWei(1),7,plotusToken.address,1e8,1,{from:user2,value:toWei(1)}));
-    });
-
-    it("Should revert if tries to pay wrong amount in eth while deposit", async function() {
-        await assertRevert(allMarkets.depositAndPlacePrediction(toWei(1),toWei(1),7,ethAddress,1e8,1,{from:user2,value:toWei(2)}));
+        await assertRevert(allMarkets.depositAndPlacePrediction(toWei(1),7,plotusToken.address,1e8,1,{from:user2,value:toWei(1)}));
     });
 
 });
