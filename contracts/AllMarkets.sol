@@ -427,10 +427,11 @@ contract AllMarkets is Governed {
     */
     function _withdraw(uint _plot, uint256 _eth, uint _maxRecords, uint _plotLeft, uint _ethLeft) internal {
       withdrawReward(_maxRecords);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = _plotLeft.sub(_plot);
+      address _plotToken = plotToken;
+      userData[msg.sender].currencyUnusedBalance[_plotToken] = _plotLeft.sub(_plot);
       userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = _ethLeft.sub(_eth);
       require(_plot > 0 || _eth > 0);
-      _transferAsset(plotToken, msg.sender, _plot);
+      _transferAsset(_plotToken, msg.sender, _plot);
       _transferAsset(ETH_ADDRESS, msg.sender, _eth);
       emit Withdrawn(msg.sender, _plot, _eth, now);
     }
