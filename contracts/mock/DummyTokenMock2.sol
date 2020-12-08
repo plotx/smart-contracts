@@ -2,16 +2,11 @@ pragma solidity 0.5.7;
 
 import "../external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
-// To branch coverage of token transer
-contract DummyTokenMock2 is ERC20 {
+contract SampleERC is ERC20 {
 
     string public name;
     string public symbol;
     uint8 public decimals = 18;
-
-    mapping(address=>bool) _dummyBit;
-
-    bool public retBit;
 
     constructor(string memory tokenName, string memory tokenSymbol) public {
     	name = tokenName;
@@ -23,11 +18,7 @@ contract DummyTokenMock2 is ERC20 {
         return 0;
     }
 
-    function setRetBit(bool _a) public {
-        retBit = _a;
-    }
-
-     /**
+    /**
     * @dev burns an amount of the tokens of the message sender
     * account.
     * @param amount The amount that will be burnt.
@@ -94,14 +85,6 @@ contract DummyTokenMock2 is ERC20 {
     function mint(address account, uint256 amount) public returns(bool) {
         _mint(account, amount);
         return true;
-    }
-
-    function isLockedForGV(address _of) public view returns(bool) {
-        return _dummyBit[_of];
-    }
-
-    function setDummyBit(address _of, bool _val) public {
-        _dummyBit[_of] = _val;
     }
     
 }

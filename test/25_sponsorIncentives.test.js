@@ -13,7 +13,7 @@ const MockUniswapRouter = artifacts.require("MockUniswapRouter");
 const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
-const DummyTokenMock2 = artifacts.require("DummyTokenMock2");
+const DummyTokenMock2 = artifacts.require("SampleERC");
 
 const web3 = Market.web3;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
