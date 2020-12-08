@@ -124,7 +124,6 @@ contract("25_sponsorIncentive. AllMarket", async function([
         );
         await increaseTime(604800);
         allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
-        // await allMarkets.initiate(plotusToken.address, marketConfig.address);
         let date = await latestTime();
         await increaseTime(3610);
         date = Math.round(date);
@@ -133,7 +132,6 @@ contract("25_sponsorIncentive. AllMarket", async function([
         let utility = await MockConfig.at("0xCBc7df3b8C870C5CDE675AaF5Fd823E4209546D2");
         await utility.setAuthorizedAddress(allMarkets.address);
         await mockUniswapV2Pair.sync();
-        // mockChainLinkAggregator = await MockChainLinkAggregator.new(); // address _plot, address _tc, address _gv, address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _marketCreationRewards, address _ethFeed, address _btcFeed // await allMarkets.addInitialMarketTypesAndStart(date, "0x5e2aa6b66531142bEAB830c385646F97fa03D80a", mockChainLinkAggregator.address);
     });
 
     it("25.1 Whitelist sponsor", async () => {
