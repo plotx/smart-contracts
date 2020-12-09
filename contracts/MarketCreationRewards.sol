@@ -223,6 +223,13 @@ contract MarketCreationRewards is Governed {
     }
 
     /**
+    * @dev Transfer `_amount` number of market registry assets contract to `_to` address
+    */
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
+      _transferAsset(_asset, _to, _amount);
+    }
+
+    /**
     * @dev internal function to calculate market reward pool share incentives for market creator
     */
     function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 ethIncentive, uint256 plotIncentive) {
@@ -312,6 +319,12 @@ contract MarketCreationRewards is Governed {
           require(IToken(_asset).transfer(_recipient, _amount));
         }
       }
+    }
+
+    /**
+    * @dev Payable Fallback function to receive funds
+    */
+    function () external payable {
     }
 
 }

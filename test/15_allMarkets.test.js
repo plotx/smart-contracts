@@ -180,7 +180,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 	          86400,
 	          "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
 	          nullAddress,
-	          toHex("AM"),
+	          toHex("MC"),
 	          [0, 0],
 	          "transferAssets(address,address,uint256)",
 	        ]
@@ -700,17 +700,17 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604800);
 		pId = (await gv.getProposalLength()).toNumber();
 		let categoryId = 19;
-		await plotusToken.transfer(allMarkets.address, toWei(100));
-		let daoPLOTbalanceBefore = await plotusToken.balanceOf(allMarkets.address);
+		await plotusToken.transfer(marketIncentives.address, toWei(100));
+		let daoPLOTbalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
 		let userPLOTbalanceBefore = await plotusToken.balanceOf(user11);
 		let actionHash = encode1(["address","address","uint256"],[plotusToken.address, user11, toWei(100)])
 		await gvProposal(categoryId, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		let daoPLOTbalanceAfter = await plotusToken.balanceOf(allMarkets.address);
+		let daoPLOTbalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
 		let userPLOTbalanceAfter = await plotusToken.balanceOf(user11);
-		assert.equal(daoPLOTbalanceBefore*1 - 100*1e18, daoPLOTbalanceAfter*1);
-		assert.equal(userPLOTbalanceBefore*1 + 100*1e18, userPLOTbalanceAfter*1);
+		assert.equal((daoPLOTbalanceBefore/1e18 - 100).toFixed(2), (daoPLOTbalanceAfter/1e18).toFixed(2));
+		assert.equal((userPLOTbalanceBefore/1e18 + 100).toFixed(2), (userPLOTbalanceAfter/1e18).toFixed(2));
 		await increaseTime(604800);
 	});
 
@@ -718,14 +718,14 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604800);
 		pId = (await gv.getProposalLength()).toNumber();
 		let categoryId = 19;
-		await allMarkets.sendTransaction({from: user13, value:1e18});
-		let daoEthbalanceBefore = await web3.eth.getBalance(allMarkets.address);
+		await marketIncentives.sendTransaction({from: user13, value:1e18});
+		let daoEthbalanceBefore = await web3.eth.getBalance(marketIncentives.address);
 		let userEthbalanceBefore = await web3.eth.getBalance(user11);
 		let actionHash = encode1(["address","address","uint256"],["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", user11, toWei(1)])
 		await gvProposal(categoryId, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		let daoEthbalanceAfter = await web3.eth.getBalance(allMarkets.address);
+		let daoEthbalanceAfter = await web3.eth.getBalance(marketIncentives.address);
 		let userEthbalanceAfter = await web3.eth.getBalance(user11);
 		assert.equal(daoEthbalanceBefore*1 - 1*1e18, daoEthbalanceAfter*1);
 		assert.equal(userEthbalanceBefore*1 + 1*1e18, userEthbalanceAfter*1);
