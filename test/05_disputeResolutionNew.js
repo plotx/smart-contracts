@@ -643,11 +643,12 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     assert.isAbove((proposal[2])/1,3);
     let plotusContractBalanceAfter = await plotusToken.balanceOf(allMarkets.address);
     // assert.isAbove(plotusContractBalanceBefore/1, plotusContractBalanceAfter/1);
-    //InIncentives will be transferred to governance 100 tokens i.e 100000000000000000000
-    assert.equal((plotusContractBalanceAfter/1), plotusContractBalanceBefore/1 - 500000000000000000000, "Tokens staked for dispute not burned");
+    //Incentives will be burnt: 500 tokens i.e 500000000000000000000
+    assert.equal((plotusContractBalanceAfter/1e18).toFixed(2), (plotusContractBalanceBefore/1e18 - 500).toFixed(2), "Tokens staked for dispute not burned");
     let allMarketsBalanceAfter = await plotusToken.balanceOf(allMarkets.address);
-    assert.equal((allMarketsBalanceAfter/1), allMarketsBalanceBefore/1, "Tokens staked for dispute not burned");
-
+    allMarketsBalanceAfter = allMarketsBalanceAfter.toString();
+    allMarketsBalanceBefore = allMarketsBalanceBefore.toString();
+    assert.equal((allMarketsBalanceAfter), allMarketsBalanceBefore, "Tokens staked for dispute not burned");
     let userBalAfter = await plotusToken.balanceOf(ab1);
 
     assert.equal(userBalAfter/1e18, userBalBefore/1e18, "Tokens not burnt");

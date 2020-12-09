@@ -44,7 +44,7 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     address = await nxms.getLatestAddress(toHex("MR"));
     mr = await MemberRoles.at(address);
     tc = await TokenController.at(await nxms.getLatestAddress(toHex("MR")));
-    allMarkets = await AllMarkets.at(await nxms.getLatestAddress(toHex("AM")));
+    allMarkets = await AllMarkets.at(await nxms.getLatestAddress(toHex("MC")));
 
     let newGV = await Governance.new()
     let actionHash = encode1(
