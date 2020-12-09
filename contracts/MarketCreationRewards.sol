@@ -198,12 +198,14 @@ contract MarketCreationRewards is Governed {
     * @param _marketId Index of market
     */
     function returnMarketRewardPoolShare(uint256 _marketId) external onlyInternal{
+      uint256 plotToTransfer = marketCreationRewardData[_marketId].plotIncentive.add(marketCreationRewardData[_marketId].plotDeposited.mul(10**predictionDecimalMultiplier));
+      uint256 ethToTransfer = marketCreationRewardData[_marketId].ethIncentive.add(marketCreationRewardData[_marketId].ethDeposited.mul(10**predictionDecimalMultiplier));
       delete marketCreationRewardData[_marketId].ethIncentive;
       delete marketCreationRewardData[_marketId].plotIncentive;
       delete marketCreationRewardData[_marketId].ethDeposited;
       delete marketCreationRewardData[_marketId].plotDeposited;
-    	_transferAsset(ETH_ADDRESS, msg.sender, marketCreationRewardData[_marketId].ethIncentive.add(marketCreationRewardData[_marketId].ethDeposited.mul(10**predictionDecimalMultiplier)));
-		  _transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive.add(marketCreationRewardData[_marketId].plotDeposited.mul(10**predictionDecimalMultiplier)));
+      _transferAsset(ETH_ADDRESS, msg.sender, ethToTransfer);
+      _transferAsset(plotToken, msg.sender, plotToTransfer);
     }
 
     /**

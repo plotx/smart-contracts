@@ -584,6 +584,13 @@ contract AllMarkets is Governed {
           tokenParticipation = 0;
           ethParticipation = 0;
         }
+      } else {
+        if(
+          marketOptionsAvailable[_marketId][marketDataExtended[_marketId].WinningOption].predictionPoints > 0
+        ){
+          tokenParticipation = 0;
+          ethParticipation = 0;
+        }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
       tokenParticipation = tokenParticipation.add(plotCommission); 
