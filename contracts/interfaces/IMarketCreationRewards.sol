@@ -10,4 +10,6 @@ contract IMarketCreationRewards {
 
     function getMarketCreatorRPoolShareParams(uint256 _market, uint256 plotStaked, uint256 ethStaked) external view returns(uint16, bool);
 
+    function transferAssets(address _asset, address _to, uint _amount) external;
+
 }

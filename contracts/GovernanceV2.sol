@@ -16,11 +16,13 @@
 pragma solidity 0.5.7;
 
 import "./interfaces/IAllMarkets.sol";
+import "./interfaces/IMarketCreationRewards.sol";
 import "./Governance.sol";
 
 contract GovernanceV2 is Governance {
 
     IAllMarkets internal allMarkets;
+    IMarketCreationRewards internal mcr;
     bytes32 constant resolveDisputeHashV2 = keccak256(abi.encodeWithSignature("resolveDispute(uint256,uint256)"));
 
     /**
@@ -29,6 +31,7 @@ contract GovernanceV2 is Governance {
     function setAllMarketsAddress() public {
         require(address(allMarkets) == address(0));
         allMarkets = IAllMarkets(address(uint160(ms.getLatestAddress("AM"))));
+        mcr = IMarketCreationRewards(address(uint160(ms.getLatestAddress("MC"))));
     }
 
     /**
@@ -101,7 +104,7 @@ contract GovernanceV2 is Governance {
         );
 
         if (_incentive > 0) {
-            allMarkets.transferAssets(
+            mcr.transferAssets(
                 address(tokenInstance),
                 address(this),
                 _incentive
@@ -165,7 +168,7 @@ contract GovernanceV2 is Governance {
         ) {
             _updateProposalStatus(_proposalId, uint256(ProposalStatus.Denied));
             _transferPLOT(
-                address(allMarkets),
+                address(mcr),
                 allProposalData[_proposalId].commonIncentive
             );
         } else {
@@ -234,7 +237,7 @@ contract GovernanceV2 is Governance {
 
         if (proposalVoteTally[_proposalId].voters == 0 && allProposalData[_proposalId].commonIncentive > 0) {
             _transferPLOT(
-                address(allMarkets),
+                address(mcr),
                 allProposalData[_proposalId].commonIncentive
             );
         }
