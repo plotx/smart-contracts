@@ -641,7 +641,7 @@ contract AllMarkets is Governed {
       * actualAmountUserPassed = (100 * userParticipationAmount)/(100-commissionPercent)
       * commissionAmount = actualAmountUserPassed - userParticipationAmount
       */
-      plotCommission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].ethCommission) - tokenParticipation;
+      plotCommission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].plotCommission) - tokenParticipation;
       ethCommission = _calculateAmulBdivC(10000, ethParticipation, 10000 - marketDataExtended[_marketId].ethCommission) - ethParticipation;
     }
 
