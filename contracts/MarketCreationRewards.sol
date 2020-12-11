@@ -12,7 +12,7 @@ import "./interfaces/IAllMarkets.sol";
 
 contract MarketCreationRewards is Governed {
 
-    using SafeMath for uint;
+    using SafeMath for *;
 
 	  event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 plotIncentive, uint256 ethIncentive);
     event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 plotIncentive, uint256 gasUsed, uint256 gasCost, uint256 gasPriceConsidered, uint256 gasPriceGiven, uint256 maxGasCap, uint256 rewardPoolSharePerc);
@@ -26,6 +26,8 @@ contract MarketCreationRewards is Governed {
     struct MarketCreationRewardData {
       uint ethIncentive;
       uint plotIncentive;
+      uint64 ethDeposited;
+      uint64 plotDeposited;
       uint16 rewardPoolSharePerc;
       address createdBy;
     }
@@ -43,6 +45,7 @@ contract MarketCreationRewards is Governed {
     address internal plotToken;
     uint256 internal plotStakeForRewardPoolShare;
     uint256 internal rewardPoolShareThreshold;
+    uint internal predictionDecimalMultiplier;
     ITokenController internal tokenController;
     IChainLinkOracle internal clGasPriceAggregator;
     IMarketUtility internal marketUtility;
@@ -77,6 +80,7 @@ contract MarketCreationRewards is Governed {
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       plotStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 1 ether;
+      predictionDecimalMultiplier = 10;
     }
 
     /**
@@ -181,10 +185,11 @@ contract MarketCreationRewards is Governed {
     * @param _plotShare PLOT reward pool share
     * msg.value ETH reward pool share
     */
-    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _plotShare) external payable onlyInternal {
-    	uint256 _ethShare = msg.value;
+    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _ethShare, uint256 _plotShare, uint64 _ethDeposited, uint64 _plotDeposited) external payable onlyInternal {
     	marketCreationRewardData[_marketId].ethIncentive = _ethShare;
     	marketCreationRewardData[_marketId].plotIncentive = _plotShare;
+      marketCreationRewardData[_marketId].ethDeposited = _ethDeposited;
+      marketCreationRewardData[_marketId].plotDeposited = _plotDeposited;
      	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _plotShare, _ethShare);
     }
 
@@ -193,10 +198,14 @@ contract MarketCreationRewards is Governed {
     * @param _marketId Index of market
     */
     function returnMarketRewardPoolShare(uint256 _marketId) external onlyInternal{
+      uint256 plotToTransfer = marketCreationRewardData[_marketId].plotIncentive.add(marketCreationRewardData[_marketId].plotDeposited.mul(10**predictionDecimalMultiplier));
+      uint256 ethToTransfer = marketCreationRewardData[_marketId].ethIncentive.add(marketCreationRewardData[_marketId].ethDeposited.mul(10**predictionDecimalMultiplier));
       delete marketCreationRewardData[_marketId].ethIncentive;
       delete marketCreationRewardData[_marketId].plotIncentive;
-    	_transferAsset(ETH_ADDRESS, msg.sender, marketCreationRewardData[_marketId].ethIncentive);
-		  _transferAsset(plotToken, msg.sender, marketCreationRewardData[_marketId].plotIncentive);
+      delete marketCreationRewardData[_marketId].ethDeposited;
+      delete marketCreationRewardData[_marketId].plotDeposited;
+      _transferAsset(ETH_ADDRESS, msg.sender, ethToTransfer);
+      _transferAsset(plotToken, msg.sender, plotToTransfer);
     }
 
     /**
@@ -211,6 +220,13 @@ contract MarketCreationRewards is Governed {
       _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
       _transferAsset(ETH_ADDRESS, msg.sender, ethIncentive);
       emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
+    }
+
+    /**
+    * @dev Transfer `_amount` number of market registry assets contract to `_to` address
+    */
+    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
+      _transferAsset(_asset, _to, _amount);
     }
 
     /**
@@ -303,6 +319,12 @@ contract MarketCreationRewards is Governed {
           require(IToken(_asset).transfer(_recipient, _amount));
         }
       }
+    }
+
+    /**
+    * @dev Payable Fallback function to receive funds
+    */
+    function () external payable {
     }
 
 }

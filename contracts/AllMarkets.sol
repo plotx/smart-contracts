@@ -37,7 +37,7 @@ contract Governed {
     /// @dev modifier that allows only the authorized addresses to execute the function
     modifier onlyAuthorizedToGovern() {
         IMaster ms = IMaster(masterAddress);
-        require(ms.getLatestAddress("GV") == msg.sender, "Not authorized");
+        require(ms.getLatestAddress("GV") == msg.sender);
         _;
     }
 
@@ -93,6 +93,11 @@ contract AllMarkets is Governed {
       mapping(uint => UserMarketData) userMarketData;
     }
 
+    struct CommissionPercent {
+     uint64 ethCommission; 
+     uint64 plotCommission; 
+    }
+
     struct MarketBasicData {
       uint32 Mtype;
       uint32 currency;
@@ -105,10 +110,12 @@ contract AllMarkets is Governed {
     struct MarketDataExtended {
       uint32 WinningOption;
       uint32 settleTime;
-      address disputeRaisedBy;
       address incentiveToken;
       address incentiveSponsoredBy;
-      uint disputeStakeAmount;
+      address disputeRaisedBy;
+      uint64 disputeStakeAmount;
+      uint64 ethCommission;
+      uint64 plotCommission;
       uint incentiveToDistribute;
       uint[] rewardToDistribute;
       PredictionStatus predictionStatus;
@@ -150,8 +157,8 @@ contract AllMarkets is Governed {
     bool internal marketCreationPaused;
     MarketCurrency[] internal marketCurrencies;
     MarketTypeData[] internal marketTypeArray;
+    CommissionPercent internal commissionPercGlobal; //with 2 decimals
     mapping(bytes32 => uint) internal marketCurrency;
-    mapping(address => uint64) internal commissionPerc; //with 2 decimals
 
     mapping(uint64 => uint32) internal marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) internal marketCreationData;
@@ -240,8 +247,8 @@ contract AllMarkets is Governed {
       marketUtility = IMarketUtility(_marketUtility);
       ETH_ADDRESS = _ethAddress;
 
-      commissionPerc[ETH_ADDRESS] = 10;
-      commissionPerc[plotToken] = 5;
+      commissionPercGlobal.ethCommission = 10;
+      commissionPercGlobal.plotCommission = 5;
       
       _addMarketType(4 hours, 100);
       _addMarketType(24 hours, 200);
@@ -271,6 +278,8 @@ contract AllMarkets is Governed {
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
+      marketDataExtended[_marketIndex].ethCommission = commissionPercGlobal.ethCommission;
+      marketDataExtended[_marketIndex].plotCommission = commissionPercGlobal.plotCommission;
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
@@ -283,9 +292,9 @@ contract AllMarkets is Governed {
     function calculateStartTimeForMarket(uint32 _marketCurrencyIndex, uint32 _marketType) public view returns(uint32 _marketStartTime) {
       _marketStartTime = marketCreationData[_marketType][_marketCurrencyIndex].initialStartTime;
       uint predictionTime = marketTypeArray[_marketType].predictionTime;
-      if(now > (predictionTime).add(_marketStartTime)) {
-        uint noOfMarketsCycles = ((now).sub(_marketStartTime)).div(predictionTime);
-       _marketStartTime = uint32((noOfMarketsCycles.mul(predictionTime)).add(_marketStartTime));
+      if(now > (predictionTime) + (_marketStartTime)) {
+        uint noOfMarketsCycles = ((now) - (_marketStartTime)) / (predictionTime);
+       _marketStartTime = uint32((noOfMarketsCycles * (predictionTime)) + (_marketStartTime));
       }
     }
 
@@ -327,7 +336,7 @@ contract AllMarkets is Governed {
       if(marketDataExtended[_marketId].settleTime > 0) {
         return marketDataExtended[_marketId].settleTime;
       }
-      return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime * 2);
+      return marketBasicData[_marketId].startTime + (marketBasicData[_marketId].predictionTime * 2);
     }
 
     /**
@@ -348,7 +357,7 @@ contract AllMarkets is Governed {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime(uint256 _marketId) public view returns(uint256) {
-      return marketDataExtended[_marketId].settleTime.add(marketBasicData[_marketId].predictionTime / 4);
+      return marketDataExtended[_marketId].settleTime + (marketBasicData[_marketId].predictionTime / 4);
     }
 
     /**
@@ -441,7 +450,7 @@ contract AllMarkets is Governed {
     * @return the time upto which user can place predictions in market
     */
     function marketExpireTime(uint _marketId) internal view returns(uint256) {
-      return marketBasicData[_marketId].startTime.add(marketBasicData[_marketId].predictionTime);
+      return marketBasicData[_marketId].startTime + (marketBasicData[_marketId].predictionTime);
     }
 
     /**
@@ -491,6 +500,12 @@ contract AllMarkets is Governed {
       require(!marketCreationPaused && _prediction <= totalOptions && _prediction >0);
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint64 _commissionStake;
+      uint64 _commissionPercent;
+      if(_asset == ETH_ADDRESS) {
+        _commissionPercent = marketDataExtended[_marketId].ethCommission;
+      } else {
+        _commissionPercent = marketDataExtended[_marketId].plotCommission;
+      }
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
         uint256 unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
@@ -502,7 +517,7 @@ contract AllMarkets is Governed {
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
-        _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
+        _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
         userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
@@ -510,7 +525,7 @@ contract AllMarkets is Governed {
         userData[msg.sender].userMarketData[_marketId].predictedWithBlot = true;
         tokenController.swapBLOT(msg.sender, address(this), (decimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
-        _commissionStake = _calculatePercentage(commissionPerc[_asset], _predictionStake, 10000);
+        _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
       _commissionStake = _predictionStake.sub(_commissionStake);
@@ -519,7 +534,7 @@ contract AllMarkets is Governed {
       require(predictionPoints > 0);
 
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
-      emit PlacePrediction(msg.sender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, commissionPerc[_asset]);
+      emit PlacePrediction(msg.sender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, _commissionPercent);
     }
 
     /**
@@ -550,7 +565,7 @@ contract AllMarkets is Governed {
     * @param _marketId Index of market
     */
     function _postResult(uint256 _value, uint256 _roundId, uint256 _marketId) internal {
-      require(now >= marketSettleTime(_marketId),"Not reached");
+      require(now >= marketSettleTime(_marketId));
       require(_value > 0);
       if(marketDataExtended[_marketId].predictionStatus != PredictionStatus.InDispute) {
         marketDataExtended[_marketId].settleTime = uint32(now);
@@ -558,52 +573,76 @@ contract AllMarkets is Governed {
         delete marketDataExtended[_marketId].settleTime;
       }
       _setMarketStatus(_marketId, PredictionStatus.Settled);
+      uint32 _winningOption; 
       if(_value < marketBasicData[_marketId].neutralMinValue) {
-        marketDataExtended[_marketId].WinningOption = 1;
+        _winningOption = 1;
       } else if(_value > marketBasicData[_marketId].neutralMaxValue) {
-        marketDataExtended[_marketId].WinningOption = 3;
+        _winningOption = 3;
       } else {
-        marketDataExtended[_marketId].WinningOption = 2;
+        _winningOption = 2;
       }
+      marketDataExtended[_marketId].WinningOption = _winningOption;
       uint64[] memory marketCreatorIncentive = new uint64[](2);
-      (uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation) = _calculateRewardTally(_marketId);
+      (uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint64 plotCommission, uint64 ethCommission) = _calculateRewardTally(_marketId, _winningOption);
       (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation, ethParticipation);
       if(_thresholdReached) {
         if(
-          marketOptionsAvailable[_marketId][marketDataExtended[_marketId].WinningOption].predictionPoints == 0
+          marketOptionsAvailable[_marketId][_winningOption].predictionPoints == 0
         ){
-          marketCreatorIncentive[0] = _calculatePercentage(_rewardPoolShare, tokenParticipation, 10000);
-          marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, ethParticipation, 10000);
+          marketCreatorIncentive[0] = _calculateAmulBdivC(_rewardPoolShare, tokenParticipation, 10000);
+          marketCreatorIncentive[1] = _calculateAmulBdivC(_rewardPoolShare, ethParticipation, 10000);
+          tokenParticipation = tokenParticipation.sub(marketCreatorIncentive[0]);
+          ethParticipation = ethParticipation.sub(marketCreatorIncentive[1]);
         } else {
-          marketCreatorIncentive[0] = _calculatePercentage(_rewardPoolShare, totalReward[0], 10000);
-          marketCreatorIncentive[1] = _calculatePercentage(_rewardPoolShare, totalReward[1], 10000);
+          marketCreatorIncentive[0] = _calculateAmulBdivC(_rewardPoolShare, totalReward[0], 10000);
+          marketCreatorIncentive[1] = _calculateAmulBdivC(_rewardPoolShare, totalReward[1], 10000);
           totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
           totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
+          tokenParticipation = 0;
+          ethParticipation = 0;
+        }
+      } else {
+        if(
+          marketOptionsAvailable[_marketId][_winningOption].predictionPoints > 0
+        ){
+          tokenParticipation = 0;
+          ethParticipation = 0;
         }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
-
-      _transferAsset(plotToken, address(marketCreationRewards), marketCreatorIncentive[0]);
-      marketCreationRewards.depositMarketRewardPoolShare.value((10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1]))(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0]));
-      emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, marketDataExtended[_marketId].WinningOption, _value, _roundId);
+      tokenParticipation = tokenParticipation.add(plotCommission); 
+      ethParticipation = ethParticipation.add(ethCommission);
+      _transferAsset(plotToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0].add(tokenParticipation)));
+      marketCreationRewards.depositMarketRewardPoolShare.value((10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1].add(ethParticipation)))(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1]), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0]), ethParticipation, tokenParticipation);
+      emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, _winningOption, _value, _roundId);
     }
 
     /**
     * @dev Internal function to calculate the reward.
     * @param _marketId Index of market
+    * @param _winningOption WinningOption of market
     */
-    function _calculateRewardTally(uint256 _marketId) internal view returns(uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation){
+    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint64 plotCommission, uint64 ethCommission){
       totalReward = new uint64[](2);
       for(uint i=1;i <= totalOptions;i++){
         uint64 _plotStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
         uint64 _ethStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
         tokenParticipation = tokenParticipation.add(_plotStakedOnOption);
         ethParticipation = ethParticipation.add(_ethStakedOnOption);
-        if(i!=marketDataExtended[_marketId].WinningOption) {
+        if(i != _winningOption) {
           totalReward[0] = totalReward[0].add(_plotStakedOnOption);
           totalReward[1] = totalReward[1].add(_ethStakedOnOption);
         }
       }
+
+      /* Steps followed to calculate commission amount
+      * We were storing users particpation amount post dedcuting commission amount, in userParticipationAmount
+      * userParticipationAmount = Actual amount passed by user - commissionAmount
+      * actualAmountUserPassed = (100 * userParticipationAmount)/(100-commissionPercent)
+      * commissionAmount = actualAmountUserPassed - userParticipationAmount
+      */
+      plotCommission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].plotCommission) - tokenParticipation;
+      ethCommission = _calculateAmulBdivC(10000, ethParticipation, 10000 - marketDataExtended[_marketId].ethCommission) - ethParticipation;
     }
 
     /**
@@ -651,6 +690,7 @@ contract AllMarkets is Governed {
     function getUserUnusedBalance(address _user) public view returns(uint256, uint256, uint256, uint256){
       uint ethReward;
       uint plotReward;
+      uint decimalMultiplier = 10**predictionDecimalMultiplier;
       uint len = userData[_user].marketsParticipated.length;
       uint[] memory _returnAmount = new uint256[](2);
       for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
@@ -658,7 +698,7 @@ contract AllMarkets is Governed {
         ethReward = ethReward.add(_returnAmount[1]);
         plotReward = plotReward.add(_returnAmount[0]);
       }
-      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(10**predictionDecimalMultiplier), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(10**predictionDecimalMultiplier));
+      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(decimalMultiplier), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(decimalMultiplier));
     }
 
     /**
@@ -763,13 +803,6 @@ contract AllMarkets is Governed {
       emit ClaimedIncentive(_user, _marketsClaimed, _incentiveToken, totalIncentive);
     }
 
-    /**
-    * @dev Transfer `_amount` number of market registry assets contract to `_to` address
-    */
-    function transferAssets(address _asset, address payable _to, uint _amount) external onlyAuthorizedToGovern {
-      _transferAsset(_asset, _to, _amount);
-    }
-
     /** 
     * @dev Gets the return amount of the specified address.
     * @param _user The address to specify the return of
@@ -828,10 +861,13 @@ contract AllMarkets is Governed {
     }
 
     /**
-    * @dev Basic function to calculate percentage of given values
+    * @dev Basic function to perform mathematical operation of (`_a` * `_b` / `_c`)
+    * @param _a value of variable a
+    * @param _b value of variable b
+    * @param _c value of variable c
     */
-    function _calculatePercentage(uint64 _percent, uint64 _value, uint64 _divisor) internal pure returns(uint64) {
-      return _percent.mul(_value).div(_divisor);
+    function _calculateAmulBdivC(uint64 _a, uint64 _b, uint64 _c) internal pure returns(uint64) {
+      return _a.mul(_b).div(_c);
     }
 
     /**
@@ -912,7 +948,7 @@ contract AllMarkets is Governed {
       uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
       marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
-      marketDataExtended[_marketId].disputeStakeAmount = _stakeForDispute;
+      marketDataExtended[_marketId].disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
@@ -929,7 +965,7 @@ contract AllMarkets is Governed {
       // delete marketCreationRewardData[_marketId].ethIncentive;
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
-      _transferAsset(plotToken, marketDataExtended[_marketId].disputeRaisedBy, marketDataExtended[_marketId].disputeStakeAmount);
+      _transferAsset(plotToken, marketDataExtended[_marketId].disputeRaisedBy, (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
@@ -955,7 +991,18 @@ contract AllMarkets is Governed {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      IToken(plotToken).burn(marketDataExtended[_marketId].disputeStakeAmount);
+      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+    }
+
+    /**
+    * @dev function to update integer parameters
+    */
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      if(code == "ETHC") { // Commission percent for ETH based predictions(Raised be two decimals)
+        commissionPercGlobal.ethCommission = uint64(value);
+      } else if(code == "TKNC") { // Commission percent for PLOT based predictions(Raised be two decimals)
+        commissionPercGlobal.plotCommission = uint64(value);
+      }
     }
 
     /**

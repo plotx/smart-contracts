@@ -180,7 +180,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 	          86400,
 	          "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
 	          nullAddress,
-	          toHex("AM"),
+	          toHex("MC"),
 	          [0, 0],
 	          "transferAssets(address,address,uint256)",
 	        ]
@@ -700,17 +700,17 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604800);
 		pId = (await gv.getProposalLength()).toNumber();
 		let categoryId = 19;
-		await plotusToken.transfer(allMarkets.address, toWei(100));
-		let daoPLOTbalanceBefore = await plotusToken.balanceOf(allMarkets.address);
+		await plotusToken.transfer(marketIncentives.address, toWei(100));
+		let daoPLOTbalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
 		let userPLOTbalanceBefore = await plotusToken.balanceOf(user11);
 		let actionHash = encode1(["address","address","uint256"],[plotusToken.address, user11, toWei(100)])
 		await gvProposal(categoryId, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		let daoPLOTbalanceAfter = await plotusToken.balanceOf(allMarkets.address);
+		let daoPLOTbalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
 		let userPLOTbalanceAfter = await plotusToken.balanceOf(user11);
-		assert.equal(daoPLOTbalanceBefore*1 - 100*1e18, daoPLOTbalanceAfter*1);
-		assert.equal(userPLOTbalanceBefore*1 + 100*1e18, userPLOTbalanceAfter*1);
+		assert.equal((daoPLOTbalanceBefore/1e18 - 100).toFixed(2), (daoPLOTbalanceAfter/1e18).toFixed(2));
+		assert.equal((userPLOTbalanceBefore/1e18 + 100).toFixed(2), (userPLOTbalanceAfter/1e18).toFixed(2));
 		await increaseTime(604800);
 	});
 
@@ -718,21 +718,21 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604800);
 		pId = (await gv.getProposalLength()).toNumber();
 		let categoryId = 19;
-		await allMarkets.sendTransaction({from: user13, value:1e18});
-		let daoEthbalanceBefore = await web3.eth.getBalance(allMarkets.address);
+		await marketIncentives.sendTransaction({from: user13, value:1e18});
+		let daoEthbalanceBefore = await web3.eth.getBalance(marketIncentives.address);
 		let userEthbalanceBefore = await web3.eth.getBalance(user11);
 		let actionHash = encode1(["address","address","uint256"],["0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", user11, toWei(1)])
 		await gvProposal(categoryId, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		let daoEthbalanceAfter = await web3.eth.getBalance(allMarkets.address);
+		let daoEthbalanceAfter = await web3.eth.getBalance(marketIncentives.address);
 		let userEthbalanceAfter = await web3.eth.getBalance(user11);
 		assert.equal(daoEthbalanceBefore*1 - 1*1e18, daoEthbalanceAfter*1);
 		assert.equal(userEthbalanceBefore*1 + 1*1e18, userEthbalanceAfter*1);
 		await increaseTime(604800);
 	});
 
-	it("Add category to update uint paramters of allMarkets", async function() {
+	it("Add category to update uint paramters of MarketCreationRewards", async function() {
 		let actionHash = encode1(
 	      ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
 	      [
@@ -765,6 +765,38 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await updateParameter(categoryId, 2, "PSFRPS", marketIncentives, "uint", 8000);
 		await updateParameter(categoryId, 2, "RPSTH", marketIncentives, "uint", 9000);
 		await updateInvalidParameter(categoryId, 2, "ABCD", marketIncentives, "uint", 10000);
+	});
+
+	it("Add category to update uint paramters of allMarkets", async function() {
+		let actionHash = encode1(
+	      ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
+	      [
+	        "updateUintParameters",
+	        2,
+	        50,
+	        50,
+	        [2],
+	        86400,
+	        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
+	        nullAddress,
+	        toHex("AM"),
+	        [0, 0],
+	        "updateUintParameters(bytes8,uint256)",
+	      ]
+	    );
+	    let p1 = await governance.getProposalLength();
+	    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
+	    await governance.submitVote(p1.toNumber(), 1);
+	    await governance.closeProposal(p1.toNumber());
+	    await increaseTime(604800);
+	});
+
+	it("Should update uint paramters", async function() {
+		let categoryId = await pc.totalCategories();
+		categoryId = categoryId*1 - 1;
+		await updateParameter(categoryId, 2, "ETHC", allMarkets, "uint", 5000);
+		await updateParameter(categoryId, 2, "TKNC", allMarkets, "uint", 6000);
+		await updateParameter(categoryId, 2, "ABCD", allMarkets, "uint", 10000);
 	})
 
 	it("Add category to update address paramters of allMarkets", async function() {
@@ -795,7 +827,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let categoryId = await pc.totalCategories();
 		categoryId = categoryId*1 - 1;
 		await updateParameter(categoryId, 2, "GASAGG", marketIncentives, "address", allMarkets.address);
-		await updateInvalidParameter(categoryId, 2, "ABCD", marketIncentives, "address", allMarkets.address);
+		await updateInvalidParameter(categoryId, 2, "ABECD", marketIncentives, "address", allMarkets.address);
 	})
 	async function updateParameter(cId, mrSequence, code, contractInst, type, proposedValue) {
         code = toHex(code);
@@ -809,21 +841,33 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
         }
 
         let actionHash = encode(action, code, proposedValue);
+        let proposalId = await governance.getProposalLength();
         await gvProposal(cId, actionHash, mr, governance, mrSequence, 0);
         if (code == toHex("MASTADD")) {
             let newMaster = await NXMaster.at(proposedValue);
             contractInst = newMaster;
         }
         let parameter;
-        // if (type == "uint") {
-            parameter = await contractInst[getterFunction](code);
-        // }
-        try {
-            parameter[1] = parameter[1].toNumber();
-        } catch (err) {}
-        // if (type == "uint") {
-            assert.equal(parameter[1], proposedValue, "Not updated");
-        // }
+        if(code == toHex("ETHC")) {
+        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
+            assert.equal(actionStatus*1, 3, "Not updated");
+        } else if(code == toHex("TKNC")) {
+        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
+            assert.equal(actionStatus*1, 3, "Not updated");
+        } else if(code == toHex("ABCD")) {
+        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
+            assert.equal(actionStatus*1, 3);
+        } else {
+	        // if (type == "uint") {
+	            parameter = await contractInst[getterFunction](code);
+	        // }
+	        try {
+	            parameter[1] = parameter[1].toNumber();
+	        } catch (err) {}
+	        // if (type == "uint") {
+	            assert.equal(parameter[1], proposedValue, "Not updated");
+	        // }
+        }
     }
 
     async function updateInvalidParameter(

@@ -14,6 +14,7 @@ const MockUniswapV2Pair = artifacts.require("MockUniswapV2Pair");
 const MockUniswapFactory = artifacts.require("MockUniswapFactory");
 const TokenController = artifacts.require("MockTokenController");
 const MockChainLinkAggregator = artifacts.require("MockChainLinkAggregator");
+const MarketCreationRewards = artifacts.require('MarketCreationRewards');
 
 const web3 = Market.web3;
 const ethAddress = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
@@ -41,7 +42,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
         weth,
         allMarkets,
         marketUtility,
-        mockChainLinkAggregator;
+        mockChainLinkAggregator,
+        marketIncentives;
     let marketId = 1;
     let predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3, predictionPointsBeforeUser4;
 
@@ -57,6 +59,7 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             memberRoles = await MemberRoles.at(memberRoles);
             governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
             governance = await Governance.at(governance);
+            marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(toHex("MC")));
             MockUniswapRouterInstance = await MockUniswapRouter.deployed();
             mockUniswapFactory = await MockUniswapFactory.deployed();
             plotusNewInstance = await Plotus.at(plotusNewAddress);
@@ -149,8 +152,15 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             }
 
             await increaseTime(8 * 60 * 60);
+            let balanceBefore = await plotusToken.balanceOf(marketIncentives.address);
+            balanceBefore = balanceBefore*1;
             await allMarkets.postResultMock(1, marketId);
             await increaseTime(8 * 60 * 60);
+            let balanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+            balanceAfter = balanceAfter*1;
+            let commission = 0.355;
+            let creationReward = 3.048475;
+            assert.equal(balanceAfter, balanceBefore + commission*1e18 + creationReward*1e18);
         });
         it("1.2 Positions After locking PLOT tokens", async () => {
             await allMarkets.createMarket(0, 0);
@@ -252,6 +262,7 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
             memberRoles = await MemberRoles.at(memberRoles);
             governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
             governance = await Governance.at(governance);
+            marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(toHex("MC")));
             MockUniswapRouterInstance = await MockUniswapRouter.deployed();
             mockUniswapFactory = await MockUniswapFactory.deployed();
             plotusNewInstance = await Plotus.at(plotusNewAddress);
@@ -335,9 +346,16 @@ describe("new_multiplier 2. Multiplier sheet eth prediction", () => {
                     assert.equal(parseInt(expectedPredictionPoints[i]), parseInt(predictionPointArray[i]));
             }
 
+            let balanceBefore = await web3.eth.getBalance(marketIncentives.address);
+            balanceBefore = balanceBefore*1;
             await increaseTime(8 * 60 * 60);
             await allMarkets.postResultMock(1, marketId);
             await increaseTime(8 * 60 * 60);
+            let balanceAfter = await web3.eth.getBalance(marketIncentives.address);
+            balanceAfter = balanceAfter*1;
+            let commission = 0.0142;
+            let creationReward = 0.015984;
+            assert.equal(balanceAfter, balanceBefore + commission*1e18 + creationReward*1e18);
         });
         it("2.2 Positions After locking PLOT tokens", async () => {
             await allMarkets.createMarket(0, 0);

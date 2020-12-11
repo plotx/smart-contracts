@@ -14,8 +14,6 @@ contract IAllMarkets {
 
     function burnDisputedProposalTokens(uint _proposaId) external;
 
-    function transferAssets(address _asset, address _to, uint _amount) external;
-
     function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256);
 
 }
