@@ -29,23 +29,6 @@ Now, It's time to install the dependencies. Enter the smart-contracts directory 
 ```
 npm install
 ```
-Make sure you delete folder `bitcore-lib` from node_modules inside modules `eth-lightwallet` and `bitcore-mnemonic`
-
-We need to compile the contracts before deploying.
-```
-npm run compile
-```
-Now, You should start a private network on port 8545 using Ganache or something similar. To run the private network - </br>
-On Windows, Execute file startGanache.bat present in smart-contracts/scripts directory </br>
-On Linux or Mac OS Systems, run the startGanache.sh file while in smart-contracts/scripts directory
-```
-./startGanache.sh
-```
-  
-Then, you can deploy Plotx contracts using the migrate script. 
-```
-npm run deploy
-```
 If you want, you can run the test cases using
 ```
 npm run test
@@ -59,6 +42,8 @@ npm run coverage
 - PLOT Token: 0x72F020f8f3E8fd9382705723Cd26380f8D0c66Bb
 - Master: 0x03c41c5Aff6D541EF7D4c51c8B2E32a5d4427275
 - MarketRegistry: 0xE210330d6768030e816d223836335079C7A0c851
+- AllMarkets: 0xb9448E3a0d95cFF578F9508084A0ed92D724c29A
+- MarketCreationRewards: 0x22376814188De44e8B6f482daa98B050ac190B46
 - MarketUtility: 0x2330058D49fA61D5C5405fA8B17fcD823c59F7Bb
 - Governance: 0x16763F192d529B420F33B699dC72F39f16620717
 - ProposalCategory: 0x2D90743ef134b35cE415855F1c38ca47d65b314C
