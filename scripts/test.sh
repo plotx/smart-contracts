@@ -20,7 +20,7 @@ ganache_running() {
 }
 
 start_ganache() { 
-  node_modules/.bin/ganache-cli --gasLimit 85000000 -k "constantinople" -p "$ganache_port" -i 5777 -m "grocery obvious wire insane limit weather parade parrot patrol stock blast ivory" -a 47 -e 110 --gasPrice 0 > /dev/null &
+  node_modules/.bin/ganache-cli --gasLimit 85000000 -k "constantinople" -p "$ganache_port" -i 5777 -m "grocery obvious wire insane limit weather parade parrot patrol stock blast ivory" -a 47 -e 250 --gasPrice 0 > /dev/null &
   ganache_pid=$!
 }
 

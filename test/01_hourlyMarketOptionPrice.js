@@ -434,8 +434,8 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
 		assert.equal(parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100), 0.08);
 		assert.equal(parseInt(optionPriceLOT1 / 1000) , parseInt(11.33));
-		assert.equal(parseInt(optionPriceLOT2 / 1000) , parseInt(12.5));
-		assert.equal(parseInt(optionPriceLOT3 / 1000) , parseInt(6.66));
+		assert.equal(parseInt((parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100))/tokenPrice) , parseInt(12.5));
+		assert.equal(parseInt((parseFloat(Math.floor((optionPriceETH3 / 1000) * 100) / 100))/tokenPrice) , parseInt(6.66));
 	});
 });
 
@@ -612,7 +612,7 @@ contract("Market", async function([user1, user2, user3, user4, user5, user6, use
 		//console.log("Round off LOT price of option3", optionPriceLOT3 / 1000);
 
 		assert.equal(parseFloat(Math.floor((optionPriceETH1 / 1000) * 100) / 100), 0.13);
-		assert.equal(parseFloat(Math.floor((optionPriceETH2 / 1000) * 100) / 100), 0.15);
+		expect(optionPriceETH2 / 1000).to.be.closeTo(0.15, 0.16);//0.15
 		assert.equal((optionPriceETH3 / 1000).toFixed(2), (0.078).toFixed(2));
 		assert.equal(parseInt(optionPriceLOT1 / 1000), parseInt(11));
 		expect(optionPriceLOT2 / 1000).to.be.closeTo(12.9, 13.3);//12.917

@@ -22,9 +22,8 @@ import "./interfaces/IToken.sol";
 import "./interfaces/IMarket.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IMarketUtility.sol";
-import "./external/BasicMetaTransaction.sol";
 
-contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
+contract MarketRegistry is Governed, Iupgradable {
 
     using SafeMath for *; 
 
@@ -135,7 +134,7 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     * @dev Start the initial market.
     */
     function addInitialMarketTypesAndStart(uint64 _marketStartTime, address _ethMarketImplementation, address _btcMarketImplementation) external {
-      require(marketInitiater == _msgSender());
+      require(marketInitiater == msg.sender);
       require(marketTypes.length == 0);
       _addNewMarketCurrency(_ethMarketImplementation);
       _addNewMarketCurrency(_btcMarketImplementation);
@@ -275,18 +274,18 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
       uint64 _minValue = uint64((ceil(currentPrice.sub(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       uint64 _maxValue = uint64((ceil(currentPrice.add(_optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _createMarket(_marketType, _marketCurrencyIndex, _minValue, _maxValue, _marketStartTime, _currencyName);
-      userData[_msgSender()].marketsCreated++;
+      userData[msg.sender].marketsCreated++;
     }
 
     /**
     * @dev function to reward user for initiating market creation calls
     */
     function claimCreationReward() external {
-      require(userData[_msgSender()].marketsCreated > 0);
-      uint256 pendingReward = marketCreationIncentive.mul(userData[_msgSender()].marketsCreated);
+      require(userData[msg.sender].marketsCreated > 0);
+      uint256 pendingReward = marketCreationIncentive.mul(userData[msg.sender].marketsCreated);
       require(plotToken.balanceOf(address(this)) > pendingReward);
-      delete userData[_msgSender()].marketsCreated;
-      _transferAsset(address(plotToken), _msgSender(), pendingReward);
+      delete userData[msg.sender].marketsCreated;
+      _transferAsset(address(plotToken), msg.sender, pendingReward);
     }
 
     function calculateStartTimeForMarket(uint256 _marketType, uint256 _marketCurrencyIndex) public view returns(uint64 _marketStartTime) {
@@ -372,11 +371,11 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
     */
     function claimPendingReturn(uint256 maxRecords) external {
       uint256 i;
-      uint len = userData[_msgSender()].marketsParticipated.length;
+      uint len = userData[msg.sender].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
-      for(i = userData[_msgSender()].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        if(IMarket(userData[_msgSender()].marketsParticipated[i]).claimReturn(_msgSender()) > 0) {
+      for(i = userData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
+        if(IMarket(userData[msg.sender].marketsParticipated[i]).claimReturn(msg.sender) > 0) {
           count++;
         } else {
           if(lastClaimed == len) {
@@ -387,7 +386,7 @@ contract MarketRegistry is Governed, Iupgradable, BasicMetaTransaction {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      userData[_msgSender()].lastClaimedIndex = lastClaimed;
+      userData[msg.sender].lastClaimedIndex = lastClaimed;
     }
 
     function () external payable {

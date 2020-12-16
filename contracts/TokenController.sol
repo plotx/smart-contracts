@@ -24,9 +24,8 @@ import "./interfaces/IToken.sol";
 import "./interfaces/IMarketRegistry.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/BasicMetaTransaction.sol";
 
-contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransaction {
+contract TokenController is IERC1132, Governed, Iupgradable {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -131,18 +130,18 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
     {
 
         require((_reason == "SM" && _time == smLockPeriod) || _reason == "DR", "Unspecified reason or time");
-        require(tokensLocked(_msgSender(), _reason) == 0, ALREADY_LOCKED);
+        require(tokensLocked(msg.sender, _reason) == 0, ALREADY_LOCKED);
         require(_amount != 0, AMOUNT_ZERO);
         
         uint256 validUntil = _time.add(now); //solhint-disable-line
 
-        lockReason[_msgSender()].push(_reason);
+        lockReason[msg.sender].push(_reason);
 
-        require(token.transferFrom(_msgSender(), address(this), _amount));
+        require(token.transferFrom(msg.sender, address(this), _amount));
 
-        locked[_msgSender()][_reason] = LockToken(_amount, validUntil, false);
+        locked[msg.sender][_reason] = LockToken(_amount, validUntil, false);
 
-        emit Locked(_msgSender(), _reason, _amount, validUntil);
+        emit Locked(msg.sender, _reason, _amount, validUntil);
         return true;
     }
 
@@ -212,15 +211,15 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
     {
         require(_reason == "SM" || _reason == "DR","Unspecified reason");
         require(_amount != 0, AMOUNT_ZERO);
-        require(tokensLocked(_msgSender(), _reason) > 0, NOT_LOCKED);
-        require(token.transferFrom(_msgSender(), address(this), _amount));
+        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
+        require(token.transferFrom(msg.sender, address(this), _amount));
 
-        locked[_msgSender()][_reason].amount = locked[_msgSender()][_reason].amount.add(_amount);
+        locked[msg.sender][_reason].amount = locked[msg.sender][_reason].amount.add(_amount);
         if(_reason == "SM") {
-            locked[_msgSender()][_reason].validity = locked[_msgSender()][_reason].validity.add(smLockPeriod);
+            locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(smLockPeriod);
         }
         
-        emit Locked(_msgSender(), _reason, locked[_msgSender()][_reason].amount, locked[_msgSender()][_reason].validity);
+        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
     }
 
@@ -237,11 +236,11 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
             require(_time == smLockPeriod, "Must be smLockPeriod");
         }
         require(_time != 0, "Time cannot be zero");
-        require(tokensLocked(_msgSender(), _reason) > 0, NOT_LOCKED);
+        require(tokensLocked(msg.sender, _reason) > 0, NOT_LOCKED);
 
-        locked[_msgSender()][_reason].validity = locked[_msgSender()][_reason].validity.add(_time);
+        locked[msg.sender][_reason].validity = locked[msg.sender][_reason].validity.add(_time);
 
-        emit Locked(_msgSender(), _reason, locked[_msgSender()][_reason].amount, locked[_msgSender()][_reason].validity);
+        emit Locked(msg.sender, _reason, locked[msg.sender][_reason].amount, locked[msg.sender][_reason].validity);
         return true;
     }
 

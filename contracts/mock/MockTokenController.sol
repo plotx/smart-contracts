@@ -5,7 +5,7 @@ import "../TokenController.sol";
 contract MockTokenController is TokenController {
 
 	uint public bit;
-    
+
     /**
      * @dev to change the operator address
      * @param _newOperator is the new address of operator

@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "../MarketUtility.sol";
+import "../MarketUtilityV2.sol";
 
-contract MockConfig is MarketUtility {
+contract MockConfig is MarketUtilityV2 {
 
 	uint public priceOfToken;
     bool public mockFlag;
@@ -60,5 +60,24 @@ contract MockConfig is MarketUtility {
             return optionPrices[params[0]];
           }
         return super.calculateOptionPrice(params, marketFeedAddress);
+    }
+
+    uint64 public nextOptionPrice;
+
+    function setNextOptionPrice(uint64 _price) public {
+        nextOptionPrice = _price;
+    }
+
+    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
+        if(mockFlag) {
+            return nextOptionPrice;
+        }
+        else  {
+            return super.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+        }
+    }
+
+    function setMaxPredictionValue(uint256 _maxPredictionAmount) public {
+        maxPredictionAmount = _maxPredictionAmount;
     }
 }

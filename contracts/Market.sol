@@ -21,9 +21,8 @@ import "./interfaces/IMarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketRegistry.sol";
-import "./external/BasicMetaTransaction.sol";
 
-contract Market is BasicMetaTransaction {
+contract Market {
     using SafeMath for *;
 
     enum PredictionStatus {
@@ -133,13 +132,13 @@ contract Market is BasicMetaTransaction {
       } else {
         require(msg.value == 0);
         if (_asset == plotToken){
-          tokenController.transferFrom(plotToken, _msgSender(), address(this), _predictionStake);
+          tokenController.transferFrom(plotToken, msg.sender, address(this), _predictionStake);
         } else {
           require(_asset == tokenController.bLOTToken());
           require(_leverage == MAX_LEVERAGE);
-          require(!userData[_msgSender()].predictedWithBlot);
-          userData[_msgSender()].predictedWithBlot = true;
-          tokenController.swapBLOT(_msgSender(), address(this), _predictionStake);
+          require(!userData[msg.sender].predictedWithBlot);
+          userData[msg.sender].predictedWithBlot = true;
+          tokenController.swapBLOT(msg.sender, address(this), _predictionStake);
           _asset = plotToken;
         }
         _commissionStake = _calculatePercentage(plotCommissionPerc, _predictionStake, 10000);
@@ -150,12 +149,12 @@ contract Market is BasicMetaTransaction {
 
       (uint predictionPoints, bool isMultiplierApplied) = calculatePredictionValue(_prediction, _commissionStake, _leverage, _asset);
       if(isMultiplierApplied) {
-        userData[_msgSender()].multiplierApplied = true; 
+        userData[msg.sender].multiplierApplied = true; 
       }
       require(predictionPoints > 0);
 
       _storePredictionData(_prediction, _commissionStake, _asset, _leverage, predictionPoints);
-      marketRegistry.setUserGlobalPredictionData(_msgSender(),_predictionStake, predictionPoints, _asset, _prediction, _leverage);
+      marketRegistry.setUserGlobalPredictionData(msg.sender,_predictionStake, predictionPoints, _asset, _prediction, _leverage);
     }
 
     function calculatePredictionValue(uint _prediction, uint _predictionStake, uint _leverage, address _asset) internal view returns(uint predictionPoints, bool isMultiplierApplied) {
@@ -171,10 +170,10 @@ contract Market is BasicMetaTransaction {
       params[9] = _predictionStake;
       params[10] = _leverage;
       bool checkMultiplier;
-      if(!userData[_msgSender()].multiplierApplied) {
+      if(!userData[msg.sender].multiplierApplied) {
         checkMultiplier = true;
       }
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, _msgSender(), marketFeedAddress, checkMultiplier);
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionValue(params, _asset, msg.sender, marketFeedAddress, checkMultiplier);
       
     }
 
@@ -200,9 +199,9 @@ contract Market is BasicMetaTransaction {
     * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _prediction, uint _predictionStake, address _asset, uint _leverage, uint predictionPoints) internal {
-      userData[_msgSender()].predictionPoints[_prediction] = userData[_msgSender()].predictionPoints[_prediction].add(predictionPoints);
-      userData[_msgSender()].assetStaked[_asset][_prediction] = userData[_msgSender()].assetStaked[_asset][_prediction].add(_predictionStake);
-      userData[_msgSender()].LeverageAsset[_asset][_prediction] = userData[_msgSender()].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
+      userData[msg.sender].predictionPoints[_prediction] = userData[msg.sender].predictionPoints[_prediction].add(predictionPoints);
+      userData[msg.sender].assetStaked[_asset][_prediction] = userData[msg.sender].assetStaked[_asset][_prediction].add(_predictionStake);
+      userData[msg.sender].LeverageAsset[_asset][_prediction] = userData[msg.sender].LeverageAsset[_asset][_prediction].add(_predictionStake.mul(_leverage));
       optionsAvailable[_prediction].predictionPoints = optionsAvailable[_prediction].predictionPoints.add(predictionPoints);
       optionsAvailable[_prediction].assetStaked[_asset] = optionsAvailable[_prediction].assetStaked[_asset].add(_predictionStake);
       optionsAvailable[_prediction].assetLeveraged[_asset] = optionsAvailable[_prediction].assetLeveraged[_asset].add(_predictionStake.mul(_leverage));
@@ -283,9 +282,9 @@ contract Market is BasicMetaTransaction {
       require(getTotalStakedValueInPLOT() > 0, "No participation");
       require(marketStatus() == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      tokenController.transferFrom(plotToken, _msgSender(), address(marketRegistry), _stakeForDispute);
+      tokenController.transferFrom(plotToken, msg.sender, address(marketRegistry), _stakeForDispute);
       lockedForDispute = true;
-      marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, _msgSender(), ethAmountToPool, tokenAmountToPool, proposedValue);
+      marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       delete ethAmountToPool;
       delete tokenAmountToPool;
       predictionStatus = PredictionStatus.InDispute;
@@ -306,12 +305,12 @@ contract Market is BasicMetaTransaction {
     }
 
     function sponsorIncentives(address _token, uint256 _value) external {
-      require(marketRegistry.isWhitelistedSponsor(_msgSender()));
+      require(marketRegistry.isWhitelistedSponsor(msg.sender));
       require(marketStatus() <= PredictionStatus.InSettlement);
       require(incentiveToken == address(0), "Already sponsored");
       incentiveToken = _token;
       incentiveToDistribute = _value;
-      tokenController.transferFrom(_token, _msgSender(), address(this), _value);
+      tokenController.transferFrom(_token, msg.sender, address(this), _value);
     }
 
 
