@@ -392,6 +392,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function deposit(uint _amount) payable public {
       require(_amount > 0 || msg.value > 0);
+      _deposit(_amount);
+    }
+
+    /**
+    * @dev Function to deposit PLOT/ETH for participation in markets
+    * @param _amount Amount of PLOT to deposit
+    * msg.value => Amount of ETH to deposit
+    */
+    function _deposit(uint _amount) internal {
       address _plotToken = plotToken;
       if(msg.value > 0) {
         userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
@@ -400,7 +409,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         IToken(_plotToken).transferFrom (msg.sender,address(this), _amount);
         userData[msg.sender].currencyUnusedBalance[_plotToken] = userData[msg.sender].currencyUnusedBalance[_plotToken].add(_amount);
       }
-      emit Deposited(msg.sender, _amount, msg.value, now);
+      if(_amount > 0 || msg.value > 0) {
+        emit Deposited(msg.sender, _amount, msg.value, now);
+      }
     }
 
     /**
@@ -443,22 +454,22 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       return marketBasicData[_marketId].startTime + (marketBasicData[_marketId].predictionTime);
     }
 
-    /**
-    * @dev Sponsor Incentive for the market
-    * @param _marketId Index of market to sponsor
-    * @param _token Address of token to sponsor
-    * @param _value Amount to sponsor
-    */
-    function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
-      require(IMaster(masterAddress).whitelistedSponsor(msg.sender));
-      require(marketStatus(_marketId) <= PredictionStatus.InSettlement);
-      require(marketDataExtended[_marketId].incentiveToken == address(0));
-      marketDataExtended[_marketId].incentiveToken = _token;
-      marketDataExtended[_marketId].incentiveToDistribute = _value;
-      marketDataExtended[_marketId].incentiveSponsoredBy = msg.sender;
-      IToken(_token).transferFrom(msg.sender, address(this), _value);
-      emit SponsoredIncentive(_marketId, _token, msg.sender, _value);
-    }
+    // /**
+    // * @dev Sponsor Incentive for the market
+    // * @param _marketId Index of market to sponsor
+    // * @param _token Address of token to sponsor
+    // * @param _value Amount to sponsor
+    // */
+    // function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
+    //   require(IMaster(masterAddress).whitelistedSponsor(msg.sender));
+    //   require(marketStatus(_marketId) <= PredictionStatus.InSettlement);
+    //   require(marketDataExtended[_marketId].incentiveToken == address(0));
+    //   marketDataExtended[_marketId].incentiveToken = _token;
+    //   marketDataExtended[_marketId].incentiveToDistribute = _value;
+    //   marketDataExtended[_marketId].incentiveSponsoredBy = msg.sender;
+    //   IToken(_token).transferFrom(msg.sender, address(this), _value);
+    //   emit SponsoredIncentive(_marketId, _token, msg.sender, _value);
+    // }
 
     /**
     * @dev Deposit and Place prediction on the available options of the market.
@@ -474,21 +485,21 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(_asset == plotToken) {
         require(msg.value == 0);
       }
-      deposit(_plotDeposit);
+      _deposit(_plotDeposit);
       _placePrediction(_marketId, _asset, _predictionStake, _prediction);
     }
 
-    /**
-    * @dev Place prediction on the available options of the market.
-    * @param _marketId Index of the market
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
-    * @param _predictionStake The amount staked by user at the time of prediction.
-    * @param _prediction The option on which user placed prediction.
-    * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
-    */
-    function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
-      _placePrediction(_marketId, _asset, _predictionStake, _prediction);
-    }
+    ///**
+    //* @dev Place prediction on the available options of the market.
+    //* @param _marketId Index of the market
+    //* @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
+    //* @param _predictionStake The amount staked by user at the time of prediction.
+    //* @param _prediction The option on which user placed prediction.
+    //* _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
+    //*/
+    //function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
+    //  _placePrediction(_marketId, _asset, _predictionStake, _prediction);
+    //}
 
     /**
     * @dev Place prediction on the available options of the market.
@@ -755,15 +766,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
        }
     }
 
-    /**
-    * @dev Allows the incentive sponsorer of market to claim back his incentives incase of zero participation in market
-    * @param _marketId Index of market
-    */
-    function withdrawSponsoredIncentives(uint256 _marketId) external {
-      require(marketStatus(_marketId) == PredictionStatus.Settled);
-      require(getTotalPredictionPoints(_marketId) == 0);
-      _transferAsset(marketDataExtended[_marketId].incentiveToken, marketDataExtended[_marketId].incentiveSponsoredBy, marketDataExtended[_marketId].incentiveToDistribute);
-    }
+    // /**
+    // * @dev Allows the incentive sponsorer of market to claim back his incentives incase of zero participation in market
+    // * @param _marketId Index of market
+    // */
+    // function withdrawSponsoredIncentives(uint256 _marketId) external {
+    //   require(marketStatus(_marketId) == PredictionStatus.Settled);
+    //   require(getTotalPredictionPoints(_marketId) == 0);
+    //   _transferAsset(marketDataExtended[_marketId].incentiveToken, marketDataExtended[_marketId].incentiveSponsoredBy, marketDataExtended[_marketId].incentiveToDistribute);
+    // }
 
     /**
     * @dev Claim the return amount of the specified address.
@@ -785,32 +796,32 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       return (2, _returnAmount[0], _returnAmount[1]);
     }
 
-    /** 
-    * @dev Allows users to claim sponsored incentives of market
-    * @param _user User address
-    * @param _markets Indexes of markets which user want to claim incentive for
-    * @param _incentiveToken Incentive token to check rewards for
-    * User will pass a list of market id's to check for incentive of given token address,
-    * Incentive will be transferred to user if user had any and the incentive token of market is same as the one user had passed
-    */
-    function claimIncentives(address payable _user, uint64[] calldata _markets, address _incentiveToken) external {
-      uint totalIncentive;
-      uint _index;
-      uint[] memory _marketsClaimed = new uint[](_markets.length);
-      for(uint64 i = 0; i < _markets.length; i++) {
-        ( , uint incentive, address incentiveToken) = getReturn(_user, _markets[i]);
-        if(incentive > 0 && incentiveToken == _incentiveToken && !userData[_user].userMarketData[_markets[i]].incentiveClaimed) {
-          userData[_user].userMarketData[_markets[i]].incentiveClaimed = true;
-          totalIncentive = totalIncentive.add(incentive);
-          _marketsClaimed[_index] = i;
-          _index++;
-        }
+    // /** 
+    // * @dev Allows users to claim sponsored incentives of market
+    // * @param _user User address
+    // * @param _markets Indexes of markets which user want to claim incentive for
+    // * @param _incentiveToken Incentive token to check rewards for
+    // * User will pass a list of market id's to check for incentive of given token address,
+    // * Incentive will be transferred to user if user had any and the incentive token of market is same as the one user had passed
+    // */
+    // function claimIncentives(address payable _user, uint64[] calldata _markets, address _incentiveToken) external {
+    //   uint totalIncentive;
+    //   uint _index;
+    //   uint[] memory _marketsClaimed = new uint[](_markets.length);
+    //   for(uint64 i = 0; i < _markets.length; i++) {
+    //     ( , uint incentive, address incentiveToken) = getReturn(_user, _markets[i]);
+    //     if(incentive > 0 && incentiveToken == _incentiveToken && !userData[_user].userMarketData[_markets[i]].incentiveClaimed) {
+    //       userData[_user].userMarketData[_markets[i]].incentiveClaimed = true;
+    //       totalIncentive = totalIncentive.add(incentive);
+    //       _marketsClaimed[_index] = i;
+    //       _index++;
+    //     }
 
-      }
-      require(totalIncentive > 0);
-      _transferAsset(_incentiveToken, _user, totalIncentive);
-      emit ClaimedIncentive(_user, _marketsClaimed, _incentiveToken, totalIncentive);
-    }
+    //   }
+    //   require(totalIncentive > 0);
+    //   _transferAsset(_incentiveToken, _user, totalIncentive);
+    //   emit ClaimedIncentive(_user, _marketsClaimed, _incentiveToken, totalIncentive);
+    // }
 
     /** 
     * @dev Gets the return amount of the specified address.
@@ -992,27 +1003,27 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _setMarketStatus(_marketId, PredictionStatus.Settled);
     }
 
-    /**
-    * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
-    * @param _proposalId Id of dispute resolution proposal
-    */
-    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
-      uint256 _marketId = disputeProposalId[_proposalId];
-      _resolveDispute(_marketId, false, 0);
-      emit DisputeResolved(_marketId, false);
-      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
-    }
+    // /**
+    // * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
+    // * @param _proposalId Id of dispute resolution proposal
+    // */
+    // function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
+    //   uint256 _marketId = disputeProposalId[_proposalId];
+    //   _resolveDispute(_marketId, false, 0);
+    //   emit DisputeResolved(_marketId, false);
+    //   IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+    // }
 
-    /**
-    * @dev function to update integer parameters
-    */
-    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      if(code == "ETHC") { // Commission percent for ETH based predictions(Raised be two decimals)
-        commissionPercGlobal.ethCommission = uint64(value);
-      } else if(code == "TKNC") { // Commission percent for PLOT based predictions(Raised be two decimals)
-        commissionPercGlobal.plotCommission = uint64(value);
-      }
-    }
+    // /**
+    // * @dev function to update integer parameters
+    // */
+    // function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+    //   if(code == "ETHC") { // Commission percent for ETH based predictions(Raised be two decimals)
+    //     commissionPercGlobal.ethCommission = uint64(value);
+    //   } else if(code == "TKNC") { // Commission percent for PLOT based predictions(Raised be two decimals)
+    //     commissionPercGlobal.plotCommission = uint64(value);
+    //   }
+    // }
 
     /**
     * @dev Get flags set for user
