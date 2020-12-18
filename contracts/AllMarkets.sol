@@ -63,10 +63,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
-    event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
+    // event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
     event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
-    event ClaimedIncentive(address indexed user, uint256[] marketsClaimed, address incentiveTokenAddress, uint256 incentive);
+    // event ClaimedIncentive(address indexed user, uint256[] marketsClaimed, address incentiveTokenAddress, uint256 incentive);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
@@ -111,7 +111,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     struct MarketDataExtended {
       uint32 WinningOption;
       uint32 settleTime;
-      address incentiveToken;
+      // address incentiveToken;
       address incentiveSponsoredBy;
       address disputeRaisedBy;
       uint64 disputeStakeAmount;
@@ -403,14 +403,14 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     function _deposit(uint _amount) internal {
       address _plotToken = plotToken;
       if(msg.value > 0) {
-        userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
+        userData[_msgSender()].currencyUnusedBalance[ETH_ADDRESS] = userData[_msgSender()].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
       }
       if(_amount > 0) {
-        IToken(_plotToken).transferFrom (msg.sender,address(this), _amount);
-        userData[msg.sender].currencyUnusedBalance[_plotToken] = userData[msg.sender].currencyUnusedBalance[_plotToken].add(_amount);
+        IToken(_plotToken).transferFrom (_msgSender(),address(this), _amount);
+        userData[_msgSender()].currencyUnusedBalance[_plotToken] = userData[_msgSender()].currencyUnusedBalance[_plotToken].add(_amount);
       }
       if(_amount > 0 || msg.value > 0) {
-        emit Deposited(msg.sender, _amount, msg.value, now);
+        emit Deposited(_msgSender(), _amount, msg.value, now);
       }
     }
 
@@ -421,7 +421,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _maxRecords Maximum number of records to check
     */
     function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
-      (uint _plotLeft, uint _plotReward, uint _ethLeft, uint _ethReward) = getUserUnusedBalance(msg.sender);
+      (uint _plotLeft, uint _plotReward, uint _ethLeft, uint _ethReward) = getUserUnusedBalance(_msgSender());
       _plotLeft = _plotLeft.add(_plotReward);
       _ethLeft = _ethLeft.add(_ethReward);
       _withdraw(_plot, _eth, _maxRecords, _plotLeft, _ethLeft);
@@ -438,12 +438,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     function _withdraw(uint _plot, uint256 _eth, uint _maxRecords, uint _plotLeft, uint _ethLeft) internal {
       withdrawReward(_maxRecords);
       address _plotToken = plotToken;
-      userData[msg.sender].currencyUnusedBalance[_plotToken] = _plotLeft.sub(_plot);
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = _ethLeft.sub(_eth);
+      userData[_msgSender()].currencyUnusedBalance[_plotToken] = _plotLeft.sub(_plot);
+      userData[_msgSender()].currencyUnusedBalance[ETH_ADDRESS] = _ethLeft.sub(_eth);
       require(_plot > 0 || _eth > 0);
-      _transferAsset(_plotToken, msg.sender, _plot);
-      _transferAsset(ETH_ADDRESS, msg.sender, _eth);
-      emit Withdrawn(msg.sender, _plot, _eth, now);
+      _transferAsset(_plotToken, _msgSender(), _plot);
+      _transferAsset(ETH_ADDRESS, _msgSender(), _eth);
+      emit Withdrawn(_msgSender(), _plot, _eth, now);
     }
 
     /**
@@ -521,33 +521,33 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       if(_asset == ETH_ADDRESS || _asset == plotToken) {
-        uint256 unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
+        uint256 unusedBalance = userData[_msgSender()].currencyUnusedBalance[_asset];
         unusedBalance = unusedBalance.div(decimalMultiplier);
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
-          unusedBalance = userData[msg.sender].currencyUnusedBalance[_asset];
+          unusedBalance = userData[_msgSender()].currencyUnusedBalance[_asset];
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
-        userData[msg.sender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
+        userData[_msgSender()].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
-        require(!userData[msg.sender].userMarketData[_marketId].predictedWithBlot);
-        userData[msg.sender].userMarketData[_marketId].predictedWithBlot = true;
-        tokenController.swapBLOT(msg.sender, address(this), (decimalMultiplier).mul(_predictionStake));
+        require(!userData[_msgSender()].userMarketData[_marketId].predictedWithBlot);
+        userData[_msgSender()].userMarketData[_marketId].predictedWithBlot = true;
+        tokenController.swapBLOT(_msgSender(), address(this), (decimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
       _commissionStake = _predictionStake.sub(_commissionStake);
       
-      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(msg.sender, _marketId, _prediction, _asset, _commissionStake);
+      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSender(), _marketId, _prediction, _asset, _commissionStake);
       require(predictionPoints > 0);
 
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
-      emit PlacePrediction(msg.sender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, _commissionPercent);
+      emit PlacePrediction(_msgSender(), _predictionStake, predictionPoints, _asset, _prediction, _marketId, _commissionPercent);
     }
 
     /**
@@ -671,16 +671,16 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function withdrawReward(uint256 maxRecords) internal {
       uint256 i;
-      uint len = userData[msg.sender].marketsParticipated.length;
+      uint len = userData[_msgSender()].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
       uint ethReward = 0;
       uint plotReward =0 ;
       require(!marketCreationPaused);
-      for(i = userData[msg.sender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(msg.sender, userData[msg.sender].marketsParticipated[i]);
+      for(i = userData[_msgSender()].lastClaimedIndex; i < len && count < maxRecords; i++) {
+        (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(_msgSender(), userData[_msgSender()].marketsParticipated[i]);
         if(claimed > 0) {
-          delete userData[msg.sender].marketsParticipated[i];
+          delete userData[_msgSender()].marketsParticipated[i];
           ethReward = ethReward.add(tempEthReward);
           plotReward = plotReward.add(tempPlotReward);
           count++;
@@ -693,10 +693,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      emit ReturnClaimed(msg.sender, plotReward, ethReward);
-      userData[msg.sender].currencyUnusedBalance[plotToken] = userData[msg.sender].currencyUnusedBalance[plotToken].add(plotReward.mul(10**predictionDecimalMultiplier));
-      userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS] = userData[msg.sender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(10**predictionDecimalMultiplier));
-      userData[msg.sender].lastClaimedIndex = uint128(lastClaimed);
+      emit ReturnClaimed(_msgSender(), plotReward, ethReward);
+      userData[_msgSender()].currencyUnusedBalance[plotToken] = userData[_msgSender()].currencyUnusedBalance[plotToken].add(plotReward.mul(10**predictionDecimalMultiplier));
+      userData[_msgSender()].currencyUnusedBalance[ETH_ADDRESS] = userData[_msgSender()].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(10**predictionDecimalMultiplier));
+      userData[_msgSender()].lastClaimedIndex = uint128(lastClaimed);
     }
 
     /**
@@ -922,19 +922,19 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param predictionPoints The positions user got during prediction.
     */
     function _storePredictionData(uint _marketId, uint _prediction, uint64 _predictionStake, address _asset, uint64 predictionPoints) internal {
-      if(!_hasUserParticipated(_marketId, msg.sender)) {
-        userData[msg.sender].marketsParticipated.push(_marketId);
+      if(!_hasUserParticipated(_marketId, _msgSender())) {
+        userData[_msgSender()].marketsParticipated.push(_marketId);
       }
-      userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
+      userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
       marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints);
       if(_asset == ETH_ADDRESS) {
-        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake);
+        userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].ethStaked = userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake);
         marketOptionsAvailable[_marketId][_prediction].ethStaked = marketOptionsAvailable[_marketId][_prediction].ethStaked.add(_predictionStake);
-        userData[msg.sender].totalEthStaked = userData[msg.sender].totalEthStaked.add(_predictionStake);
+        userData[_msgSender()].totalEthStaked = userData[_msgSender()].totalEthStaked.add(_predictionStake);
       } else {
-        userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[msg.sender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
+        userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[_msgSender()].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
         marketOptionsAvailable[_marketId][_prediction].plotStaked = marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake);
-        userData[msg.sender].totalPlotStaked = userData[msg.sender].totalPlotStaked.add(_predictionStake);
+        userData[_msgSender()].totalPlotStaked = userData[_msgSender()].totalPlotStaked.add(_predictionStake);
       }
     }
 
