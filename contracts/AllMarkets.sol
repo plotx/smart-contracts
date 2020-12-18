@@ -81,7 +81,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       bool claimedReward;
       bool predictedWithBlot;
       bool multiplierApplied;
-      bool incentiveClaimed;
       mapping(uint => PredictionData) predictionData;
     }
 
@@ -112,7 +111,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint32 WinningOption;
       uint32 settleTime;
       // address incentiveToken;
-      address incentiveSponsoredBy;
+      // address incentiveSponsoredBy;
       address disputeRaisedBy;
       uint64 disputeStakeAmount;
       uint64 ethCommission;
@@ -714,7 +713,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint len = userData[_user].marketsParticipated.length;
       uint[] memory _returnAmount = new uint256[](2);
       for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
-        (_returnAmount, , ) = getReturn(_user, userData[_user].marketsParticipated[i]);
+        (_returnAmount) = getReturn(_user, userData[_user].marketsParticipated[i]);
         ethReward = ethReward.add(_returnAmount[1]);
         plotReward = plotReward.add(_returnAmount[0]);
       }
@@ -792,7 +791,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       userData[_user].userMarketData[_marketId].claimedReward = true;
       uint[] memory _returnAmount = new uint256[](2);
-      (_returnAmount, , ) = getReturn(_user, _marketId);
+      (_returnAmount) = getReturn(_user, _marketId);
       return (2, _returnAmount[0], _returnAmount[1]);
     }
 
@@ -831,13 +830,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return incentive uint[] memory representing the amount incentive.
     * @return _incentiveTokens address[] memory representing the incentive tokens.
     */
-    function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount, uint incentive, address _incentiveToken){
-      uint256 _totalUserPredictionPoints = 0;
-      uint256 _totalPredictionPoints = 0;
+    function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount){
+    // function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount, uint incentive, address _incentiveToken){
       returnAmount = new uint256[](2);
-      (_totalUserPredictionPoints, _totalPredictionPoints) = _calculatePredictionPoints(_user, _marketId);
-      if(marketStatus(_marketId) != PredictionStatus.Settled || _totalPredictionPoints == 0) {
-       return (returnAmount, incentive, marketDataExtended[_marketId].incentiveToken);
+      if(marketStatus(_marketId) != PredictionStatus.Settled || getTotalPredictionPoints(_marketId) == 0) {
+       return (returnAmount);
       }
       uint256 _winningOption = marketDataExtended[_marketId].WinningOption;
       returnAmount = new uint256[](2);
@@ -847,10 +844,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(userPredictionPointsOnWinngOption > 0) {
         returnAmount = _addUserReward(_marketId, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
       }
-      if(marketDataExtended[_marketId].incentiveToDistribute > 0) {
-        incentive = _totalUserPredictionPoints.mul((marketDataExtended[_marketId].incentiveToDistribute).div(_totalPredictionPoints));
-      }
-      return (returnAmount, incentive, marketDataExtended[_marketId].incentiveToken);
+      return returnAmount;
     }
 
     /**
@@ -865,19 +859,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
           );
       }
       return returnAmount;
-    }
-
-    /**
-    * @dev Calculate the return of the specified address.
-    * @param _user The address to query the return of.
-    * @return _totalUserPredictionPoints uint representing the positions owned by the passed address.
-    * @return _totalPredictionPoints uint representing the total positions of winners.
-    */
-    function _calculatePredictionPoints(address _user, uint _marketId) internal view returns(uint _totalUserPredictionPoints, uint _totalPredictionPoints){
-      for(uint  i=1;i<=totalOptions;i++){
-        _totalUserPredictionPoints = _totalUserPredictionPoints.add(userData[_user].userMarketData[_marketId].predictionData[i].predictionPoints);
-        _totalPredictionPoints = _totalPredictionPoints.add(marketOptionsAvailable[_marketId][i].predictionPoints);
-      }
     }
 
     /**
