@@ -1,14 +1,15 @@
 var ethutil= require('ethereumjs-util');
 var abi = require('ethereumjs-abi');
+const BN = require('bn.js');
 
 async function signAndExecuteMetaTx(...args) {
 
+	let types = ['uint256', 'address', 'uint256', 'bytes'];
 	let pKey = args[0];
-	let types = args[1];
-	let values = args[2];
-	let user = args[3];
-	let functionSignature = args[4];
-	let contractInstance = args[5];
+	let contractInstance = args[3];
+	let functionSignature = args[2];
+	let user = args[1];
+	let values = [new BN(await contractInstance.getNonce(user)), contractInstance.address, new BN(await contractInstance.getChainID()), ethutil.toBuffer(functionSignature)];
 
 	let msgTosign = abi.soliditySHA3(
 	        types,
