@@ -989,16 +989,16 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _setMarketStatus(_marketId, PredictionStatus.Settled);
     }
 
-    // /**
-    // * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
-    // * @param _proposalId Id of dispute resolution proposal
-    // */
-    // function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
-    //   uint256 _marketId = disputeProposalId[_proposalId];
-    //   _resolveDispute(_marketId, false, 0);
-    //   emit DisputeResolved(_marketId, false);
-    //   IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
-    // }
+    /**
+    * @dev Burns the tokens of member who raised the dispute, if dispute is rejected.
+    * @param _proposalId Id of dispute resolution proposal
+    */
+    function burnDisputedProposalTokens(uint _proposalId) external onlyAuthorizedToGovern {
+      uint256 _marketId = disputeProposalId[_proposalId];
+      _resolveDispute(_marketId, false, 0);
+      emit DisputeResolved(_marketId, false);
+      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+    }
 
     // /**
     // * @dev function to update integer parameters
