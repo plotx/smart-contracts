@@ -290,7 +290,7 @@ describe("newPlotusWithBlot", () => {
             options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
             getReturnsInEth = async (user) => {
                 const response = await allMarkets.getReturn(user, marketId);
-                let returnAmountInEth = response[0][1] / 1e8;
+                let returnAmountInEth = response[1] / 1e8;
                 return returnAmountInEth;
             };
 
@@ -313,7 +313,7 @@ describe("newPlotusWithBlot", () => {
             options = [2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
             getReturnsInPLOT = async (user) => {
                 const response = await allMarkets.getReturn(user, marketId);
-                let returnAmountInPLOT = response[0][0] / 1e8;
+                let returnAmountInPLOT = response[0] / 1e8;
                 return returnAmountInPLOT;
             };
 
@@ -362,12 +362,12 @@ describe("newPlotusWithBlot", () => {
                 expectedInLot = totalReturnLotExpexted[accounts.indexOf(account)].toFixed(2);
                 // assert.equal(diffToken, expectedInLot);
                 try{
-                    assert.equal(diff, expectedInEth);
+                    assert.equal(diff/1, expectedInEth);
                 }catch(e){
                     console.log(`Not equal!! -> Sheet: ${expectedInEth} Got: ${diff}`);
                 }
                 try{
-                    assert.equal(diffToken, expectedInLot);
+                    assert.equal(diffToken/1, expectedInLot);
                 }catch(e){
                     console.log(`Not equal!! -> Sheet: ${expectedInLot} Got: ${diffToken}`);
                 }
