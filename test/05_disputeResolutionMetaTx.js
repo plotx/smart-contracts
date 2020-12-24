@@ -105,7 +105,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     // let allMarkets = await masterInstance.getLatestAddress(web3.utils.toHex("AM"));
     // allMarkets = await AllMarkets.at(allMarkets);
 
-    let functionSignature = encode("createMarket(uint256,uint256)", 0, 0);        
+    let functionSignature = encode("createMarket(uint32,uint32)", 0, 0);        
     await signAndExecuteMetaTx(
         "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",              
         "0x44B436a66E71Bc2b51320D837D5E006954af08A1",
@@ -282,7 +282,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 
     await increaseTime(10001);
     // await allMarkets.createMarket(0,0,{from:dr1});
-    let functionSignature = encode("createMarket(uint256,uint256)", 0, 0);        
+    let functionSignature = encode("createMarket(uint32,uint32)", 0, 0);        
     await signAndExecuteMetaTx(
         "141319b1a84827e1046e93741bf8a9a15a916d49684ab04925ac4ce4573eea23",              
         dr1,
@@ -465,7 +465,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await marketConfig.setOptionPrice(3, 27);
     await increaseTime(10001);
     // await allMarkets.createMarket(0,0);
-    let functionSignature = encode("createMarket(uint256,uint256)", 0, 0);        
+    let functionSignature = encode("createMarket(uint32,uint32)", 0, 0);        
     await signAndExecuteMetaTx(
         "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",              
         ab1,
@@ -616,7 +616,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 
     await increaseTime(10001);
     // await allMarkets.createMarket(0,0);
-    let functionSignature = encode("createMarket(uint256,uint256)", 0, 0);        
+    let functionSignature = encode("createMarket(uint32,uint32)", 0, 0);        
     await signAndExecuteMetaTx(
         "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",              
         ab1,
@@ -844,7 +844,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
 //             let allMarkets = await masterInstance.getLatestAddress(web3.utils.toHex("AM"));
 //             allMarkets = await AllMarkets.at(allMarkets);
 
-//             let functionSignature = encode("createMarket(uint256,uint256)", 0, 0);        
+//             let functionSignature = encode("createMarket(uint32,uint32)", 0, 0);        
 //             await signAndExecuteMetaTx(
 //               "fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f869fabbd",              
 //               user1,
