@@ -4,13 +4,14 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
 import "./external/govblocks-protocol/Governed.sol";
+import "./external/BasicMetaTransaction.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IMarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
 
-contract MarketCreationRewards is Governed {
+contract MarketCreationRewards is Governed , BasicMetaTransaction{
 
     using SafeMath for *;
 
@@ -212,14 +213,14 @@ contract MarketCreationRewards is Governed {
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
     function claimCreationReward(uint256 _maxRecords) external {
-      uint256 pendingPLOTReward = marketCreationRewardUserData[msg.sender].incentives;
-      delete marketCreationRewardUserData[msg.sender].incentives;
+      uint256 pendingPLOTReward = marketCreationRewardUserData[_msgSender()].incentives;
+      delete marketCreationRewardUserData[_msgSender()].incentives;
       (uint256 ethIncentive, uint256 plotIncentive) = _getRewardPoolIncentives(_maxRecords);
       pendingPLOTReward = pendingPLOTReward.add(plotIncentive);
       require(pendingPLOTReward > 0 || ethIncentive > 0, "No pending");
-      _transferAsset(address(plotToken), msg.sender, pendingPLOTReward);
-      _transferAsset(ETH_ADDRESS, msg.sender, ethIncentive);
-      emit ClaimedMarketCreationReward(msg.sender, ethIncentive, pendingPLOTReward);
+      _transferAsset(address(plotToken), _msgSender(), pendingPLOTReward);
+      _transferAsset(ETH_ADDRESS, _msgSender(), ethIncentive);
+      emit ClaimedMarketCreationReward(_msgSender(), ethIncentive, pendingPLOTReward);
     }
 
     /**

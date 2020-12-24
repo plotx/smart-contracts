@@ -949,15 +949,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(getTotalPredictionPoints(_marketId) > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      IToken(plotToken).transferFrom(msg.sender, address(this), _stakeForDispute);
+      IToken(plotToken).transferFrom(_msgSender(), address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
-      // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
+      // marketBasicData[_msgSender()].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
+      marketDataExtended[_marketId].disputeRaisedBy = _msgSender();
       marketDataExtended[_marketId].disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(_marketId, _proposedValue));
-      emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
+      emit DisputeRaised(_marketId, _msgSender(), proposalId, _proposedValue);
       _setMarketStatus(_marketId, PredictionStatus.InDispute);
     }
 
