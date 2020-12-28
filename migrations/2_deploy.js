@@ -41,9 +41,11 @@ module.exports = function(deployer, network, accounts){
       let vestingContract = await deployer.deploy(Vesting, plotusToken.address, accounts[0]);
       let masterProxy = await deployer.deploy(Master);
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
+      let allMarkets = await deployer.deploy(AllMarkets);
+      let mcr = await deployer.deploy(MarketCreationRewards);
       master = await Master.at(master.address);
-      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployPlotus.address, deployTokenController.address, blotToken.address];
-      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], marketConfig.address, [uniswapRouter.address, deployPlotusToken.address, uniswapFactory.address], vestingContract.address);
+      let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployTokenController.address, allMarkets.address, mcr.address, marketConfig.address, blotToken.address];
+      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], [uniswapRouter.address, uniswapFactory.address], vestingContract.address);
       let mockWeth = await deployer.deploy(MockWeth);
       let deployMarketBTC = await deployer.deploy(MarketBTC);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
@@ -56,8 +58,8 @@ module.exports = function(deployer, network, accounts){
       master = await Master.at(master.address);
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
       // await blotToken.changeOperator(await master.getLatestAddress("0x5443"));
-      let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
-      let plotus = await Plotus.at(plotusAddress);
+      // let plotusAddress = await master.getLatestAddress(web3.utils.toHex("PL"));
+      // let plotus = await Plotus.at(plotusAddress);
       // await mockchainLinkAggregaror.setLatestAnswer(934999802346);
       var date = Date.now();
       date = Math.round(date/1000) + 10000
@@ -68,59 +70,19 @@ module.exports = function(deployer, network, accounts){
       await pc.proposalCategoryInitiate();
       // console.log(await plotus.getOpenMarkets());
       await plotusToken.transfer(uniswapRouter.address, "100000000000000000000");
-      await plotusToken.transfer(plotus.address, "10000000000000000000000");
-      let allMarkets = await deployer.deploy(AllMarkets);
-      let mcr = await deployer.deploy(MarketCreationRewards);
-      let _marketUtility = await plotus.marketUtility();
+      // await plotusToken.transfer(plotus.address, "10000000000000000000000");
+      
+      let _marketUtility = await master.getLatestAddress(web3.utils.toHex("MU"));
       let mockchainLinkGas = await deployer.deploy(MockchainLinkGas);
 
-      let gv = await Governance.at(gvAddress);
-      // Creating proposal for adding new proxy internal contract
-      let actionHash = encode1(
-        ['bytes2','address'],
-        [web3.utils.toHex('AM'),
-        allMarkets.address]
-      );
-
-      let p = await gv.getProposalLength();
-      await gv.createProposal("proposal", "proposal", "proposal", 0);
-      let canClose = await gv.canCloseProposal(p);
-      assert.equal(parseFloat(canClose),0);
-      await gv.categorizeProposal(p, 9, 0);
-      await gv.submitProposalWithSolution(p, "proposal", actionHash);
-      await gv.submitVote(p, 1)
-      await increaseTime(604800);
-      await gv.closeProposal(p);
-      await increaseTime(604800);
-      await gv.triggerAction(p);
-
-      actionHash = encode1(
-        ['bytes2','address'],
-        [web3.utils.toHex('MC'),
-        mcr.address]
-      );
-
-      p = await gv.getProposalLength();
-      await gv.createProposal("proposal", "proposal", "proposal", 0);
-      canClose = await gv.canCloseProposal(p);
-      assert.equal(parseFloat(canClose),0);
-      await gv.categorizeProposal(p, 9, 0);
-      await gv.submitProposalWithSolution(p, "proposal", actionHash);
-      await gv.submitVote(p, 1)
-      await increaseTime(604800);
-      await gv.closeProposal(p);
-      await increaseTime(604800);
-      await gv.triggerAction(p);
 
       let allMarketsProxy = await OwnedUpgradeabilityProxy.at(
         await master.getLatestAddress(web3.utils.toHex('AM'))
       );
-      assert.equal(allMarkets.address, await allMarketsProxy.implementation());
 
       let mcrProxy = await OwnedUpgradeabilityProxy.at(
         await master.getLatestAddress(web3.utils.toHex('MC'))
       );
-      assert.equal(mcr.address, await mcrProxy.implementation());
 
       allMarkets = await AllMarkets.at(allMarketsProxy.address);
       mcr = await MarketCreationRewards.at(mcrProxy.address);
@@ -129,10 +91,6 @@ module.exports = function(deployer, network, accounts){
       assert.equal(await master.isInternal(mcr.address), true);
       await mcr.initialise(_marketUtility, mockchainLinkGas.address)
       await allMarkets.addInitialMarketTypesAndStart(mcr.address, "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE", _marketUtility, date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
-
-      date = (await web3.eth.getBlock('latest')).timestamp + 10000;
-      let hash = await plotus.addInitialMarketTypesAndStart(date, deployMarket.address, deployMarketBTC.address);
-      console.log(hash.receipt.gasUsed);
   });
 };
 

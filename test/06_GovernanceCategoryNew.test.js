@@ -9,7 +9,7 @@ const PlotusToken = artifacts.require("MockPLOT");
 const Market = artifacts.require('MockMarket');
 const DummyMockMarket = artifacts.require('DummyMockMarket');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
-const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
+const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolderMetaTX;
 const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const encode = require('./utils/encoder.js').encode;
@@ -75,33 +75,10 @@ contract('Configure Global Parameters', accounts => {
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
           2,
-          0
+          0, accounts[0]
         );
         let proxy = await OwnedUpgradeabilityProxy.at(gv.address);
         assert.equal(await proxy.implementation(), newGV.address);
-        let nullAddress = "0x0000000000000000000000000000";
-
-        actionHash = encode1(
-          ["uint256", "string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
-          [
-            10,
-            "ResolveDispute",
-            3,
-            50,
-            50,
-            [2],
-            86400,
-            "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
-            nullAddress,
-            toHex("AM"),
-            [0, 0],
-            "resolveDispute(uint256,uint256)",
-          ]
-        );
-        let p1 = await gv.getProposalLength();
-        await gv.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 4, "Add new member", actionHash);
-        await gv.submitVote(p1.toNumber(), 1);
-        await gv.closeProposal(p1.toNumber());
       });
       
       it('Should Not Update Market Config if zero address passed', async function() {
@@ -122,7 +99,7 @@ contract('Configure Global Parameters', accounts => {
           await MemberRoles.at(await ms.getLatestAddress(toHex('MR'))),
           gv,
           2,
-          0
+          0, accounts[0]
         );
         let proxyCon = await OwnedUpgradeabilityProxy.at(await pl.marketUtility());
         assert.equal(await proxyCon.implementation(), oldImplementation);

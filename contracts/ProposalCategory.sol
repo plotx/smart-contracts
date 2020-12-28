@@ -55,7 +55,6 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         initiated = true;
 
         uint256 advisoryBoardRole = uint256(IMemberRoles.Role.AdvisoryBoard);
-        uint256 tokenHolder = uint256(IMemberRoles.Role.TokenHolder);
         uint256 disputeResolutionBoard = uint256(IMemberRoles.Role.DisputeResolution);
 
         _addInitialCategories("Uncategorized", "", "EX", "", 0, 0);
@@ -91,21 +90,21 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             50,
             advisoryBoardRole
         ); //4
-        _addInitialCategories(
-            "Update Market Implementations",
-            "QmbyrHnGgTU9WWFq7DgtRTdpExLg9MqcFRYpWNpo7Ezjd5",
-            "PL",
-            "updateMarketImplementations(uint256[],address[])",
-            60,
-            tokenHolder
-        ); // 5
+        // _addInitialCategories(
+        //     "Update Market Implementations",
+        //     "QmbyrHnGgTU9WWFq7DgtRTdpExLg9MqcFRYpWNpo7Ezjd5",
+        //     "PL",
+        //     "updateMarketImplementations(uint256[],address[])",
+        //     60,
+        //     advisoryBoardRole
+        // ); // 5
         _addInitialCategories(
             "Update contract's Implementation",
             "QmesiuX929bJHmgH8E58L6FWPazcLdgcdjmFzinEdsMfre",
             "PL",
             "upgradeContractImplementation(address,address)",
             60,
-            tokenHolder
+            advisoryBoardRole
         ); // 6
         _addInitialCategories(
             "Upgrade multiple contract Implementations",
@@ -113,7 +112,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeMultipleImplementations(bytes2[],address[])",
             50,
-            tokenHolder
+            advisoryBoardRole
         ); // 7
         _addInitialCategories(
             "Update master Implementation",
@@ -121,7 +120,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "upgradeTo(address)",
             50,
-            tokenHolder
+            advisoryBoardRole
         ); // 8
         _addInitialCategories(
             "Add new contract",
@@ -129,13 +128,13 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "addNewContract(bytes2,address)",
             50,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Raise Dispute",
             "QmQLKazba2dL8nTtGaoon6DsPv5FcpKqWZPRdxLv2tfUQW",
-            "PL",
-            "resolveDispute(address,uint256)",
+            "AM",
+            "resolveDispute(uint256,uint256)",
             60,
             disputeResolutionBoard
         );
@@ -145,7 +144,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "TC",
             "burnLockedTokens(address,bytes32,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         ); //11
         _addInitialCategories(
             "Swap AB member",
@@ -153,7 +152,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MR",
             "swapABMember(address,address)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Update governance parameters",
@@ -161,7 +160,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "GV",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Update Token Controller parameters",
@@ -169,71 +168,71 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "TC",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Add new market type",
             "QmPwAdEj6quzB65JWr6hDz6HrLtjTfbezwUiAe6mBq2sxY",
-            "PL",
-            "addNewMarketType(uint64,uint64,uint64)",
+            "AM",
+            "addMarketType(uint32,uint32,uint32)",
             60,
-            tokenHolder
+            advisoryBoardRole
         ); //15
         _addInitialCategories(
             "Add new market currency",
             "QmTu2FnkqUWhhNbeQraSrtbdA4DfGLavTsLRKRCeLV51x1",
-            "PL",
-            "addNewMarketCurrency(address,uint64)",
+            "AM",
+            "addMarketCurrency(bytes32,address,uint8,uint8,uint32)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Pause Market Creation",
             "QmamFs4k5ZbzajipsbWb4LCaKtyxDUwb9U5dYiNFqExb2W",
-            "PL",
+            "AM",
             "pauseMarketCreation()",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Resume Market Creation",
             "QmZ9W1gHTJjSnt3ieiNv1Ux6ooX7ngU4Jrpvk3QiiBeP5r",
-            "PL",
+            "AM",
             "resumeMarketCreation()",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Transfer Market Registry Assets",
             "QmeRCfGJuA6oTqY8a7nuVxdHih2SmZUTaZLVrttGv6yKy5",
-            "PL",
+            "MC",
             "transferAssets(address,address,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
-            "Update Market Uint parameters",
+            "Update Market Creation Reward Uint parameters",
             "QmXPXBkSKfidTgbDcRBLqokqAa9SU2wwErTyedPAZPfr5z",
-            "PL",
+            "MC",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         ); //20
-        _addInitialCategories(
-            "Update Market Address parameters",
-            "QmbbNRchZHMULBbKFT8qjCWgCRPa4qdkst8mE8A2Kffy7N",
-            "PL",
-            "updateConfigAddressParameters(bytes8,address)",
-            60,
-            tokenHolder
-        );
+        // _addInitialCategories(
+        //     "Update Market Address parameters",
+        //     "QmbbNRchZHMULBbKFT8qjCWgCRPa4qdkst8mE8A2Kffy7N",
+        //     "PL",
+        //     "updateConfigAddressParameters(bytes8,address)",
+        //     60,
+        //     advisoryBoardRole
+        // );
         _addInitialCategories(
             "Update Member roles parameters",
             "QmcG8KXLMTDL5CtiKed12bJxE4ioL7Wn7oXLdW1zYWpf62",
             "MR",
             "updateUintParameters(bytes8,uint256)",
             60,
-            tokenHolder
+            advisoryBoardRole
         ); //22
         _addInitialCategories(
             "Whitelist Sponsor",
@@ -241,7 +240,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "MS",
             "whitelistSponsor(address)",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
         _addInitialCategories(
             "Any other item",
@@ -249,7 +248,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "EX",
             "",
             60,
-            tokenHolder
+            advisoryBoardRole
         );
     }
 

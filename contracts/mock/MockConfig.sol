@@ -1,8 +1,8 @@
 pragma solidity 0.5.7;
 
-import "../MarketUtilityV2.sol";
+import "../MarketUtility.sol";
 
-contract MockConfig is MarketUtilityV2 {
+contract MockConfig is MarketUtility {
 
 	uint public priceOfToken;
     bool public mockFlag;
@@ -59,7 +59,7 @@ contract MockConfig is MarketUtilityV2 {
         if(mockFlag) {
             return optionPrices[params[0]];
           }
-        return super.calculateOptionPrice(params, marketFeedAddress);
+        // return super.calculateOptionPrice(params, marketFeedAddress);
     }
 
     uint64 public nextOptionPrice;

@@ -21,7 +21,6 @@ import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
-import "./interfaces/IMarketRegistry.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/BasicMetaTransaction.sol";
@@ -43,12 +42,11 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
     bool internal constructorCheck;
 
     PlotXToken public token;
-    IMarketRegistry public marketRegistry;
     IbLOTToken public bLOTToken;
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(marketRegistry.isMarket(msg.sender) || IMaster(masterAddress).isInternal(msg.sender), "Not authorized");
+        require(IMaster(masterAddress).isInternal(msg.sender), "Not authorized");
         _;
     }
 
@@ -65,7 +63,6 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
         IMaster ms = IMaster(msg.sender);
         token = PlotXToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
-        marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
     }
 
     /**
