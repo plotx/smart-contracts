@@ -8,15 +8,15 @@ contract MockConfig is MarketUtility {
     bool public mockFlag;
     mapping(uint => uint) optionPrices;
 
-	function initialize(address payable[] memory _addressParams, address _intiater) public {
+	function initialize(address _intiater) public {
 		priceOfToken = 1e16;
         mockFlag = true;
-		super.initialize(_addressParams, _intiater);
+		super.initialize(_intiater);
 	}
 
-    function setWeth(address _weth) external {
-        weth = _weth;
-    }
+    // function setWeth(address _weth) external {
+    //     weth = _weth;
+    // }
 
 	function setPrice(uint _newPrice) external {
 		priceOfToken = _newPrice;
@@ -26,16 +26,16 @@ contract MockConfig is MarketUtility {
 		return amountIn.mul(priceOfToken).div(1e18);
 	}
 
-	function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
-        uint _value = _amount;
-        if(_asset == ETH_ADDRESS) {
-            // address pair = uniswapFactory.getPair(plotToken, weth);
-            _value = _amount.mul(1e18).div(priceOfToken);
-            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
-            // _value = output[1];
-        }
-        return (minStakeForMultiplier, _value);
-    }
+	// function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
+ //        uint _value = _amount;
+ //        if(_asset == ETH_ADDRESS) {
+ //            // address pair = uniswapFactory.getPair(plotToken, weth);
+ //            _value = _amount.mul(1e18).div(priceOfToken);
+ //            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
+ //            // _value = output[1];
+ //        }
+ //        return (minStakeForMultiplier, _value);
+ //    }
 
     /**
      * @dev Internal function to update pair cummulative price
@@ -43,9 +43,9 @@ contract MockConfig is MarketUtility {
     function _setCummulativePrice() internal {
     }
 
-    function update() external {
+    // function update() external {
     
-    }
+    // }
 
     function setOptionPrice(uint _option, uint _price) public {
         optionPrices[_option] = _price;

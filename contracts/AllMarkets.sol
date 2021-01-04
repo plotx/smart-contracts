@@ -58,22 +58,19 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       Settled
     }
 
-    event Deposited(address indexed user, uint256 plot, uint256 eth, uint256 timeStamp);
-    event Withdrawn(address indexed user, uint256 plot, uint256 eth, uint256 timeStamp);
+    event Deposited(address indexed user, uint256 plot, uint256 timeStamp);
+    event Withdrawn(address indexed user, uint256 plot, uint256 timeStamp);
     event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
-    // event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
-    event MarketResult(uint256 indexed marketIndex, uint256[] totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
-    event ReturnClaimed(address indexed user, uint256 plotReward, uint256 ethReward);
-    // event ClaimedIncentive(address indexed user, uint256[] marketsClaimed, address incentiveTokenAddress, uint256 incentive);
+    event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
+    event ReturnClaimed(address indexed user, uint256 plotReward);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
 
     struct PredictionData {
       uint64 predictionPoints;
-      uint64 ethStaked;
       uint64 plotStaked;
     }
     
@@ -85,18 +82,14 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     struct UserData {
-      uint128 totalEthStaked;
       uint128 totalPlotStaked;
       uint128 lastClaimedIndex;
       uint[] marketsParticipated;
-      mapping(address => uint) currencyUnusedBalance;
+      uint unusedPlotBalance;
       mapping(uint => UserMarketData) userMarketData;
     }
 
-    struct CommissionPercent {
-     uint64 ethCommission; 
-     uint64 plotCommission; 
-    }
+    uint64 internal plotCommission; 
 
     struct MarketBasicData {
       uint32 Mtype;
@@ -110,14 +103,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     struct MarketDataExtended {
       uint32 WinningOption;
       uint32 settleTime;
-      // address incentiveToken;
-      // address incentiveSponsoredBy;
       address disputeRaisedBy;
       uint64 disputeStakeAmount;
-      uint64 ethCommission;
       uint64 plotCommission;
       uint incentiveToDistribute;
-      uint[] rewardToDistribute;
+      uint rewardToDistribute;
       PredictionStatus predictionStatus;
     }
 
@@ -141,7 +131,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       bool paused;
     }
 
-    address internal ETH_ADDRESS;
     address internal plotToken;
 
     ITokenController internal tokenController;
@@ -149,7 +138,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     IGovernance internal governance;
     IMarketCreationRewards internal marketCreationRewards;
 
-    // uint8[] constant roundOfToNearest = [25,1];
     uint internal totalOptions;
     uint internal predictionDecimalMultiplier;
     uint internal defaultMaxRecords;
@@ -157,7 +145,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     bool internal marketCreationPaused;
     MarketCurrency[] internal marketCurrencies;
     MarketTypeData[] internal marketTypeArray;
-    CommissionPercent internal commissionPercGlobal; //with 2 decimals
     mapping(bytes32 => uint) internal marketCurrency;
 
     mapping(uint64 => uint32) internal marketType;
@@ -245,10 +232,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
       marketUtility = IMarketUtility(_marketUtility);
-      ETH_ADDRESS = _ethAddress;
 
-      commissionPercGlobal.ethCommission = 10;
-      commissionPercGlobal.plotCommission = 5;
+      plotCommission = 5;
       
       _addMarketType(4 hours, 100);
       _addMarketType(24 hours, 200);
@@ -269,21 +254,20 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _marketCurrencyIndex The index of market currency feed
     * @param _marketTypeIndex The time duration of market.
     */
-    function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public payable {
+    function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public {
       uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
-      marketUtility.update();
+      // marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
-      marketDataExtended[_marketIndex].ethCommission = commissionPercGlobal.ethCommission;
-      marketDataExtended[_marketIndex].plotCommission = commissionPercGlobal.plotCommission;
+      marketDataExtended[_marketIndex].plotCommission = plotCommission;
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
-      marketCreationRewards.calculateMarketCreationIncentive(_msgSender(), gasProvided - gasleft(), _marketIndex);
+      marketCreationRewards.calculateMarketCreationIncentive(_msgSender(), _marketIndex);
     }
 
     /**
@@ -299,18 +283,13 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     /**
-    * @dev Transfer the assets to specified address.
-    * @param _asset The asset transfer to the specific address.
+    * @dev Transfer the plot to specified address.
     * @param _recipient The address to transfer the asset of
     * @param _amount The amount which is transfer.
     */
     function _transferAsset(address _asset, address _recipient, uint256 _amount) internal {
       if(_amount > 0) { 
-        if(_asset == ETH_ADDRESS) {
-          (address(uint160(_recipient))).transfer(_amount);
-        } else {
           require(IToken(_asset).transfer(_recipient, _amount));
-        }
       }
     }
 
@@ -385,66 +364,51 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     /**
-    * @dev Function to deposit PLOT/ETH for participation in markets
+    * @dev Function to deposit PLOT for participation in markets
     * @param _amount Amount of PLOT to deposit
-    * msg.value => Amount of ETH to deposit
     */
-    function deposit(uint _amount) payable public {
-      require(_amount > 0 || msg.value > 0);
+    function deposit(uint _amount) public {
+      require(_amount > 0);
       _deposit(_amount);
     }
 
     /**
-    * @dev Function to deposit PLOT/ETH for participation in markets
+    * @dev Function to deposit PLOT for participation in markets
     * @param _amount Amount of PLOT to deposit
-    * msg.value => Amount of ETH to deposit
     */
     function _deposit(uint _amount) internal {
       address payable _msgSender = _msgSender();
       address _plotToken = plotToken;
-      if(msg.value > 0) {
-        userData[_msgSender].currencyUnusedBalance[ETH_ADDRESS] = userData[_msgSender].currencyUnusedBalance[ETH_ADDRESS].add(msg.value);
-      }
-      if(_amount > 0) {
-        IToken(_plotToken).transferFrom (_msgSender,address(this), _amount);
-        userData[_msgSender].currencyUnusedBalance[_plotToken] = userData[_msgSender].currencyUnusedBalance[_plotToken].add(_amount);
-      }
-      if(_amount > 0 || msg.value > 0) {
-        emit Deposited(_msgSender, _amount, msg.value, now);
-      }
+      IToken(_plotToken).transferFrom(_msgSender,address(this), _amount);
+      userData[_msgSender].unusedPlotBalance = userData[_msgSender].unusedPlotBalance.add(_amount);
+      emit Deposited(_msgSender, _amount, now);
     }
 
     /**
-    * @dev Withdraw provided amount of deposited and available assets
+    * @dev Withdraw provided amount of deposited and available plot
     * @param _plot Amount of PLOT to withdraw
-    * @param _eth Amount of ETH to withdraw
     * @param _maxRecords Maximum number of records to check
     */
-    function withdraw(uint _plot, uint256 _eth, uint _maxRecords) public {
-      (uint _plotLeft, uint _plotReward, uint _ethLeft, uint _ethReward) = getUserUnusedBalance(_msgSender());
+    function withdraw(uint _plot, uint _maxRecords) public {
+      (uint _plotLeft, uint _plotReward) = getUserUnusedBalance(_msgSender());
       _plotLeft = _plotLeft.add(_plotReward);
-      _ethLeft = _ethLeft.add(_ethReward);
-      _withdraw(_plot, _eth, _maxRecords, _plotLeft, _ethLeft);
+      _withdraw(_plot, _maxRecords, _plotLeft);
     }
 
     /**
     * @dev Internal function to withdraw deposited and available assets
     * @param _plot Amount of PLOT to withdraw
-    * @param _eth Amount of ETH to withdraw
     * @param _maxRecords Maximum number of records to check
     * @param _plotLeft Amount of PLOT left unused for user
-    * @param _ethLeft Amount of ETH left unused for user
     */
-    function _withdraw(uint _plot, uint256 _eth, uint _maxRecords, uint _plotLeft, uint _ethLeft) internal {
+    function _withdraw(uint _plot, uint _maxRecords, uint _plotLeft) internal {
       address payable _msgSender = _msgSender();
       withdrawReward(_maxRecords);
       address _plotToken = plotToken;
-      userData[_msgSender].currencyUnusedBalance[_plotToken] = _plotLeft.sub(_plot);
-      userData[_msgSender].currencyUnusedBalance[ETH_ADDRESS] = _ethLeft.sub(_eth);
-      require(_plot > 0 || _eth > 0);
-      _transferAsset(_plotToken, _msgSender, _plot);
-      _transferAsset(ETH_ADDRESS, _msgSender, _eth);
-      emit Withdrawn(_msgSender, _plot, _eth, now);
+      userData[_msgSender].unusedPlotBalance = _plotLeft.sub(_plot);
+      require(_plot > 0);
+      _transferAsset(plotToken, _msgSender, _plot);
+      emit Withdrawn(_msgSender, _plot, now);
     }
 
     /**
@@ -455,52 +419,20 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       return marketBasicData[_marketId].startTime + (marketBasicData[_marketId].predictionTime);
     }
 
-    // /**
-    // * @dev Sponsor Incentive for the market
-    // * @param _marketId Index of market to sponsor
-    // * @param _token Address of token to sponsor
-    // * @param _value Amount to sponsor
-    // */
-    // function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
-    //   require(IMaster(masterAddress).whitelistedSponsor(msg.sender));
-    //   require(marketStatus(_marketId) <= PredictionStatus.InSettlement);
-    //   require(marketDataExtended[_marketId].incentiveToken == address(0));
-    //   marketDataExtended[_marketId].incentiveToken = _token;
-    //   marketDataExtended[_marketId].incentiveToDistribute = _value;
-    //   marketDataExtended[_marketId].incentiveSponsoredBy = msg.sender;
-    //   IToken(_token).transferFrom(msg.sender, address(this), _value);
-    //   emit SponsoredIncentive(_marketId, _token, msg.sender, _value);
-    // }
-
     /**
     * @dev Deposit and Place prediction on the available options of the market.
     * @param _marketId Index of the market
     * @param _plotDeposit PLOT amount to deposit
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
+    * @param _asset The asset used by user during prediction whether it is plotToken address or in Bplot.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
-    * _plotDeposit should be passed with 18 decimals, amount of ETH to deposit should be sent as msg.value
+    * _plotDeposit should be passed with 18 decimals
     * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
-    function depositAndPlacePrediction(uint _plotDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external payable {
-      if(_asset == plotToken) {
-        require(msg.value == 0);
-      }
+    function depositAndPlacePrediction(uint _plotDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
       _deposit(_plotDeposit);
       _placePrediction(_marketId, _asset, _predictionStake, _prediction);
     }
-
-    ///**
-    //* @dev Place prediction on the available options of the market.
-    //* @param _marketId Index of the market
-    //* @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
-    //* @param _predictionStake The amount staked by user at the time of prediction.
-    //* @param _prediction The option on which user placed prediction.
-    //* _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
-    //*/
-    //function placePrediction(uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
-    //  _placePrediction(_marketId, _asset, _predictionStake, _prediction);
-    //}
 
     /**
     * @dev Place prediction on the available options of the market.
@@ -516,24 +448,21 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint64 _commissionStake;
       uint64 _commissionPercent;
-      if(_asset == ETH_ADDRESS) {
-        _commissionPercent = marketDataExtended[_marketId].ethCommission;
-      } else {
-        _commissionPercent = marketDataExtended[_marketId].plotCommission;
-      }
+      _commissionPercent = marketDataExtended[_marketId].plotCommission;
+      
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
-      if(_asset == ETH_ADDRESS || _asset == plotToken) {
-        uint256 unusedBalance = userData[_msgSender].currencyUnusedBalance[_asset];
+      if(_asset == plotToken) {
+        uint256 unusedBalance = userData[_msgSender].unusedPlotBalance;
         unusedBalance = unusedBalance.div(decimalMultiplier);
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
-          unusedBalance = userData[_msgSender].currencyUnusedBalance[_asset];
+          unusedBalance = userData[_msgSender].unusedPlotBalance;
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
-        userData[_msgSender].currencyUnusedBalance[_asset] = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
+        userData[_msgSender].unusedPlotBalance = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[_msgSender].userMarketData[_marketId].predictedWithBlot);
@@ -604,38 +533,31 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         _winningOption = 2;
       }
       marketDataExtended[_marketId].WinningOption = _winningOption;
-      uint64[] memory marketCreatorIncentive = new uint64[](2);
-      (uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint64 plotCommission, uint64 ethCommission) = _calculateRewardTally(_marketId, _winningOption);
-      (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation, ethParticipation);
+      uint64 marketCreatorIncentive;
+      (uint64 totalReward, uint64 tokenParticipation, uint64 plotCommission) = _calculateRewardTally(_marketId, _winningOption);
+      (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation);
       if(_thresholdReached) {
         if(
           marketOptionsAvailable[_marketId][_winningOption].predictionPoints == 0
         ){
-          marketCreatorIncentive[0] = _calculateAmulBdivC(_rewardPoolShare, tokenParticipation, 10000);
-          marketCreatorIncentive[1] = _calculateAmulBdivC(_rewardPoolShare, ethParticipation, 10000);
-          tokenParticipation = tokenParticipation.sub(marketCreatorIncentive[0]);
-          ethParticipation = ethParticipation.sub(marketCreatorIncentive[1]);
+          marketCreatorIncentive = _calculateAmulBdivC(_rewardPoolShare, tokenParticipation, 10000);
+          tokenParticipation = tokenParticipation.sub(marketCreatorIncentive);
         } else {
-          marketCreatorIncentive[0] = _calculateAmulBdivC(_rewardPoolShare, totalReward[0], 10000);
-          marketCreatorIncentive[1] = _calculateAmulBdivC(_rewardPoolShare, totalReward[1], 10000);
-          totalReward[0] = totalReward[0].sub(marketCreatorIncentive[0]);
-          totalReward[1] = totalReward[1].sub(marketCreatorIncentive[1]);
+          marketCreatorIncentive = _calculateAmulBdivC(_rewardPoolShare, totalReward, 10000);
+          totalReward = totalReward.sub(marketCreatorIncentive);
           tokenParticipation = 0;
-          ethParticipation = 0;
         }
       } else {
         if(
           marketOptionsAvailable[_marketId][_winningOption].predictionPoints > 0
         ){
           tokenParticipation = 0;
-          ethParticipation = 0;
         }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
       tokenParticipation = tokenParticipation.add(plotCommission); 
-      ethParticipation = ethParticipation.add(ethCommission);
-      _transferAsset(plotToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0].add(tokenParticipation)));
-      marketCreationRewards.depositMarketRewardPoolShare.value((10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1].add(ethParticipation)))(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[1]), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive[0]), ethParticipation, tokenParticipation);
+      _transferAsset(plotToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive.add(tokenParticipation)));
+      marketCreationRewards.depositMarketRewardPoolShare(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive), tokenParticipation);
       emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, _winningOption, _value, _roundId);
     }
 
@@ -644,16 +566,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     * @param _winningOption WinningOption of market
     */
-    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64[] memory totalReward, uint64 tokenParticipation, uint64 ethParticipation, uint64 plotCommission, uint64 ethCommission){
-      totalReward = new uint64[](2);
+    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64 totalReward, uint64 tokenParticipation, uint64 plotCommission){
       for(uint i=1;i <= totalOptions;i++){
         uint64 _plotStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
-        uint64 _ethStakedOnOption = marketOptionsAvailable[_marketId][i].ethStaked;
         tokenParticipation = tokenParticipation.add(_plotStakedOnOption);
-        ethParticipation = ethParticipation.add(_ethStakedOnOption);
         if(i != _winningOption) {
-          totalReward[0] = totalReward[0].add(_plotStakedOnOption);
-          totalReward[1] = totalReward[1].add(_ethStakedOnOption);
+          totalReward = totalReward.add(_plotStakedOnOption);
         }
       }
 
@@ -664,7 +582,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       * commissionAmount = actualAmountUserPassed - userParticipationAmount
       */
       plotCommission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].plotCommission) - tokenParticipation;
-      ethCommission = _calculateAmulBdivC(10000, ethParticipation, 10000 - marketDataExtended[_marketId].ethCommission) - ethParticipation;
     }
 
     /**
@@ -677,14 +594,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint len = userData[_msgSender].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
-      uint ethReward = 0;
       uint plotReward =0 ;
       require(!marketCreationPaused);
       for(i = userData[_msgSender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        (uint claimed, uint tempPlotReward, uint tempEthReward) = claimReturn(_msgSender, userData[_msgSender].marketsParticipated[i]);
+        (uint claimed, uint tempPlotReward) = claimReturn(_msgSender, userData[_msgSender].marketsParticipated[i]);
         if(claimed > 0) {
           delete userData[_msgSender].marketsParticipated[i];
-          ethReward = ethReward.add(tempEthReward);
           plotReward = plotReward.add(tempPlotReward);
           count++;
         } else {
@@ -696,9 +611,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      emit ReturnClaimed(_msgSender, plotReward, ethReward);
-      userData[_msgSender].currencyUnusedBalance[plotToken] = userData[_msgSender].currencyUnusedBalance[plotToken].add(plotReward.mul(10**predictionDecimalMultiplier));
-      userData[_msgSender].currencyUnusedBalance[ETH_ADDRESS] = userData[_msgSender].currencyUnusedBalance[ETH_ADDRESS].add(ethReward.mul(10**predictionDecimalMultiplier));
+      emit ReturnClaimed(_msgSender, plotReward);
+      userData[_msgSender].unusedPlotBalance = userData[_msgSender].unusedPlotBalance.add(plotReward.mul(10**predictionDecimalMultiplier));
       userData[_msgSender].lastClaimedIndex = uint128(lastClaimed);
     }
 
@@ -707,21 +621,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _user Address of user
     * return PLOT Unused in deposit
     * return PLOT Return from market
-    * return ETH Unused in deposit
-    * return ETH Return from market
     */
-    function getUserUnusedBalance(address _user) public view returns(uint256, uint256, uint256, uint256){
-      uint ethReward;
+    function getUserUnusedBalance(address _user) public view returns(uint256, uint256){
       uint plotReward;
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       uint len = userData[_user].marketsParticipated.length;
-      uint[] memory _returnAmount = new uint256[](2);
       for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
-        (_returnAmount) = getReturn(_user, userData[_user].marketsParticipated[i]);
-        ethReward = ethReward.add(_returnAmount[1]);
-        plotReward = plotReward.add(_returnAmount[0]);
+        plotReward = plotReward.add(getReturn(_user, userData[_user].marketsParticipated[i]));
       }
-      return (userData[_user].currencyUnusedBalance[plotToken], plotReward.mul(decimalMultiplier), userData[_user].currencyUnusedBalance[ETH_ADDRESS], ethReward.mul(decimalMultiplier));
+      return (userData[_user].unusedPlotBalance, plotReward.mul(decimalMultiplier));
     }
 
     /**
@@ -741,7 +649,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return neutralMinValue Neutral min value deciding the option ranges of market
     * @return neutralMaxValue Neutral max value deciding the option ranges of market
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
-    * @return _ethStaked uint[] memory representing the ether staked on each option ranges of the market.
     * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
     * @return _predictionTime uint representing the type of market.
     * @return _expireTime uint representing the time at which market closes for prediction
@@ -749,7 +656,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function getMarketData(uint256 _marketId) external view returns
        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue,
-        uint[] memory _optionPrice, uint[] memory _ethStaked, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
+        uint[] memory _optionPrice, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
         _marketCurrency = marketCurrencies[marketBasicData[_marketId].currency].currencyName;
         _predictionTime = marketBasicData[_marketId].predictionTime;
         _expireTime =marketExpireTime(_marketId);
@@ -758,73 +665,32 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         neutralMaxValue = marketBasicData[_marketId].neutralMaxValue;
         
         _optionPrice = new uint[](totalOptions);
-        _ethStaked = new uint[](totalOptions);
         _plotStaked = new uint[](totalOptions);
         uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
-          _ethStaked[i] = marketOptionsAvailable[_marketId][i+1].ethStaked;
           _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
           uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
           _optionPrice[i] = marketUtility.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
        }
     }
 
-    // /**
-    // * @dev Allows the incentive sponsorer of market to claim back his incentives incase of zero participation in market
-    // * @param _marketId Index of market
-    // */
-    // function withdrawSponsoredIncentives(uint256 _marketId) external {
-    //   require(marketStatus(_marketId) == PredictionStatus.Settled);
-    //   require(getTotalPredictionPoints(_marketId) == 0);
-    //   _transferAsset(marketDataExtended[_marketId].incentiveToken, marketDataExtended[_marketId].incentiveSponsoredBy, marketDataExtended[_marketId].incentiveToDistribute);
-    // }
-
     /**
     * @dev Claim the return amount of the specified address.
     * @param _user User address
     * @param _marketId Index of market
-    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed; Return in PLOT; Return in ETH
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed; Return in PLOT
     */
-    function claimReturn(address payable _user, uint _marketId) internal returns(uint256, uint256, uint256) {
+    function claimReturn(address payable _user, uint _marketId) internal returns(uint256, uint256) {
 
       if(marketStatus(_marketId) != PredictionStatus.Settled) {
-        return (0, 0 ,0);
+        return (0, 0);
       }
       if(userData[_user].userMarketData[_marketId].claimedReward) {
-        return (1, 0, 0);
+        return (1, 0);
       }
       userData[_user].userMarketData[_marketId].claimedReward = true;
-      uint[] memory _returnAmount = new uint256[](2);
-      (_returnAmount) = getReturn(_user, _marketId);
-      return (2, _returnAmount[0], _returnAmount[1]);
+      return (2, getReturn(_user, _marketId));
     }
-
-    // /** 
-    // * @dev Allows users to claim sponsored incentives of market
-    // * @param _user User address
-    // * @param _markets Indexes of markets which user want to claim incentive for
-    // * @param _incentiveToken Incentive token to check rewards for
-    // * User will pass a list of market id's to check for incentive of given token address,
-    // * Incentive will be transferred to user if user had any and the incentive token of market is same as the one user had passed
-    // */
-    // function claimIncentives(address payable _user, uint64[] calldata _markets, address _incentiveToken) external {
-    //   uint totalIncentive;
-    //   uint _index;
-    //   uint[] memory _marketsClaimed = new uint[](_markets.length);
-    //   for(uint64 i = 0; i < _markets.length; i++) {
-    //     ( , uint incentive, address incentiveToken) = getReturn(_user, _markets[i]);
-    //     if(incentive > 0 && incentiveToken == _incentiveToken && !userData[_user].userMarketData[_markets[i]].incentiveClaimed) {
-    //       userData[_user].userMarketData[_markets[i]].incentiveClaimed = true;
-    //       totalIncentive = totalIncentive.add(incentive);
-    //       _marketsClaimed[_index] = i;
-    //       _index++;
-    //     }
-
-    //   }
-    //   require(totalIncentive > 0);
-    //   _transferAsset(_incentiveToken, _user, totalIncentive);
-    //   emit ClaimedIncentive(_user, _marketsClaimed, _incentiveToken, totalIncentive);
-    // }
 
     /** 
     * @dev Gets the return amount of the specified address.
@@ -834,16 +700,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return incentive uint[] memory representing the amount incentive.
     * @return _incentiveTokens address[] memory representing the incentive tokens.
     */
-    function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount){
-    // function getReturn(address _user, uint _marketId) public view returns (uint[] memory returnAmount, uint incentive, address _incentiveToken){
-      returnAmount = new uint256[](2);
+    function getReturn(address _user, uint _marketId) public view returns (uint returnAmount){
       if(marketStatus(_marketId) != PredictionStatus.Settled || getTotalPredictionPoints(_marketId) == 0) {
        return (returnAmount);
       }
       uint256 _winningOption = marketDataExtended[_marketId].WinningOption;
-      returnAmount = new uint256[](2);
-      returnAmount[0] = userData[_user].userMarketData[_marketId].predictionData[_winningOption].plotStaked;
-      returnAmount[1] = userData[_user].userMarketData[_marketId].predictionData[_winningOption].ethStaked;
+      returnAmount = userData[_user].userMarketData[_marketId].predictionData[_winningOption].plotStaked;
       uint256 userPredictionPointsOnWinngOption = userData[_user].userMarketData[_marketId].predictionData[_winningOption].predictionPoints;
       if(userPredictionPointsOnWinngOption > 0) {
         returnAmount = _addUserReward(_marketId, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
@@ -856,13 +718,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param returnAmount The return amount.
     * @return uint[] memory representing the return amount after adding reward.
     */
-    function _addUserReward(uint256 _marketId, uint[] memory returnAmount, uint256 _winningOption, uint256 _userPredictionPointsOnWinngOption) internal view returns(uint[] memory){
-      for(uint j = 0; j< returnAmount.length; j++) {
-        returnAmount[j] = returnAmount[j].add(
-            _userPredictionPointsOnWinngOption.mul(marketDataExtended[_marketId].rewardToDistribute[j]).div(marketOptionsAvailable[_marketId][_winningOption].predictionPoints)
+    function _addUserReward(uint256 _marketId, uint returnAmount, uint256 _winningOption, uint256 _userPredictionPointsOnWinngOption) internal view returns(uint){
+        return returnAmount.add(
+            _userPredictionPointsOnWinngOption.mul(marketDataExtended[_marketId].rewardToDistribute).div(marketOptionsAvailable[_marketId][_winningOption].predictionPoints)
           );
-      }
-      return returnAmount;
     }
 
     /**
@@ -878,12 +737,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     /**
     * @dev Returns total assets staked in market by users
     * @param _marketId Index of market
-    * @return ethStaked Total eth staked on market
     * @return plotStaked Total PLOT staked on market
     */
-    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 ethStaked, uint256 plotStaked) {
+    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 plotStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
-        ethStaked = ethStaked.add(marketOptionsAvailable[_marketId][i].ethStaked);
         plotStaked = plotStaked.add(marketOptionsAvailable[_marketId][i].plotStaked);
       }
     }
@@ -913,15 +770,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
       marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints);
-      if(_asset == ETH_ADDRESS) {
-        userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].ethStaked = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].ethStaked.add(_predictionStake);
-        marketOptionsAvailable[_marketId][_prediction].ethStaked = marketOptionsAvailable[_marketId][_prediction].ethStaked.add(_predictionStake);
-        userData[_msgSender].totalEthStaked = userData[_msgSender].totalEthStaked.add(_predictionStake);
-      } else {
-        userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
-        marketOptionsAvailable[_marketId][_prediction].plotStaked = marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake);
-        userData[_msgSender].totalPlotStaked = userData[_msgSender].totalPlotStaked.add(_predictionStake);
-      }
+      
+      userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
+      marketOptionsAvailable[_marketId][_prediction].plotStaked = marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake);
+      userData[_msgSender].totalPlotStaked = userData[_msgSender].totalPlotStaked.add(_predictionStake);
+      
     }
 
     /**
@@ -1000,17 +853,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
-    // /**
-    // * @dev function to update integer parameters
-    // */
-    // function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-    //   if(code == "ETHC") { // Commission percent for ETH based predictions(Raised be two decimals)
-    //     commissionPercGlobal.ethCommission = uint64(value);
-    //   } else if(code == "TKNC") { // Commission percent for PLOT based predictions(Raised be two decimals)
-    //     commissionPercGlobal.plotCommission = uint64(value);
-    //   }
-    // }
-
     /**
     * @dev Get flags set for user
     * @param _marketId Index of market.
@@ -1032,24 +874,23 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return uint256 Value of market currently at the time closing market.
     * @return uint256 representing the positions of the winning option.
     * @return uint[] memory representing the reward to be distributed.
-    * @return uint256 representing the Eth staked on winning option.
     * @return uint256 representing the PLOT staked on winning option.
     */
-    function getMarketResults(uint256 _marketId) external view returns(uint256 _winningOption, uint256, uint256[] memory, uint256, uint256) {
+    function getMarketResults(uint256 _marketId) external view returns(uint256 _winningOption, uint256, uint256, uint256) {
       _winningOption = marketDataExtended[_marketId].WinningOption;
-      return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].ethStaked, marketOptionsAvailable[_marketId][_winningOption].plotStaked);
+      return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].plotStaked);
     }
 
-    /**
-    * @dev Returns total assets value in PLOT staked on market
-    * @param _marketId Index of market
-    * @return plotStaked Total staked value in PLOT on market
-    */
-    function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
-      (uint256 ethStaked, uint256 plotStaked) = getTotalAssetsStaked(_marketId);
-      (, ethStaked) = marketUtility.getValueAndMultiplierParameters(ETH_ADDRESS, ethStaked);
-      return plotStaked.add(ethStaked);
-    }
+// we can remove this function
+    // /**
+    // * @dev Returns total assets value in PLOT staked on market
+    // * @param _marketId Index of market
+    // * @return plotStaked Total staked value in PLOT on market
+    // */
+    // function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
+    //   uint256 plotStaked = getTotalAssetsStaked(_marketId);
+    //   return plotStaked;
+    // }
 
     /**
     * @dev Internal function set market status
@@ -1058,12 +899,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */    
     function _setMarketStatus(uint256 _marketId, PredictionStatus _status) internal {
       marketDataExtended[_marketId].predictionStatus = _status;
-    }
-
-    /**
-    * @dev Payable Fallback function to receive funds
-    */
-    function () external payable {
     }
 
 }

@@ -15,7 +15,6 @@
 
 pragma solidity 0.5.7;
 
-import "./external/uniswap/solidity-interface.sol";
 import "./external/uniswap/FixedPoint.sol";
 import "./external/uniswap/oracleLibrary.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
@@ -34,8 +33,6 @@ contract MarketUtility is Governed {
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 constant updatePeriod = 1 hours;
 
-    uint256 internal STAKE_WEIGHTAGE;
-    uint256 internal STAKE_WEIGHTAGE_MIN_AMOUNT;
     uint256 internal minTimeElapsedDivisor;
     uint256 internal minPredictionAmount;
     uint256 internal maxPredictionAmount;
@@ -44,24 +41,24 @@ contract MarketUtility is Governed {
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
     address internal plotToken;
-    address internal plotETHpair;
-    address internal weth;
+    // address internal plotETHpair;
+    // address internal weth;
     address internal initiater;
     address public authorizedAddress;
     bool public initialized;
 
 
-    struct UniswapPriceData {
-        FixedPoint.uq112x112 price0Average;
-        uint256 price0CumulativeLast;
-        FixedPoint.uq112x112 price1Average;
-        uint256 price1CumulativeLast;
-        uint32 blockTimestampLast;
-        bool initialized;
-    }
+    // struct UniswapPriceData {
+    //     FixedPoint.uq112x112 price0Average;
+    //     uint256 price0CumulativeLast;
+    //     FixedPoint.uq112x112 price1Average;
+    //     uint256 price1CumulativeLast;
+    //     uint32 blockTimestampLast;
+    //     bool initialized;
+    // }
 
-    mapping(address => UniswapPriceData) internal uniswapPairData;
-    IUniswapV2Factory uniswapFactory;
+    // mapping(address => UniswapPriceData) internal uniswapPairData;
+    // IUniswapV2Factory uniswapFactory;
 
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
@@ -89,7 +86,7 @@ contract MarketUtility is Governed {
     /**
      * @dev Initiates the config contact with initial values
      **/
-    function initialize(address payable[] memory _addressParams, address _initiater) public {
+    function initialize(address _initiater) public {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
             address(uint160(address(this)))
         );
@@ -98,19 +95,15 @@ contract MarketUtility is Governed {
         initialized = true;
         _setInitialParameters();
         initiater = _initiater;
-        weth = IUniswapV2Router02(_addressParams[0]).WETH();
-        uniswapFactory = IUniswapV2Factory(_addressParams[1]);
     }
 
     /**
      * @dev Internal function to set initial value
      **/
     function _setInitialParameters() internal {
-        STAKE_WEIGHTAGE = 40; //
-        STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
         minTimeElapsedDivisor = 6;
-        minPredictionAmount = 1e15;
-        maxPredictionAmount = 28 ether;
+        minPredictionAmount = 1e15;// need to change the value according to plot
+        maxPredictionAmount = 28 ether; // need to change the value according to plot
         positionDecimals = 1e2;
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
@@ -128,14 +121,14 @@ contract MarketUtility is Governed {
     function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool) {
       bool multiplierApplied;
       uint _stakedBalance = tokenController.tokensLockedAtTime(_user, "SM", now);
-      uint _predictionValueInToken;
-      (, _predictionValueInToken) = getValueAndMultiplierParameters(_asset, _predictionStake);
+      // uint _predictionValueInToken;
+      // (, _predictionValueInToken) = getValueAndMultiplierParameters(_asset, _predictionStake);
       if(_stakeValue < minStakeForMultiplier) {
         return (predictionPoints,multiplierApplied);
       }
       uint _muliplier = 100;
-      if(_stakedBalance.div(_predictionValueInToken) > 0) {
-        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+      if(_stakedBalance.div(_predictionStake) > 0) {
+        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionStake.mul(10));
         multiplierApplied = true;
       }
       return (predictionPoints.mul(_muliplier).div(100),multiplierApplied);
@@ -148,16 +141,11 @@ contract MarketUtility is Governed {
         external
         onlyAuthorized
     {
-        if (code == "SW") { // Stake weightage
-            require(value <= 100, "Value must be less or equal to 100");
-            STAKE_WEIGHTAGE = value;
-        } else if (code == "SWMA") { // Minimum amount required for stake weightage
-            STAKE_WEIGHTAGE_MIN_AMOUNT = value;
-        } else if (code == "MTED") { // Minimum time elapsed divisor
+        if (code == "MTED") { // Minimum time elapsed divisor
             minTimeElapsedDivisor = value;
         } else if (code == "MINPRD") { // Minimum predictionamount
             minPredictionAmount = value;
-        } else if (code == "MAXPRD") { // Minimum predictionamount
+        } else if (code == "MAXPRD") { // Maximum predictionamount
             maxPredictionAmount = value;
         } else if (code == "PDEC") { // Position's Decimals
             positionDecimals = value;
@@ -172,77 +160,70 @@ contract MarketUtility is Governed {
         }
     }
 
-    /**
-     * @dev Updates address parameters of config
-     **/
-    function updateAddressParameters(bytes8 code, address payable value)
-        external
-        onlyAuthorized
-    {
-        require(value != address(0), "Value cannot be address(0)");
-        if (code == "UNIFAC") { // Uniswap factory address
-            uniswapFactory = IUniswapV2Factory(value);
-            plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        } else {
-            revert("Invalid code");
-        }
-    }
+    // /**
+    //  * @dev Updates address parameters of config
+    //  **/
+    // function updateAddressParameters(bytes8 code, address payable value)
+    //     external
+    //     onlyAuthorized
+    // {
+    //     require(value != address(0), "Value cannot be address(0)");
+    //     if (code == "UNIFAC") { // Uniswap factory address
+    //         uniswapFactory = IUniswapV2Factory(value);
+    //         plotETHpair = uniswapFactory.getPair(plotToken, weth);
+    //     } else {
+    //         revert("Invalid code");
+    //     }
+    // }
 
-    /**
-     * @dev Update cumulative price of token in uniswap
-     **/
-    function update() external onlyAuthorized {
-        require(plotETHpair != address(0), "Uniswap pair not set");
-        UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
-        (
-            uint256 price0Cumulative,
-            uint256 price1Cumulative,
-            uint32 blockTimestamp
-        ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
-        uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
+    // /**
+    //  * @dev Update cumulative price of token in uniswap
+    //  **/
+    // function update() external onlyAuthorized {
+    //     // require(plotETHpair != address(0), "Uniswap pair not set");
+    //     // UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
+    //     // (
+    //     //     uint256 price0Cumulative,
+    //     //     uint256 price1Cumulative,
+    //     //     uint32 blockTimestamp
+    //     // ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
+    //     // uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
 
-        if (timeElapsed >= updatePeriod || !_priceData.initialized) {
-            // overflow is desired, casting never truncates
-            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-            _priceData.price0Average = FixedPoint.uq112x112(
-                uint224(
-                    (price0Cumulative - _priceData.price0CumulativeLast) /
-                        timeElapsed
-                )
-            );
-            _priceData.price1Average = FixedPoint.uq112x112(
-                uint224(
-                    (price1Cumulative - _priceData.price1CumulativeLast) /
-                        timeElapsed
-                )
-            );
+    //     if (timeElapsed >= updatePeriod || !_priceData.initialized) {
+    //         // overflow is desired, casting never truncates
+    //         // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
+    //         // _priceData.price0Average = FixedPoint.uq112x112(
+    //         //     uint224(
+    //         //         (price0Cumulative - _priceData.price0CumulativeLast) /
+    //         //             timeElapsed
+    //         //     )
+    //         // );
+    //         // _priceData.price1Average = FixedPoint.uq112x112(
+    //         //     uint224(
+    //         //         (price1Cumulative - _priceData.price1CumulativeLast) /
+    //         //             timeElapsed
+    //         //     )
+    //         // );
 
-            _priceData.price0CumulativeLast = price0Cumulative;
-            _priceData.price1CumulativeLast = price1Cumulative;
-            _priceData.blockTimestampLast = blockTimestamp;
-            if(!_priceData.initialized) {
-              _priceData.initialized = true;
-            }
-        }
-    }
+    //         _priceData.price0CumulativeLast = price0Cumulative;
+    //         _priceData.price1CumulativeLast = price1Cumulative;
+    //         _priceData.blockTimestampLast = blockTimestamp;
+    //         if(!_priceData.initialized) {
+    //           _priceData.initialized = true;
+    //         }
+    //     }
+    // }
 
-    /**
-     * @dev Set initial PLOT/ETH pair cummulative price
-     **/
-    function setInitialCummulativePrice() public {
-      require(msg.sender == initiater);
-      require(plotETHpair == address(0),"Already initialised");
-      plotETHpair = uniswapFactory.getPair(plotToken, weth);
-      UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
-      (
-          uint256 price0Cumulative,
-          uint256 price1Cumulative,
-          uint32 blockTimestamp
-      ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
-      _priceData.price0CumulativeLast = price0Cumulative;
-      _priceData.price1CumulativeLast = price1Cumulative;
-      _priceData.blockTimestampLast = blockTimestamp;
-    }
+    // /**
+    //  * @dev Set initial PLOT/ETH pair cummulative price
+    //  **/
+    // function setInitialCummulativePrice() public {
+    //   require(msg.sender == initiater);
+      
+    //   _priceData.price0CumulativeLast = price0Cumulative;
+    //   _priceData.price1CumulativeLast = price1Cumulative;
+    //   _priceData.blockTimestampLast = blockTimestamp;
+    // }
 
     /**
     * @dev Get decimals of given price feed address 
@@ -286,8 +267,6 @@ contract MarketUtility is Governed {
         view
         returns (
             uint256,
-            uint256,
-            uint256,
             uint256
         )
     {
@@ -295,8 +274,6 @@ contract MarketUtility is Governed {
             _marketFeedAddress
         );
         return (
-            STAKE_WEIGHTAGE,
-            STAKE_WEIGHTAGE_MIN_AMOUNT,
             _currencyPrice,
             minTimeElapsedDivisor
         );
@@ -337,40 +314,40 @@ contract MarketUtility is Governed {
             (uint256(currentRoundAnswer), currentRoundId);
     }
 
-    /**
-     * @dev Get value of provided currency address in ETH
-     * @param _currencyAddress Address of currency
-     * @param _amount Amount of provided currency
-     * @return Value of provided amount in ETH
-     **/
-    function getAssetValueETH(address _currencyAddress, uint256 _amount)
-        public
-        view
-        returns (uint256 tokenEthValue)
-    {
-        tokenEthValue = _amount;
-        if (_currencyAddress != ETH_ADDRESS) {
-            tokenEthValue = getPrice(plotETHpair, _amount);
-        }
-    }
+    // /**
+    //  * @dev Get value of provided currency address in ETH
+    //  * @param _currencyAddress Address of currency
+    //  * @param _amount Amount of provided currency
+    //  * @return Value of provided amount in ETH
+    //  **/
+    // function getAssetValueETH(address _currencyAddress, uint256 _amount)
+    //     public
+    //     view
+    //     returns (uint256 tokenEthValue)
+    // {
+    //     tokenEthValue = _amount;
+    //     if (_currencyAddress != ETH_ADDRESS) {
+    //         tokenEthValue = getPrice(plotETHpair, _amount);
+    //     }
+    // }
 
-    /**
-     * @dev Get price of provided currency address in ETH
-     * @param _currencyAddress Address of currency
-     * @return Price of provided currency in ETH
-     * @return Decimals of the currency
-     **/
-    function getAssetPriceInETH(address _currencyAddress)
-        public
-        view
-        returns (uint256 tokenEthValue, uint256 decimals)
-    {
-        tokenEthValue = 1;
-        if (_currencyAddress != ETH_ADDRESS) {
-            decimals = IToken(_currencyAddress).decimals();
-            tokenEthValue = getPrice(plotETHpair, 10**decimals);
-        }
-    }
+    // /**
+    //  * @dev Get price of provided currency address in ETH
+    //  * @param _currencyAddress Address of currency
+    //  * @return Price of provided currency in ETH
+    //  * @return Decimals of the currency
+    //  **/
+    // function getAssetPriceInETH(address _currencyAddress)
+    //     public
+    //     view
+    //     returns (uint256 tokenEthValue, uint256 decimals)
+    // {
+    //     tokenEthValue = 1;
+    //     if (_currencyAddress != ETH_ADDRESS) {
+    //         decimals = IToken(_currencyAddress).decimals();
+    //         tokenEthValue = getPrice(plotETHpair, 10**decimals);
+    //     }
+    // }
 
     /**
      * @dev Get amount of stake required to raise a dispute
@@ -379,47 +356,47 @@ contract MarketUtility is Governed {
         return tokenStakeForDispute;
     }
 
-    /**
-     * @dev Get value of _asset in PLOT token and multiplier parameters
-     * @param _asset Address of asset for which value is requested
-     * @param _amount Amount of _asset
-     * @return min prediction amount required for multiplier
-     * @return value of given asset in PLOT tokens
-     **/
-    function getValueAndMultiplierParameters(address _asset, uint256 _amount)
-        public
-        view
-        returns (uint256, uint256)
-    {
-        uint256 _value = _amount;
-        if (_asset == ETH_ADDRESS) {
-            _value = (uniswapPairData[plotETHpair].price1Average)
-                .mul(_amount)
-                .decode144();
-        }
-        return (minStakeForMultiplier, _value);
-    }
+    // /**
+    //  * @dev Get value of _asset in PLOT token and multiplier parameters
+    //  * @param _asset Address of asset for which value is requested
+    //  * @param _amount Amount of _asset
+    //  * @return min prediction amount required for multiplier
+    //  * @return value of given asset in PLOT tokens
+    //  **/
+    // function getValueAndMultiplierParameters(address _asset, uint256 _amount)
+    //     public
+    //     view
+    //     returns (uint256, uint256)
+    // {
+    //     uint256 _value = _amount;
+    //     if (_asset == ETH_ADDRESS) {
+    //         _value = (uniswapPairData[plotETHpair].price1Average)
+    //             .mul(_amount)
+    //             .decode144();
+    //     }
+    //     return (minStakeForMultiplier, _value);
+    // }
 
-    /**
-     * @dev Get Market feed address
-     * @return Uniswap factory address
-     **/
-    function getFeedAddresses() public view returns (address) {
-        return (address(uniswapFactory));
-    }
+    // /**
+    //  * @dev Get Market feed address
+    //  * @return Uniswap factory address
+    //  **/
+    // function getFeedAddresses() public view returns (address) {
+    //     return (address(uniswapFactory));
+    // }
 
-    /**
-     * @dev Get value of token in pair
-     **/
-    function getPrice(address pair, uint256 amountIn)
-        public
-        view
-        returns (uint256 amountOut)
-    {
-        amountOut = (uniswapPairData[pair].price0Average)
-            .mul(amountIn)
-            .decode144();
-    }
+    // /**
+    //  * @dev Get value of token in pair
+    //  **/
+    // function getPrice(address pair, uint256 amountIn)
+    //     public
+    //     view
+    //     returns (uint256 amountOut)
+    // {
+    //     amountOut = (uniswapPairData[pair].price0Average)
+    //         .mul(amountIn)
+    //         .decode144();
+    // }
 
 
   function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
@@ -430,7 +407,8 @@ contract MarketUtility is Governed {
   }
 
   function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
-      uint _stakeValue = getAssetValueETH(_asset, _predictionStake.mul(1e10));
+      // uint _stakeValue = getAssetValueETH(_asset, _predictionStake.mul(1e10));
+      uint _stakeValue = _predictionStake.mul(1e10);
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
       }
