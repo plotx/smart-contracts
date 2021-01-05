@@ -82,4 +82,10 @@ contract IMarketUtility {
         address _currencyFeedAddress,
         uint256 _settleTime
     ) public view returns (uint256 latestAnswer, uint256 roundId);
+
+    function getSettlemetPriceByRoundId(
+        address _currencyFeedAddress,
+        uint256 _settleTime,
+        uint80 _roundId
+    ) public view returns (uint256 latestAnswer, uint256 roundId);
 }
