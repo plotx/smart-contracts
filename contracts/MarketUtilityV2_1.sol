@@ -17,7 +17,7 @@ pragma solidity 0.5.7;
 
 import "./MarketUtilityV2.sol";
 
-contract MarketUtilityV3 is MarketUtilityV2 {
+contract MarketUtilityV2_1 is MarketUtilityV2 {
     /**
      * @dev Get price of provided feed address
      * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
