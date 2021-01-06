@@ -44,9 +44,6 @@ contract MarketUtilityV2_1 is MarketUtilityV2 {
         while(currentRoundTime > _settleTime) {
             roundIdToCheck--;
             (roundIdToCheck, currentRoundAnswer, , currentRoundTime, )= IChainLinkOracle(_currencyFeedAddress).getRoundData(roundIdToCheck);
-            if(currentRoundTime <= _settleTime) {
-                break;
-            }
         }
         return
             (uint256(currentRoundAnswer), roundIdToCheck);
