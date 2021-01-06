@@ -170,11 +170,13 @@ contract("26_SettleMarketV2. AllMarket", async function([
     it("Should be able to settle markets created in V2 AllMarkets", async() => {
         let tx;
         let currentRoundId;
+        let requiredRoundId = await chainlinkAggregator.currentRound();
+        await chainlinkAggregator.setLatestAnswer(500000000);
+        currentRoundId = await chainlinkAggregator.currentRound();
         for(let i = 1;i<=12;i++) {
-            currentRoundId = await chainlinkAggregator.currentRound();
             tx = await allMarkets.settleMarketByRoundId(i, currentRoundId/1);
         }
-        assert.equal(tx.logs[0].args.closeValue/1, ((await chainlinkAggregator.getRoundData(currentRoundId))[1])/1);
+        assert.equal(tx.logs[0].args.closeValue/1, ((await chainlinkAggregator.getRoundData(requiredRoundId))[1])/1);
     })
     it("Scenario 1: Latest Round Id, Required RoundId, Sent RoundId are same", async () => {
         let tx = await allMarkets.createMarketAndSettle(0,0,0);
@@ -313,7 +315,8 @@ contract("26_SettleMarketV2. AllMarket", async function([
             closingPrice += 1000000000;
             await chainlinkAggregator.setLatestAnswer(closingPrice);
         }
-        await allMarkets.createMarketAndSettle(0,0,0);
+        let currentRoundId = await chainlinkAggregator.currentRound();
+        let tx2 = await allMarkets.createMarketAndSettle(0,0,currentRoundId/1);
         await increaseTime(2*14400);
         closingPrice += 1000000000;
         await chainlinkAggregator.setLatestAnswer(closingPrice);
@@ -321,6 +324,10 @@ contract("26_SettleMarketV2. AllMarket", async function([
         tx = await allMarkets.createMarketAndSettle(0,0,requiredRoundId);
         // tx = await allMarkets.settleMarketByRoundId(tx.logs[0].args.marketIndex/1, requiredRoundId);
         assert.equal(tx.logs[0].args.closeValue/1, ((await chainlinkAggregator.getRoundData(requiredRoundId))[1])/1);
+        await increaseTime(14400*2)
+        currentRoundId = await chainlinkAggregator.currentRound();
+        await allMarkets.settleMarketByRoundId(tx.logs[1].args.marketIndex/1, currentRoundId/1);
+        await allMarkets.settleMarketByRoundId(tx2.logs[1].args.marketIndex/1, currentRoundId/1);
     });
 
     it("Scenario 9: Required RoundId = latest round, Sent round id is lesser", async () => {
