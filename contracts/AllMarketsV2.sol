@@ -48,7 +48,7 @@ contract AllMarketsV2 is AllMarkets {
     function createMarketAndSettle(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex, uint80 _roundId) public {
     	uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
-      _closePreviousMarketV2( _marketTypeIndex, _marketCurrencyIndex, _roundId);
+      _closePreviousMarketWithRoundId( _marketTypeIndex, _marketCurrencyIndex, _roundId);
       marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
@@ -71,7 +71,7 @@ contract AllMarketsV2 is AllMarkets {
     /**
     * @dev Internal function to settle the previous market 
     */
-    function _closePreviousMarketV2(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex, uint80 _roundId) internal {
+    function _closePreviousMarketWithRoundId(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex, uint80 _roundId) internal {
     	uint64 currentMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket;
       if(currentMarket != 0 && _roundId > 0) {
         require(marketStatus(currentMarket) >= PredictionStatus.InSettlement);
@@ -90,6 +90,8 @@ contract AllMarketsV2 is AllMarkets {
 
     /**
     * @dev Settle the market, setting the winning option
+    * @param _marketId Index of market.
+    * @param _roundId Index of the nearest price feed round from which the price to be taken from.
     */
     function settleMarketByRoundId(uint256 _marketId, uint80 _roundId) public {
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
