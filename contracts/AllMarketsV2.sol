@@ -73,7 +73,7 @@ contract AllMarketsV2 is AllMarkets {
     */
     function _closePreviousMarketWithRoundId(uint64 _marketTypeIndex, uint64 _marketCurrencyIndex, uint80 _roundId) internal {
     	uint64 currentMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket;
-      if(currentMarket != 0 && _roundId > 0) {
+      if(currentMarket != 0) {
         require(marketStatus(currentMarket) >= PredictionStatus.InSettlement);
         uint64 penultimateMarket = marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket;
         if(penultimateMarket > 0 && now >= marketSettleTime(penultimateMarket)) {
@@ -95,6 +95,7 @@ contract AllMarketsV2 is AllMarkets {
     */
     function settleMarketByRoundId(uint256 _marketId, uint80 _roundId) public {
       if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
+        require(_roundId > 0);
         (uint256 _value, uint256 _roundIdUsed) = marketUtility.getSettlemetPriceByRoundId(marketCurrencies[marketBasicData[_marketId].currency].marketFeed, marketSettleTime(_marketId), _roundId);
         _postResult(_value, _roundIdUsed, _marketId);
       }
