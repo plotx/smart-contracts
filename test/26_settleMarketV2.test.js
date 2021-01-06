@@ -340,7 +340,7 @@ contract("26_SettleMarketV2. AllMarket", async function([
         // assert.equal(tx.logs[0].args.closeValue/1, ((await chainlinkAggregator.getRoundData(currentRoundId))[1])/1);
     });
 
-    it("Scenario 9: Required RoundId = latest round, Sent round id is lesser", async () => {
+    it("Scenario 10: Required RoundId = latest round, Sent round id is lesser", async () => {
         let tx = await allMarkets.createMarketAndSettle(0,0,0);
         let id = tx.logs[0].args.marketIndex/1;
         let settleTime = (await allMarkets.getMarketData(id))._expireTime/1 - (await latestTime())*1;
