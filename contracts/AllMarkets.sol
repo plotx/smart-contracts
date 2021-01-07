@@ -58,20 +58,20 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       Settled
     }
 
-    event Deposited(address indexed user, uint256 plot, uint256 timeStamp);
-    event Withdrawn(address indexed user, uint256 plot, uint256 timeStamp);
+    event Deposited(address indexed user, uint256 amount, uint256 timeStamp);
+    event Withdrawn(address indexed user, uint256 amount, uint256 timeStamp);
     event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
     event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
-    event ReturnClaimed(address indexed user, uint256 plotReward);
+    event ReturnClaimed(address indexed user, uint256 amount);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
 
     struct PredictionData {
       uint64 predictionPoints;
-      uint64 plotStaked;
+      uint64 amountStaked;
     }
     
     struct UserMarketData {
@@ -82,14 +82,14 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     struct UserData {
-      uint128 totalPlotStaked;
+      uint128 totalStaked;
       uint128 lastClaimedIndex;
       uint[] marketsParticipated;
-      uint unusedPlotBalance;
+      uint unusedBalance;
       mapping(uint => UserMarketData) userMarketData;
     }
 
-    uint64 internal plotCommission; 
+    uint64 internal commission; 
 
     struct MarketBasicData {
       uint32 Mtype;
@@ -105,7 +105,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint32 settleTime;
       address disputeRaisedBy;
       uint64 disputeStakeAmount;
-      uint64 plotCommission;
+      uint64 commission;
       uint incentiveToDistribute;
       uint rewardToDistribute;
       PredictionStatus predictionStatus;
@@ -132,6 +132,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     address internal plotToken;
+
+    address internal predictionToken;
 
     ITokenController internal tokenController;
     IMarketUtility internal marketUtility;
@@ -216,6 +218,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       IMaster ms = IMaster(msg.sender);
       masterAddress = msg.sender;
       plotToken = ms.dAppToken();
+      predictionToken = ms.dAppToken();
       governance = IGovernance(ms.getLatestAddress("GV"));
       tokenController = ITokenController(ms.getLatestAddress("TC"));
     }
@@ -233,7 +236,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       defaultMaxRecords = 20;
       marketUtility = IMarketUtility(_marketUtility);
 
-      plotCommission = 5;
+      commission = 5;
       
       _addMarketType(4 hours, 100);
       _addMarketType(24 hours, 200);
@@ -263,7 +266,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
-      marketDataExtended[_marketIndex].plotCommission = plotCommission;
+      marketDataExtended[_marketIndex].commission = commission;
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
@@ -283,7 +286,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     /**
-    * @dev Transfer the plot to specified address.
+    * @dev Transfer the _asset to specified address.
     * @param _recipient The address to transfer the asset of
     * @param _amount The amount which is transfer.
     */
@@ -364,8 +367,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     /**
-    * @dev Function to deposit PLOT for participation in markets
-    * @param _amount Amount of PLOT to deposit
+    * @dev Function to deposit prediction token for participation in markets
+    * @param _amount Amount of prediction tokens to deposit
     */
     function deposit(uint _amount) public {
       require(_amount > 0);
@@ -373,42 +376,42 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     /**
-    * @dev Function to deposit PLOT for participation in markets
-    * @param _amount Amount of PLOT to deposit
+    * @dev Function to deposit prediction token for participation in markets
+    * @param _amount Amount of prediction token to deposit
     */
     function _deposit(uint _amount) internal {
       address payable _msgSender = _msgSender();
-      address _plotToken = plotToken;
-      IToken(_plotToken).transferFrom(_msgSender,address(this), _amount);
-      userData[_msgSender].unusedPlotBalance = userData[_msgSender].unusedPlotBalance.add(_amount);
+      address _predictionToken = predictionToken;
+      IToken(_predictionToken).transferFrom(_msgSender,address(this), _amount);
+      userData[_msgSender].unusedBalance = userData[_msgSender].unusedBalance.add(_amount);
       emit Deposited(_msgSender, _amount, now);
     }
 
     /**
-    * @dev Withdraw provided amount of deposited and available plot
-    * @param _plot Amount of PLOT to withdraw
+    * @dev Withdraw provided amount of deposited and available prediction token
+    * @param _token Amount of prediction token to withdraw
     * @param _maxRecords Maximum number of records to check
     */
-    function withdraw(uint _plot, uint _maxRecords) public {
-      (uint _plotLeft, uint _plotReward) = getUserUnusedBalance(_msgSender());
-      _plotLeft = _plotLeft.add(_plotReward);
-      _withdraw(_plot, _maxRecords, _plotLeft);
+    function withdraw(uint _token, uint _maxRecords) public {
+      (uint _tokenLeft, uint _tokenReward) = getUserUnusedBalance(_msgSender());
+      _tokenLeft = _tokenLeft.add(_tokenReward);
+      _withdraw(_token, _maxRecords, _tokenLeft);
     }
 
     /**
     * @dev Internal function to withdraw deposited and available assets
-    * @param _plot Amount of PLOT to withdraw
+    * @param _token Amount of prediction token to withdraw
     * @param _maxRecords Maximum number of records to check
-    * @param _plotLeft Amount of PLOT left unused for user
+    * @param _tokenLeft Amount of prediction token left unused for user
     */
-    function _withdraw(uint _plot, uint _maxRecords, uint _plotLeft) internal {
+    function _withdraw(uint _token, uint _maxRecords, uint _tokenLeft) internal {
       address payable _msgSender = _msgSender();
       withdrawReward(_maxRecords);
-      address _plotToken = plotToken;
-      userData[_msgSender].unusedPlotBalance = _plotLeft.sub(_plot);
-      require(_plot > 0);
-      _transferAsset(plotToken, _msgSender, _plot);
-      emit Withdrawn(_msgSender, _plot, now);
+      address _predictionToken = predictionToken;
+      userData[_msgSender].unusedBalance = _tokenLeft.sub(_token);
+      require(_token > 0);
+      _transferAsset(predictionToken, _msgSender, _token);
+      emit Withdrawn(_msgSender, _token, now);
     }
 
     /**
@@ -422,22 +425,22 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     /**
     * @dev Deposit and Place prediction on the available options of the market.
     * @param _marketId Index of the market
-    * @param _plotDeposit PLOT amount to deposit
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in Bplot.
+    * @param _tokenDeposit prediction token amount to deposit
+    * @param _asset The asset used by user during prediction whether it is prediction token address or in Bonus token.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
-    * _plotDeposit should be passed with 18 decimals
+    * _tokenDeposit should be passed with 18 decimals
     * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
-    function depositAndPlacePrediction(uint _plotDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
-      _deposit(_plotDeposit);
+    function depositAndPlacePrediction(uint _tokenDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
+      _deposit(_tokenDeposit);
       _placePrediction(_marketId, _asset, _predictionStake, _prediction);
     }
 
     /**
     * @dev Place prediction on the available options of the market.
     * @param _marketId Index of the market
-    * @param _asset The asset used by user during prediction whether it is plotToken address or in ether.
+    * @param _asset The asset used by user during prediction whether it is prediction token address or in Bonus token.
     * @param _predictionStake The amount staked by user at the time of prediction.
     * @param _prediction The option on which user placed prediction.
     * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
@@ -448,27 +451,27 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
       uint64 _commissionStake;
       uint64 _commissionPercent;
-      _commissionPercent = marketDataExtended[_marketId].plotCommission;
+      _commissionPercent = marketDataExtended[_marketId].commission;
       
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
-      if(_asset == plotToken) {
-        uint256 unusedBalance = userData[_msgSender].unusedPlotBalance;
+      if(_asset == predictionToken) {
+        uint256 unusedBalance = userData[_msgSender].unusedBalance;
         unusedBalance = unusedBalance.div(decimalMultiplier);
         if(_predictionStake > unusedBalance)
         {
           withdrawReward(defaultMaxRecords);
-          unusedBalance = userData[_msgSender].unusedPlotBalance;
+          unusedBalance = userData[_msgSender].unusedBalance;
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
-        userData[_msgSender].unusedPlotBalance = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
+        userData[_msgSender].unusedBalance = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
         require(!userData[_msgSender].userMarketData[_marketId].predictedWithBlot);
         userData[_msgSender].userMarketData[_marketId].predictedWithBlot = true;
         tokenController.swapBLOT(_msgSender, address(this), (decimalMultiplier).mul(_predictionStake));
-        _asset = plotToken;
+        _asset = predictionToken;
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
@@ -534,7 +537,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       marketDataExtended[_marketId].WinningOption = _winningOption;
       uint64 marketCreatorIncentive;
-      (uint64 totalReward, uint64 tokenParticipation, uint64 plotCommission) = _calculateRewardTally(_marketId, _winningOption);
+      (uint64 totalReward, uint64 tokenParticipation, uint64 commission) = _calculateRewardTally(_marketId, _winningOption);
       (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation);
       if(_thresholdReached) {
         if(
@@ -555,8 +558,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
-      tokenParticipation = tokenParticipation.add(plotCommission); 
-      _transferAsset(plotToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive.add(tokenParticipation)));
+      tokenParticipation = tokenParticipation.add(commission); 
+      _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive.add(tokenParticipation)));
       marketCreationRewards.depositMarketRewardPoolShare(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive), tokenParticipation);
       emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, _winningOption, _value, _roundId);
     }
@@ -566,12 +569,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     * @param _winningOption WinningOption of market
     */
-    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64 totalReward, uint64 tokenParticipation, uint64 plotCommission){
+    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64 totalReward, uint64 tokenParticipation, uint64 commission){
       for(uint i=1;i <= totalOptions;i++){
-        uint64 _plotStakedOnOption = marketOptionsAvailable[_marketId][i].plotStaked;
-        tokenParticipation = tokenParticipation.add(_plotStakedOnOption);
+        uint64 _tokenStakedOnOption = marketOptionsAvailable[_marketId][i].amountStaked;
+        tokenParticipation = tokenParticipation.add(_tokenStakedOnOption);
         if(i != _winningOption) {
-          totalReward = totalReward.add(_plotStakedOnOption);
+          totalReward = totalReward.add(_tokenStakedOnOption);
         }
       }
 
@@ -581,7 +584,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       * actualAmountUserPassed = (100 * userParticipationAmount)/(100-commissionPercent)
       * commissionAmount = actualAmountUserPassed - userParticipationAmount
       */
-      plotCommission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].plotCommission) - tokenParticipation;
+      commission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].commission) - tokenParticipation;
     }
 
     /**
@@ -594,13 +597,13 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint len = userData[_msgSender].marketsParticipated.length;
       uint lastClaimed = len;
       uint count;
-      uint plotReward =0 ;
+      uint tokenReward =0 ;
       require(!marketCreationPaused);
       for(i = userData[_msgSender].lastClaimedIndex; i < len && count < maxRecords; i++) {
-        (uint claimed, uint tempPlotReward) = claimReturn(_msgSender, userData[_msgSender].marketsParticipated[i]);
+        (uint claimed, uint tempTokenReward) = claimReturn(_msgSender, userData[_msgSender].marketsParticipated[i]);
         if(claimed > 0) {
           delete userData[_msgSender].marketsParticipated[i];
-          plotReward = plotReward.add(tempPlotReward);
+          tokenReward = tokenReward.add(tempTokenReward);
           count++;
         } else {
           if(lastClaimed == len) {
@@ -611,25 +614,25 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(lastClaimed == len) {
         lastClaimed = i;
       }
-      emit ReturnClaimed(_msgSender, plotReward);
-      userData[_msgSender].unusedPlotBalance = userData[_msgSender].unusedPlotBalance.add(plotReward.mul(10**predictionDecimalMultiplier));
+      emit ReturnClaimed(_msgSender, tokenReward);
+      userData[_msgSender].unusedBalance = userData[_msgSender].unusedBalance.add(tokenReward.mul(10**predictionDecimalMultiplier));
       userData[_msgSender].lastClaimedIndex = uint128(lastClaimed);
     }
 
     /**
     * @dev FUnction to return users unused deposited balance including the return earned in markets
     * @param _user Address of user
-    * return PLOT Unused in deposit
-    * return PLOT Return from market
+    * return prediction token Unused in deposit
+    * return prediction token Return from market
     */
     function getUserUnusedBalance(address _user) public view returns(uint256, uint256){
-      uint plotReward;
+      uint tokenReward;
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       uint len = userData[_user].marketsParticipated.length;
       for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
-        plotReward = plotReward.add(getReturn(_user, userData[_user].marketsParticipated[i]));
+        tokenReward = tokenReward.add(getReturn(_user, userData[_user].marketsParticipated[i]));
       }
-      return (userData[_user].unusedPlotBalance, plotReward.mul(decimalMultiplier));
+      return (userData[_user].unusedBalance, tokenReward.mul(decimalMultiplier));
     }
 
     /**
@@ -649,14 +652,14 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return neutralMinValue Neutral min value deciding the option ranges of market
     * @return neutralMaxValue Neutral max value deciding the option ranges of market
     * @return _optionPrice uint[] memory representing the option price of each option ranges of the market.
-    * @return _plotStaked uint[] memory representing the plot staked on each option ranges of the market.
+    * @return _tokenStaked uint[] memory representing the prediction token staked on each option ranges of the market.
     * @return _predictionTime uint representing the type of market.
     * @return _expireTime uint representing the time at which market closes for prediction
     * @return _predictionStatus uint representing the status of the market.
     */
     function getMarketData(uint256 _marketId) external view returns
        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue,
-        uint[] memory _optionPrice, uint[] memory _plotStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
+        uint[] memory _optionPrice, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
         _marketCurrency = marketCurrencies[marketBasicData[_marketId].currency].currencyName;
         _predictionTime = marketBasicData[_marketId].predictionTime;
         _expireTime =marketExpireTime(_marketId);
@@ -665,10 +668,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         neutralMaxValue = marketBasicData[_marketId].neutralMaxValue;
         
         _optionPrice = new uint[](totalOptions);
-        _plotStaked = new uint[](totalOptions);
+        _tokenStaked = new uint[](totalOptions);
         uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
-          _plotStaked[i] = marketOptionsAvailable[_marketId][i+1].plotStaked;
+          _tokenStaked[i] = marketOptionsAvailable[_marketId][i+1].amountStaked;
           uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
           _optionPrice[i] = marketUtility.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
        }
@@ -678,7 +681,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @dev Claim the return amount of the specified address.
     * @param _user User address
     * @param _marketId Index of market
-    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed; Return in PLOT
+    * @return Flag, if 0:cannot claim, 1: Already Claimed, 2: Claimed; Return in prediction token
     */
     function claimReturn(address payable _user, uint _marketId) internal returns(uint256, uint256) {
 
@@ -705,7 +708,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
        return (returnAmount);
       }
       uint256 _winningOption = marketDataExtended[_marketId].WinningOption;
-      returnAmount = userData[_user].userMarketData[_marketId].predictionData[_winningOption].plotStaked;
+      returnAmount = userData[_user].userMarketData[_marketId].predictionData[_winningOption].amountStaked;
       uint256 userPredictionPointsOnWinngOption = userData[_user].userMarketData[_marketId].predictionData[_winningOption].predictionPoints;
       if(userPredictionPointsOnWinngOption > 0) {
         returnAmount = _addUserReward(_marketId, returnAmount, _winningOption, userPredictionPointsOnWinngOption);
@@ -737,11 +740,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     /**
     * @dev Returns total assets staked in market by users
     * @param _marketId Index of market
-    * @return plotStaked Total PLOT staked on market
+    * @return tokenStaked Total prediction token staked on market
     */
-    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 plotStaked) {
+    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 tokenStaked) {
       for(uint256 i = 1; i<= totalOptions;i++) {
-        plotStaked = plotStaked.add(marketOptionsAvailable[_marketId][i].plotStaked);
+        tokenStaked = tokenStaked.add(marketOptionsAvailable[_marketId][i].amountStaked);
       }
     }
 
@@ -771,9 +774,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].predictionPoints = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].predictionPoints.add(predictionPoints);
       marketOptionsAvailable[_marketId][_prediction].predictionPoints = marketOptionsAvailable[_marketId][_prediction].predictionPoints.add(predictionPoints);
       
-      userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].plotStaked.add(_predictionStake);
-      marketOptionsAvailable[_marketId][_prediction].plotStaked = marketOptionsAvailable[_marketId][_prediction].plotStaked.add(_predictionStake);
-      userData[_msgSender].totalPlotStaked = userData[_msgSender].totalPlotStaked.add(_predictionStake);
+      userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].amountStaked = userData[_msgSender].userMarketData[_marketId].predictionData[_prediction].amountStaked.add(_predictionStake);
+      marketOptionsAvailable[_marketId][_prediction].amountStaked = marketOptionsAvailable[_marketId][_prediction].amountStaked.add(_predictionStake);
+      userData[_msgSender].totalStaked = userData[_msgSender].totalStaked.add(_predictionStake);
       
     }
 
@@ -802,7 +805,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(getTotalPredictionPoints(_marketId) > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      IToken(plotToken).transferFrom(msg.sender, address(this), _stakeForDispute);
+      IToken(predictionToken).transferFrom(msg.sender, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
@@ -824,7 +827,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       // delete marketCreationRewardData[_marketId].ethIncentive;
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
-      _transferAsset(plotToken, marketDataExtended[_marketId].disputeRaisedBy, (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      _transferAsset(predictionToken, marketDataExtended[_marketId].disputeRaisedBy, (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
@@ -850,7 +853,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      IToken(predictionToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
@@ -874,23 +877,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return uint256 Value of market currently at the time closing market.
     * @return uint256 representing the positions of the winning option.
     * @return uint[] memory representing the reward to be distributed.
-    * @return uint256 representing the PLOT staked on winning option.
+    * @return uint256 representing the prediction token staked on winning option.
     */
     function getMarketResults(uint256 _marketId) external view returns(uint256 _winningOption, uint256, uint256, uint256) {
       _winningOption = marketDataExtended[_marketId].WinningOption;
-      return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].plotStaked);
+      return (_winningOption, marketOptionsAvailable[_marketId][_winningOption].predictionPoints, marketDataExtended[_marketId].rewardToDistribute, marketOptionsAvailable[_marketId][_winningOption].amountStaked);
     }
-
-// we can remove this function
-    // /**
-    // * @dev Returns total assets value in PLOT staked on market
-    // * @param _marketId Index of market
-    // * @return plotStaked Total staked value in PLOT on market
-    // */
-    // function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256) {
-    //   uint256 plotStaked = getTotalAssetsStaked(_marketId);
-    //   return plotStaked;
-    // }
 
     /**
     * @dev Internal function set market status
