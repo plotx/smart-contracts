@@ -15,8 +15,6 @@
 
 pragma solidity 0.5.7;
 
-import "./external/uniswap/FixedPoint.sol";
-import "./external/uniswap/oracleLibrary.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/Governed.sol";
@@ -28,7 +26,6 @@ import "./interfaces/IToken.sol";
 contract MarketUtility is Governed {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
-    using FixedPoint for *;
 
     address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 constant updatePeriod = 1 hours;
