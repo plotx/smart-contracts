@@ -14,7 +14,7 @@ contract MarketCreationRewards is Governed {
 
 	  event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 tokenIncentive);
     event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 tokenIncentive, uint256 rewardPoolSharePerc);
-    event ClaimedMarketCreationReward(address indexed user, uint256 tokenIncentive);
+    event ClaimedMarketCreationReward(address indexed user, uint256 plotIncentive, uint rewardPoolShare, address predictionToken);
 
     modifier onlyInternal() {
       IMaster(masterAddress).isInternal(msg.sender);
@@ -163,11 +163,11 @@ contract MarketCreationRewards is Governed {
     function claimCreationReward(uint256 _maxRecords) external {
       uint256 pendingTokenReward = marketCreationRewardUserData[msg.sender].incentives;
       delete marketCreationRewardUserData[msg.sender].incentives;
-      uint256 tokenIncentive = _getRewardPoolIncentives(_maxRecords);
-      pendingTokenReward = pendingTokenReward.add(tokenIncentive);
-      require(pendingTokenReward > 0, "No pending");
-      _transferAsset(address(predictionToken), msg.sender, pendingTokenReward);
-      emit ClaimedMarketCreationReward(msg.sender, pendingTokenReward);
+      uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
+      require(pendingTokenReward > 0 || rewardPoolShare > 0, "No pending");
+      _transferAsset(address(plotToken), msg.sender, pendingTokenReward);
+      _transferAsset(address(predictionToken), msg.sender, rewardPoolShare);
+      emit ClaimedMarketCreationReward(msg.sender, pendingTokenReward, rewardPoolShare, predictionToken);
     }
 
     /**

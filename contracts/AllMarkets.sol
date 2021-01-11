@@ -471,7 +471,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         require(!userData[_msgSender].userMarketData[_marketId].predictedWithBlot);
         userData[_msgSender].userMarketData[_marketId].predictedWithBlot = true;
         tokenController.swapBLOT(_msgSender, address(this), (decimalMultiplier).mul(_predictionStake));
-        _asset = predictionToken;
+        _asset = plotToken;
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
@@ -805,7 +805,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(getTotalPredictionPoints(_marketId) > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      IToken(predictionToken).transferFrom(msg.sender, address(this), _stakeForDispute);
+      IToken(plotToken).transferFrom(msg.sender, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
@@ -827,7 +827,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       // delete marketCreationRewardData[_marketId].ethIncentive;
       _resolveDispute(_marketId, true, _result);
       emit DisputeResolved(_marketId, true);
-      _transferAsset(predictionToken, marketDataExtended[_marketId].disputeRaisedBy, (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      _transferAsset(plotToken, marketDataExtended[_marketId].disputeRaisedBy, (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
@@ -853,7 +853,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      IToken(predictionToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
