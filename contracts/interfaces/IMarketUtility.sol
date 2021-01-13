@@ -1,7 +1,7 @@
 pragma solidity 0.5.7;
 contract IMarketUtility {
 
-    function initialize(address payable[] calldata _addressParams, address _initiater) external;
+    function initialize(address _initiater) external;
 
 	/**
      * @dev to Set authorized address to update parameters 

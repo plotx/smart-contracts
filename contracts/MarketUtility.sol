@@ -27,7 +27,6 @@ contract MarketUtility is Governed {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
 
-    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 constant updatePeriod = 1 hours;
 
     uint256 internal minTimeElapsedDivisor;

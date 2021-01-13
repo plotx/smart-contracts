@@ -51,7 +51,6 @@ contract Master is Governed {
         address[] calldata _implementations,
         address _token,
         address _defaultAddress,
-        address payable[] calldata _configParams,
         address _vesting
     ) external {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
@@ -84,7 +83,7 @@ contract Master is Governed {
 
         _setMasterAddress();
 
-        IMarketUtility(contractAddress["MU"]).initialize(_configParams, _defaultAddress);
+        IMarketUtility(contractAddress["MU"]).initialize(_defaultAddress);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
         IMemberRoles(contractAddress["MR"]).setInititorAddress(_defaultAddress);

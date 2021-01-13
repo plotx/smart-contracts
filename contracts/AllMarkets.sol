@@ -226,7 +226,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     /**
     * @dev Start the initial market and set initial variables.
     */
-    function addInitialMarketTypesAndStart(address _marketCreationRewards,address _ethAddress, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
+    function addInitialMarketTypesAndStart(address _marketCreationRewards, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
       
       marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
