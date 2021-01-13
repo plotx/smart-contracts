@@ -228,7 +228,7 @@ contract MarketCreationRewards is Governed {
     * @param _marketId Index of market to check threshold
     */
     function _checkIfThresholdReachedForRPS(uint256 _marketId, uint256 tokenStaked) internal view returns(bool) {
-      return (tokenStaked > rewardPoolShareThreshold);
+      return (tokenStaked.mul(10**predictionDecimalMultiplier) > rewardPoolShareThreshold);
     }
 
     /**

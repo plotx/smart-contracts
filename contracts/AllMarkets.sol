@@ -433,7 +433,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * _predictioStake should be passed with 8 decimals, reduced it to 8 decimals to reduce the storage space of prediction data
     */
     function depositAndPlacePrediction(uint _tokenDeposit, uint _marketId, address _asset, uint64 _predictionStake, uint256 _prediction) external {
-      _deposit(_tokenDeposit);
+      if(_tokenDeposit > 0) {
+        _deposit(_tokenDeposit);
+      }
       _placePrediction(_marketId, _asset, _predictionStake, _prediction);
     }
 

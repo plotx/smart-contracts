@@ -54,7 +54,7 @@ contract MarketUtility is Governed {
       require(msg.sender == proxy.proxyOwner(),"not owner.");
       IMaster ms = IMaster(msg.sender);
       authorizedAddress = ms.getLatestAddress("AM");
-      tokenController = ITokenController(ms.getLatestAddress("AM"));
+      tokenController = ITokenController(ms.getLatestAddress("TC"));
       masterAddress = msg.sender;
     }
 
@@ -77,8 +77,8 @@ contract MarketUtility is Governed {
      **/
     function _setInitialParameters() internal {
         minTimeElapsedDivisor = 6;
-        minPredictionAmount = 1e15;// need to change the value according to prediction token
-        maxPredictionAmount = 28 ether; // need to change the value according to prediction token
+        minPredictionAmount = 10 ether;// need to change the value according to prediction token
+        maxPredictionAmount = 100000 ether; // need to change the value according to prediction token
         positionDecimals = 1e2;
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
