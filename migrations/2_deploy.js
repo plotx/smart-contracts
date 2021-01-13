@@ -42,7 +42,7 @@ module.exports = function(deployer, network, accounts){
       master = await Master.at(master.address);
       await plotusToken.changeOperator(await master.getLatestAddress("0x5443"));
       var date = Date.now();
-      date = Math.round(date/1000) + 10000
+      date = Math.round(date/1000);
       let pc = await ProposalCategory.at(await master.getLatestAddress(web3.utils.toHex("PC")));
       let mr = await MemberRoles.at(await master.getLatestAddress(web3.utils.toHex("MR")));
       await mr.memberRolesInitiate([accounts[0]]);
