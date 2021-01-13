@@ -54,12 +54,8 @@ contract MarketUtility is Governed {
       require(msg.sender == proxy.proxyOwner(),"not owner.");
       IMaster ms = IMaster(msg.sender);
       authorizedAddress = ms.getLatestAddress("AM");
+      tokenController = ITokenController(ms.getLatestAddress("AM"));
       masterAddress = msg.sender;
-    }
-
-    function setAuthAdd() public {
-      IMaster ms = IMaster(masterAddress);
-      authorizedAddress = ms.getLatestAddress("AM");
     }
 
     /**
