@@ -56,6 +56,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
 
         uint256 advisoryBoardRole = uint256(IMemberRoles.Role.AdvisoryBoard);
         uint256 disputeResolutionBoard = uint256(IMemberRoles.Role.DisputeResolution);
+        uint256 tokenHolder = uint256(IMemberRoles.Role.TokenHolder);
 
         _addInitialCategories("Uncategorized", "", "EX", "", 0, 0);
         _addInitialCategories(
@@ -105,7 +106,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "upgradeContractImplementation(address,address)",
             60,
             advisoryBoardRole
-        ); // 6
+        ); // 5
         _addInitialCategories(
             "Upgrade multiple contract Implementations",
             "QmcL1jUk7oda2cumSUTCrF6vTSeQN7qd1bYDFdz3v7BbUH",
@@ -113,7 +114,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "upgradeMultipleImplementations(bytes2[],address[])",
             50,
             advisoryBoardRole
-        ); // 7
+        ); // 6
         _addInitialCategories(
             "Update master Implementation",
             "QmPrGbWA4cuWzZbc9ZmqFmSRSFJnp5sa747wKsJnQkkj4t",
@@ -121,7 +122,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "upgradeTo(address)",
             50,
             advisoryBoardRole
-        ); // 8
+        ); // 7
         _addInitialCategories(
             "Add new contract",
             "QmXq5Jb4oeNzD2NHBLuWqy2m9J4N1KtkwyirBjkPBRNHii",
@@ -136,7 +137,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "AM",
             "resolveDispute(uint256,uint256)",
             60,
-            disputeResolutionBoard
+            tokenHolder
         );
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",

@@ -258,7 +258,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _marketTypeIndex The time duration of market.
     */
     function createMarket(uint32 _marketCurrencyIndex,uint32 _marketTypeIndex) public {
-      uint256 gasProvided = gasleft();
       require(!marketCreationPaused && !marketTypeArray[_marketTypeIndex].paused);
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // marketUtility.update();
@@ -814,7 +813,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
       marketDataExtended[_marketId].disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
       disputeProposalId[proposalId] = _marketId;
-      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 10, solutionHash, abi.encode(_marketId, _proposedValue));
+      governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 9, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
       _setMarketStatus(_marketId, PredictionStatus.InDispute);
     }
