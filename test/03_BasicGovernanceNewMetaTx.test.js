@@ -1,5 +1,5 @@
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
-const Governance = artifacts.require("GovernanceV2");
+const Governance = artifacts.require("Governance");
 const AllMarkets = artifacts.require("AllMarkets");
 const MemberRoles = artifacts.require("MockMemberRoles");
 const ProposalCategory = artifacts.require("ProposalCategory");
@@ -363,7 +363,6 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
     for (let i = 0; i < 3; i++) {
       await gvProposalWithIncentiveViaTokenHolderMetaTX(12, actionHash, mr, gv, 2, 10, 0, ab1, privateKeyList[0]);
     }
-    console.log("HEre");
     let p = await gv.getProposalLength();
     await assertRevert(gv.rejectAction(pId));
     let functionSignature = encode3("createProposal(string,string,string,uint256)","Proposal1", "Proposal1", "Proposal1", 0);
@@ -398,11 +397,9 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       gv
     );
     // await gv.submitVote(p, 1);
-    console.log("HEre");
     for (let i = 0; i < 3; i++) {
       await gvProposalWithIncentiveViaTokenHolderMetaTX(12, actionHash, mr, gv, 2, 10, 0, ab1, privateKeyList[0]);
     }
-    console.log("HEre");
     let pendingRewards = await gv.getPendingReward(ab1);
     await gv.claimReward(ab1, 20);
     pendingRewards = await gv.getPendingReward(ab1);

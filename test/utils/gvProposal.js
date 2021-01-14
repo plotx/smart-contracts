@@ -98,7 +98,6 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
   let userAdd = args[7];
   let privateKey = args[8];
   let p = await gv.getProposalLength();
-    console.log("1");
   let functionSignature = encode3("createProposal(string,string,string,uint256)","Proposal1", "Proposal1", "Proposal1", 0);
   await signAndExecuteMetaTx(
     privateKey,
@@ -109,7 +108,6 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
   // await gv.createProposal("proposal", "proposal", "proposal", 0);
   let canClose = await gv.canCloseProposal(p);
   assert.equal(parseFloat(canClose),0);
-    console.log("2");
   functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",p, catId, incentive);
   await signAndExecuteMetaTx(
     privateKey,
@@ -119,7 +117,6 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
   );
   // await gv.categorizeProposal(p, catId, incentive);
   functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", p, "Addnewmember", actionHash);
-    console.log("3");
   await signAndExecuteMetaTx(
     privateKey,
     userAdd,
@@ -130,7 +127,6 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
   // let members = await mr.members(seq);
   // let iteration = 0;
   // for (iteration = 1; iteration < members[1].length; iteration++)
-    console.log("4");
   functionSignature = encode3("submitVote(uint256,uint256)",p, 1);
   await signAndExecuteMetaTx(
     privateKey,
@@ -140,7 +136,6 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
   );
   // await gv.submitVote(p, 1);
 
-    console.log("5");
   await increaseTime(604800);
   if (seq != 3) await gv.closeProposal(p);
   let proposal = await gv.proposal(p);
