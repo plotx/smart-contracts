@@ -97,63 +97,63 @@ contract("Rewards-Market", async function(users) {
 			await allMarkets.claimRelayerRewards();
 			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-			assert.equal(relayerBalAfter-relayerBalBefore,toWei(54.66));
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),49.194*1e3);
 
 
-			let betpoints = [0,5552.77777,22211.11111,11660.83333,4553.27777,55527.77777,77738.88888,11105.55555,1850.92592,11105.55555,8329.16666];
+			let betpoints = [0,5441.72222,21766.88888,11427.61666,4462.21222,54417.22222,76184.11111,10883.44444,1813.90740,10883.44444,8162.58333];
 
 
-			// for(i=1;i<11;i++)
-			// {
-			// 	let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],7,options[i]))/1e5;
-			// 	assert.equal(betPointUser,betpoints[i]);
-			// 	let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
-			// 	assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,predictionVal[i]);
-			// }
+			for(i=1;i<11;i++)
+			{
+				let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],7,options[i]))/1e5;
+				assert.equal(betPointUser,betpoints[i]);
+				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,predictionVal[i]);
+			}
 
-			// await increaseTime(8*60*60);
+			await increaseTime(8*60*60);
 
-			// await allMarkets.postResultMock(1,7);
-			// await plotusToken.transfer(users[12], "700000000000000000000");
-			// await plotusToken.approve(allMarkets.address, "500000000000000000000", {
-			// 	from: users[12],
-			// });
-			// let proposalId = await governance.getProposalLength();
-			// await allMarkets.raiseDispute(7, "500000000000000000000","","","", {from: users[12]});
-			// await increaseTime(604810);
-			// await governance.closeProposal(proposalId/1);
+			await allMarkets.postResultMock(1,7);
+			await plotusToken.transfer(users[12], "700000000000000000000");
+			await plotusToken.approve(allMarkets.address, "500000000000000000000", {
+				from: users[12],
+			});
+			let proposalId = await governance.getProposalLength();
+			await allMarkets.raiseDispute(7, "500000000000000000000","","","", {from: users[12]});
+			await increaseTime(604810);
+			await governance.closeProposal(proposalId/1);
 
-			// await increaseTime(60*61);
+			await increaseTime(60*61);
 
-			// let userRewardPlot = [0,0,0,0,0,1122.21985936,1571.10780313,0,0,0,0];
+			let userRewardPlot = [0,0,0,0,0,1099.775462,1539.685647,0,0,0,0];
 
-			// for(i=1;i<11;i++)
-			// {
-			// 	let reward = await allMarkets.getReturn(users[i],7);
-			// 	assert.equal(reward/1e8,userRewardPlot[i]);
-			// 	let plotBalBefore = await plotusToken.balanceOf(users[i]);
-			// 	let plotEthUnused = await allMarkets.getUserUnusedBalance(users[i]);
-			// 	functionSignature = encode3("withdraw(uint,uint)", plotEthUnused[0].iadd(plotEthUnused[1]), 100);
-			// 	await signAndExecuteMetaTx(
-			//       privateKeyList[i],
-			//       users[i],
-			//       functionSignature,
-			//       allMarkets
-			//       );
-			// 	let plotBalAfter = await plotusToken.balanceOf(users[i]);
-			// 	assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
-			// }
+			for(i=1;i<11;i++)
+			{
+				let reward = await allMarkets.getReturn(users[i],7);
+				assert.equal(Math.round(reward/1e2),userRewardPlot[i]*1e6);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+				let plotEthUnused = await allMarkets.getUserUnusedBalance(users[i]);
+				functionSignature = encode3("withdraw(uint,uint)", plotEthUnused[0].iadd(plotEthUnused[1]), 100);
+				await signAndExecuteMetaTx(
+			      privateKeyList[i],
+			      users[i],
+			      functionSignature,
+			      allMarkets
+			      );
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
+			}
 
-			// let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			// assert.equal(383058375,Math.round(marketCreatorReward[1]/1e11));
+			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
+			assert.equal(375397207,Math.round(marketCreatorReward[1]/1e11));
 
-			// let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
+			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
-			// await marketIncentives.claimCreationReward(100,{from:users[11]});
+			await marketIncentives.claimCreationReward(100,{from:users[11]});
 
-			// let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
+			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			// assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),383058375);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),375397207);
 
 				
 		});
