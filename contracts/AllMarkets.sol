@@ -471,7 +471,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
         require(_predictionStake <= unusedBalance);
-        _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
         userData[_msgSender].unusedBalance = (unusedBalance.sub(_predictionStake)).mul(decimalMultiplier);
       } else {
         require(_asset == tokenController.bLOTToken());
@@ -479,10 +478,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         userData[_msgSender].userMarketData[_marketId].predictedWithBlot = true;
         tokenController.swapBLOT(_msgSender, address(this), (decimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
-        _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
       _predictionStakePostDeduction = _deductRelayerFee(_predictionStake, _asset, _msgSender);
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
+      _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStakePostDeduction, 10000);
       _commissionStake = _predictionStakePostDeduction.sub(_commissionStake);
       
       uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSender, _marketId, _prediction, _asset, _commissionStake);
