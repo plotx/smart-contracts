@@ -49,6 +49,8 @@ module.exports = function(deployer, network, accounts){
       await pc.proposalCategoryInitiate();
       
       let _marketUtility = await master.getLatestAddress(web3.utils.toHex("MU"));
+      let marketutility = await MarketConfig.at(_marketUtility); 
+      await marketutility.setAssetPlotConversionRate(plotusToken.address, 1);
 
 
       let allMarketsProxy = await OwnedUpgradeabilityProxy.at(

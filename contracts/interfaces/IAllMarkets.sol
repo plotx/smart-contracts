@@ -16,4 +16,7 @@ contract IAllMarkets {
 
     function getTotalStakedValueInPLOT(uint256 _marketId) public view returns(uint256);
 
+    function getTotalAssetsStaked(uint _marketId) public view returns(uint256 tokenStaked);
+
+    function getTotalStakedWorthInPLOT(uint256 _marketId) public view returns(uint256 _tokenStakedWorth);
 }

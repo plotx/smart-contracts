@@ -939,7 +939,7 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
                 categoryQuorumPerc;
         } else if (roleAuthorized == uint256(IMemberRoles.Role.DisputeResolution)) {
             (uint256 marketId, ) = abi.decode(allProposalSolutions[_proposalId][1], (uint256, uint256));
-            uint256 totalStakeValueInPlot = allMarkets.getTotalStakedValueInPLOT(marketId);
+            uint256 totalStakeValueInPlot = allMarkets.getTotalStakedWorthInPLOT(marketId);
             if(allProposalData[_proposalId].totalVoteValue > 0) {
                 check =
                     (allProposalData[_proposalId].totalVoteValue) >=

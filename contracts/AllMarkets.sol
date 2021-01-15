@@ -132,6 +132,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     uint64 public relayerFeePercent;
+    uint64 public daoCommissionPercent;
     mapping (address => uint256) public relayerFeeEarned;
 
     address internal plotToken;
@@ -238,6 +239,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
       relayerFeePercent = 200;
+      daoCommissionPercent = 1000;
       marketUtility = IMarketUtility(_marketUtility);
 
       commission = 5;
@@ -609,8 +611,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint _decimalMultiplier = 10**predictionDecimalMultiplier;
       address _relayer = msg.sender;
       uint256 _fee = (_decimalMultiplier).mul(relayerFeeEarned[_relayer]);
+      uint256 _daoCommission = _fee.mul(daoCommissionPercent).div(10000);
+      _fee = _fee.sub(_daoCommission);
       delete relayerFeeEarned[_relayer];
       _transferAsset(predictionToken, _relayer, _fee);
+      _transferAsset(predictionToken, address(marketCreationRewards), _daoCommission);
     }
 
     /**
@@ -772,6 +777,16 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       for(uint256 i = 1; i<= totalOptions;i++) {
         tokenStaked = tokenStaked.add(marketOptionsAvailable[_marketId][i].amountStaked);
       }
+    }
+
+    /**
+    * @dev Returns total assets staked in market in PLOT value
+    * @param _marketId Index of market
+    * @return tokenStaked Total prediction token staked on market value in PLOT
+    */
+    function getTotalStakedWorthInPLOT(uint256 _marketId) public view returns(uint256 _tokenStakedWorth) {
+      uint256 _conversionRate = marketUtility.conversionRate(predictionToken);
+      return (getTotalAssetsStaked(_marketId)).mul(_conversionRate);
     }
 
     /**

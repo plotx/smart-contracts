@@ -3,6 +3,8 @@ contract IMarketUtility {
 
     function initialize(address _initiater) external;
 
+    mapping(address => uint256) public conversionRate;
+
 	/**
      * @dev to Set authorized address to update parameters 
      */

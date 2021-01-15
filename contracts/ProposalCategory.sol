@@ -137,7 +137,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "AM",
             "resolveDispute(uint256,uint256)",
             60,
-            tokenHolder
+            disputeResolutionBoard
         );
         _addInitialCategories(
             "Burn Dispute Resolution Member Tokens",

@@ -36,9 +36,10 @@ contract MarketUtility is Governed {
     uint256 internal minStakeForMultiplier;
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
-    address internal initiater;
     address public authorizedAddress;
     bool public initialized;
+
+    mapping(address => uint256) public conversionRate;
 
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
@@ -53,7 +54,6 @@ contract MarketUtility is Governed {
       OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
       require(msg.sender == proxy.proxyOwner(),"not owner.");
       IMaster ms = IMaster(msg.sender);
-      authorizedAddress = ms.getLatestAddress("AM");
       tokenController = ITokenController(ms.getLatestAddress("TC"));
       masterAddress = msg.sender;
     }
@@ -69,7 +69,7 @@ contract MarketUtility is Governed {
         require(!initialized, "Already initialized");
         initialized = true;
         _setInitialParameters();
-        initiater = _initiater;
+        authorizedAddress = _initiater;
     }
 
     /**
@@ -131,6 +131,10 @@ contract MarketUtility is Governed {
         } else {
             revert("Invalid code");
         }
+    }
+
+    function setAssetPlotConversionRate(address _asset, uint256 _rate) public onlyAuthorized {
+      conversionRate[_asset] = _rate;
     }
 
     /**
