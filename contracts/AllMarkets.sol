@@ -493,9 +493,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     function _deductRelayerFee(uint64 _amount, address _asset, address _msgSender) internal returns(uint64 _amountPostFee){
       uint64 _relayerFee;
-      if(_msgSender != msg.sender) {
+      if(_msgSender != tx.origin) {
         _relayerFee = _calculateAmulBdivC(relayerFeePercent, _amount, 10000);
-        relayerFeeEarned[msg.sender] = relayerFeeEarned[msg.sender].add(_relayerFee);
+        relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_relayerFee);
       }
       _amountPostFee = _amount.sub(_relayerFee);
     }
