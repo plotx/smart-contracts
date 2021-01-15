@@ -68,7 +68,7 @@ contract MarketCreationRewards is Governed {
       maxRewardPoolPercForMC = 500; // Raised by 2 decimals
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       tokenStakeForRewardPoolShare = 25000 ether;
-      rewardPoolShareThreshold = 1 ether; //need to change value (in prediction token)
+      rewardPoolShareThreshold = 400 ether; //need to change value (in prediction token)
       predictionDecimalMultiplier = 10;
       marketCreatorReward = 10 ether; // need to change the value (in prediction token)
     }
