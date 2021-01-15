@@ -131,6 +131,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       bool paused;
     }
 
+    uint64 public relayerFeePercent;
+    mapping (address => uint256) public relayerFeeEarned;
+
     address internal plotToken;
 
     address internal predictionToken;
@@ -234,6 +237,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       totalOptions = 3;
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
+      relayerFeePercent = 200;
       marketUtility = IMarketUtility(_marketUtility);
 
       commission = 5;
@@ -453,7 +457,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint64 _commissionStake;
       uint64 _commissionPercent;
       _commissionPercent = marketDataExtended[_marketId].commission;
-      
+      uint64 _predictionStakePostDeduction = _predictionStake;
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       if(_asset == predictionToken) {
         uint256 unusedBalance = userData[_msgSender].unusedBalance;
@@ -475,14 +479,24 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         _asset = plotToken;
         _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStake, 10000);
       }
+      _predictionStakePostDeduction = _deductRelayerFee(_predictionStake, _asset, _msgSender);
       //Storing prediction stake value in _commissionStake variable after deducting commission fee
-      _commissionStake = _predictionStake.sub(_commissionStake);
+      _commissionStake = _predictionStakePostDeduction.sub(_commissionStake);
       
       uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSender, _marketId, _prediction, _asset, _commissionStake);
       require(predictionPoints > 0);
 
       _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
       emit PlacePrediction(_msgSender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, _commissionPercent);
+    }
+
+    function _deductRelayerFee(uint64 _amount, address _asset, address _msgSender) internal returns(uint64 _amountPostFee){
+      uint64 _relayerFee;
+      if(_msgSender != msg.sender) {
+        _relayerFee = _calculateAmulBdivC(relayerFeePercent, _amount, 10000);
+        relayerFeeEarned[msg.sender] = relayerFeeEarned[msg.sender].add(_relayerFee);
+      }
+      _amountPostFee = _amount.sub(_relayerFee);
     }
 
     /**
@@ -586,6 +600,17 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       * commissionAmount = actualAmountUserPassed - userParticipationAmount
       */
       commission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].commission) - tokenParticipation;
+    }
+
+    /**
+    * @dev Claim fees earned by the relayer address
+    */
+    function claimRelayerRewards() external {
+      uint _decimalMultiplier = 10**predictionDecimalMultiplier;
+      address _relayer = msg.sender;
+      uint256 _fee = (_decimalMultiplier).mul(relayerFeeEarned[_relayer]);
+      delete relayerFeeEarned[_relayer];
+      _transferAsset(predictionToken, _relayer, _fee);
     }
 
     /**
