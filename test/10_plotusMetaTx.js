@@ -149,7 +149,13 @@ contract("Rewards-Market", async function(users) {
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
-			await marketIncentives.claimCreationReward(100,{from:users[11]});
+			functionSignature = encode3("claimCreationReward(uint256)", 100);
+            await signAndExecuteMetaTx(
+                privateKeyList[11],
+                users[11],
+                functionSignature,
+                marketIncentives
+                );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
