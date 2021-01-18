@@ -7,8 +7,9 @@ import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
+import "./external/BasicMetaTransaction.sol";
 
-contract MarketCreationRewards is Governed {
+contract MarketCreationRewards is Governed, BasicMetaTransaction {
 
     using SafeMath for *;
 
@@ -161,13 +162,14 @@ contract MarketCreationRewards is Governed {
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
     function claimCreationReward(uint256 _maxRecords) external {
-      uint256 pendingTokenReward = marketCreationRewardUserData[msg.sender].incentives;
-      delete marketCreationRewardUserData[msg.sender].incentives;
+      address payable _msgSender = _msgSender();
+      uint256 pendingTokenReward = marketCreationRewardUserData[_msgSender].incentives;
+      delete marketCreationRewardUserData[_msgSender].incentives;
       uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
       require(pendingTokenReward > 0 || rewardPoolShare > 0, "No pending");
-      _transferAsset(address(plotToken), msg.sender, pendingTokenReward);
-      _transferAsset(address(predictionToken), msg.sender, rewardPoolShare);
-      emit ClaimedMarketCreationReward(msg.sender, pendingTokenReward, rewardPoolShare, predictionToken);
+      _transferAsset(address(plotToken), _msgSender, pendingTokenReward);
+      _transferAsset(address(predictionToken), _msgSender, rewardPoolShare);
+      emit ClaimedMarketCreationReward(_msgSender, pendingTokenReward, rewardPoolShare, predictionToken);
     }
 
     /**
@@ -181,7 +183,7 @@ contract MarketCreationRewards is Governed {
     * @dev internal function to calculate market reward pool share incentives for market creator
     */
     function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 tokenIncentive) {
-      MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[msg.sender];
+      MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[_msgSender()];
       uint256 len = rewardData.marketsCreated.length;
       uint256 lastClaimed = len;
       uint256 count;
