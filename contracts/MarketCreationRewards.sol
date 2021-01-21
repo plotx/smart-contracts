@@ -60,12 +60,13 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
       predictionToken = ms.dAppToken();
       tokenController = ITokenController(ms.getLatestAddress("TC"));
       allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
+      _initialise();
     }
 
     /**
     * @dev Function to set inital parameters of contract
     */
-    function initialise() external {
+    function _initialise() internal {
       maxRewardPoolPercForMC = 500; // Raised by 2 decimals
       minRewardPoolPercForMC = 50; // Raised by 2 decimals
       tokenStakeForRewardPoolShare = 25000 ether;
