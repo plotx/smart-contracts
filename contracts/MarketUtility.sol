@@ -36,14 +36,14 @@ contract MarketUtility is Governed {
     uint256 internal minStakeForMultiplier;
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
-    address public authorizedAddress;
     bool public initialized;
 
     mapping(address => uint256) public conversionRate;
+    mapping (address => bool) internal authorizedAddresses;
 
     ITokenController internal tokenController;
     modifier onlyAuthorized() {
-        require(msg.sender == authorizedAddress, "Not authorized");
+        require(authorizedAddresses[msg.sender], "Not authorized");
         _;
     }
 
@@ -69,7 +69,21 @@ contract MarketUtility is Governed {
         require(!initialized, "Already initialized");
         initialized = true;
         _setInitialParameters();
-        authorizedAddress = _initiater;
+        authorizedAddresses[_initiater] = true;
+    }
+
+    /**
+    * @dev Function to set authorized address
+    **/
+    function addAuthorizedAddress(address _address) external onlyAuthorized {
+        authorizedAddresses[_address] = true;
+    }
+
+    /**
+    * @dev Function to check if given `_address` is  authorized address
+    **/
+    function isAuthorized(address _address) external view returns(bool) {
+      return authorizedAddresses[_address];
     }
 
     /**

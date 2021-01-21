@@ -56,6 +56,8 @@ contract IMarketUtility {
     
     function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied);
     
+    function isAuthorized(address _address) external view returns(bool);
+
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market

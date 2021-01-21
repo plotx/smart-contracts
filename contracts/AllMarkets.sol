@@ -230,17 +230,19 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     /**
     * @dev Start the initial market and set initial variables.
     */
-    function addInitialMarketTypesAndStart(address _marketCreationRewards, address _marketUtility, uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
+    function addInitialMarketTypesAndStart(uint32 _marketStartTime, address _ethFeed, address _btcFeed) external {
       require(marketTypeArray.length == 0);
       
-      marketCreationRewards = IMarketCreationRewards(_marketCreationRewards);
+      IMaster ms = IMaster(masterAddress);
+      marketCreationRewards = IMarketCreationRewards(ms.getLatestAddress("MC"));
+      marketUtility = IMarketUtility(ms.getLatestAddress("MU"));
+      require(marketUtility.isAuthorized(msg.sender));
       
       totalOptions = 3;
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
       relayerFeePercent = 200;
       daoCommissionPercent = 1000;
-      marketUtility = IMarketUtility(_marketUtility);
 
       commission = 5;
       
@@ -516,6 +518,18 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function settleMarket(uint256 _marketId) external {
       _settleMarket(_marketId);
+    }
+
+    /**
+    * @dev Settle the market explicitly by manually passing the price of market currency
+    * @param _marketId Index of market
+    * @param _marketSettleValue The current price of market currency.
+    */
+    function postMarketResult(uint256 _marketId, uint256 _marketSettleValue) external {
+      require(marketUtility.isAuthorized(msg.sender));
+      if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
+        _postResult(_marketSettleValue, 0, _marketId);
+      }
     }
 
     /**
