@@ -66,7 +66,7 @@ module.exports = function(deployer, network, accounts){
 
       assert.equal(await master.isInternal(allMarkets.address), true);
       assert.equal(await master.isInternal(mcr.address), true);
-      await mcr.initialise()
-      await allMarkets.addInitialMarketTypesAndStart(mcr.address, _marketUtility, date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+      // await mcr.initialise()
+      await allMarkets.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
   });
 };
