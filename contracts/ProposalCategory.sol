@@ -146,7 +146,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "burnLockedTokens(address,bytes32,uint256)",
             60,
             advisoryBoardRole
-        ); //11
+        ); //10
         _addInitialCategories(
             "Swap AB member",
             "QmV5HJMmhkEiHWt5qdNp6AbCqcn9Lw9ASA9efHDKGm8mdh",
@@ -178,7 +178,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "addMarketType(uint32,uint32,uint32)",
             60,
             advisoryBoardRole
-        ); //15
+        ); //14
         _addInitialCategories(
             "Add new market currency",
             "QmTu2FnkqUWhhNbeQraSrtbdA4DfGLavTsLRKRCeLV51x1",
@@ -204,7 +204,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             advisoryBoardRole
         );
         _addInitialCategories(
-            "Transfer Market Registry Assets",
+            "Transfer Assets",
             "QmeRCfGJuA6oTqY8a7nuVxdHih2SmZUTaZLVrttGv6yKy5",
             "MC",
             "transferAssets(address,address,uint256)",
@@ -218,7 +218,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "updateUintParameters(bytes8,uint256)",
             60,
             advisoryBoardRole
-        ); //20
+        ); //19
         // _addInitialCategories(
         //     "Update Market Address parameters",
         //     "QmbbNRchZHMULBbKFT8qjCWgCRPa4qdkst8mE8A2Kffy7N",
@@ -234,7 +234,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "updateUintParameters(bytes8,uint256)",
             60,
             advisoryBoardRole
-        ); //22
+        ); //20
         _addInitialCategories(
             "Whitelist Sponsor",
             "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",

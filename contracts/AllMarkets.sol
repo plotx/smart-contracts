@@ -148,7 +148,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     uint internal predictionDecimalMultiplier;
     uint internal defaultMaxRecords;
 
-    bool internal marketCreationPaused;
+    bool public marketCreationPaused;
     MarketCurrency[] internal marketCurrencies;
     MarketTypeData[] internal marketTypeArray;
     mapping(bytes32 => uint) internal marketCurrency;
