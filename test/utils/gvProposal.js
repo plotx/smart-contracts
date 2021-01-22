@@ -81,10 +81,6 @@ async function gvProposalWithIncentiveViaTokenHolder(...args) {
   if (seq != 3) await gv.closeProposal(p);
   let proposal = await gv.proposal(p);
   assert.equal(proposal[2].toNumber(), 3);
-  if(!skipTrigger) {
-    await increaseTime(86401);
-    await gv.triggerAction(p);
-  }
 }
 
 async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
