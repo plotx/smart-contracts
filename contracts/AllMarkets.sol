@@ -799,7 +799,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function getTotalStakedWorthInPLOT(uint256 _marketId) public view returns(uint256 _tokenStakedWorth) {
       uint256 _conversionRate = marketUtility.conversionRate(predictionToken);
-      return (getTotalAssetsStaked(_marketId)).mul(_conversionRate);
+      return (getTotalAssetsStaked(_marketId)).mul(_conversionRate).mul(10**predictionDecimalMultiplier);
     }
 
     /**
@@ -856,18 +856,19 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param solutionHash The ipfs solution hash.
     */
     function raiseDispute(uint256 _marketId, uint256 _proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
+      address payable _msgSender = _msgSender();
       require(getTotalPredictionPoints(_marketId) > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      IToken(plotToken).transferFrom(msg.sender, address(this), _stakeForDispute);
+      IToken(plotToken).transferFrom(_msgSender, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      marketDataExtended[_marketId].disputeRaisedBy = msg.sender;
+      marketDataExtended[_marketId].disputeRaisedBy = _msgSender;
       marketDataExtended[_marketId].disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 9, solutionHash, abi.encode(_marketId, _proposedValue));
-      emit DisputeRaised(_marketId, msg.sender, proposalId, _proposedValue);
+      emit DisputeRaised(_marketId, _msgSender, proposalId, _proposedValue);
       _setMarketStatus(_marketId, PredictionStatus.InDispute);
     }
 
