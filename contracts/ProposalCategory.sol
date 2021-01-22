@@ -102,7 +102,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         _addInitialCategories(
             "Update contract's Implementation",
             "QmesiuX929bJHmgH8E58L6FWPazcLdgcdjmFzinEdsMfre",
-            "PL",
+            "AM",
             "upgradeContractImplementation(address,address)",
             60,
             advisoryBoardRole

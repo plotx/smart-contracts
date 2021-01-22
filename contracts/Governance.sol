@@ -540,7 +540,7 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
      * @param val value to set
      */
     function updateUintParameters(bytes8 code, uint256 val) public {
-        require(ms.isAuthorizedToGovern(_msgSender()));
+        require(ms.isAuthorizedToGovern(msg.sender));
         if (code == "GOVHOLD") {
             tokenHoldingTime = val * 1 days;
         } else if (code == "MAXDRFT") {
@@ -1125,6 +1125,7 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
         allVotes.push(ProposalVote(address(0), 0, 0, 0, 0));
         totalProposals = 1;
         tokenHoldingTime = 1 * 3 days;
+        maxDraftTime = 14 days;
         constructorCheck = true;
         roleIdAllowedToCatgorize = uint256(IMemberRoles.Role.AdvisoryBoard);
         actionWaitingTime = 1 days;
