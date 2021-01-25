@@ -60,7 +60,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     event Deposited(address indexed user, uint256 amount, uint256 timeStamp);
     event Withdrawn(address indexed user, uint256 amount, uint256 timeStamp);
-    event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 optionRangePerc, bool status);
+    event MarketTypes(uint256 indexed index, uint32 predictionTime, uint32 cooldownTime, uint32 optionRangePerc, bool status);
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
     event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
@@ -114,6 +114,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     struct MarketTypeData {
       uint32 predictionTime;
       uint32 optionRangePerc;
+      uint32 cooldownTime;
       bool paused;
     }
 
@@ -194,24 +195,34 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @dev Add new market type.
     * @param _predictionTime The time duration of market.
     * @param _optionRangePerc Option range percent of neutral min, max options (raised by 2 decimals)
+    * @param _marketCooldownTime Cool down time of the market after market is settled
     */
-    function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc, uint32 _marketStartTime) external onlyAuthorizedToGovern {
+    function addMarketType(uint32 _predictionTime, uint32 _optionRangePerc, uint32 _marketStartTime, uint32 _marketCooldownTime) external onlyAuthorizedToGovern {
       require(marketTypeArray[marketType[_predictionTime]].predictionTime != _predictionTime);
       require(_predictionTime > 0);
       require(_optionRangePerc > 0);
+      require(_marketCooldownTime > 0);
       uint32 index = uint32(marketTypeArray.length);
-      _addMarketType(_predictionTime, _optionRangePerc);
+      _addMarketType(_predictionTime, _optionRangePerc, _marketCooldownTime);
       for(uint32 i = 0;i < marketCurrencies.length; i++) {
           marketCreationData[index][i].initialStartTime = _marketStartTime;
       }
     }
 
-    function _addMarketType(uint32 _predictionTime, uint32 _optionRangePerc) internal {
+    function _addMarketType(uint32 _predictionTime, uint32 _optionRangePerc, uint32 _marketCooldownTime) internal {
       uint32 index = uint32(marketTypeArray.length);
       marketType[_predictionTime] = index;
-      marketTypeArray.push(MarketTypeData(_predictionTime, _optionRangePerc, false));
-      emit MarketTypes(index, _predictionTime, _optionRangePerc, true);
+      marketTypeArray.push(MarketTypeData(_predictionTime, _optionRangePerc, _marketCooldownTime, false));
+      emit MarketTypes(index, _predictionTime, _marketCooldownTime, _optionRangePerc, true);
     }
+
+    // function updateMarketType(uint32 _marketType, uint32 _optionRangePerc, uint32 _marketCooldownTime) external onlyAuthorizedToGovern {
+    //   require(_optionRangePerc > 0);
+    //   require(_marketCooldownTime > 0);
+    //   marketTypeArray[_marketType].optionRangePerc = _optionRangePerc;
+    //   marketTypeArray[_marketType].cooldownTime = _marketCooldownTime;
+    //   emit MarketTypes(_marketType, _predictionTime, _marketCooldownTime, _optionRangePerc, true);
+    // }
 
     /**
      * @dev Changes the master address and update it's instance
@@ -246,9 +257,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
       commission = 5;
       
-      _addMarketType(4 hours, 100);
-      _addMarketType(24 hours, 200);
-      _addMarketType(168 hours, 500);
+      _addMarketType(4 hours, 100, 1 hours);
+      _addMarketType(24 hours, 200, 6 hours);
+      _addMarketType(168 hours, 500, 8 hours);
 
       _addMarketCurrency("ETH/USD", _ethFeed, 8, 1, _marketStartTime);
       _addMarketCurrency("BTC/USD", _btcFeed, 8, 25, _marketStartTime);
@@ -346,7 +357,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime(uint256 _marketId) public view returns(uint256) {
-      return marketDataExtended[_marketId].settleTime + (marketBasicData[_marketId].predictionTime / 4);
+      return marketTypeArray[marketBasicData[_marketId].Mtype].cooldownTime;
     }
 
     /**
