@@ -540,7 +540,7 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
      * @param val value to set
      */
     function updateUintParameters(bytes8 code, uint256 val) public {
-        require(ms.isAuthorizedToGovern(msg.sender));
+        require(ms.isAuthorizedToGovern(_msgSender()));
         if (code == "GOVHOLD") {
             tokenHoldingTime = val * 1 days;
         } else if (code == "MAXDRFT") {
@@ -1011,12 +1011,24 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
         } else if (contractName != "EX") {
             actionAddress = ms.getLatestAddress(contractName);
         }
-        (bool actionStatus, ) = actionAddress.call(
-            abi.encodePacked(
-                _functionHash,
-                allProposalSolutions[_proposalId][1]
-            )
-        );
+        bool actionStatus;
+        if(contractName == "GV") {
+            (actionStatus, ) = actionAddress.call(
+                abi.encodePacked(
+                    _functionHash,
+                    allProposalSolutions[_proposalId][1],
+                    address(this)
+                )
+            );    
+        }
+        else {
+            (actionStatus, ) = actionAddress.call(
+                abi.encodePacked(
+                    _functionHash,
+                    allProposalSolutions[_proposalId][1]
+                )
+            );
+        }
         if (actionStatus) {
             emit ActionSuccess(_proposalId);
         } else {

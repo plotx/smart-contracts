@@ -60,6 +60,14 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         functionSignature,
         gv
         ));
+    functionSignature = encode3("updateUintParameters(bytes8,uint256)",toHex("GOVHOLD"), 3000);
+    functionSignature = functionSignature + (gv.address).slice(2);
+    await assertRevert(signAndExecuteMetaTx(
+            privateKeyList[0],
+            ab1,
+            functionSignature,
+            gv
+            ));
   });
 
   it("15.2 Only Advisory Board members are authorized to categorize proposal", async function () {
