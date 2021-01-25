@@ -39,6 +39,8 @@ contract MarketUtility is Governed {
     bool public initialized;
 
     mapping(address => uint256) public conversionRate;
+    mapping(address => uint256) public userLevel;
+    mapping(uint256 => uint256) public levelMultiplier;
     mapping (address => bool) internal authorizedAddresses;
 
     ITokenController internal tokenController;
@@ -101,21 +103,16 @@ contract MarketUtility is Governed {
 
     /**
     * @dev Check if user gets any multiplier on his positions
-    * @param _asset The assets uses by user during prediction.
-    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _user User address
     * @param predictionPoints The actual positions user got during prediction.
-    * @param _stakeValue The stake value of asset.
     * @return uint256 representing multiplied positions
+    * @return bool returns true if multplier applied
     */
-    function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool) {
+    function checkMultiplier(address _user, uint predictionPoints) public view returns(uint, bool) {
       bool multiplierApplied;
-      uint _stakedBalance = tokenController.tokensLockedAtTime(_user, "SM", now);
-      if(_stakeValue < minStakeForMultiplier) {
-        return (predictionPoints,multiplierApplied);
-      }
       uint _muliplier = 100;
-      if(_stakedBalance.div(_predictionStake) > 0) {
-        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionStake.mul(10));
+      if(userLevel[_user] > 0) {
+        _muliplier = _muliplier + levelMultiplier[userLevel[_user]];
         multiplierApplied = true;
       }
       return (predictionPoints.mul(_muliplier).div(100),multiplierApplied);
@@ -147,8 +144,34 @@ contract MarketUtility is Governed {
         }
     }
 
+    /**
+    * @dev Function to set `_asset` to PLOT token value conversion rate
+    * @param _asset Token Address
+    * @param _rate `_asset` to PLOT conversion rate
+    */
     function setAssetPlotConversionRate(address _asset, uint256 _rate) public onlyAuthorized {
       conversionRate[_asset] = _rate;
+    }
+
+    /**
+    * @dev Function to set `_user` level for prediction points multiplier
+    * @param _user User address
+    * @param _level user level indicator
+    */
+    function setUserLevel(address _user, uint256 _level) public onlyAuthorized {
+      userLevel[_user] = _level;
+    }
+
+    /**
+    * @dev Function to set multiplier per level (With 2 decimals)
+    * @param _userLevels Array of levels
+    * @param _multipliers Array of corresponding multipliers
+    */
+    function setMultiplierLevels(uint256[] memory _userLevels, uint256[] memory _multipliers) public onlyAuthorized {
+      require(_userLevels.length == _multipliers.length);
+      for(uint256 i = 0; i < _userLevels.length; i++) {
+        levelMultiplier[_userLevels[i]] = _multipliers[i];
+      }
     }
 
     /**
@@ -247,14 +270,14 @@ contract MarketUtility is Governed {
         return tokenStakeForDispute;
     }
 
-  function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
-    uint currentPrice = getAssetPriceUSD(_marketFeed);
-    uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
-    _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
-    _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
-  }
+    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
+      uint currentPrice = getAssetPriceUSD(_marketFeed);
+      uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
+      _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+      _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+    }
 
-  function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
+    function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
       uint _stakeValue = _predictionStake.mul(1e10);
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
@@ -263,7 +286,7 @@ contract MarketUtility is Governed {
       predictionPoints = uint64(_stakeValue.div(1e10)).div(_optionPrice);
       if(!multiplierApplied) {
         uint256 _predictionPoints;
-        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_asset, _user, _predictionStake.mul(1e10),  predictionPoints, _stakeValue);
+        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_user,  predictionPoints);
         predictionPoints = uint64(_predictionPoints);
       }
     }
@@ -278,12 +301,5 @@ contract MarketUtility is Governed {
 
     function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
         return ((a + m - 1) / m) * m;
-    }
-
-    /**
-    * @dev Internal function to get the absolute difference of two values
-    */
-    function _getAbsoluteDifference(uint value1, uint value2) internal pure returns(uint) {
-      return value1 > value2 ? value1.sub(value2) : value2.sub(value1);
     }
 }
