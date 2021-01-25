@@ -14,8 +14,8 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     using SafeMath for *;
 
 	  event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 tokenIncentive);
-    event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 tokenIncentive, uint256 rewardPoolSharePerc);
-    event ClaimedMarketCreationReward(address indexed user, uint256 plotIncentive, uint rewardPoolShare, address predictionToken);
+    event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 rewardPoolSharePerc);
+    event ClaimedMarketCreationReward(address indexed user, uint rewardPoolShare, address predictionToken);
 
     modifier onlyInternal() {
       IMaster(masterAddress).isInternal(msg.sender);
@@ -132,9 +132,7 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     function calculateMarketCreationIncentive(address _createdBy, uint64 _marketId) external onlyInternal {
       _checkIfCreatorStaked(_createdBy, _marketId);
       marketCreationRewardUserData[_createdBy].marketsCreated.push(_marketId);
-      uint256 incentive = marketCreatorReward;
-      marketCreationRewardUserData[_createdBy].incentives = marketCreationRewardUserData[_createdBy].incentives.add(incentive);
-      emit MarketCreationReward(_createdBy, _marketId, incentive, marketCreationRewardData[_marketId].rewardPoolSharePerc);
+      emit MarketCreationReward(_createdBy, _marketId, marketCreationRewardData[_marketId].rewardPoolSharePerc);
     }
 
     /**
@@ -164,13 +162,10 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     */
     function claimCreationReward(uint256 _maxRecords) external {
       address payable _msgSender = _msgSender();
-      uint256 pendingTokenReward = marketCreationRewardUserData[_msgSender].incentives;
-      delete marketCreationRewardUserData[_msgSender].incentives;
       uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
-      require(pendingTokenReward > 0 || rewardPoolShare > 0, "No pending");
-      _transferAsset(address(plotToken), _msgSender, pendingTokenReward);
+      require(rewardPoolShare > 0, "No pending");
       _transferAsset(address(predictionToken), _msgSender, rewardPoolShare);
-      emit ClaimedMarketCreationReward(_msgSender, pendingTokenReward, rewardPoolShare, predictionToken);
+      emit ClaimedMarketCreationReward(_msgSender, rewardPoolShare, predictionToken);
     }
 
     /**

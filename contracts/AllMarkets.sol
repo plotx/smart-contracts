@@ -375,15 +375,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     /**
     * @dev Function to deposit prediction token for participation in markets
-    * @param _amount Amount of prediction tokens to deposit
-    */
-    function deposit(uint _amount) public {
-      require(_amount > 0);
-      _deposit(_amount);
-    }
-
-    /**
-    * @dev Function to deposit prediction token for participation in markets
     * @param _amount Amount of prediction token to deposit
     */
     function _deposit(uint _amount) internal {
