@@ -320,7 +320,9 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
             locked[_of][_reason].claimed = true;
             _removeReason(_of, _reason);
         }
-        token.burn(_amount);
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        IMaster ms = IMaster(proxy.proxyOwner());
+        token.transfer(ms.getLatestAddress("MC"),_amount);
         emit Burned(_of, _reason, _amount);
     }
 
