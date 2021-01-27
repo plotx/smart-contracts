@@ -955,7 +955,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      IToken(plotToken).burn((10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      IToken(plotToken).transfer(address(marketCreationRewards),(10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
