@@ -520,25 +520,29 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     function _deductRelayerFee(uint64 _amount, address _asset, address _msgSender) internal returns(uint64 _amountPostFee){
-      uint64 _relayerFee;
+      uint64 _fee;
+      address _relayer;
       if(_msgSender != tx.origin) {
-        _relayerFee = _calculateAmulBdivC(cummulativeFeePercent, _amount, 10000);
+        _relayer = tx.origin;
+      } else {
+        _relayer = _msgSender;
       }
-      _amountPostFee = _amount.sub(_relayerFee);
+      _fee = _calculateAmulBdivC(cummulativeFeePercent, _amount, 10000);
+      _amountPostFee = _amount.sub(_fee);
       uint64 _referrerFee;
       uint64 _refereeFee;
-      uint64 _daoCommission = _relayerFee.mul(daoCommissionPercent).div(10000);
+      uint64 _daoCommission = _fee.mul(daoCommissionPercent).div(10000);
       address _referrer;
       if(_referrer != address(0)) {
         //Commission for referee
-        _refereeFee = _calculateAmulBdivC(refereeFeePercent, _relayerFee, 10000);
+        _refereeFee = _calculateAmulBdivC(refereeFeePercent, _fee, 10000);
         userData[_msgSender].refereeFee = userData[_msgSender].refereeFee.add(_refereeFee);
         //Commission for referrer
-        _referrerFee = _calculateAmulBdivC(referrerFeePercent, _relayerFee, 10000);
+        _referrerFee = _calculateAmulBdivC(referrerFeePercent, _fee, 10000);
         userData[_referrer].referrerFee = userData[_referrer].referrerFee.add(_referrerFee);
       }
-      _relayerFee = _relayerFee.sub(_daoCommission).sub(_referrerFee).sub(_refereeFee);
-      relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_relayerFee);
+      _fee = _fee.sub(_daoCommission).sub(_referrerFee).sub(_refereeFee);
+      relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_fee);
       _transferAsset(predictionToken, address(marketCreationRewards), _daoCommission);
     }
 
