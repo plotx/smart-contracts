@@ -534,6 +534,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(_msgSender != tx.origin) {
         _relayerFee = _calculateAmulBdivC(relayerFeePercent, _amount, 10000);
       }
+      _amountPostFee = _amount.sub(_relayerFee);
       uint64 _referrerFee;
       uint64 _refereeFee;
       uint64 _daoCommission = _relayerFee.mul(daoCommissionPercent).div(10000);
@@ -549,7 +550,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _relayerFee = _relayerFee.sub(_daoCommission).sub(_referrerFee).sub(_refereeFee);
       relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_relayerFee);
       _transferAsset(predictionToken, address(marketCreationRewards), _daoCommission);
-      _amountPostFee = _amount.sub(_relayerFee);
     }
 
     /**
