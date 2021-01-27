@@ -1,9 +1,13 @@
 pragma solidity 0.5.7;
-import "../PlotXToken.sol";
+import "../Matic-plot-token.sol";
 
-contract MockPLOT is PlotXToken {
+contract MockPLOT is PlotXToken1 {
 
-	constructor(uint256 initialSupply, address owner) public PlotXToken(initialSupply, owner) {
+	constructor(string memory name_,
+        string memory symbol_,
+        uint8 decimals_,
+        address _operator,
+        address childChainManager) public PlotXToken1(name_,symbol_,decimals_,_operator,childChainManager) {
     }
 
 	function burnTokens(address _of, uint _amount) external {
