@@ -134,7 +134,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       bool paused;
     }
 
-    uint64 public relayerFeePercent;
+    uint64 public cummulativeFeePercent;
     uint64 public daoCommissionPercent;
     uint64 public referrerFeePercent;
     uint64 public refereeFeePercent;
@@ -282,7 +282,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       totalOptions = 3;
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
-      relayerFeePercent = 200;
+      cummulativeFeePercent = 200;
       daoCommissionPercent = 1000;
       refereeFeePercent = 500;
       referrerFeePercent = 500;
@@ -522,7 +522,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     function _deductRelayerFee(uint64 _amount, address _asset, address _msgSender) internal returns(uint64 _amountPostFee){
       uint64 _relayerFee;
       if(_msgSender != tx.origin) {
-        _relayerFee = _calculateAmulBdivC(relayerFeePercent, _amount, 10000);
+        _relayerFee = _calculateAmulBdivC(cummulativeFeePercent, _amount, 10000);
       }
       _amountPostFee = _amount.sub(_relayerFee);
       uint64 _referrerFee;
