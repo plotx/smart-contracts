@@ -65,7 +65,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
     event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
     event ReturnClaimed(address indexed user, uint256 amount);
-    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
+    event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
     event ReferralLog(address indexed referrer, address indexed referee, uint256 referredOn);
@@ -93,7 +93,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       mapping(uint => UserMarketData) userMarketData;
     }
 
-    uint64 internal commission; 
 
     struct MarketBasicData {
       uint32 Mtype;
@@ -109,7 +108,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint32 settleTime;
       address disputeRaisedBy;
       uint64 disputeStakeAmount;
-      uint64 commission;
       uint incentiveToDistribute;
       uint rewardToDistribute;
       PredictionStatus predictionStatus;
@@ -289,7 +287,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       refereeFeePercent = 500;
       referrerFeePercent = 500;
 
-      commission = 5;
       
       _addMarketType(4 hours, 100, 1 hours);
       _addMarketType(24 hours, 200, 6 hours);
@@ -318,7 +315,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue));
-      marketDataExtended[_marketIndex].commission = commission;
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
        (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket, _marketIndex);
       emit MarketQuestion(_marketIndex, marketCurrencies[_marketCurrencyIndex].currencyName, _marketTypeIndex, _startTime, marketTypeArray[_marketTypeIndex].predictionTime, _minValue, _maxValue);
@@ -494,9 +490,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       address payable _msgSender = _msgSender();
       require(!marketCreationPaused && _prediction <= totalOptions && _prediction >0);
       require(now >= marketBasicData[_marketId].startTime && now <= marketExpireTime(_marketId));
-      uint64 _commissionStake;
-      uint64 _commissionPercent;
-      _commissionPercent = marketDataExtended[_marketId].commission;
       uint64 _predictionStakePostDeduction = _predictionStake;
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
       if(_asset == predictionToken) {
@@ -518,15 +511,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         _asset = plotToken;
       }
       _predictionStakePostDeduction = _deductRelayerFee(_predictionStake, _asset, _msgSender);
-      //Storing prediction stake value in _commissionStake variable after deducting commission fee
-      _commissionStake = _calculateAmulBdivC(_commissionPercent, _predictionStakePostDeduction, 10000);
-      _commissionStake = _predictionStakePostDeduction.sub(_commissionStake);
       
-      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSender, _marketId, _prediction, _asset, _commissionStake);
+      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSender, _marketId, _prediction, _asset, _predictionStakePostDeduction);
       require(predictionPoints > 0);
 
-      _storePredictionData(_marketId, _prediction, _commissionStake, _asset, predictionPoints);
-      emit PlacePrediction(_msgSender, _predictionStake, predictionPoints, _asset, _prediction, _marketId, _commissionPercent);
+      _storePredictionData(_marketId, _prediction, _predictionStakePostDeduction, _asset, predictionPoints);
+      emit PlacePrediction(_msgSender, _predictionStake, predictionPoints, _asset, _prediction, _marketId);
     }
 
     function _deductRelayerFee(uint64 _amount, address _asset, address _msgSender) internal returns(uint64 _amountPostFee){
@@ -617,7 +607,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       marketDataExtended[_marketId].WinningOption = _winningOption;
       uint64 marketCreatorIncentive;
-      (uint64 totalReward, uint64 tokenParticipation, uint64 commission) = _calculateRewardTally(_marketId, _winningOption);
+      (uint64 totalReward, uint64 tokenParticipation) = _calculateRewardTally(_marketId, _winningOption);
       (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation);
       if(_thresholdReached) {
         if(
@@ -638,7 +628,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         }
       }
       marketDataExtended[_marketId].rewardToDistribute = totalReward;
-      tokenParticipation = tokenParticipation.add(commission); 
       _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive.add(tokenParticipation)));
       marketCreationRewards.depositMarketRewardPoolShare(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive), tokenParticipation);
       emit MarketResult(_marketId, marketDataExtended[_marketId].rewardToDistribute, _winningOption, _value, _roundId);
@@ -649,7 +638,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     * @param _winningOption WinningOption of market
     */
-    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64 totalReward, uint64 tokenParticipation, uint64 commission){
+    function _calculateRewardTally(uint256 _marketId, uint256 _winningOption) internal view returns(uint64 totalReward, uint64 tokenParticipation){
       for(uint i=1;i <= totalOptions;i++){
         uint64 _tokenStakedOnOption = marketOptionsAvailable[_marketId][i].amountStaked;
         tokenParticipation = tokenParticipation.add(_tokenStakedOnOption);
@@ -664,7 +653,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       * actualAmountUserPassed = (100 * userParticipationAmount)/(100-commissionPercent)
       * commissionAmount = actualAmountUserPassed - userParticipationAmount
       */
-      commission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].commission) - tokenParticipation;
+      // commission = _calculateAmulBdivC(10000, tokenParticipation, 10000 - marketDataExtended[_marketId].commission) - tokenParticipation;
     }
 
     /**
