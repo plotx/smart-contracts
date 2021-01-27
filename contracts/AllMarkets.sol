@@ -68,6 +68,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex, uint256 commissionPercent);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
     event DisputeResolved(uint256 indexed marketIndex, bool status);
+    event ReferralLog(address indexed referrer, address indexed referee, uint256 referredOn);
 
     struct PredictionData {
       uint64 predictionPoints;
@@ -86,6 +87,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint128 lastClaimedIndex;
       uint[] marketsParticipated;
       uint unusedBalance;
+      uint referrerFee;
+      uint refereeFee;
+      address referrer;
       mapping(uint => UserMarketData) userMarketData;
     }
 
@@ -134,6 +138,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     uint64 public relayerFeePercent;
     uint64 public daoCommissionPercent;
+    uint64 public referrerFeePercent;
+    uint64 public refereeFeePercent;
     mapping (address => uint256) public relayerFeeEarned;
 
     address internal plotToken;
@@ -164,6 +170,32 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     mapping(uint =>mapping(uint=>PredictionData)) internal marketOptionsAvailable;
     mapping(uint256 => uint256) internal disputeProposalId;
+
+    function setReferrer(address _referrer, address _referee) external {
+      require(marketUtility.isAuthorized(msg.sender));
+      require(userData[_referee].totalStaked == 0);
+      require(userData[_referee].referrer == address(0));
+      userData[_referee].referrer = _referrer;
+      emit ReferralLog(_referrer, _referee, now);
+    }
+
+    /**
+    * @dev Get fees earned by participating in the referral program
+    * @param _user Address of the user
+    * @return _referrerFee Fees earned by referring other users
+    * @return _refereeFee Fees earned if referred by some one
+    */
+    function getReferralFees(address _user) external view returns(uint256 _referrerFee, uint256 _refereeFee) {
+      return (userData[_user].referrerFee, userData[_user].refereeFee);
+    }
+
+    function claimReferralFee(address _user) external {
+      uint256 _referrerFee = userData[_user].referrerFee;
+      delete userData[_user].referrerFee;
+      uint256 _refereeFee = userData[_user].refereeFee;
+      delete userData[_user].refereeFee;
+      _transferAsset(predictionToken, _user, (_refereeFee.add(_referrerFee)).mul(10**predictionDecimalMultiplier));
+    }
 
     /**
     * @dev Add new market currency.
@@ -254,6 +286,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       defaultMaxRecords = 20;
       relayerFeePercent = 200;
       daoCommissionPercent = 1000;
+      refereeFeePercent = 500;
+      referrerFeePercent = 500;
 
       commission = 5;
       
@@ -499,8 +533,22 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint64 _relayerFee;
       if(_msgSender != tx.origin) {
         _relayerFee = _calculateAmulBdivC(relayerFeePercent, _amount, 10000);
-        relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_relayerFee);
       }
+      uint64 _referrerFee;
+      uint64 _refereeFee;
+      uint64 _daoCommission = _relayerFee.mul(daoCommissionPercent).div(10000);
+      address _referrer;
+      if(_referrer != address(0)) {
+        //Commission for referee
+        _refereeFee = _calculateAmulBdivC(refereeFeePercent, _relayerFee, 10000);
+        userData[_msgSender].refereeFee = userData[_msgSender].refereeFee.add(_refereeFee);
+        //Commission for referrer
+        _referrerFee = _calculateAmulBdivC(referrerFeePercent, _relayerFee, 10000);
+        userData[_referrer].referrerFee = userData[_referrer].referrerFee.add(_referrerFee);
+      }
+      _relayerFee = _relayerFee.sub(_daoCommission).sub(_referrerFee).sub(_refereeFee);
+      relayerFeeEarned[tx.origin] = relayerFeeEarned[tx.origin].add(_relayerFee);
+      _transferAsset(predictionToken, address(marketCreationRewards), _daoCommission);
       _amountPostFee = _amount.sub(_relayerFee);
     }
 
@@ -626,11 +674,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint _decimalMultiplier = 10**predictionDecimalMultiplier;
       address _relayer = msg.sender;
       uint256 _fee = (_decimalMultiplier).mul(relayerFeeEarned[_relayer]);
-      uint256 _daoCommission = _fee.mul(daoCommissionPercent).div(10000);
-      _fee = _fee.sub(_daoCommission);
       delete relayerFeeEarned[_relayer];
       _transferAsset(predictionToken, _relayer, _fee);
-      _transferAsset(predictionToken, address(marketCreationRewards), _daoCommission);
     }
 
     /**
