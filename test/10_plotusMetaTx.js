@@ -72,7 +72,7 @@ contract("Rewards-Market", async function(users) {
 			let nullAddress = "0x0000000000000000000000000000";
          
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
-            await marketIncentives.claimCreationReward(100,{from:users[11]});
+            // await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
 
 		it("Scenario 1: Few user wins", async () => {
@@ -100,7 +100,7 @@ contract("Rewards-Market", async function(users) {
 			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),49.194*1e3);
 
 
-			let betpoints = [0,5441.72222,21766.88888,11427.61666,4462.21222,54417.22222,76184.11111,10883.44444,1813.90740,10883.44444,8162.58333];
+			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666];
 
 
 			for(i=1;i<11;i++)
@@ -125,7 +125,7 @@ contract("Rewards-Market", async function(users) {
 
 			await increaseTime(60*61);
 
-			let userRewardPlot = [0,0,0,0,0,1099.775462,1539.685647,0,0,0,0];
+			let userRewardPlot = [0,0,0,0,0,1100.32562500,1540.455875,0,0,0,0];
 
 			for(i=1;i<11;i++)
 			{
@@ -145,7 +145,7 @@ contract("Rewards-Market", async function(users) {
 			}
 
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			assert.equal(375397207,Math.round(marketCreatorReward[1]/1e11));
+			assert.equal(375585000,Math.round(marketCreatorReward[1]/1e11));
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
@@ -159,7 +159,7 @@ contract("Rewards-Market", async function(users) {
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),375397207);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),375585000);
 
 				
 		});
