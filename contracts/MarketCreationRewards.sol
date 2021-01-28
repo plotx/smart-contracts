@@ -37,7 +37,6 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
 	
 	  uint16 internal maxRewardPoolPercForMC;
     uint16 internal minRewardPoolPercForMC;
-    uint256 internal marketCreatorReward;
     address internal plotToken;
     address internal predictionToken;
     uint256 internal tokenStakeForRewardPoolShare;
@@ -72,7 +71,6 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
       tokenStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 400 ether; //need to change value (in prediction token)
       predictionDecimalMultiplier = 10;
-      marketCreatorReward = 10 ether; // need to change the value (in prediction token)
     }
 
     /**
@@ -87,8 +85,6 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
         tokenStakeForRewardPoolShare = value;
       } else if(code == "RPSTH") { // Reward Pool percent for market creator
         rewardPoolShareThreshold = value;
-      } else if(code == "MCR") { // Reward for market creator
-        marketCreatorReward = value;
       }
     }
 
@@ -105,8 +101,6 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
         value = tokenStakeForRewardPoolShare;
       } else if(code == "RPSTH") { // Reward Pool percent for market creator
         value = rewardPoolShareThreshold;
-      } else if(code == "MCR") { // Reward for market creator
-        value = marketCreatorReward;
       }
     }
 

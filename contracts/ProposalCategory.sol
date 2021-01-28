@@ -175,7 +175,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "Add new market type",
             "QmPwAdEj6quzB65JWr6hDz6HrLtjTfbezwUiAe6mBq2sxY",
             "AM",
-            "addMarketType(uint32,uint32,uint32)",
+            "addMarketType(uint32,uint32,uint32,uint32)",
             60,
             advisoryBoardRole
         ); //14
@@ -240,6 +240,14 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
             "MS",
             "whitelistSponsor(address)",
+            60,
+            advisoryBoardRole
+        );
+        _addInitialCategories(
+            "Toggle market creation of Type",
+            "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
+            "AM",
+            "toggleMarketCreationType(uint64,bool)",
             60,
             advisoryBoardRole
         );
