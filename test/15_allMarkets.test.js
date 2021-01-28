@@ -271,7 +271,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
 		// startTime = Math.round((Date.now())/1000) + 2*604800;
-		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60, 50, startTime, 3600);
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60, 50, startTime, 7200);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 
 		actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60 * 2, 1, 10, 3600);
@@ -317,6 +317,9 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await allMarkets.createMarket(0, 3);
 		await increaseTime(604810);
 		await allMarkets.settleMarket(8);
+		let marketSettleTime = await allMarkets.marketSettleTime(8);
+		let marketCoolDownTime = await allMarkets.marketCoolDownTime(8);
+		assert.equal(marketCoolDownTime/1 - marketSettleTime/1, 7200);
 		await allMarkets.settleMarket(9);
 		await allMarkets.createMarket(0, 3);
 		await increaseTime(604800);
