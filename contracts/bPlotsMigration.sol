@@ -272,7 +272,7 @@ contract BLOT is Iupgradable {
     /**
      * @dev Add `account` as minter
      */
-    function addMinter(address account) public {//onlyMinter {
+    function addMinter(address account) public onlyMinter {
         _addMinter(account);
     }
 
