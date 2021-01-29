@@ -318,6 +318,15 @@ contract MarketUtility is Governed {
       }
     }
 
+    function getAllOptionPrices(uint _marketId) external view returns(uint64[] memory _optionPrices) {
+      _optionPrices = new uint64[](3);
+      for(uint i=0;i<3;i++) {
+
+        _optionPrices[i] = getOptionPrice(_marketId,i+1);
+      }
+
+    }
+
     function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64) {
       (uint[] memory _optionPricingParams, uint32 startTime, address _feedAddress) = allMarkets.getMarketOptionPricingParams(_marketId,_prediction);
       uint stakingFactorConst;
