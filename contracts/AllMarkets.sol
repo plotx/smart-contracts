@@ -765,13 +765,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         neutralMinValue = marketBasicData[_marketId].neutralMinValue;
         neutralMaxValue = marketBasicData[_marketId].neutralMaxValue;
         
-        // _optionPrice = new uint[](totalOptions);
         _tokenStaked = new uint[](totalOptions);
-        // uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
           _tokenStaked[i] = marketOptionsAvailable[_marketId][i+1].amountStaked;
-          // uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
-          // _optionPrice[i] = marketUtility.getOptionPrice(_marketId, i);
        }
     }
 
