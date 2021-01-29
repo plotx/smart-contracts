@@ -71,7 +71,7 @@ contract("Rewards-Market", async function(users) {
 			let nullAddress = "0x0000000000000000000000000000";
          
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
-            await marketIncentives.claimCreationReward(100,{from:users[11]});
+            // await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
 
 		it("Scenario 3: All winners, no losers", async () => {
@@ -99,7 +99,7 @@ contract("Rewards-Market", async function(users) {
 			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),49.194*1e3);
 
 
-			let betpoints = [0,10883.44444,43533.77777,22855.23333,13386.63666,54417.22222,76184.11111,21766.88888,5441.72222,32650.33333,16325.16666];
+			let betpoints = [0,10888.88888, 43555.55555, 22866.66666, 13393.33333, 54444.44444, 76222.22222, 21777.77777, 5444.44444, 32666.66666, 16333.33333];
 
 
 			for(i=1;i<11;i++)
@@ -124,7 +124,7 @@ contract("Rewards-Market", async function(users) {
 
 			await increaseTime(60*61);
 
-			let userRewardPlot = [0,97.951,391.804,205.6971,120.47973,489.755,685.657,195.902,48.9755,293.853,146.9265];
+			let userRewardPlot = [0,98, 392, 205.8, 120.54, 490, 686, 196, 49, 294, 147];
 
 			for(i=1;i<11;i++)
 			{
@@ -165,7 +165,7 @@ contract("Rewards-Market", async function(users) {
             await tokenController.lock(toHex("SM"),toWei(300000),30*3600*24,{from:users[12]});
             await allMarkets.createMarket(0, 0,{from:users[12], gasPrice:10});
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
-			await marketIncentives.claimCreationReward(100,{from:users[12]});
+			// await marketIncentives.claimCreationReward(100,{from:users[12]});
 		});
 
 		it("Scenario 5: All losers, no winners and Staked less than 1 ETH", async () => {
@@ -192,7 +192,7 @@ contract("Rewards-Market", async function(users) {
 
 			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),6.66*1e3);
 
-			let betpoints = [0,1088.34444,1813.90740,5441.72222,2539.47037,1088.34444,5441.72222];
+			let betpoints = [0,1088.88888, 1814.81481, 5444.44444, 2540.74074, 1088.88888, 5444.44444];
 
 
 			for(i=1;i<7;i++)

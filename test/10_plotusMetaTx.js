@@ -63,9 +63,9 @@ contract("Rewards-Market", async function(users) {
 			allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
 			marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
             await increaseTime(5 * 3600);
-            await plotusToken.transfer(marketIncentives.address,toWei(100000));
-            await plotusToken.transfer(users[11],toWei(100000));
             await plotusToken.transfer(users[12],toWei(100000));
+            await plotusToken.transfer(users[11],toWei(100000));
+            await plotusToken.transfer(marketIncentives.address,toWei(500));
             await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
             await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
 
@@ -80,24 +80,35 @@ contract("Rewards-Market", async function(users) {
 			let totalDepositedPlot = toWei(1000);
 			let predictionVal  = [0,100, 400, 210, 123, 500, 700, 200, 50, 300, 150];
 			let options=[0,2,2,2,3,1,1,2,3,3,2];
+			let daoCommissions = [0, 0.2, 0.8, 0.42, 0.246, 1, 1.4, 0.4, 0.1, 0.6, 0.3];
 			for(i=1; i<11;i++){
+				if(i>1) {
+					await allMarkets.setReferrer(users[1], users[i]);
+					//SHould not add referrer if already set
+					await assertRevert(allMarkets.setReferrer(users[1], users[i]));
+				}
 				await plotusToken.transfer(users[i], toWei(2000));
 			    await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[i] });
 			    let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", totalDepositedPlot, 7, plotusToken.address, predictionVal[i]*1e8, options[i]);
 				await marketConfig.setNextOptionPrice(options[i]*9);
+				let daoBalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
 				await signAndExecuteMetaTx(
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
 			      allMarkets
 			      );
+				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
 			}
 
+			//SHould not add referrer if already placed prediction
+			await assertRevert(allMarkets.setReferrer(users[1], users[2]));
 			let relayerBalBefore = await plotusToken.balanceOf(users[0]);
 			await allMarkets.claimRelayerRewards();
 			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),49.194*1e3);
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),43.928*1e3);
 
 
 			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666];
@@ -163,5 +174,30 @@ contract("Rewards-Market", async function(users) {
 
 				
 		});
+
+		it("Check referral fee", async () => {
+			let referralRewardPlot = [2.633, 0.4, 0.21, 0.123, 0.5, 0.7, 0.2, 0.05, 0.3, 0.15];
+
+			for(i=1;i<11;i++)
+			{
+				let reward = await allMarkets.getReferralFees(users[i]);
+				if(i == 1) {
+					reward = reward[0];
+				} else {
+					reward = reward[1];
+				}
+				assert.equal(reward/1,referralRewardPlot[i-1]*1e8);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+				functionSignature = encode3("claimReferralFee(address)", users[i]);
+				await signAndExecuteMetaTx(
+			      privateKeyList[i],
+			      users[i],
+			      functionSignature,
+			      allMarkets
+			      );
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((plotBalAfter/1e13-plotBalBefore/1e13)),reward/1e3);
+			}
+		})
 	});
 });
