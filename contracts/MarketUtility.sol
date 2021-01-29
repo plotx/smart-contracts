@@ -23,6 +23,14 @@ import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IToken.sol";
 
+contract IAllMarkets {
+  
+  function getMarketStakeData(uint _marketId, uint _option) public view returns(uint[] memory);
+  function getMarketPricingParams(uint _marketId) public view returns(uint[] memory);
+  function getMarketStartAndTotalTime(uint _marketId) external view returns(uint32,uint32);
+  function getMarketMinMaxValAndFeed(uint _marketId) external view returns(uint,uint,address);
+}
+
 contract MarketUtility is Governed {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
@@ -37,6 +45,10 @@ contract MarketUtility is Governed {
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
     bool public initialized;
+    uint256 public stakingFactorMinStake;
+    uint256 public stakingFactorWeightage;
+    uint256 public currentPriceWeightage;
+
 
     mapping(address => uint256) public conversionRate;
     mapping(address => uint256) public userLevel;
@@ -44,6 +56,7 @@ contract MarketUtility is Governed {
     mapping (address => bool) internal authorizedAddresses;
 
     ITokenController internal tokenController;
+    IAllMarkets internal allMarkets;
     modifier onlyAuthorized() {
         require(authorizedAddresses[msg.sender], "Not authorized");
         _;
@@ -57,6 +70,7 @@ contract MarketUtility is Governed {
       require(msg.sender == proxy.proxyOwner(),"not owner.");
       IMaster ms = IMaster(msg.sender);
       tokenController = ITokenController(ms.getLatestAddress("TC"));
+      allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
       masterAddress = msg.sender;
     }
 
@@ -99,6 +113,9 @@ contract MarketUtility is Governed {
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
         tokenStakeForDispute = 500 ether;
+        stakingFactorMinStake = 20000 ether;
+        stakingFactorWeightage = 40;
+        currentPriceWeightage = 60;
     }
 
     /**
@@ -139,11 +156,16 @@ contract MarketUtility is Governed {
             riskPercentage = value;
         } else if (code == "TSDISP") { // Amount of tokens to be staked for raising a dispute
             tokenStakeForDispute = value;
-        } else {
+        } else if (code == "SFMS") { // Minimum amount of tokens to be staked for considering staking factor
+            stakingFactorMinStake = value;
+        } else if (code == "SFCPW") { // Staking Factor Weightage and Current Price weightage
+            stakingFactorWeightage = value;
+            currentPriceWeightage = uint(100).sub(value);
+        }else {
             revert("Invalid code");
         }
     }
-
+    
     /**
     * @dev Function to set `_asset` to PLOT token value conversion rate
     * @param _asset Token Address
@@ -277,13 +299,13 @@ contract MarketUtility is Governed {
       _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
     }
 
-    function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
+    function calculatePredictionPoints(uint _marketId, uint256 _prediction, address _user, bool multiplierApplied, uint _predictionStake) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
       uint _stakeValue = _predictionStake.mul(1e10);
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
         return (0, isMultiplierApplied);
       }
-      uint64 _optionPrice = getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
-      predictionPoints = uint64(_stakeValue.div(1e10)).div(_optionPrice);
+      uint64 _optionPrice = getOptionPrice(_marketId, _prediction);
+      predictionPoints = uint64(_stakeValue.mul(1e8)).div(_optionPrice);
       if(!multiplierApplied) {
         uint256 _predictionPoints;
         (_predictionPoints, isMultiplierApplied) = checkMultiplier(_user,  predictionPoints);
@@ -291,11 +313,63 @@ contract MarketUtility is Governed {
       }
     }
 
-    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
-      if(totalPredictionPoints > 0) {
-        _optionPrice = (predictionPointsOnOption.mul(100)).div(totalPredictionPoints) + 100;
+    function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64) {
+      uint[] memory _stakeData = allMarkets.getMarketStakeData(_marketId,_prediction);
+      uint[] memory _marketPricingParam = allMarkets.getMarketPricingParams(_marketId);
+      uint stakingFactorConst;
+      if(_stakeData[1] > _marketPricingParam[0])
+      {
+        stakingFactorConst = uint(10000).mul(10**18).div(_stakeData[1].mul(_marketPricingParam[1]));
+      }
+      (uint32 startTime, uint32 totalTime) = allMarkets.getMarketStartAndTotalTime(_marketId);
+      uint timeElapsed = uint(now).sub(startTime);
+      if(timeElapsed<_marketPricingParam[3]) {
+        timeElapsed = _marketPricingParam[3];
+      }
+      uint timeFactor = timeElapsed.mul(10000).div(_marketPricingParam[2].mul(totalTime)); 
+      uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction);
+
+      uint optionPrice = _stakeData[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor));
+      optionPrice = optionPrice.div(stakingFactorConst.mul(_stakeData[1]).mul(_distanceData[0].add(1)).add((_distanceData[2].add(3)).mul(timeFactor)));
+
+      return uint64(optionPrice);
+
+    }
+
+    function getOptionDistanceData(uint _marketId,uint _prediction) internal view returns(uint[] memory) {
+      // [0]--> max Distance+1, 
+      // [1]--> option distance + 1, 
+      // [2]--> optionDistance1+1+optionDistance2+1+optionDistance3+1
+      uint[] memory _distanceData = new uint256[](3); 
+      
+      (uint minVal, uint maxVal, address _feedAddress) = allMarkets.getMarketMinMaxValAndFeed(_marketId);
+      uint currentPrice = getAssetPriceUSD(
+            _feedAddress
+        );
+      _distanceData[0] = 2;
+      uint currentOption;
+      // _distanceData[2] = 3;
+      if(currentPrice < minVal)
+      {
+        currentOption = 1;
+      } else if(currentPrice > maxVal) {
+        currentOption = 3;
       } else {
-        _optionPrice = 100;
+        currentOption = 2;
+        _distanceData[0] = 1;
+        // _distanceData[2] = 2;
+      }
+        _distanceData[1] = _distanceData[0].sub(modDiff(currentOption,_prediction)); // option distance + 1
+        _distanceData[2] = uint(3).mul(_distanceData[0]).sub(_distanceData[2]);
+      return _distanceData;
+    }
+
+    function modDiff(uint a, uint b) internal pure returns(uint) {
+      if(a>b)
+      {
+        return a.sub(b);
+      } else {
+        return b.sub(a);
       }
     }
 

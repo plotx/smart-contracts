@@ -39,11 +39,11 @@ contract IMarketUtility {
     
     function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool);
   
-    function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied);
+    function calculatePredictionPoints(uint _marketId, uint _prediction, address _user, bool multiplierApplied, uint _predictionStake) external view returns(uint64 predictionPoints, bool isMultiplierApplied);
 
     function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue);
     
-    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice);
+    function getOptionPrice(uint256 _marketId, uint _prediction) public view returns(uint64 _optionPrice);
     
     function getPriceFeedDecimals(address _priceFeed) public view returns(uint8);
 
@@ -86,4 +86,9 @@ contract IMarketUtility {
         address _currencyFeedAddress,
         uint256 _settleTime
     ) public view returns (uint256 latestAnswer, uint256 roundId);
+
+
+    function stakingFactorMinStake() external view returns(uint);
+    function stakingFactorWeightage() external view returns(uint);
+    function currentPriceWeightage() external view returns(uint32);
 }
