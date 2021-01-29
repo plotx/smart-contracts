@@ -33,8 +33,8 @@ contract BLOT is Iupgradable {
 
     address public operator;
     address public plotToken;
-    address public authController;
-    address public migrationController;
+    address public authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
+    address public migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
     
     mapping(bytes32 => MigrationStatus) public migrationStatus;
     struct MigrationStatus{
@@ -44,6 +44,8 @@ contract BLOT is Iupgradable {
 
     event MinterAdded(address indexed account);
     event MinterRemoved(address indexed account);
+    event MigrationAuthorised(bytes hash);
+    event MigrationCompleted(bytes hash);
 
     mapping (address => uint256) internal _balances;
 
@@ -212,7 +214,10 @@ contract BLOT is Iupgradable {
         require(migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].completed == false, "Migration has been already completed");
         
         migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].initiated = true;
+        emit MigrationAuthorised(_hash);
+
         return migrationHash(_hash, _from, _to, _timestamp, _amount);
+        
     }
     
    
@@ -233,6 +238,8 @@ contract BLOT is Iupgradable {
         
         _mint( _to, _amount);
         migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].completed = true;
+        emit MigrationCompleted(_hash);
+
         return true;
     }
 
