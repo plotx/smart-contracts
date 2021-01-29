@@ -24,11 +24,16 @@ import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IToken.sol";
 
 contract IAllMarkets {
-  
-  function getMarketStakeData(uint _marketId, uint _option) public view returns(uint[] memory);
-  function getMarketPricingParams(uint _marketId) public view returns(uint[] memory);
-  function getMarketStartAndTotalTime(uint _marketId) external view returns(uint32,uint32);
-  function getMarketMinMaxValAndFeed(uint _marketId) external view returns(uint,uint,address);
+  enum PredictionStatus {
+      Live,
+      InSettlement,
+      Cooling,
+      InDispute,
+      Settled
+    }
+  function getMarketOptionPricingParams(uint _marketId, uint _option) public view returns(uint[] memory,uint32,address);
+  function getMarketData(uint256 _marketId) external view returns
+       (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus);
 }
 
 contract MarketUtility is Governed {
@@ -314,35 +319,34 @@ contract MarketUtility is Governed {
     }
 
     function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64) {
-      uint[] memory _stakeData = allMarkets.getMarketStakeData(_marketId,_prediction);
-      uint[] memory _marketPricingParam = allMarkets.getMarketPricingParams(_marketId);
+      (uint[] memory _optionPricingParams, uint32 startTime, address _feedAddress) = allMarkets.getMarketOptionPricingParams(_marketId,_prediction);
       uint stakingFactorConst;
-      if(_stakeData[1] > _marketPricingParam[0])
+      if(_optionPricingParams[1] > _optionPricingParams[2])
       {
-        stakingFactorConst = uint(10000).mul(10**18).div(_stakeData[1].mul(_marketPricingParam[1]));
+        stakingFactorConst = uint(10000).mul(10**18).div(_optionPricingParams[1].mul(_optionPricingParams[3]));
       }
-      (uint32 startTime, uint32 totalTime) = allMarkets.getMarketStartAndTotalTime(_marketId);
+      (, , , , uint totalTime, , ) = allMarkets.getMarketData(_marketId);
       uint timeElapsed = uint(now).sub(startTime);
-      if(timeElapsed<_marketPricingParam[3]) {
-        timeElapsed = _marketPricingParam[3];
+      if(timeElapsed<_optionPricingParams[5]) {
+        timeElapsed = _optionPricingParams[5];
       }
-      uint timeFactor = timeElapsed.mul(10000).div(_marketPricingParam[2].mul(totalTime)); 
-      uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction);
+      uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(totalTime)); 
+      uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction, _feedAddress);
 
-      uint optionPrice = _stakeData[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor));
-      optionPrice = optionPrice.div(stakingFactorConst.mul(_stakeData[1]).mul(_distanceData[0].add(1)).add((_distanceData[2].add(3)).mul(timeFactor)));
+      uint optionPrice = _optionPricingParams[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor));
+      optionPrice = optionPrice.div(stakingFactorConst.mul(_optionPricingParams[1]).mul(_distanceData[0].add(1)).add((_distanceData[2].add(3)).mul(timeFactor)));
 
       return uint64(optionPrice);
 
     }
 
-    function getOptionDistanceData(uint _marketId,uint _prediction) internal view returns(uint[] memory) {
+    function getOptionDistanceData(uint _marketId,uint _prediction, address _feedAddress) internal view returns(uint[] memory) {
+      (, uint minVal, uint maxVal , , , , ) = allMarkets.getMarketData(_marketId);
       // [0]--> max Distance+1, 
       // [1]--> option distance + 1, 
       // [2]--> optionDistance1+1+optionDistance2+1+optionDistance3+1
       uint[] memory _distanceData = new uint256[](3); 
       
-      (uint minVal, uint maxVal, address _feedAddress) = allMarkets.getMarketMinMaxValAndFeed(_marketId);
       uint currentPrice = getAssetPriceUSD(
             _feedAddress
         );

@@ -757,8 +757,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return _predictionStatus uint representing the status of the market.
     */
     function getMarketData(uint256 _marketId) external view returns
-       (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue,
-        uint[] memory _optionPrice, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
+       (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
         _marketCurrency = marketCurrencies[marketBasicData[_marketId].currency].currencyName;
         _predictionTime = marketBasicData[_marketId].predictionTime;
         _expireTime =marketExpireTime(_marketId);
@@ -766,13 +765,13 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         neutralMinValue = marketBasicData[_marketId].neutralMinValue;
         neutralMaxValue = marketBasicData[_marketId].neutralMaxValue;
         
-        _optionPrice = new uint[](totalOptions);
+        // _optionPrice = new uint[](totalOptions);
         _tokenStaked = new uint[](totalOptions);
         // uint64 totalPredictionPoints = getTotalPredictionPoints(_marketId);
         for (uint i = 0; i < totalOptions; i++) {
           _tokenStaked[i] = marketOptionsAvailable[_marketId][i+1].amountStaked;
           // uint64 predictionPointsOnOption = marketOptionsAvailable[_marketId][i+1].predictionPoints;
-          _optionPrice[i] = marketUtility.getOptionPrice(_marketId, i);
+          // _optionPrice[i] = marketUtility.getOptionPrice(_marketId, i);
        }
     }
 
@@ -1004,28 +1003,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       marketDataExtended[_marketId].predictionStatus = _status;
     }
 
-    function getMarketStakeData(uint _marketId, uint _option) external view returns(uint[] memory) {
-      uint[] memory _stakeData = new uint256[](2);
-      _stakeData[0] = marketOptionsAvailable[_marketId][_option].amountStaked;
-      _stakeData[1] = marketTotalTokenStaked[_marketId];
-      return _stakeData;
-    }
-
-    function getMarketPricingParams(uint _marketId) external view returns(uint[] memory) {
-      uint[] memory _marketPricingParam = new uint256[](4);
-      _marketPricingParam[0] = marketPricingData[_marketId].stakingFactorMinStake;
-      _marketPricingParam[1] = marketPricingData[_marketId].stakingFactorWeightage;
-      _marketPricingParam[2] = marketPricingData[_marketId].currentPriceWeightage;
-      _marketPricingParam[3] = uint(marketPricingData[_marketId].minTimePassed);
-      return _marketPricingParam;
-    }
-
-    function getMarketStartAndTotalTime(uint _marketId) external view returns(uint32,uint32) {
-      return (marketBasicData[_marketId].startTime,marketBasicData[_marketId].predictionTime);
-    }
-
-    function getMarketMinMaxValAndFeed(uint _marketId) external view returns(uint,uint,address) {
-      return (marketBasicData[_marketId].neutralMinValue,marketBasicData[_marketId].neutralMaxValue,marketCurrencies[marketBasicData[_marketId].currency].marketFeed);
+    function getMarketOptionPricingParams(uint _marketId, uint _option) external view returns(uint[] memory, uint32,address) {
+      uint[] memory _optionPricingParams = new uint256[](6);
+      _optionPricingParams[0] = marketOptionsAvailable[_marketId][_option].amountStaked;
+      _optionPricingParams[1] = marketTotalTokenStaked[_marketId];
+      _optionPricingParams[2] = marketPricingData[_marketId].stakingFactorMinStake;
+      _optionPricingParams[3] = marketPricingData[_marketId].stakingFactorWeightage;
+      _optionPricingParams[4] = marketPricingData[_marketId].currentPriceWeightage;
+      _optionPricingParams[5] = uint(marketPricingData[_marketId].minTimePassed);
+      return (_optionPricingParams,marketBasicData[_marketId].startTime,marketCurrencies[marketBasicData[_marketId].currency].marketFeed);
     }
 
 }
