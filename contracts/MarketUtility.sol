@@ -342,7 +342,7 @@ contract MarketUtility is Governed {
       uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(totalTime)); 
       uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction, _feedAddress);
 
-      uint optionPrice = _optionPricingParams[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor));
+      uint optionPrice = _optionPricingParams[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor).mul(10**18));
       optionPrice = optionPrice.div(stakingFactorConst.mul(_optionPricingParams[1]).mul(_distanceData[0].add(1)).add((_distanceData[2].add(3)).mul(timeFactor)));
 
       return uint64(optionPrice);
@@ -361,7 +361,7 @@ contract MarketUtility is Governed {
         );
       _distanceData[0] = 2;
       uint currentOption;
-      // _distanceData[2] = 3;
+      _distanceData[2] = 3;
       if(currentPrice < minVal)
       {
         currentOption = 1;
@@ -370,10 +370,9 @@ contract MarketUtility is Governed {
       } else {
         currentOption = 2;
         _distanceData[0] = 1;
-        // _distanceData[2] = 2;
+        _distanceData[2] = 1;
       }
         _distanceData[1] = _distanceData[0].sub(modDiff(currentOption,_prediction)); // option distance + 1
-        _distanceData[2] = uint(3).mul(_distanceData[0]).sub(_distanceData[2]);
       return _distanceData;
     }
 
