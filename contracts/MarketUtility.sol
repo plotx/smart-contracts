@@ -194,7 +194,7 @@ contract MarketUtility is Governed {
     * @param _userLevels Array of levels
     * @param _multipliers Array of corresponding multipliers
     */
-    function setMultiplierLevels(uint256[] memory _userLevels, uint256[] memory _multipliers) public onlyAuthorized {
+    function setMultiplierLevels(uint256[] memory _userLevels, uint256[] memory _multipliers) public onlyAuthorizedToGovern {
       require(_userLevels.length == _multipliers.length);
       for(uint256 i = 0; i < _userLevels.length; i++) {
         levelMultiplier[_userLevels[i]] = _multipliers[i];
