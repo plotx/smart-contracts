@@ -16,7 +16,6 @@
 pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
-import "./PlotXToken.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";
@@ -41,7 +40,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
 
     bool internal constructorCheck;
 
-    PlotXToken public token;
+    IToken public token;
     IbLOTToken public bLOTToken;
     Vesting public vesting;
 
@@ -61,7 +60,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
         constructorCheck = true;
         masterAddress = msg.sender;
         IMaster ms = IMaster(msg.sender);
-        token = PlotXToken(ms.dAppToken());
+        token = IToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
     }
 
