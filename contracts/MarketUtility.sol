@@ -51,8 +51,8 @@ contract MarketUtility is Governed {
     uint256 internal tokenStakeForDispute;
     bool public initialized;
     uint256 public stakingFactorMinStake;
-    uint256 public stakingFactorWeightage;
-    uint256 public currentPriceWeightage;
+    uint32 public stakingFactorWeightage;
+    uint32 public currentPriceWeightage;
 
 
     mapping(address => uint256) public conversionRate;
@@ -164,8 +164,8 @@ contract MarketUtility is Governed {
         } else if (code == "SFMS") { // Minimum amount of tokens to be staked for considering staking factor
             stakingFactorMinStake = value;
         } else if (code == "SFCPW") { // Staking Factor Weightage and Current Price weightage
-            stakingFactorWeightage = value;
-            currentPriceWeightage = uint(100).sub(value);
+            stakingFactorWeightage = uint32(value);
+            currentPriceWeightage = 100 - stakingFactorWeightage;
         }else {
             revert("Invalid code");
         }
@@ -230,28 +230,20 @@ contract MarketUtility is Governed {
 
     /**
      * @dev Get Parameter required for option price calculation
-     * @param _marketFeedAddress  Feed Address of currency on which market options are based on
-     * @return Stake weightage percentage for calculation option price
-     * @return minimum amount of stake required to consider stake weightage
-     * @return Current price of the market currency
-     * @return Divisor to calculate minimum time elapsed for a market type
      **/
-    function getPriceCalculationParams(
-        address _marketFeedAddress
-    )
+    function getPriceCalculationParams()
         public
         view
         returns (
             uint256,
-            uint256
+            uint256,
+            uint32
         )
     {
-        uint256 _currencyPrice = getAssetPriceUSD(
-            _marketFeedAddress
-        );
         return (
-            _currencyPrice,
-            minTimeElapsedDivisor
+            stakingFactorMinStake,
+            stakingFactorWeightage,
+            currentPriceWeightage
         );
     }
 
@@ -310,7 +302,7 @@ contract MarketUtility is Governed {
         return (0, isMultiplierApplied);
       }
       uint64 _optionPrice = getOptionPrice(_marketId, _prediction);
-      predictionPoints = uint64(_stakeValue.mul(1e8)).div(_optionPrice);
+      predictionPoints = uint64(_predictionStake).div(_optionPrice);
       if(!multiplierApplied) {
         uint256 _predictionPoints;
         (_predictionPoints, isMultiplierApplied) = checkMultiplier(_user,  predictionPoints);

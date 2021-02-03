@@ -70,6 +70,7 @@ module.exports = function(deployer, network, accounts){
       assert.equal(await master.isInternal(allMarkets.address), true);
       assert.equal(await master.isInternal(mcr.address), true);
       // await mcr.initialise()
-      await allMarkets.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address);
+      await plotusToken.approve(allMarkets.address, "1000000000000000000000000")
+      await allMarkets.addInitialMarketTypesAndStart(date, mockchainLinkAggregaror.address, mockchainLinkAggregaror.address, accounts[0]);
   });
 };

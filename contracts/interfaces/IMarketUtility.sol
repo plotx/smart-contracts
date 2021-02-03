@@ -91,4 +91,13 @@ contract IMarketUtility {
     function stakingFactorMinStake() external view returns(uint);
     function stakingFactorWeightage() external view returns(uint);
     function currentPriceWeightage() external view returns(uint32);
+
+    function getPriceCalculationParams()
+        public
+        view
+        returns (
+            uint256,
+            uint32,
+            uint32
+        );
 }
