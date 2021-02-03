@@ -118,7 +118,7 @@ contract MarketUtility is Governed {
         minStakeForMultiplier = 5e17;
         riskPercentage = 20;
         tokenStakeForDispute = 500 ether;
-        stakingFactorMinStake = 20000 ether;
+        stakingFactorMinStake = uint(20000).mul(10**8);
         stakingFactorWeightage = 40;
         currentPriceWeightage = 60;
     }
@@ -324,18 +324,22 @@ contract MarketUtility is Governed {
       uint stakingFactorConst;
       if(_optionPricingParams[1] > _optionPricingParams[2])
       {
-        stakingFactorConst = uint(10000).mul(10**18).div(_optionPricingParams[1].mul(_optionPricingParams[3]));
+        stakingFactorConst = uint(10000).div(_optionPricingParams[3]);
       }
       (, , , , uint totalTime, , ) = allMarkets.getMarketData(_marketId);
       uint timeElapsed = uint(now).sub(startTime);
       if(timeElapsed<_optionPricingParams[5]) {
         timeElapsed = _optionPricingParams[5];
       }
-      uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(totalTime)); 
       uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction, _feedAddress);
+      uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(_distanceData[0].add(1)));
 
-      uint optionPrice = _optionPricingParams[0].mul(stakingFactorConst).mul((_distanceData[0]).add(1)).add((_distanceData[1].add(1)).mul(timeFactor).mul(10**18));
-      optionPrice = optionPrice.div(stakingFactorConst.mul(_optionPricingParams[1]).mul(_distanceData[0].add(1)).add((_distanceData[2].add(3)).mul(timeFactor)));
+      uint optionPrice; 
+      if(stakingFactorConst > 0)  
+        optionPrice = (_optionPricingParams[0].mul(stakingFactorConst).mul(10**18).div(_optionPricingParams[1])); 
+        
+      optionPrice = optionPrice.add((_distanceData[1].add(1)).mul(timeFactor).mul(10**18).div(totalTime));  
+      optionPrice = optionPrice.div(stakingFactorConst.mul(10**13).add(timeFactor.mul(10**13).mul(_distanceData[2].add(3)).div(totalTime)));
 
       return uint64(optionPrice);
 
