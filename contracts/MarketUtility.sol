@@ -22,19 +22,20 @@ import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IToken.sol";
+import "./interfaces/IAllMarkets.sol";
 
-contract IAllMarkets {
-  enum PredictionStatus {
-      Live,
-      InSettlement,
-      Cooling,
-      InDispute,
-      Settled
-    }
-  function getMarketOptionPricingParams(uint _marketId, uint _option) public view returns(uint[] memory,uint32,address);
-  function getMarketData(uint256 _marketId) external view returns
-       (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus);
-}
+// contract IAllMarkets {
+//   enum PredictionStatus {
+//       Live,
+//       InSettlement,
+//       Cooling,
+//       InDispute,
+//       Settled
+//     }
+//   function getMarketOptionPricingParams(uint _marketId, uint _option) public view returns(uint[] memory,uint32,address);
+//   function getMarketData(uint256 _marketId) external view returns
+//        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus);
+// }
 
 contract MarketUtility is Governed {
     using SafeMath for uint256;
@@ -59,6 +60,8 @@ contract MarketUtility is Governed {
     mapping(address => uint256) public userLevel;
     mapping(uint256 => uint256) public levelMultiplier;
     mapping (address => bool) internal authorizedAddresses;
+    mapping(bytes32 => uint) public marketTypeFeedPrice;
+    
 
     ITokenController internal tokenController;
     IAllMarkets internal allMarkets;
@@ -169,6 +172,12 @@ contract MarketUtility is Governed {
         }else {
             revert("Invalid code");
         }
+    }
+
+    function setFeedPriceForMarketType(bytes32 _marketCurr, uint _val) external onlyAuthorized {
+      address _feedAddress = allMarkets.getMarketCurrencyData(_marketCurr);
+      require(_feedAddress == address(0));
+      marketTypeFeedPrice[_marketCurr] = _val;
     }
     
     /**
@@ -346,15 +355,20 @@ contract MarketUtility is Governed {
     }
 
     function getOptionDistanceData(uint _marketId,uint _prediction, address _feedAddress) internal view returns(uint[] memory) {
-      (, uint minVal, uint maxVal , , , , ) = allMarkets.getMarketData(_marketId);
+      (bytes32 _marketCurr, uint minVal, uint maxVal , , , , ) = allMarkets.getMarketData(_marketId);
       // [0]--> max Distance+1, 
       // [1]--> option distance + 1, 
       // [2]--> optionDistance1+1+optionDistance2+1+optionDistance3+1
       uint[] memory _distanceData = new uint256[](3); 
-      
-      uint currentPrice = getAssetPriceUSD(
+      uint currentPrice;
+      if(_feedAddress == address(0)) {
+        currentPrice = marketTypeFeedPrice[_marketCurr];
+      } else {
+        currentPrice = getAssetPriceUSD(
             _feedAddress
         );
+      }
+       
       _distanceData[0] = 2;
       uint currentOption;
       _distanceData[2] = 3;
