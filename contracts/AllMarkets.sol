@@ -203,10 +203,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     }
 
     function claimReferralFee(address _user) external {
-      uint256 _referrerFee = userData[_user].referrerFee;
-      delete userData[_user].referrerFee;
-      uint256 _refereeFee = userData[_user].refereeFee;
-      delete userData[_user].refereeFee;
+      UserData storage _userData = userData[_user];
+      uint256 _referrerFee = _userData.referrerFee;
+      delete _userData.referrerFee;
+      uint256 _refereeFee = _userData.refereeFee;
+      delete _userData.refereeFee;
       _transferAsset(predictionToken, _user, (_refereeFee.add(_referrerFee)).mul(10**predictionDecimalMultiplier));
     }
 
@@ -265,10 +266,28 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     function updateMarketType(uint32 _marketType, uint32 _optionRangePerc, uint32 _marketCooldownTime, uint32 _minTimePassed) external onlyAuthorizedToGovern {
       require(_optionRangePerc > 0);
       require(_marketCooldownTime > 0);
-      marketTypeArray[_marketType].optionRangePerc = _optionRangePerc;
-      marketTypeArray[_marketType].cooldownTime = _marketCooldownTime;
-      marketTypeArray[_marketType].minTimePassed = _minTimePassed;
-      emit MarketTypes(_marketType, marketTypeArray[_marketType].predictionTime, _marketCooldownTime, _optionRangePerc, true, _minTimePassed);
+      MarketTypeData storage _marketTypeArray = marketTypeArray[_marketType];
+      _marketTypeArray.optionRangePerc = _optionRangePerc;
+      _marketTypeArray.cooldownTime = _marketCooldownTime;
+      _marketTypeArray.minTimePassed = _minTimePassed;
+      emit MarketTypes(_marketType, _marketTypeArray.predictionTime, _marketCooldownTime, _optionRangePerc, true, _minTimePassed);
+    }
+
+    /**
+    * @dev function to update integer parameters
+    */
+    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+      if(code == "CMFP") { // Cummulative fee percent
+        cummulativeFeePercent = uint64(value);
+      } else if(code == "DAOCM") { // DAO commission percent in Cummulative fee
+        daoCommissionPercent = uint64(value);
+      } else if(code == "RFRRF") { // Referrer fee percent in Cummulative fee
+        referrerFeePercent = uint64(value);
+      } else if(code == "RFREF") { // Referee fee percent in Cummulative fee
+        refereeFeePercent = uint64(value);
+      } else if(code == "MDPA") { // Market creators default prediction amount
+        mcDefaultPredictionAmount = uint64(value);
+      }
     }
 
     /**
@@ -409,12 +428,13 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @return PredictionStatus representing the status of market.
     */
     function marketStatus(uint256 _marketId) public view returns(PredictionStatus){
-      if(marketDataExtended[_marketId].predictionStatus == PredictionStatus.Live && now >= marketExpireTime(_marketId)) {
+      MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
+      if(_marketDataExtended.predictionStatus == PredictionStatus.Live && now >= marketExpireTime(_marketId)) {
         return PredictionStatus.InSettlement;
-      } else if(marketDataExtended[_marketId].predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime(_marketId)) {
+      } else if(_marketDataExtended.predictionStatus == PredictionStatus.Settled && now <= marketCoolDownTime(_marketId)) {
         return PredictionStatus.Cooling;
       }
-      return marketDataExtended[_marketId].predictionStatus;
+      return _marketDataExtended.predictionStatus;
     }
 
     /**
@@ -455,8 +475,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function _deposit(uint _amount) internal {
       address payable _msgSenderAddress = _msgSender();
-      address _predictionToken = predictionToken;
-      IToken(_predictionToken).transferFrom(_msgSenderAddress,address(this), _amount);
+      _transferTokenFrom(predictionToken, _msgSenderAddress, address(this), _amount);
       userData[_msgSenderAddress].unusedBalance = userData[_msgSenderAddress].unusedBalance.add(_amount);
       emit Deposited(_msgSenderAddress, _amount, now);
     }
@@ -480,7 +499,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function _withdraw(uint _token, uint _maxRecords, uint _tokenLeft) internal {
       address payable _msgSenderAddress = _msgSender();
-      withdrawReward(_maxRecords);
+      _withdrawReward(_maxRecords);
       address _predictionToken = predictionToken;
       userData[_msgSenderAddress].unusedBalance = _tokenLeft.sub(_token);
       require(_token > 0);
@@ -533,7 +552,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         unusedBalance = unusedBalance.div(decimalMultiplier);
         if(_predictionStake > unusedBalance)
         {
-          withdrawReward(defaultMaxRecords);
+          _withdrawReward(defaultMaxRecords);
           unusedBalance = _userData.unusedBalance;
           unusedBalance = unusedBalance.div(decimalMultiplier);
         }
@@ -588,9 +607,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function _calculatePredictionPointsAndMultiplier(address _user, uint256 _marketId, uint256 _prediction, address _asset, uint64 _stake) internal returns(uint64 predictionPoints){
       bool isMultiplierApplied;
-      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(_marketId, _prediction, _user, userData[_user].userMarketData[_marketId].multiplierApplied, _stake);
+      UserData storage _userData = userData[_user];
+      (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(_marketId, _prediction, _user, _userData.userMarketData[_marketId].multiplierApplied, _stake);
       if(isMultiplierApplied) {
-        userData[_user].userMarketData[_marketId].multiplierApplied = true; 
+        _userData.userMarketData[_marketId].multiplierApplied = true; 
       }
     }
 
@@ -634,6 +654,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(now >= marketSettleTime(_marketId));
       require(_value > 0);
       MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
+      MarketBasicData storage _marketBasicData = marketBasicData[_marketId];
       if(_marketDataExtended.predictionStatus != PredictionStatus.InDispute) {
         _marketDataExtended.settleTime = uint32(now);
       } else {
@@ -641,20 +662,21 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       }
       _setMarketStatus(_marketId, PredictionStatus.Settled);
       uint32 _winningOption; 
-      if(_value < marketBasicData[_marketId].neutralMinValue) {
+      if(_value < _marketBasicData.neutralMinValue) {
         _winningOption = 1;
-      } else if(_value > marketBasicData[_marketId].neutralMaxValue) {
+      } else if(_value > _marketBasicData.neutralMaxValue) {
         _winningOption = 3;
       } else {
         _winningOption = 2;
       }
       _marketDataExtended.WinningOption = _winningOption;
       uint64 marketCreatorIncentive;
+      uint64 predictionPointsOnWinningOption = marketOptionsAvailable[_marketId][_winningOption].predictionPoints;
       (uint64 totalReward, uint64 tokenParticipation) = _calculateRewardTally(_marketId, _winningOption);
       (uint64 _rewardPoolShare, bool _thresholdReached) = marketCreationRewards.getMarketCreatorRPoolShareParams(_marketId, tokenParticipation);
       if(_thresholdReached) {
         if(
-          marketOptionsAvailable[_marketId][_winningOption].predictionPoints == 0
+          predictionPointsOnWinningOption == 0
         ){
           marketCreatorIncentive = _calculateAmulBdivC(_rewardPoolShare, tokenParticipation, 10000);
           tokenParticipation = tokenParticipation.sub(marketCreatorIncentive);
@@ -665,7 +687,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
         }
       } else {
         if(
-          marketOptionsAvailable[_marketId][_winningOption].predictionPoints > 0
+          predictionPointsOnWinningOption > 0
         ){
           tokenParticipation = 0;
         }
@@ -706,7 +728,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @dev Claim the pending return of the market.
     * @param maxRecords Maximum number of records to claim reward for
     */
-    function withdrawReward(uint256 maxRecords) internal {
+    function _withdrawReward(uint256 maxRecords) internal {
       address payable _msgSenderAddress = _msgSender();
       uint256 i;
       UserData storage _userData = userData[_msgSenderAddress];
@@ -744,11 +766,12 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     function getUserUnusedBalance(address _user) public view returns(uint256, uint256){
       uint tokenReward;
       uint decimalMultiplier = 10**predictionDecimalMultiplier;
-      uint len = userData[_user].marketsParticipated.length;
-      for(uint i = userData[_user].lastClaimedIndex; i < len; i++) {
-        tokenReward = tokenReward.add(getReturn(_user, userData[_user].marketsParticipated[i]));
+      UserData storage _userData = userData[_user];
+      uint len = _userData.marketsParticipated.length;
+      for(uint i = _userData.lastClaimedIndex; i < len; i++) {
+        tokenReward = tokenReward.add(getReturn(_user, _userData.marketsParticipated[i]));
       }
-      return (userData[_user].unusedBalance, tokenReward.mul(decimalMultiplier));
+      return (_userData.unusedBalance, tokenReward.mul(decimalMultiplier));
     }
 
     /**
@@ -775,12 +798,13 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function getMarketData(uint256 _marketId) external view returns
        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus){
-        _marketCurrency = marketCurrencies[marketBasicData[_marketId].currency].currencyName;
-        _predictionTime = marketBasicData[_marketId].predictionTime;
+        MarketBasicData storage _marketBasicData = marketBasicData[_marketId];
+        _marketCurrency = marketCurrencies[_marketBasicData.currency].currencyName;
+        _predictionTime = _marketBasicData.predictionTime;
         _expireTime =marketExpireTime(_marketId);
         _predictionStatus = marketStatus(_marketId);
-        neutralMinValue = marketBasicData[_marketId].neutralMinValue;
-        neutralMaxValue = marketBasicData[_marketId].neutralMaxValue;
+        neutralMinValue = _marketBasicData.neutralMinValue;
+        neutralMaxValue = _marketBasicData.neutralMaxValue;
         
         _tokenStaked = new uint[](totalOptions);
         for (uint i = 0; i < totalOptions; i++) {
@@ -799,10 +823,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       if(marketStatus(_marketId) != PredictionStatus.Settled) {
         return (0, 0);
       }
-      if(userData[_user].userMarketData[_marketId].claimedReward) {
+      UserData storage _userData = userData[_user];
+      if(_userData.userMarketData[_marketId].claimedReward) {
         return (1, 0);
       }
-      userData[_user].userMarketData[_marketId].claimedReward = true;
+      _userData.userMarketData[_marketId].claimedReward = true;
       return (2, getReturn(_user, _marketId));
     }
 
@@ -931,7 +956,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(getTotalPredictionPoints(_marketId) > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
-      IToken(plotToken).transferFrom(_msgSenderAddress, address(this), _stakeForDispute);
+      _transferTokenFrom(plotToken, _msgSenderAddress, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
@@ -941,6 +966,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 9, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, _msgSenderAddress, proposalId, _proposedValue);
       _setMarketStatus(_marketId, PredictionStatus.InDispute);
+    }
+
+    function _transferTokenFrom(address _token, address _from, address _to, uint256 _amount) internal {
+      IToken(_token).transferFrom(_from, _to, _amount);
     }
 
     /**
