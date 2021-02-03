@@ -1060,4 +1060,11 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       return (_optionPricingParams,marketBasicData[_marketId].startTime,marketBasicData[_marketId].feedAddress);
     }
 
+    function getMarketCurrencyData(bytes32 currencyType) external view returns(address) {
+      uint typeIndex = marketCurrency[currencyType];
+      require((marketCurrencies[typeIndex].currencyName == currencyType));
+      return (marketCurrencies[typeIndex].marketFeed);
+
+    } 
+
 }
