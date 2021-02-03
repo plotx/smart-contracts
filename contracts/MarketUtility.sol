@@ -24,19 +24,6 @@ import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
 
-// contract IAllMarkets {
-//   enum PredictionStatus {
-//       Live,
-//       InSettlement,
-//       Cooling,
-//       InDispute,
-//       Settled
-//     }
-//   function getMarketOptionPricingParams(uint _marketId, uint _option) public view returns(uint[] memory,uint32,address);
-//   function getMarketData(uint256 _marketId) external view returns
-//        (bytes32 _marketCurrency,uint neutralMinValue,uint neutralMaxValue, uint[] memory _tokenStaked,uint _predictionTime,uint _expireTime, PredictionStatus _predictionStatus);
-// }
-
 contract MarketUtility is Governed {
     using SafeMath for uint256;
     using SafeMath64 for uint64;
@@ -262,9 +249,16 @@ contract MarketUtility is Governed {
      * @return Current price of the market currency
      **/
     function getAssetPriceUSD(
-        address _currencyFeedAddress
+        address _currencyFeedAddress,
+        bytes32 _marketCurr
     ) public view returns (uint256 latestAnswer) {
+
+      if(_currencyFeedAddress == address(0)) {
+        return marketTypeFeedPrice[_marketCurr];
+      } else {
         return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
+      }
+        
     }
 
     /**
@@ -298,8 +292,8 @@ contract MarketUtility is Governed {
         return tokenStakeForDispute;
     }
 
-    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue) {
-      uint currentPrice = getAssetPriceUSD(_marketFeed);
+    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed, bytes32 _marketCurr) external view returns(uint64 _minValue, uint64 _maxValue) {
+      uint currentPrice = getAssetPriceUSD(_marketFeed, _marketCurr);
       uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
       _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
       _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
@@ -360,14 +354,11 @@ contract MarketUtility is Governed {
       // [1]--> option distance + 1, 
       // [2]--> optionDistance1+1+optionDistance2+1+optionDistance3+1
       uint[] memory _distanceData = new uint256[](3); 
-      uint currentPrice;
-      if(_feedAddress == address(0)) {
-        currentPrice = marketTypeFeedPrice[_marketCurr];
-      } else {
-        currentPrice = getAssetPriceUSD(
-            _feedAddress
+      uint currentPrice = getAssetPriceUSD(
+            _feedAddress,
+            _marketCurr
         );
-      }
+      
        
       _distanceData[0] = 2;
       uint currentOption;
