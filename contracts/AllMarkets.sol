@@ -223,7 +223,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require((marketCurrencies[marketCurrency[_currencyName]].currencyName != _currencyName));
       require(decimals != 0);
       require(roundOfToNearest != 0);
-      require(_marketFeed != address(0));
       _addMarketCurrency(_currencyName, _marketFeed, decimals, roundOfToNearest, _marketStartTime);
     }
 
@@ -349,7 +348,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _closePreviousMarket( _marketTypeIndex, _marketCurrencyIndex);
       // marketUtility.update();
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
-      (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed);
+      (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(marketTypeArray[_marketTypeIndex].optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed, marketCurrencies[_marketCurrencyIndex].currencyName);
       uint64 _marketIndex = uint64(marketBasicData.length);
       marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, marketTypeArray[_marketTypeIndex].predictionTime,_minValue,_maxValue, marketCurrencies[_marketCurrencyIndex].marketFeed));
       (marketCreationData[_marketTypeIndex][_marketCurrencyIndex].penultimateMarket, marketCreationData[_marketTypeIndex][_marketCurrencyIndex].latestMarket) =
@@ -638,8 +637,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     * @dev Settle the market, setting the winning option
     */
     function _settleMarket(uint256 _marketId) internal {
-      if(marketStatus(_marketId) == PredictionStatus.InSettlement) {
-        (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(marketCurrencies[marketBasicData[_marketId].currency].marketFeed, marketSettleTime(_marketId));
+      address _feedAdd = marketCurrencies[marketBasicData[_marketId].currency].marketFeed;
+      if(marketStatus(_marketId) == PredictionStatus.InSettlement && _feedAdd != address(0)) {
+        (uint256 _value, uint256 _roundId) = marketUtility.getSettlemetPrice(_feedAdd, marketSettleTime(_marketId));
         _postResult(_value, _roundId, _marketId);
       }
     }
