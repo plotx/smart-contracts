@@ -298,7 +298,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       IMaster ms = IMaster(msg.sender);
       masterAddress = msg.sender;
       plotToken = ms.dAppToken();
-      predictionToken = ms.dAppToken();
+      predictionToken = plotToken;
       governance = IGovernance(ms.getLatestAddress("GV"));
       tokenController = ITokenController(ms.getLatestAddress("TC"));
     }
@@ -959,9 +959,10 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _transferTokenFrom(plotToken, _msgSenderAddress, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
+      MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
-      marketDataExtended[_marketId].disputeRaisedBy = _msgSenderAddress;
-      marketDataExtended[_marketId].disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
+      _marketDataExtended.disputeRaisedBy = _msgSenderAddress;
+      _marketDataExtended.disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
       disputeProposalId[proposalId] = _marketId;
       governance.createProposalwithSolution(proposalTitle, proposalTitle, description, 9, solutionHash, abi.encode(_marketId, _proposedValue));
       emit DisputeRaised(_marketId, _msgSenderAddress, proposalId, _proposedValue);
@@ -1008,7 +1009,8 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint256 _marketId = disputeProposalId[_proposalId];
       _resolveDispute(_marketId, false, 0);
       emit DisputeResolved(_marketId, false);
-      IToken(plotToken).transfer(address(marketCreationRewards),(10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      _transferAsset(plotToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
+      // IToken(plotToken).transfer(address(marketCreationRewards),(10**predictionDecimalMultiplier).mul(marketDataExtended[_marketId].disputeStakeAmount));
     }
 
     /**
