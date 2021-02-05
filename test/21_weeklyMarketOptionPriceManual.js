@@ -73,7 +73,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[1],
 	      user2,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user3, toWei(2000));
@@ -83,7 +84,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[2],
 	      user3,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user4, toWei(5000));
@@ -93,7 +95,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[3],
 	      user4,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 
@@ -121,7 +124,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[1],
 	      user2,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user3, toWei(5000));
@@ -131,7 +135,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[2],
 	      user3,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user4, toWei(40000));
@@ -141,7 +146,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[3],
 	      user4,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		let optionPricePaams = await allMarkets.getMarketOptionPricingParams(8,1);
@@ -169,7 +175,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[1],
 	      user2,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user3, toWei(5000));
@@ -179,7 +186,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[2],
 	      user3,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user4, toWei(40000));
@@ -189,7 +197,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[3],
 	      user4,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		let optionPricePaams = await allMarkets.getMarketOptionPricingParams(9,1);
@@ -217,7 +226,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[1],
 	      user2,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user3, toWei(5000));
@@ -227,7 +237,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[2],
 	      user3,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 
 		await plotusToken.transfer(user4, toWei(40000));
@@ -237,7 +248,8 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      privateKeyList[3],
 	      user4,
 	      functionSignature,
-	      allMarkets
+	      allMarkets,
+            "AM"
 	      );
 		await marketConfig.setFeedPriceForMarketType(toHex("ETH/PLOT"),1225000000000);
 		let optionPricePaams = await allMarkets.getMarketOptionPricingParams(10,1);

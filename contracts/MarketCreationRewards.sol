@@ -7,9 +7,9 @@ import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
-import "./external/BasicMetaTransaction.sol";
+import "./external/NativeMetaTransaction.sol";
 
-contract MarketCreationRewards is Governed, BasicMetaTransaction {
+contract MarketCreationRewards is Governed, NativeMetaTransaction {
 
     using SafeMath for *;
 
@@ -71,6 +71,7 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
       tokenStakeForRewardPoolShare = 25000 ether;
       rewardPoolShareThreshold = 400 ether; //need to change value (in prediction token)
       predictionDecimalMultiplier = 10;
+      _initializeEIP712("MC");
     }
 
     /**

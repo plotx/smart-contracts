@@ -58,7 +58,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+        "GV"
         ));
     functionSignature = encode3("updateUintParameters(bytes8,uint256)",toHex("GOVHOLD"), 3000);
     functionSignature = functionSignature + (gv.address).slice(2);
@@ -66,7 +67,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
             privateKeyList[0],
             ab1,
             functionSignature,
-            gv
+            gv,
+            "GV"
             ));
   });
 
@@ -81,7 +83,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[11],
         notMember,
         functionSignature,
-        gv
+        gv,
+        "GV"
         ));
     // await assertRevert(gv.setMasterAddress({ from: notMember }));
     // await gv.changeDependentContractAddress();
@@ -93,14 +96,16 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[11],
         notMember,
         functionSignature,
-        gv
+        gv,
+        "GV"
         ));
     functionSignature = encode3("createProposalwithSolution(string,string,string,uint256,string,bytes32)","Add new member", "Add new member", "hash", 9, "", "0x");
     await assertRevert(signAndExecuteMetaTx(
         privateKeyList[11],
         notMember,
         functionSignature,
-        gv
+        gv,
+        "GV"  
         ));
     // await assertRevert(
     //   gv.createProposalwithSolution("Add new member", "Add new member", "hash", 9, "", "0x", { from: notMember })
@@ -116,7 +121,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+        "GV"
         );
     let propLength2 = await gv.getProposalLength();
     assert.isAbove(propLength2.toNumber(), propLength.toNumber(), "Proposal not created");
@@ -129,7 +135,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[11],
       notMember,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
   });
 
@@ -139,14 +146,16 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",proposalId, 35, 0);
     await assertRevert(signAndExecuteMetaTx(
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     // await assertRevert(gv.categorizeProposal(proposalId, 0, 0));
     // await assertRevert(gv.categorizeProposal(proposalId, 35, 0));
@@ -158,7 +167,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
         ));
     // await assertRevert(gv.submitProposalWithSolution(proposalId, "Addnewmember", "0x4d52"));
   });
@@ -170,7 +180,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.categorizeProposal(proposalId, 2, 0);
     let proposalData = await gv.proposal(proposalId);
@@ -186,7 +197,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     // await assertRevert(gv.submitVote(proposalId, 1));
     functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", proposalId, "Addnewmember", "0xffa3992900000000000000000000000000000000000000000000000000000000000000004344000000000000000000000000000000000000000000000000000000000000");
@@ -194,7 +206,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[11],
         notMember,
         functionSignature,
-        gv
+        gv,
+      "GV"
         ));
     // await assertRevert(
     //   gv.submitProposalWithSolution(
@@ -209,7 +222,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
         );
     // await gv.submitProposalWithSolution(
     //   proposalId,
@@ -225,7 +239,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     // await assertRevert(gv.categorizeProposal(proposalId, 2, toWei(1)));
   });
@@ -236,7 +251,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     // await assertRevert(gv.submitVote(proposalId, 5));
   });
@@ -247,7 +263,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[11],
       notMember,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     await assertRevert(gv.submitVote(proposalId, 1, { from: notMember }));
   });
@@ -258,7 +275,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(proposalId, 1);
     await gv.proposalDetails(proposalId);
@@ -267,7 +285,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     ));
     // await assertRevert(gv.submitVote(proposalId, 1));
   });
@@ -321,7 +340,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
       );
       // await gv.createProposal("Proposal1", "Proposal1", "Proposal1", 0); //Pid 1
       functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",pId, 2, toWei(1));
@@ -329,7 +349,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
       );
       // await gv.categorizeProposal(pId, 2, toWei(1));
       functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", pId, "Addnewmember", "0xffa3992900000000000000000000000000000000000000000000000000000000000000004344000000000000000000000000000000000000000000000000000000000000");
@@ -337,7 +358,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
       );
       // await gv.submitProposalWithSolution(
       //   pId,
@@ -349,7 +371,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
         privateKeyList[0],
         ab1,
         functionSignature,
-        gv
+        gv,
+      "GV"
       );
       // await gv.submitVote(pId,1);
 
@@ -378,7 +401,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.createProposal("proposal", "proposal", "proposal", 0);
     functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",p, 12, 10);
@@ -386,7 +410,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.categorizeProposal(p, 12, 10);
     functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", p, "Addnewmember", actionHash);
@@ -394,7 +419,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitProposalWithSolution(p, "proposal", actionHash);
     functionSignature = encode3("submitVote(uint256,uint256)",p, 1);
@@ -402,7 +428,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(p, 1);
     for (let i = 0; i < 3; i++) {
@@ -452,7 +479,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.createProposal("Proposal", "Proposal", "Proposal", 0);
     await increaseTime(604810 * 2);
@@ -466,7 +494,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.createProposal("Proposal", "Proposal", "Proposal", 0);
     functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",pId, 12, 10);
@@ -474,7 +503,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.categorizeProposal(pId, 12, 10);
     await increaseTime(604810 * 2);
@@ -494,7 +524,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.createProposal("proposal", "proposal", "proposal", 0);
     functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",pId, 13, 10);
@@ -502,7 +533,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.categorizeProposal(pId, 13, 10);
     functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", pId, "Addnewmember", actionHash);
@@ -510,7 +542,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitProposalWithSolution(pId, "proposal", actionHash);
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -518,7 +551,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1);
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -526,7 +560,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[1],
       ab2,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab2});
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -534,7 +569,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[2],
       ab3,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab3});
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -542,7 +578,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[3],
       ab4,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab4});
     await increaseTime(604810);
@@ -580,7 +617,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.createProposal("proposal", "proposal", "proposal", 0);
     functionSignature = encode3("categorizeProposal(uint256,uint256,uint256)",pId, 13, 10);
@@ -588,7 +626,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.categorizeProposal(pId, 13, 10);
     functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", pId, "Addnewmember", actionHash);
@@ -596,7 +635,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[0],
       ab1,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitProposalWithSolution(pId, "proposal", actionHash);
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -604,7 +644,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[1],
       ab2,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab2});
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -612,7 +653,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[2],
       ab3,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab3});
     functionSignature = encode3("submitVote(uint256,uint256)",pId, 1);
@@ -620,7 +662,8 @@ contract("Governance", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6,
       privateKeyList[3],
       ab4,
       functionSignature,
-      gv
+      gv,
+      "GV"
     );
     // await gv.submitVote(pId, 1, {from:ab4});
     await increaseTime(604810);

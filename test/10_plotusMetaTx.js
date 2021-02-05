@@ -101,7 +101,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              	   "AM"
 			      );
 				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
 				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
@@ -160,7 +161,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
@@ -176,7 +178,8 @@ contract("Rewards-Market", async function(users) {
                 privateKeyList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+                "MC"
                 );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
@@ -204,7 +207,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((plotBalAfter/1e13-plotBalBefore/1e13)),reward/1e3);
@@ -295,7 +299,8 @@ contract("Rewards-Market Stake less than 1 ether", async function(users) {
 		      privateKeyList[11],
 		      users[11],
 		      functionSignature,
-		      allMarkets
+		      allMarkets,
+              "AM"
 		      );
 			let plotBalAfter = await plotusToken.balanceOf(users[11]);
 			assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round(reward/1e8));
@@ -309,7 +314,8 @@ contract("Rewards-Market Stake less than 1 ether", async function(users) {
                 privateKeyList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+              	"MC"
                 ));
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
@@ -377,7 +383,8 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
 				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
@@ -453,7 +460,8 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
@@ -469,7 +477,8 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
                 privateKeyList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+                "MC"
                 );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
@@ -497,7 +506,8 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((plotBalAfter/1e13-plotBalBefore/1e13)),reward/1e3);

@@ -18,7 +18,7 @@ pragma solidity 0.5.7;
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/interfaces/IGovernance.sol";
-import "./external/BasicMetaTransaction.sol";
+import "./external/NativeMetaTransaction.sol";
 import "./interfaces/IMarketUtility.sol";   
 import "./interfaces/IToken.sol";
 import "./interfaces/ITokenController.sol";
@@ -44,7 +44,7 @@ contract Governed {
 
 }
 
-contract AllMarkets is Governed, BasicMetaTransaction {
+contract AllMarkets is Governed, NativeMetaTransaction {
     using SafeMath32 for uint32;
     using SafeMath64 for uint64;
     using SafeMath128 for uint128;
@@ -356,6 +356,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
           createMarket(0, i);
           createMarket(1, i);
       }
+      _initializeEIP712("AM");
     }
 
     /**

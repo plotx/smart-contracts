@@ -22,9 +22,9 @@ import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/BasicMetaTransaction.sol";
+import "./external/NativeMetaTransaction.sol";
 
-contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransaction {
+contract TokenController is IERC1132, Governed, Iupgradable, NativeMetaTransaction {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -62,6 +62,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
         IMaster ms = IMaster(msg.sender);
         token = IToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
+        _initializeEIP712("TC");
     }
 
     /**

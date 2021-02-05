@@ -92,7 +92,8 @@ describe("newPlotusWithBlot", () => {
                 pkList[i],
                 users[i],
                 functionSignature,
-                allMarkets
+                allMarkets,
+                "AM"
                 );
           }
         });
@@ -163,7 +164,8 @@ describe("newPlotusWithBlot", () => {
                       pkList[i],
                       users[i],
                       functionSignature,
-                      allMarkets
+                      allMarkets,
+                        "AM"
                       );
                 } catch (e) { }
                 afterClaimToken = await plotusToken.balanceOf(users[i]);
@@ -196,7 +198,8 @@ describe("newPlotusWithBlot", () => {
                 pkList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+                "MC"
                 );
 
             let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
