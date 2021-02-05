@@ -4,7 +4,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
 import "./external/govblocks-protocol/Governed.sol";
-import "./interfaces/ITokenController.sol";
+// import "./interfaces/ITokenController.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
 import "./external/BasicMetaTransaction.sol";
@@ -14,7 +14,7 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     using SafeMath for *;
 
 	  event MarketCreatorRewardPoolShare(address indexed createdBy, uint256 indexed marketIndex, uint256 tokenIncentive);
-    event MarketCreationReward(address indexed createdBy, uint256 marketIndex, uint256 rewardPoolSharePerc);
+    event MarketCreationReward(address indexed createdBy, uint256 marketIndex);
     event ClaimedMarketCreationReward(address indexed user, uint rewardPoolShare, address predictionToken);
 
     modifier onlyInternal() {
@@ -25,24 +25,24 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     struct MarketCreationRewardData {
       uint tokenIncentive;
       // uint64 tokenDeposited;
-      uint16 rewardPoolSharePerc;
+      // uint16 rewardPoolSharePerc;
       address createdBy;
     }
 
     struct MarketCreationRewardUserData {
-      uint incentives;
       uint128 lastClaimedIndex;
+      uint256 rewardEarned;
       uint64[] marketsCreated;
     }
 	
-	  uint16 internal maxRewardPoolPercForMC;
-    uint16 internal minRewardPoolPercForMC;
+	  // uint16 internal maxRewardPoolPercForMC;
+   //  uint16 internal minRewardPoolPercForMC;
     address internal plotToken;
     address internal predictionToken;
-    uint256 internal tokenStakeForRewardPoolShare;
-    uint256 internal rewardPoolShareThreshold;
+    // uint256 internal tokenStakeForRewardPoolShare;
+    // uint256 internal rewardPoolShareThreshold;
     uint internal predictionDecimalMultiplier;
-    ITokenController internal tokenController;
+    // ITokenController internal tokenController;
     IAllMarkets internal allMarkets;
     mapping(uint256 => MarketCreationRewardData) internal marketCreationRewardData; //Of market
     mapping(address => MarketCreationRewardUserData) internal marketCreationRewardUserData; //Of user
@@ -57,7 +57,7 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
       masterAddress = msg.sender;
       plotToken = ms.dAppToken();
       predictionToken = ms.dAppToken();
-      tokenController = ITokenController(ms.getLatestAddress("TC"));
+      // tokenController = ITokenController(ms.getLatestAddress("TC"));
       allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
       _initialise();
     }
@@ -66,57 +66,57 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     * @dev Function to set inital parameters of contract
     */
     function _initialise() internal {
-      maxRewardPoolPercForMC = 500; // Raised by 2 decimals
-      minRewardPoolPercForMC = 50; // Raised by 2 decimals
-      tokenStakeForRewardPoolShare = 25000 ether;
-      rewardPoolShareThreshold = 400 ether; //need to change value (in prediction token)
+      // maxRewardPoolPercForMC = 500; // Raised by 2 decimals
+      // minRewardPoolPercForMC = 50; // Raised by 2 decimals
+      // tokenStakeForRewardPoolShare = 25000 ether;
+      // rewardPoolShareThreshold = 400 ether; //need to change value (in prediction token)
       predictionDecimalMultiplier = 10;
     }
 
-    /**
-    * @dev function to update integer parameters
-    */
-    function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
-        maxRewardPoolPercForMC = uint16(value);
-      } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
-        minRewardPoolPercForMC = uint16(value);
-      } else if(code == "PSFRPS") { // Reward Pool percent for market creator
-        tokenStakeForRewardPoolShare = value;
-      } else if(code == "RPSTH") { // Reward Pool percent for market creator
-        rewardPoolShareThreshold = value;
-      }
-    }
+    // /**
+    // * @dev function to update integer parameters
+    // */
+    // function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
+    //   if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
+    //     maxRewardPoolPercForMC = uint16(value);
+    //   } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
+    //     minRewardPoolPercForMC = uint16(value);
+    //   } else if(code == "PSFRPS") { // Reward Pool percent for market creator
+    //     tokenStakeForRewardPoolShare = value;
+    //   } else if(code == "RPSTH") { // Reward Pool percent for market creator
+    //     rewardPoolShareThreshold = value;
+    //   }
+    // }
 
-    /**
-    * @dev function to get integer parameters
-    */
-    function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
-      codeVal = code;
-      if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
-        value = maxRewardPoolPercForMC;
-      } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
-        value = minRewardPoolPercForMC;
-      } else if(code == "PSFRPS") { // Reward Pool percent for market creator
-        value = tokenStakeForRewardPoolShare;
-      } else if(code == "RPSTH") { // Reward Pool percent for market creator
-        value = rewardPoolShareThreshold;
-      }
-    }
+    // /**
+    // * @dev function to get integer parameters
+    // */
+    // function getUintParameters(bytes8 code) external view returns(bytes8 codeVal, uint256 value) {
+    //   codeVal = code;
+    //   if(code == "MAXRPSP") { // Max Reward Pool percent for market creator
+    //     value = maxRewardPoolPercForMC;
+    //   } else if(code == "MINRPSP") { // Min Reward Pool percent for market creator
+    //     value = minRewardPoolPercForMC;
+    //   } else if(code == "PSFRPS") { // Reward Pool percent for market creator
+    //     value = tokenStakeForRewardPoolShare;
+    //   } else if(code == "RPSTH") { // Reward Pool percent for market creator
+    //     value = rewardPoolShareThreshold;
+    //   }
+    // }
 
-    /**
-    * @dev internal function to calculate market reward pool share percent to be rewarded to market creator
-    */
-    function _checkIfCreatorStaked(address _createdBy, uint64 _marketId) internal {
-      uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(_createdBy, "SM", now);
-      marketCreationRewardData[_marketId].createdBy = _createdBy;
-      //Intentionally performed mul operation after div, to get absolute value instead of decimals
-      marketCreationRewardData[_marketId].rewardPoolSharePerc
-       = uint16(Math.min(
-          maxRewardPoolPercForMC,
-          minRewardPoolPercForMC + tokensLocked.div(tokenStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
-        ));
-    }
+    // /**
+    // * @dev internal function to calculate market reward pool share percent to be rewarded to market creator
+    // */
+    // function _checkIfCreatorStaked(address _createdBy, uint64 _marketId) internal {
+    //   uint256 tokensLocked = ITokenController(tokenController).tokensLockedAtTime(_createdBy, "SM", now);
+    //   marketCreationRewardData[_marketId].createdBy = _createdBy;
+    //   //Intentionally performed mul operation after div, to get absolute value instead of decimals
+    //   marketCreationRewardData[_marketId].rewardPoolSharePerc
+    //    = uint16(Math.min(
+    //       maxRewardPoolPercForMC,
+    //       minRewardPoolPercForMC + tokensLocked.div(tokenStakeForRewardPoolShare).mul(minRewardPoolPercForMC)
+    //     ));
+    // }
 
     /**
     * @dev function to calculate user incentive for market creation
@@ -124,40 +124,30 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     */
     function calculateMarketCreationIncentive(address _createdBy, uint64 _marketId) external onlyInternal {
-      _checkIfCreatorStaked(_createdBy, _marketId);
+      marketCreationRewardData[_marketId].createdBy = _createdBy;
+      // _checkIfCreatorStaked(_createdBy, _marketId);
       marketCreationRewardUserData[_createdBy].marketsCreated.push(_marketId);
-      emit MarketCreationReward(_createdBy, _marketId, marketCreationRewardData[_marketId].rewardPoolSharePerc);
+      emit MarketCreationReward(_createdBy, _marketId);
     }
 
     /**
     * @dev Function to deposit market reward pool share funds for market creator
     * @param _marketId Index of market
-    * @param _tokenShare prediction token reward pool share
+    * @param _tokenShare prediction token fee share earned by 
     */
-    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _tokenShare) external onlyInternal {
-    	marketCreationRewardData[_marketId].tokenIncentive = _tokenShare;
+    function depositMarketCreationReward(uint256 _marketId, uint256 _tokenShare) external onlyInternal {
+    	marketCreationRewardUserData[marketCreationRewardData[_marketId].createdBy].rewardEarned = _tokenShare;
       // marketCreationRewardData[_marketId].tokenDeposited = _tokenDeposited;
      	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _tokenShare);
     } 
-
-    /**
-    * @dev Function to return the market reward pool share funds of market creator: To be used in case of dispute
-    * @param _marketId Index of market
-    */
-    function returnMarketRewardPoolShare(uint256 _marketId) external onlyInternal{
-      uint256 tokenToTransfer = marketCreationRewardData[_marketId].tokenIncentive;
-      // uint256 tokenToTransfer = marketCreationRewardData[_marketId].tokenIncentive.add(marketCreationRewardData[_marketId].tokenDeposited.mul(10**predictionDecimalMultiplier));
-      delete marketCreationRewardData[_marketId].tokenIncentive;
-      // delete marketCreationRewardData[_marketId].tokenDeposited;
-      _transferAsset(predictionToken, msg.sender, tokenToTransfer);
-    }
 
     /**
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
     function claimCreationReward(uint256 _maxRecords) external {
       address payable _msgSender = _msgSender();
-      uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
+      // uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
+      uint256 rewardPoolShare = marketCreationRewardUserData[_msgSender].rewardEarned;
       require(rewardPoolShare > 0, "No pending");
       _transferAsset(address(predictionToken), _msgSender, rewardPoolShare);
       emit ClaimedMarketCreationReward(_msgSender, rewardPoolShare, predictionToken);
@@ -170,32 +160,32 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
       _transferAsset(_asset, _to, _amount);
     }
 
-    /**
-    * @dev internal function to calculate market reward pool share incentives for market creator
-    */
-    function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 tokenIncentive) {
-      MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[_msgSender()];
-      uint256 len = rewardData.marketsCreated.length;
-      uint256 lastClaimed = len;
-      uint256 count;
-      uint128 i;
-      for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
-        MarketCreationRewardData storage marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
-        if(allMarkets.marketStatus(rewardData.marketsCreated[i]) == IAllMarkets.PredictionStatus.Settled) {
-          tokenIncentive = tokenIncentive.add(marketData.tokenIncentive);
-          delete marketData.tokenIncentive;
-          count++;
-        } else {
-          if(lastClaimed == len) {
-            lastClaimed = i;
-          }
-        }
-      }
-      if(lastClaimed == len) {
-        lastClaimed = i;
-      }
-      rewardData.lastClaimedIndex = uint128(lastClaimed);
-    }
+    // /**
+    // * @dev internal function to calculate market reward pool share incentives for market creator
+    // */
+    // function _getRewardPoolIncentives(uint256 _maxRecords) internal returns(uint256 tokenIncentive) {
+    //   MarketCreationRewardUserData storage rewardData = marketCreationRewardUserData[_msgSender()];
+    //   uint256 len = rewardData.marketsCreated.length;
+    //   uint256 lastClaimed = len;
+    //   uint256 count;
+    //   uint128 i;
+    //   for(i = rewardData.lastClaimedIndex;i < len && count < _maxRecords; i++) {
+    //     MarketCreationRewardData storage marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+    //     if(allMarkets.marketStatus(rewardData.marketsCreated[i]) == IAllMarkets.PredictionStatus.Settled) {
+    //       tokenIncentive = tokenIncentive.add(marketData.tokenIncentive);
+    //       delete marketData.tokenIncentive;
+    //       count++;
+    //     } else {
+    //       if(lastClaimed == len) {
+    //         lastClaimed = i;
+    //       }
+    //     }
+    //   }
+    //   if(lastClaimed == len) {
+    //     lastClaimed = i;
+    //   }
+    //   rewardData.lastClaimedIndex = uint128(lastClaimed);
+    // }
 
     /**
     * @dev function to get pending reward of user for initiating market creation calls as per the new incetive calculations
@@ -203,42 +193,42 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     * @return tokenIncentive Incentives given for creating market as per the gas consumed
     * @return pendingTokenReward prediction token Reward pool share of markets created by user
     */
-    function getPendingMarketCreationRewards(address _user) external view returns(uint256 tokenIncentive, uint256 pendingTokenReward){
-      tokenIncentive = marketCreationRewardUserData[_user].incentives;
-      pendingTokenReward = _getPendingRewardPoolIncentives(_user);
+    function getPendingMarketCreationRewards(address _user) external view returns(uint256 tokenIncentive){
+      tokenIncentive = marketCreationRewardUserData[_user].rewardEarned;
+      // pendingTokenReward = _getPendingRewardPoolIncentives(_user);
     }
 
-    /**
-    * @dev Get market reward pool share percent to be rewarded to market creator
-    */
-    function getMarketCreatorRPoolShareParams(uint256 _market, uint256 _tokenStaked) external view returns(uint16, bool) {
-      return (marketCreationRewardData[_market].rewardPoolSharePerc, _checkIfThresholdReachedForRPS(_tokenStaked));
-    }
+    // /**
+    // * @dev Get market reward pool share percent to be rewarded to market creator
+    // */
+    // function getMarketCreatorRPoolShareParams(uint256 _market, uint256 _tokenStaked) external view returns(uint16, bool) {
+    //   return (marketCreationRewardData[_market].rewardPoolSharePerc, _checkIfThresholdReachedForRPS(_tokenStaked));
+    // }
 
-    /**
-    * @dev Check if threshold reached for reward pool share percent for market creator.
-    * Calculate total leveraged amount staked in market value in prediction token
-    * @param _tokenStaked Total assets staked on market
-    */
-    function _checkIfThresholdReachedForRPS(uint256 _tokenStaked) internal view returns(bool) {
-      return (_tokenStaked.mul(10**predictionDecimalMultiplier) > rewardPoolShareThreshold);
-    }
+    // *
+    // * @dev Check if threshold reached for reward pool share percent for market creator.
+    // * Calculate total leveraged amount staked in market value in prediction token
+    // * @param _tokenStaked Total assets staked on market
+    
+    // function _checkIfThresholdReachedForRPS(uint256 _tokenStaked) internal view returns(bool) {
+    //   return (_tokenStaked.mul(10**predictionDecimalMultiplier) > rewardPoolShareThreshold);
+    // }
 
-    /**
-    * @dev internal function to calculate market reward pool share incentives for market creator
-    */
-    function _getPendingRewardPoolIncentives(address _user) internal view returns(uint256 tokenIncentive) {
-      MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[_user];
-      uint256 len = rewardData.marketsCreated.length;
-      for(uint256 i = rewardData.lastClaimedIndex;i < len; i++) {
-        MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
-        if(marketData.tokenIncentive > 0) {
-          if(allMarkets.marketStatus(rewardData.marketsCreated[i]) == IAllMarkets.PredictionStatus.Settled) {
-            tokenIncentive = tokenIncentive.add(marketData.tokenIncentive);
-          }
-        }
-      }
-    }
+    // /**
+    // * @dev internal function to calculate market reward pool share incentives for market creator
+    // */
+    // function _getPendingRewardPoolIncentives(address _user) internal view returns(uint256 tokenIncentive) {
+    //   MarketCreationRewardUserData memory rewardData = marketCreationRewardUserData[_user];
+    //   uint256 len = rewardData.marketsCreated.length;
+    //   for(uint256 i = rewardData.lastClaimedIndex;i < len; i++) {
+    //     MarketCreationRewardData memory marketData = marketCreationRewardData[rewardData.marketsCreated[i]];
+    //     if(marketData.tokenIncentive > 0) {
+    //       if(allMarkets.marketStatus(rewardData.marketsCreated[i]) == IAllMarkets.PredictionStatus.Settled) {
+    //         tokenIncentive = tokenIncentive.add(marketData.tokenIncentive);
+    //       }
+    //     }
+    //   }
+    // }
 
     /**
     * @dev Transfer the assets to specified address.
