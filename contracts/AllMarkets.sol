@@ -174,7 +174,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
     mapping(uint64 => uint32) internal marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) internal marketCreationData;
-    mapping(uint256 => uint256) public marketTotalTokenStaked;
 
     MarketBasicData[] internal marketBasicData;
 
@@ -926,7 +925,6 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       _userData.userMarketData[_marketId].predictionData[_prediction].amountStaked = _userData.userMarketData[_marketId].predictionData[_prediction].amountStaked.add(_predictionStake);
       _predictionData.amountStaked = _predictionData.amountStaked.add(_predictionStake);
       _userData.totalStaked = _userData.totalStaked.add(_predictionStake);
-      marketTotalTokenStaked[_marketId] = marketTotalTokenStaked[_marketId].add(_predictionStake);
       
     }
 
@@ -1054,7 +1052,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       uint[] memory _optionPricingParams = new uint256[](6);
       PricingData storage _marketPricingData = marketPricingData[_marketId];
       _optionPricingParams[0] = marketOptionsAvailable[_marketId][_option].amountStaked;
-      _optionPricingParams[1] = marketTotalTokenStaked[_marketId];
+      _optionPricingParams[1] = getTotalAssetsStaked(_marketId);
       _optionPricingParams[2] = _marketPricingData.stakingFactorMinStake;
       _optionPricingParams[3] = _marketPricingData.stakingFactorWeightage;
       _optionPricingParams[4] = _marketPricingData.currentPriceWeightage;
