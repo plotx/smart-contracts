@@ -24,7 +24,7 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     
     struct MarketCreationRewardData {
       uint tokenIncentive;
-      uint64 tokenDeposited;
+      // uint64 tokenDeposited;
       uint16 rewardPoolSharePerc;
       address createdBy;
     }
@@ -134,9 +134,9 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     * @param _tokenShare prediction token reward pool share
     */
-    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _tokenShare, uint64 _tokenDeposited) external onlyInternal {
+    function depositMarketRewardPoolShare(uint256 _marketId, uint256 _tokenShare) external onlyInternal {
     	marketCreationRewardData[_marketId].tokenIncentive = _tokenShare;
-      marketCreationRewardData[_marketId].tokenDeposited = _tokenDeposited;
+      // marketCreationRewardData[_marketId].tokenDeposited = _tokenDeposited;
      	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _tokenShare);
     } 
 
@@ -145,9 +145,10 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     * @param _marketId Index of market
     */
     function returnMarketRewardPoolShare(uint256 _marketId) external onlyInternal{
-      uint256 tokenToTransfer = marketCreationRewardData[_marketId].tokenIncentive.add(marketCreationRewardData[_marketId].tokenDeposited.mul(10**predictionDecimalMultiplier));
+      uint256 tokenToTransfer = marketCreationRewardData[_marketId].tokenIncentive;
+      // uint256 tokenToTransfer = marketCreationRewardData[_marketId].tokenIncentive.add(marketCreationRewardData[_marketId].tokenDeposited.mul(10**predictionDecimalMultiplier));
       delete marketCreationRewardData[_marketId].tokenIncentive;
-      delete marketCreationRewardData[_marketId].tokenDeposited;
+      // delete marketCreationRewardData[_marketId].tokenDeposited;
       _transferAsset(predictionToken, msg.sender, tokenToTransfer);
     }
 
@@ -210,17 +211,17 @@ contract MarketCreationRewards is Governed, BasicMetaTransaction {
     /**
     * @dev Get market reward pool share percent to be rewarded to market creator
     */
-    function getMarketCreatorRPoolShareParams(uint256 _market, uint256 tokenStaked) external view returns(uint16, bool) {
-      return (marketCreationRewardData[_market].rewardPoolSharePerc, _checkIfThresholdReachedForRPS(_market, tokenStaked));
+    function getMarketCreatorRPoolShareParams(uint256 _market, uint256 _tokenStaked) external view returns(uint16, bool) {
+      return (marketCreationRewardData[_market].rewardPoolSharePerc, _checkIfThresholdReachedForRPS(_tokenStaked));
     }
 
     /**
     * @dev Check if threshold reached for reward pool share percent for market creator.
     * Calculate total leveraged amount staked in market value in prediction token
-    * @param _marketId Index of market to check threshold
+    * @param _tokenStaked Total assets staked on market
     */
-    function _checkIfThresholdReachedForRPS(uint256 _marketId, uint256 tokenStaked) internal view returns(bool) {
-      return (tokenStaked.mul(10**predictionDecimalMultiplier) > rewardPoolShareThreshold);
+    function _checkIfThresholdReachedForRPS(uint256 _tokenStaked) internal view returns(bool) {
+      return (_tokenStaked.mul(10**predictionDecimalMultiplier) > rewardPoolShareThreshold);
     }
 
     /**
