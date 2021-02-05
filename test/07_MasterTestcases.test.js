@@ -256,7 +256,7 @@ contract('Master', function(accounts) {
       let totalSupply = await oldTC.totalSupply();
       let catDetails = await oldPC.category(5);
       let members = await oldMR.members(2);
-      let relayerFeePercent = await oldAM.relayerFeePercent();
+      let relayerFeePercent = (await oldAM.getUintParameters(toHex("RELF")))[1];
       let catId = 6;
       let newAllMarkets = await AllMarkets.new();
       await increaseTime(100);
@@ -344,7 +344,7 @@ contract('Master', function(accounts) {
       assert.equal((await oldMR.members(2)).toString(), members.toString());
       assert.equal((await oldTC.totalSupply()) / 1, totalSupply / 1);
       assert.equal((await oldPC.category(5)).toString(), catDetails.toString());
-      assert.equal((await oldAM.relayerFeePercent()).toString(), relayerFeePercent.toString());
+      assert.equal(((await oldAM.getUintParameters(toHex("RELF")))[1]).toString(), relayerFeePercent.toString());
     });
     it('Add new Proxy Internal contract', async function() {
       let nic = await NewProxyInternalContract.new();

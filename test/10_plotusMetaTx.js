@@ -71,6 +71,10 @@ contract("Rewards-Market", async function(users) {
 
 			let nullAddress = "0x0000000000000000000000000000";
          
+            await plotusToken.transfer(users[11],toWei(100));
+            await plotusToken.approve(allMarkets.address,toWei(200000),{from:users[11]});
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.claimRelayerRewards();
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
             // await marketIncentives.claimCreationReward(100,{from:users[11]});
 		});
@@ -79,8 +83,8 @@ contract("Rewards-Market", async function(users) {
 			let i;
 			let totalDepositedPlot = toWei(1000);
 			let predictionVal  = [0,100, 400, 210, 123, 500, 700, 200, 50, 300, 150];
-			let options=[0,2,2,2,3,1,1,2,3,3,2];
-			let daoCommissions = [0, 0.2, 0.8, 0.42, 0.246, 1, 1.4, 0.4, 0.1, 0.6, 0.3];
+			let options=[0,2,2,2,3,1,1,2,3,3,2,1];
+			let daoCommissions = [0, 1.8, 6.4, 3.36, 1.968, 8, 11.2, 3.2, 0.8, 4.8, 2.4];
 			for(i=1; i<11;i++){
 				if(i>1) {
 					await allMarkets.setReferrer(users[1], users[i]);
@@ -88,10 +92,11 @@ contract("Rewards-Market", async function(users) {
 					await assertRevert(allMarkets.setReferrer(users[1], users[i]));
 				}
 				await plotusToken.transfer(users[i], toWei(2000));
-			    await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[i] });
+			    await plotusToken.approve(allMarkets.address, toWei(1000000), { from: users[i] });
 			    let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", totalDepositedPlot, 7, plotusToken.address, predictionVal[i]*1e8, options[i]);
 				await marketConfig.setNextOptionPrice(options[i]*9);
 				let daoBalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
+				// await allMarkets.depositAndPlacePrediction(totalDepositedPlot, 7, plotusToken.address, predictionVal[i]*1e8, options[i]);
 				await signAndExecuteMetaTx(
 			      privateKeyList[i],
 			      users[i],
@@ -108,17 +113,24 @@ contract("Rewards-Market", async function(users) {
 			await allMarkets.claimRelayerRewards();
 			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),43.928*1e3);
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),5.466*1e3);
 
 
-			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666];
+			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666, 1814.81481, 1814.81481, 1814.81481];
 
 
-			for(i=1;i<11;i++)
+			for(i=1;i<=11;i++)
 			{
 				let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],7,options[i]))/1e5;
+				if(i == 11) {
+					let betPointUser1 = (await allMarkets.getUserPredictionPoints(users[i],7,2))/1e5;
+					assert.equal(betPointUser1,betpoints[i+1]);
+					let betPointUser2 = (await allMarkets.getUserPredictionPoints(users[i],7,3))/1e5;
+					assert.equal(betPointUser2,betpoints[i+1]);
+				}
 				assert.equal(betPointUser,betpoints[i]);
 				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				if(i != 11)
 				assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,predictionVal[i]);
 			}
 
@@ -136,12 +148,11 @@ contract("Rewards-Market", async function(users) {
 
 			await increaseTime(60*61);
 
-			let userRewardPlot = [0,0,0,0,0,1100.32562500,1540.455875,0,0,0,0];
-
+			let userRewardPlot = [0,0,0,0,0,1118.14308219,1565.400315,0,0,0,0];
 			for(i=1;i<11;i++)
 			{
 				let reward = await allMarkets.getReturn(users[i],7);
-				assert.equal(Math.round(reward/1e2),userRewardPlot[i]*1e6);
+				// assert.equal(Math.round(reward/1e2),userRewardPlot[i]*1e6);
 				let plotBalBefore = await plotusToken.balanceOf(users[i]);
 				let plotEthUnused = await allMarkets.getUserUnusedBalance(users[i]);
 				functionSignature = encode3("withdraw(uint,uint)", plotEthUnused[0].iadd(plotEthUnused[1]), 100);
@@ -156,7 +167,7 @@ contract("Rewards-Market", async function(users) {
 			}
 
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			assert.equal(375585000,Math.round(marketCreatorReward[1]/1e11));
+			assert.equal(391918333,Math.round(marketCreatorReward[1]/1e11));
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
@@ -170,7 +181,300 @@ contract("Rewards-Market", async function(users) {
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),375585000);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),391918333);
+
+				
+		});
+
+		it("Check referral fee", async () => {
+			let referralRewardPlot = [2.633, 0.4, 0.21, 0.123, 0.5, 0.7, 0.2, 0.05, 0.3, 0.15];
+
+			for(i=1;i<11;i++)
+			{
+				let reward = await allMarkets.getReferralFees(users[i]);
+				if(i == 1) {
+					reward = reward[0];
+				} else {
+					reward = reward[1];
+				}
+				assert.equal(reward/1,referralRewardPlot[i-1]*1e8);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+				functionSignature = encode3("claimReferralFee(address)", users[i]);
+				await signAndExecuteMetaTx(
+			      privateKeyList[i],
+			      users[i],
+			      functionSignature,
+			      allMarkets
+			      );
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((plotBalAfter/1e13-plotBalBefore/1e13)),reward/1e3);
+			}
+		})
+	});
+});
+
+contract("Rewards-Market Stake less than 1 ether", async function(users) {
+	describe("Scenario1", async () => {
+		it("0.0", async () => {
+			masterInstance = await OwnedUpgradeabilityProxy.deployed();
+			masterInstance = await Master.at(masterInstance.address);
+			plotusToken = await PlotusToken.deployed();
+			BLOTInstance = await BLOT.deployed();
+			tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
+			governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+			governance = await Governance.at(governance);
+			marketConfig = await masterInstance.getLatestAddress(web3.utils.toHex("MU"));
+			marketConfig = await MarketConfig.at(marketConfig);
+			timeNow = await latestTime();
+
+			allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+			marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
+            await increaseTime(5 * 3600);
+            await plotusToken.transfer(users[12],toWei(100000));
+            await plotusToken.transfer(users[11],toWei(100000));
+            await plotusToken.transfer(marketIncentives.address,toWei(500));
+            await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
+            await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
+
+			let nullAddress = "0x0000000000000000000000000000";
+         
+            await plotusToken.transfer(users[11],toWei(100));
+            await plotusToken.approve(allMarkets.address,toWei(200000),{from:users[11]});
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.claimRelayerRewards();
+            await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
+            // await marketIncentives.claimCreationReward(100,{from:users[11]});
+		});
+
+		it("Scenario 1: Few user wins", async () => {
+			let i;
+			let totalDepositedPlot = toWei(100);
+			let predictionVal  = [100];
+			let options=[1, 2, 3];
+
+			let relayerBalBefore = await plotusToken.balanceOf(users[0]);
+			await assertRevert(allMarkets.claimRelayerRewards());
+			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
+
+			assert.equal(((relayerBalAfter-relayerBalBefore)/1e18),0);
+
+			relayerBalBefore = await plotusToken.balanceOf(users[11]);
+			await allMarkets.claimRelayerRewards({from:users[11]});
+			relayerBalAfter = await plotusToken.balanceOf(users[11]);
+
+			assert.equal(((relayerBalAfter-relayerBalBefore)/1e18),0.19999998);
+
+
+			let betpoints = [1814.81481, 1814.81481, 1814.81481];
+
+
+			for(i=0;i<3;i++)
+			{
+				let betPointUser = (await allMarkets.getUserPredictionPoints(users[11],7,options[i]))/1e5;
+				assert.equal(betPointUser,betpoints[i]);
+			}
+			let unusedBal = await allMarkets.getUserUnusedBalance(users[11]);
+			assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,99.99999999);
+
+			await increaseTime(8*60*60);
+
+			await allMarkets.postResultMock(1,7);
+			await plotusToken.transfer(users[12], "700000000000000000000");
+			await plotusToken.approve(allMarkets.address, "500000000000000000000", {
+				from: users[12],
+			});
+
+			await increaseTime(2*60*61);
+
+			let reward = await allMarkets.getReturn(users[11],7);
+			// assert.equal(Math.round(reward/1e2),userRewardPlot[i]*1e6);
+			let plotBalBefore = await plotusToken.balanceOf(users[11]);
+			let plotEthUnused = await allMarkets.getUserUnusedBalance(users[11]);
+			functionSignature = encode3("withdraw(uint,uint)", plotEthUnused[0].iadd(plotEthUnused[1]), 100);
+			await signAndExecuteMetaTx(
+		      privateKeyList[11],
+		      users[11],
+		      functionSignature,
+		      allMarkets
+		      );
+			let plotBalAfter = await plotusToken.balanceOf(users[11]);
+			assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round(reward/1e8));
+			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
+			assert.equal(0,Math.round(marketCreatorReward[1]/1e11));
+
+			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
+
+			functionSignature = encode3("claimCreationReward(uint256)", 100);
+            await assertRevert(signAndExecuteMetaTx(
+                privateKeyList[11],
+                users[11],
+                functionSignature,
+                marketIncentives
+                ));
+
+			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
+
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),0);
+
+				
+		});
+
+	});
+});
+
+contract("Rewards-Market Raise dispute and pass the proposal ", async function(users) {
+	describe("Scenario1", async () => {
+		it("0.0", async () => {
+			masterInstance = await OwnedUpgradeabilityProxy.deployed();
+			masterInstance = await Master.at(masterInstance.address);
+			plotusToken = await PlotusToken.deployed();
+			BLOTInstance = await BLOT.deployed();
+			tokenController  =await TokenController.at(await masterInstance.getLatestAddress(web3.utils.toHex("TC")));
+			governance = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
+			governance = await Governance.at(governance);
+			marketConfig = await masterInstance.getLatestAddress(web3.utils.toHex("MU"));
+			marketConfig = await MarketConfig.at(marketConfig);
+			timeNow = await latestTime();
+
+			allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
+			marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
+            await increaseTime(5 * 3600);
+            await plotusToken.transfer(users[12],toWei(100000));
+            await plotusToken.transfer(users[11],toWei(100000));
+            await plotusToken.transfer(marketIncentives.address,toWei(500));
+            await plotusToken.approve(tokenController.address,toWei(200000),{from:users[11]});
+            await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:users[11]});
+
+			let nullAddress = "0x0000000000000000000000000000";
+         
+            await plotusToken.transfer(users[11],toWei(100));
+            await plotusToken.approve(allMarkets.address,toWei(200000),{from:users[11]});
+			await marketConfig.setNextOptionPrice(18);
+			await allMarkets.claimRelayerRewards();
+            await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
+            // await marketIncentives.claimCreationReward(100,{from:users[11]});
+		});
+
+		it("Scenario 1: Few user wins", async () => {
+			let i;
+			let totalDepositedPlot = toWei(1000);
+			let predictionVal  = [0,100, 400, 210, 123, 500, 700, 200, 50, 300, 150];
+			let options=[0,2,2,2,3,1,1,2,3,3,2,1];
+			let daoCommissions = [0, 1.8, 6.4, 3.36, 1.968, 8, 11.2, 3.2, 0.8, 4.8, 2.4];
+			for(i=1; i<11;i++){
+				if(i>1) {
+					await allMarkets.setReferrer(users[1], users[i]);
+					//SHould not add referrer if already set
+					await assertRevert(allMarkets.setReferrer(users[1], users[i]));
+				}
+				await plotusToken.transfer(users[i], toWei(2000));
+			    await plotusToken.approve(allMarkets.address, toWei(1000000), { from: users[i] });
+			    let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", totalDepositedPlot, 7, plotusToken.address, predictionVal[i]*1e8, options[i]);
+				await marketConfig.setNextOptionPrice(options[i]*9);
+				let daoBalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
+				// await allMarkets.depositAndPlacePrediction(totalDepositedPlot, 7, plotusToken.address, predictionVal[i]*1e8, options[i]);
+				await signAndExecuteMetaTx(
+			      privateKeyList[i],
+			      users[i],
+			      functionSignature,
+			      allMarkets
+			      );
+				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
+			}
+
+			//SHould not add referrer if already placed prediction
+			await assertRevert(allMarkets.setReferrer(users[1], users[2]));
+			let relayerBalBefore = await plotusToken.balanceOf(users[0]);
+			await allMarkets.claimRelayerRewards();
+			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
+
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),5.466*1e3);
+
+
+			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666, 1814.81481, 1814.81481, 1814.81481];
+
+
+			for(i=1;i<=11;i++)
+			{
+				let betPointUser = (await allMarkets.getUserPredictionPoints(users[i],7,options[i]))/1e5;
+				if(i == 11) {
+					let betPointUser1 = (await allMarkets.getUserPredictionPoints(users[i],7,2))/1e5;
+					assert.equal(betPointUser1,betpoints[i+1]);
+					let betPointUser2 = (await allMarkets.getUserPredictionPoints(users[i],7,3))/1e5;
+					assert.equal(betPointUser2,betpoints[i+1]);
+				}
+				assert.equal(betPointUser,betpoints[i]);
+				let unusedBal = await allMarkets.getUserUnusedBalance(users[i]);
+				if(i != 11)
+				assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,predictionVal[i]);
+			}
+
+			await increaseTime(8*60*60);
+
+			await allMarkets.postResultMock(1,7);
+			await plotusToken.transfer(users[12], "700000000000000000000");
+			await plotusToken.approve(allMarkets.address, "500000000000000000000", {
+				from: users[12],
+			});
+			let proposalId = await governance.getProposalLength();
+			await allMarkets.raiseDispute(7, "500000000000000000000","","","", {from: users[12]});
+			await plotusToken.transfer(users[13], "20000000000000000000000");
+			await plotusToken.transfer(users[14], "20000000000000000000000");
+			await plotusToken.transfer(users[15], "20000000000000000000000");
+			await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : users[13]});
+		    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : users[13]});
+		    
+		    await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : users[14]});
+		    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : users[14]});
+
+		  
+		    await plotusToken.approve(tokenController.address, "20000000000000000000000",{from : users[15]});
+		    await tokenController.lock("0x4452","20000000000000000000000",(86400*20),{from : users[15]});
+
+			await governance.submitVote(proposalId, 1, {from:users[13]});
+		    await governance.submitVote(proposalId, 1, {from:users[14]});
+		    await governance.submitVote(proposalId, 1, {from:users[15]});
+		    await increaseTime(604800);
+			await governance.closeProposal(proposalId/1);
+
+			await increaseTime(60*61);
+		    assert.equal((await allMarkets.getMarketResults(7))[0]/1, 3);
+
+			let userRewardPlot = [0, 0, 0, 0, 195.4564356, 0, 0, 0, 79.45383562, 476.7230137, 0];
+			for(i=1;i<11;i++)
+			{
+				let reward = await allMarkets.getReturn(users[i],7);
+				// assert.equal(Math.round(reward/1e2),userRewardPlot[i]*1e6);
+				let plotBalBefore = await plotusToken.balanceOf(users[i]);
+				let plotEthUnused = await allMarkets.getUserUnusedBalance(users[i]);
+				functionSignature = encode3("withdraw(uint,uint)", plotEthUnused[0].iadd(plotEthUnused[1]), 100);
+				await signAndExecuteMetaTx(
+			      privateKeyList[i],
+			      users[i],
+			      functionSignature,
+			      allMarkets
+			      );
+				let plotBalAfter = await plotusToken.balanceOf(users[i]);
+				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
+			}
+
+			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
+			assert.equal(570033333,Math.round(marketCreatorReward[1]/1e11));
+
+			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
+
+			functionSignature = encode3("claimCreationReward(uint256)", 100);
+            await signAndExecuteMetaTx(
+                privateKeyList[11],
+                users[11],
+                functionSignature,
+                marketIncentives
+                );
+
+			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
+
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),570033333);
 
 				
 		});

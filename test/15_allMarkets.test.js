@@ -41,7 +41,7 @@ let mockchainLinkInstance;
 let allMarkets, marketIncentives, tokenController;
 let nullAddress = "0x0000000000000000000000000000000000000000";
 
-contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3, user11, user12, user13]) => {
+contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7, mem8, mem9, mem10, notMember, dr1, dr2, dr3, user11, user12, user13, user14]) => {
 	before(async function() {
 		nxms = await OwnedUpgradeabilityProxy.deployed();
 		nxms = await NXMaster.at(nxms.address);
@@ -73,6 +73,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
         await plotusToken.transfer(marketIncentives.address,toWei(100000));
         await plotusToken.transfer(user11,toWei(100000));
         await plotusToken.transfer(user12,toWei(100000));
+		await plotusToken.transfer(user14,toWei(100000));
         await plotusToken.approve(tokenController.address,toWei(200000),{from:user11});
         await tokenController.lock(toHex("SM"),toWei(100000),30*3600*24,{from:user11});
 
@@ -109,22 +110,6 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.categorizeProposal(pId, 15, 0);
 		let startTime = (await latestTime()) / 1 + 2 * 604800;
 		let actionHash = encode("addMarketCurrency(bytes32,address,uint8,uint8,uint32)", toHex("ETH/USD"), mockchainLinkInstance.address, 8, 1, startTime);
-		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
-		await gv.submitVote(pId, 1, { from: ab1 });
-		await increaseTime(604810);
-		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
-		await gv.closeProposal(pId);
-		let actionStatus = await gv.proposalActionStatus(pId);
-		assert.equal(actionStatus / 1, 1);
-	});
-
-	it("Should not add new market curreny if null address is passed as feed", async function() {
-		await increaseTime(604810);
-		pId = (await gv.getProposalLength()).toNumber();
-		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
-		await gv.categorizeProposal(pId, 15, 0);
-		let startTime = (await latestTime()) / 1 + 2 * 604800;
-		let actionHash = encode("addMarketCurrency(bytes32,address,uint8,uint8,uint32)", toHex("ETH/PLOT"), nullAddress, 8, 1, startTime);
 		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
 		await gv.submitVote(pId, 1, { from: ab1 });
 		await increaseTime(604810);
@@ -180,8 +165,9 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.closeProposal(pId);
 		let actionStatus = await gv.proposalActionStatus(pId);
 		assert.equal(actionStatus / 1, 3);
-		await allMarkets.createMarket(2,0);
+		await plotusToken.approve(allMarkets.address, toWei(1000000), {from:user14});
 		await increaseTime(604810);
+		await allMarkets.createMarket(2,0,{from:user14});
 	});
 
 	it("Predict on newly created market", async function() {
@@ -222,7 +208,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.categorizeProposal(pId, 14, 0);
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
-		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 24 * 60 * 60, 50, startTime, 3600);
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 24 * 60 * 60, 50, startTime, 3600, 100);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 		await gv.submitVote(pId, 1, { from: ab1 });
 		await increaseTime(604810);
@@ -238,7 +224,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.categorizeProposal(pId, 14, 0);
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
-		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 0, 50, startTime, 3600);
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 0, 50, startTime, 3600, 100);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 		await gv.submitVote(pId, 1, { from: ab1 });
 		await increaseTime(604810);
@@ -254,7 +240,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await gv.categorizeProposal(pId, 14, 0);
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
-		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 6 * 60 * 60, 0, startTime, 3600);
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 6 * 60 * 60, 0, startTime, 3600, 100);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 		await gv.submitVote(pId, 1, { from: ab1 });
 		await increaseTime(604810);
@@ -271,12 +257,12 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
 		// startTime = Math.round((Date.now())/1000) + 2*604800;
-		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60, 50, startTime, 7200);
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 60 * 60, 50, startTime, 7200, 100);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 
-		actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60 * 2, 1, 10, 3600);
+		actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 60 * 60 * 2, 1, 10, 3600, 100);
 		await assertRevert(gv.submitProposalWithSolution(pId, "update max followers limit", actionHash)); //should revert as start time is not enough
-		actionHash = encode("addMarketType(uint32,uint32,uint32,uint32)", 60 * 60 * 2, await latestTime(),10, 3600);
+		actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 60 * 60 * 2, await latestTime(),10, 3600, 100);
 		await assertRevert(gv.submitProposalWithSolution(pId, "update max followers limit", actionHash)); //should revert as start time is not enough
 
 		await gv.submitVote(pId, 1, { from: ab1 });
@@ -293,7 +279,9 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		// assert.equal(parseFloat(voteData[0]), 1.50005e+25);
 		// assert.equal(parseFloat(voteData[1]), 1);
 		// assert.equal(parseFloat(voteData[2]), 6);
-		await allMarkets.createMarket(0,3);
+		await increaseTime(604810);
+		await increaseTime(604820);
+		await allMarkets.createMarket(0,3, {from:user14});
 
 		// let openMarkets = await pl.getOpenMarkets();
 		// assert.isAbove(openMarkets[1].length, openMarketsBefore[1].length, "Currency not added");
@@ -301,9 +289,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 
 	it("Predict on newly created market", async function() {
 		await marketConfig.setNextOptionPrice(18);
-		await increaseTime(604810);
-		await assertRevert(allMarkets.createMarket(0,3)); //should revert as market is live
-		await increaseTime(604820);
+		await assertRevert(allMarkets.createMarket(0,3), {from:user14}); //should revert as market is live
+		// await increaseTime(604820);
 
 		// set price
 		// user 1
@@ -314,7 +301,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let reward = await allMarkets.getReturn(ab1, 8);
 		assert.equal(reward, 0);
 		await increaseTime(3650);
-		await allMarkets.createMarket(0, 3);
+		await allMarkets.createMarket(0, 3, {from:user14});
 		await increaseTime(604810);
 		await allMarkets.settleMarket(8);
 		let marketSettleTime = await allMarkets.marketSettleTime(8);
@@ -532,6 +519,23 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 	    await governance.submitVote(p1.toNumber(), 1);
 	    await governance.closeProposal(p1.toNumber());
 	    await increaseTime(604800);
+	});
+
+
+	it("Should add new market curreny with null address is passed as feed", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 15, 0);
+		let startTime = (await latestTime()) / 1 + 2 * 604800;
+		let actionHash = encode("addMarketCurrency(bytes32,address,uint8,uint8,uint32)", toHex("LINK/PLOT"), nullAddress, 8, 1, startTime);
+		await gv.submitProposalWithSolution(pId, "addNewMarketCurrency", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await assertRevert(gv.submitVote(pId, 1, { from: mem2 })); //closed to vote
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 3);
 	});
 
 	// it("Should update address paramters", async function() {
