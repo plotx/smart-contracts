@@ -1064,7 +1064,22 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       marketDataExtended[_marketId].predictionStatus = _status;
     }
 
+    /**
+    * @dev Gets the Option pricing params for market.
+    * @param _marketId Index of market.
+    * @param _option predicting option.
+    * @return uint[] Array consist of pricing param.
+    * @return uint32 start time of market.
+    * @return address feed address for market.
+    */
     function getMarketOptionPricingParams(uint _marketId, uint _option) external view returns(uint[] memory, uint32,address) {
+
+      // [0] -> amount staked in `_option`
+      // [1] -> Total amount staked in market
+      // [2] -> Minimum prediction amount in market needed to kick-in staking factor in option pricing calculation
+      // [3] -> Weightage given to staking factor in option pricing
+      // [4] -> Weightage given to Current price factor in option pricing
+      // [5] -> Till this time, time factor will be same for option pricing
       uint[] memory _optionPricingParams = new uint256[](6);
       MarketBasicData storage _marketBasicData = marketBasicData[_marketId];
       PricingData storage _marketPricingData = marketPricingData[_marketId];
@@ -1077,9 +1092,15 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       return (_optionPricingParams,_marketBasicData.startTime,_marketBasicData.feedAddress);
     }
 
+    /**
+    * @dev Gets the Feed address for market.
+    * @ param currencyType currency name.
+    * @return address feed address for market.
+    */
     function getMarketCurrencyData(bytes32 currencyType) external view returns(address) {
       uint typeIndex = marketCurrency[currencyType];
       MarketCurrency storage _marketCurrency = marketCurrencies[typeIndex];
+      // Market currency should be valid
       require((_marketCurrency.currencyName == currencyType));
       return (_marketCurrency.marketFeed);
 

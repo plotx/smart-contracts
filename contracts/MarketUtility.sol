@@ -38,8 +38,12 @@ contract MarketUtility is Governed {
     uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
     bool public initialized;
+
+    // Minimum prediction amount in market needed to kick-in staking factor in option pricing calculation
     uint256 public stakingFactorMinStake;
+    // Weightage given to staking factor in option pricing
     uint32 public stakingFactorWeightage;
+    // Weightage given to current price in option pricing
     uint32 public currentPriceWeightage;
 
 
@@ -47,6 +51,7 @@ contract MarketUtility is Governed {
     mapping(address => uint256) public userLevel;
     mapping(uint256 => uint256) public levelMultiplier;
     mapping (address => bool) internal authorizedAddresses;
+    // Mapping to store latest price of currency type if it's feed address is null.
     mapping(bytes32 => uint) public marketTypeFeedPrice;
     
 
@@ -161,9 +166,14 @@ contract MarketUtility is Governed {
         }
     }
 
+    /**
+    * @dev Function to set `_marketCurr` to Cuurency Price. Callable by authorised addresses only
+    * @param _marketCurr currencyType
+    * @param _val Price of currency
+    */
     function setFeedPriceForMarketType(bytes32 _marketCurr, uint _val) external onlyAuthorized {
-      address _feedAddress = allMarkets.getMarketCurrencyData(_marketCurr);
-      require(_feedAddress == address(0));
+      address _feedAddress = allMarkets.getMarketCurrencyData(_marketCurr); // getting feed address.
+      require(_feedAddress == address(0)); // feed addess should be null.
       marketTypeFeedPrice[_marketCurr] = _val;
     }
     
@@ -246,6 +256,7 @@ contract MarketUtility is Governed {
     /**
      * @dev Get price of provided feed address
      * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
+     * @param _marketCurr  name of currency type
      * @return Current price of the market currency
      **/
     function getAssetPriceUSD(
@@ -254,9 +265,9 @@ contract MarketUtility is Governed {
     ) public view returns (uint256 latestAnswer) {
 
       if(_currencyFeedAddress == address(0)) {
-        return marketTypeFeedPrice[_marketCurr];
+        return marketTypeFeedPrice[_marketCurr]; // If feed address is null, return manually feeded value
       } else {
-        return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
+        return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer()); // If feed address is available, return value from feed contract
       }
         
     }
@@ -313,54 +324,79 @@ contract MarketUtility is Governed {
       }
     }
 
+    /**
+     * @dev Gets price for all the options in a market
+     * @param _marketId  Market ID
+     * @return _optionPrices array consisting of prices for all available options
+     **/
     function getAllOptionPrices(uint _marketId) external view returns(uint64[] memory _optionPrices) {
       _optionPrices = new uint64[](3);
       for(uint i=0;i<3;i++) {
-
         _optionPrices[i] = getOptionPrice(_marketId,i+1);
       }
 
     }
 
+    /**
+     * @dev Gets price for given market and option
+     * @param _marketId  Market ID
+     * @param _prediction  prediction option
+     * @return  option price
+     **/
     function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64) {
       (uint[] memory _optionPricingParams, uint32 startTime, address _feedAddress) = allMarkets.getMarketOptionPricingParams(_marketId,_prediction);
       uint stakingFactorConst;
+      uint optionPrice; 
+      // Checking if current stake in market reached minimum stake required for considering staking factor.
       if(_optionPricingParams[1] > _optionPricingParams[2])
       {
-        stakingFactorConst = uint(10000).div(_optionPricingParams[3]);
+        // 10000 / staking weightage
+        stakingFactorConst = uint(10000).div(_optionPricingParams[3]); 
+        // (Amount staked in option x stakingFactorConst x 10^18) / Total staked in market --- (1)
+        optionPrice = (_optionPricingParams[0].mul(stakingFactorConst).mul(10**18).div(_optionPricingParams[1])); 
       }
-      (, , , , uint totalTime, , ) = allMarkets.getMarketData(_marketId);
       uint timeElapsed = uint(now).sub(startTime);
+      // max(timeElapsed, minTimePassed)
       if(timeElapsed<_optionPricingParams[5]) {
         timeElapsed = _optionPricingParams[5];
       }
       uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction, _feedAddress);
+
+      // (Time Elapsed x 10000) / (currentPriceWeightage x (Max Distance + 1))
       uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(_distanceData[0].add(1)));
 
-      uint optionPrice; 
-      if(stakingFactorConst > 0)  
-        optionPrice = (_optionPricingParams[0].mul(stakingFactorConst).mul(10**18).div(_optionPricingParams[1])); 
-        
+      (, , , , uint totalTime, , ) = allMarkets.getMarketData(_marketId);
+
+      // (1) + ((Option Distance from max distance + 1) x timeFactor x 10^18 / Total Prediction Time)  -- (2)
       optionPrice = optionPrice.add((_distanceData[1].add(1)).mul(timeFactor).mul(10**18).div(totalTime));  
+      // (2) / ((stakingFactorConst x 10^13) + timeFactor x 10^13 x (cummulative option distaance + 3) / Total Prediction Time)
       optionPrice = optionPrice.div(stakingFactorConst.mul(10**13).add(timeFactor.mul(10**13).mul(_distanceData[2].add(3)).div(totalTime)));
 
+      // option price for `_prediction` in 10^5 format
       return uint64(optionPrice);
 
     }
 
+    /**
+     * @dev Gets price for given market and option
+     * @param _marketId  Market ID
+     * @param _prediction  prediction option
+     * @return  Array consist of Max Distance between current option and any option, predicting Option distance from max distance, cummulative option distance
+     **/
     function getOptionDistanceData(uint _marketId,uint _prediction, address _feedAddress) internal view returns(uint[] memory) {
       (bytes32 _marketCurr, uint minVal, uint maxVal , , , , ) = allMarkets.getMarketData(_marketId);
-      // [0]--> max Distance+1, 
-      // [1]--> option distance + 1, 
-      // [2]--> optionDistance1+1+optionDistance2+1+optionDistance3+1
+      // [0]--> Max Distance between current option and any option, (For 3 options, if current option is 2 it will be `1`. else, it will be `2`) 
+      // [1]--> Predicting option distance from Max distance, (MaxDistance - | currentOption - predicting option |)
+      // [2]--> sum of all possible option distances,  
       uint[] memory _distanceData = new uint256[](3); 
+
+      // Fetching current price
       uint currentPrice = getAssetPriceUSD(
             _feedAddress,
             _marketCurr
         );
-      
-       
       _distanceData[0] = 2;
+      // current option based on current price
       uint currentOption;
       _distanceData[2] = 3;
       if(currentPrice < minVal)
@@ -373,10 +409,15 @@ contract MarketUtility is Governed {
         _distanceData[0] = 1;
         _distanceData[2] = 1;
       }
-        _distanceData[1] = _distanceData[0].sub(modDiff(currentOption,_prediction)); // option distance + 1
+
+      // MaxDistance - | currentOption - predicting option |
+      _distanceData[1] = _distanceData[0].sub(modDiff(currentOption,_prediction)); 
       return _distanceData;
     }
 
+    /**
+     * @dev  Calculates difference between `a` and `b`.
+     **/
     function modDiff(uint a, uint b) internal pure returns(uint) {
       if(a>b)
       {
