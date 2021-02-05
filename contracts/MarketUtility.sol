@@ -30,12 +30,9 @@ contract MarketUtility is Governed {
 
     uint256 constant updatePeriod = 1 hours;
 
-    uint256 internal minTimeElapsedDivisor;
     uint256 internal minPredictionAmount;
     uint256 internal maxPredictionAmount;
     uint256 internal positionDecimals;
-    uint256 internal minStakeForMultiplier;
-    uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
     bool public initialized;
     uint256 public stakingFactorMinStake;
@@ -101,12 +98,9 @@ contract MarketUtility is Governed {
      * @dev Internal function to set initial value
      **/
     function _setInitialParameters() internal {
-        minTimeElapsedDivisor = 6;
         minPredictionAmount = 10 ether;// need to change the value according to prediction token
         maxPredictionAmount = 100000 ether; // need to change the value according to prediction token
         positionDecimals = 1e2;
-        minStakeForMultiplier = 5e17;
-        riskPercentage = 20;
         tokenStakeForDispute = 500 ether;
         stakingFactorMinStake = uint(20000).mul(10**8);
         stakingFactorWeightage = 40;
@@ -135,20 +129,14 @@ contract MarketUtility is Governed {
      **/
     function updateUintParameters(bytes8 code, uint256 value)
         external
-        onlyAuthorized
+        onlyAuthorizedToGovern
     {
-        if (code == "MTED") { // Minimum time elapsed divisor
-            minTimeElapsedDivisor = value;
-        } else if (code == "MINPRD") { // Minimum predictionamount
+        if (code == "MINPRD") { // Minimum predictionamount
             minPredictionAmount = value;
         } else if (code == "MAXPRD") { // Maximum predictionamount
             maxPredictionAmount = value;
         } else if (code == "PDEC") { // Position's Decimals
             positionDecimals = value;
-        } else if (code == "MINSTM") { // Min stake required for applying multiplier
-            minStakeForMultiplier = value;
-        } else if (code == "RPERC") { // Risk percentage
-            riskPercentage = value;
         } else if (code == "TSDISP") { // Amount of tokens to be staked for raising a dispute
             tokenStakeForDispute = value;
         } else if (code == "SFMS") { // Minimum amount of tokens to be staked for considering staking factor
@@ -207,7 +195,6 @@ contract MarketUtility is Governed {
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
-     * @return Percentage of users leveraged amount to deduct when placed in wrong prediction
      * @return Decimal points for prediction positions
      * @return Maximum prediction amount
      **/
@@ -217,11 +204,10 @@ contract MarketUtility is Governed {
         returns (
             uint256,
             uint256,
-            uint256,
             uint256
         )
     {
-        return (minPredictionAmount, riskPercentage, positionDecimals, maxPredictionAmount);
+        return (minPredictionAmount, positionDecimals, maxPredictionAmount);
     }
 
     /**

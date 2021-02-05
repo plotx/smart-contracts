@@ -13,4 +13,12 @@ contract MockPLOT is PlotXToken {
 	function burnTokens(address _of, uint _amount) external {
         _burn(_of, _amount);
 	}
+
+	function burn(uint _amount) external {
+        _burn(msg.sender, _amount);
+	}
+
+	function mint(address _user, uint _amount) external {
+        _mint(_user, _amount);
+	}
 }

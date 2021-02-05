@@ -245,9 +245,25 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
         );
         _addInitialCategories(
             "Toggle market creation of Type",
-            "QmRB2twfkzjox4ZAStnZTvtqr7Tr7ByGVdjTziWnpxXmWw",
+            "",
             "AM",
             "toggleMarketCreationType(uint64,bool)",
+            60,
+            advisoryBoardRole
+        );
+        _addInitialCategories(
+            "Set Multiplier per level",
+            "",
+            "MU",
+            "setMultiplierLevels(uint256[],uint256[])",
+            60,
+            advisoryBoardRole
+        );
+        _addInitialCategories(
+            "Update Market Utility Uint parameters",
+            "QmXPXBkSKfidTgbDcRBLqokqAa9SU2wwErTyedPAZPfr5z",
+            "MU",
+            "updateUintParameters(bytes8,uint256)",
             60,
             advisoryBoardRole
         );

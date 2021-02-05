@@ -268,6 +268,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
       require(_optionRangePerc > 0);
       require(_marketCooldownTime > 0);
       MarketTypeData storage _marketTypeArray = marketTypeArray[_marketType];
+      require(_marketTypeArray.predictionTime != 0);
       _marketTypeArray.optionRangePerc = _optionRangePerc;
       _marketTypeArray.cooldownTime = _marketCooldownTime;
       _marketTypeArray.minTimePassed = _minTimePassed;
@@ -328,6 +329,9 @@ contract AllMarkets is Governed, BasicMetaTransaction {
     */
     function addInitialMarketTypesAndStart(uint32 _marketStartTime, address _ethFeed, address _btcFeed, address _multiSig) external {
       require(marketTypeArray.length == 0);
+      require(_ethFeed != address(0));
+      require(_btcFeed != address(0));
+      require(_multiSig != address(0));
       
       IMaster ms = IMaster(masterAddress);
       marketCreationRewards = IMarketCreationRewards(ms.getLatestAddress("MC"));
@@ -393,7 +397,7 @@ contract AllMarkets is Governed, BasicMetaTransaction {
 
       _placePrediction(_marketId, predictionToken, mcDefaultPredictionAmount/3, 1);
       _placePrediction(_marketId, predictionToken, mcDefaultPredictionAmount/3, 2);
-      _placePrediction(_marketId, predictionToken, mcDefaultPredictionAmount/3, 3);
+      _placePrediction(_marketId, predictionToken, mcDefaultPredictionAmount - 2*(mcDefaultPredictionAmount/3), 3);
     }
 
     /**
