@@ -3,10 +3,9 @@ const ProposalCategory = artifacts.require('ProposalCategory');
 const MemberRoles = artifacts.require('MemberRoles');
 const Master = artifacts.require('Master');
 const TokenController = artifacts.require('TokenController');
-const Plotus = artifacts.require("MarketRegistry");
 const MarketConfig = artifacts.require('MarketUtility');
+const AllMarkets = artifacts.require('AllMarkets');
 const PlotusToken = artifacts.require("MockPLOT");
-const MockUniswapFactory = artifacts.require('MockUniswapFactory');
 const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
 const gvProposal = require('./utils/gvProposal.js').gvProposalWithIncentiveViaTokenHolder;
@@ -46,8 +45,8 @@ contract('Configure Global Parameters', accounts => {
       address = await ms.getLatestAddress('0x4d52');
       mr = await MemberRoles.at(address);
       tc = await TokenController.at(await ms.getLatestAddress('0x5443'));
-      pl = await Plotus.at(await ms.getLatestAddress(toHex('PL')));
-      marketConfig = await MarketConfig.at(await pl.marketUtility());
+      allMarkets = await AllMarkets.at(await ms.getLatestAddress(toHex('AM')));
+      marketConfig = await MarketConfig.at(await ms.getLatestAddress(toHex('MU')));
       plotTok = await PlotusToken.deployed();
       feedInstance = await MockchainLink.deployed()
 
@@ -122,140 +121,101 @@ contract('Configure Global Parameters', accounts => {
 
     describe('Update Market Config Params', function() {
 
-      it('Should update market creation incentive', async function() {
-        await updateParameter(20, 2, 'MCRINC', pl, 'configUint', 100);
-        let configData = await pl.getUintParameters(toHex('MCRINC'));
-        assert.equal(configData[1], 100, 'Not updated');
-      });
-
-      it('Should update STAKE WEIGHTAGE', async function() {
-        await updateParameter(20, 2, 'SW', pl, 'configUint', 60);
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
-        assert.equal(configData[0], 60, 'Not updated');
-      });
-
-      it('Should not update STAKE WEIGHTAGE if passed value > 100', async function() {
-        await updateParameter(20, 2, 'SW', pl, 'configUint', 200);
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
-        assert.notEqual(configData[0], 200, 'updated');
-      });
-
-      it('Should update STAKE WEIGHTAGE MIN AMOUNT', async function() {
-        await updateParameter(20, 2, 'SWMA', pl, 'configUint', toWei(100));
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
-        assert.equal(configData[1], toWei(100), 'Not updated');
-      });
-
-      it('Should update Min Time Elapsed Divisor', async function() {
-        await updateParameter(20, 2, 'MTED', pl, 'configUint', toWei(10));
-        let configData = await marketConfig.getPriceCalculationParams(feedInstance.address);
-        assert.equal(configData[3], toWei(10), 'Not updated');
-      });
-
       it('Should update Min PredictionAmount', async function() {
-        await updateParameter(20, 2, 'MINPRD', pl, 'configUint', toWei(120));
+        await updateParameter(24, 2, 'MINPRD', marketConfig, 'configUint', 75);
         let configData = await marketConfig.getBasicMarketDetails();
-        assert.equal(configData[0], toWei(120), 'Not updated');
+        assert.equal(configData[0], 75, 'Not updated');
       });
 
       it('Should update Max PredictionAmount', async function() {
-        await updateParameter(20, 2, 'MAXPRD', pl, 'configUint', toWei(120));
+        await updateParameter(24, 2, 'MAXPRD', marketConfig, 'configUint', 80);
         let configData = await marketConfig.getBasicMarketDetails();
-        assert.equal(configData[3], toWei(120), 'Not updated');
+        assert.equal(configData[2]/1, 80, 'Not updated');
       });
 
       it('Should update Position Decimals', async function() {
-        await updateParameter(20, 2, 'PDEC', pl, 'configUint', 19);
+        await updateParameter(24, 2, 'PDEC', marketConfig, 'configUint', 19);
         let configData = await marketConfig.getBasicMarketDetails();
-        assert.equal(configData[2], 19, 'Not updated');
-      });
-
-      it('Should update Min Stake For Multiplier', async function() {
-        await updateParameter(20, 2, 'MINSTM', pl, 'configUint', 23);
-        let configData = await marketConfig.getValueAndMultiplierParameters(pl.address, 10);
-        assert.equal(configData[0], 23, 'Not updated');
-      });
-
-      it('Should update Loss Percentage', async function() {
-        await updateParameter(20, 2, 'RPERC', pl, 'configUint', 24);
-        let configData = await marketConfig.getBasicMarketDetails();
-        assert.equal(configData[1], 24, 'Not updated');
+        assert.equal(configData[1]/1, 19, 'Not updated');
       });
 
       it('Should update Token Stake For Dispute', async function() {
-        await updateParameter(20, 2, 'TSDISP', pl, 'configUint', 26);
+        await updateParameter(24, 2, 'TSDISP', pl, 'configUint', 26);
         let configData = await marketConfig.getDisputeResolutionParams();
         assert.equal(configData, 26, 'Not updated');
       });
 
+      it('Should update Min Stake For Multiplier', async function() {
+        await updateParameter(24, 2, 'SFMS', marketConfig, 'configUint', 23);
+        let configData = await marketConfig.getPriceCalculationParams();
+        assert.equal(configData[0], 23, 'Not updated');
+      });
+
+      it('Should Staking Factor Weightage and Current Price weightage', async function() {
+        await updateParameter(24, 2, 'SFCPW', marketConfig, 'configUint', 24);
+        let configData = await marketConfig.getPriceCalculationParams();
+        assert.equal(configData[1], 24, 'Not updated');
+        assert.equal(configData[2], 100-24, 'Not updated');
+      });
+
       it('Should not update if invalid code is passed', async function() {
-        await updateParameter(20, 2, 'CDTIM1', pl, 'configUint', 28);
+        await updateParameter(24, 2, 'CDTIM1', pl, 'configUint', 28);
       });
 
       it('Should not allow to update if unauthorized call', async function() {
-        await assertRevert(marketConfig.updateAddressParameters(toHex("UNIFAC"),pl.address));
+        await assertRevert(marketConfig.updateUintParameters(toHex("UNIFAC"),100));
       });
 
-      it('Should update Uniswap Factory', async function() {
-        let uniswapFactory = await MockUniswapFactory.new();
-        await updateParameter(21, 2, 'UNIFAC', pl, 'configAddress', uniswapFactory.address);
-        let configData = await marketConfig.getFeedAddresses();
-        assert.equal(configData, uniswapFactory.address, 'Not updated');
-      });
-
-      it('Should not update if invalid code is passed', async function() {
-        await updateParameter(21, 2, 'CDTIM1', pl, 'configAddress', pl.address);
-      });
 
     });
     describe('Update Token Controller Parameters', function() {
       it('Should update Lock period for Stake multiplier', async function() {
-        await updateParameter(14, 2, 'SMLP', tc, 'uint', '2');
+        await updateParameter(13, 2, 'SMLP', tc, 'uint', '2');
       });
       it('Should not update if parameter code is incorrect', async function() {
-        await updateInvalidParameter(14, 2, 'EPTIM', tc, 'uint', '86400');
+        await updateInvalidParameter(13, 2, 'EPTIM', tc, 'uint', '86400');
       });
     });
 
-    describe('Update Governance Parameters', function() {
+    describe('Update MemberRoles Parameters', function() {
       it('Should update Min Token Locked For DR', async function() {
-        await updateParameter(22, 2, 'MNLOCKDR', mr, 'uint', '123');
+        await updateParameter(20, 2, 'MNLOCKDR', mr, 'uint', '123');
       });
       it('Should update Lock Time For DR', async function() {
-        await updateParameter(22, 2, 'TLOCDR', mr, 'uint', '123');
+        await updateParameter(20, 2, 'TLOCDR', mr, 'uint', '123');
       });  
       it('Should not update if parameter code is incorrect', async function() {
-        await updateInvalidParameter(13, 2, 'EPTIM', mr, 'uint', '86400');
+        await updateInvalidParameter(20, 2, 'EPTIM', mr, 'uint', '86400');
       });
     }); 
 
     describe('Update Governance Parameters', function() {
       it('Should update Governance Token Holding Time', async function() {
-        await updateParameter(13, 2, 'GOVHOLD', gv, 'uint', '86400');
+        await updateParameter(12, 2, 'GOVHOLD', gv, 'uint', '86400');
       });
       it('Should update AB majority', async function() {
-        await updateParameter(13, 2, 'ABMAJ', gv, 'uint', '20');
+        await updateParameter(12, 2, 'ABMAJ', gv, 'uint', '20');
       });
       it('Should update Max Draft time limit', async function() {
-        await updateParameter(13, 2, 'MAXDRFT', gv, 'uint', '86400');
+        await updateParameter(12, 2, 'MAXDRFT', gv, 'uint', '3600');
       });
-      it('Should update Action Reject Auth Role', async function() {
-        await updateParameter(13, 2, 'REJAUTH', gv, 'uint', '123');
+      // it('Should update Action Reject Auth Role', async function() {
+      //   await updateParameter(12, 2, 'REJAUTH', gv, 'uint', '12');
+      // });
+      it('Should update DR quorum multiplier', async function() {
+        await updateParameter(12, 2, 'DRQUMR', gv, 'uint', '35');
       });
-      it('Should update Action Reject Auth Role', async function() {
-        await updateParameter(13, 2, 'DRQUMR', gv, 'uint', '123');
-      });
-      it('Should update Vote Perc Reject Action', async function() {
-        await updateParameter(13, 2, 'REJCOUNT', gv, 'uint', '123');
+      it('Should update members required to Reject action ', async function() {
+        await updateParameter(12, 2, 'REJCOUNT', gv, 'uint', '19');
       });
       it('Should update max vote weigthage percent', async function() {
-        await updateParameter(13, 2, 'MAXVW', gv, 'uint', '43');
+        await updateParameter(12, 2, 'MAXVW', gv, 'uint', '27');
       });  
       it('Should not update if parameter code is incorrect', async function() {
-        await updateInvalidParameter(13, 2, 'EPTIM', gv, 'uint', '86400');
+        await updateInvalidParameter(12, 2, 'EPTIM', gv, 'uint', '86400');
       });
       it('Should update Action Waiting Time', async function() {
-        await updateParameter(13, 2, 'ACWT', gv, 'uint', '123');
+        await updateParameter(12, 2, 'ACWT', gv, 'uint', '123');
       });
     });
 

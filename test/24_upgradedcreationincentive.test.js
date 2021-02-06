@@ -121,7 +121,7 @@ contract("Market Creation Incentive", async function([
     });
 
     it("Should revert if tries to call addInitialMarketTypesAndStart() after initialization", async function() {
-        await assertRevert(allMarkets.addInitialMarketTypesAndStart(1,user1,user1));
+        await assertRevert(allMarkets.addInitialMarketTypesAndStart(1,user1,user1,user1));
     });
 
     it("Should create Markets", async function() {
@@ -137,6 +137,8 @@ contract("Market Creation Incentive", async function([
     it("Scenario 1: Should be able to get reward pool share of market", async function() {
         marketId = 8;
         await increaseTime(4 * 3600);
+        await plotusToken.transfer(user2, toWei(1000));
+        await plotusToken.approve(allMarkets.address, toWei(10000), { from: user2 });
         let tx = await allMarkets.createMarket(0, 0, { from: user2 });
 
         await plotusToken.transfer(user7, toWei(10000));
@@ -148,7 +150,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -184,7 +186,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -250,8 +252,9 @@ contract("Market Creation Incentive", async function([
 
     it("Scenario 3: Should be able to get reward pool share of market", async function() {
         marketId++;
-        await plotusToken.transfer(user12, toWei(50000));
+        await plotusToken.transfer(user12, toWei(51000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user12 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user12 });
         await tokenController.lock("0x534d", toWei(50000), 86400 * 30, { from: user12 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user12 });
@@ -265,7 +268,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -334,8 +337,9 @@ contract("Market Creation Incentive", async function([
 
     it("Scenario 4: Should be able to get reward pool share of market", async function() {
         marketId++;
-        await plotusToken.transfer(user4, toWei(60000));
+        await plotusToken.transfer(user4, toWei(61000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user4 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user4 });
         await tokenController.lock("0x534d", toWei(60000), 86400 * 30, { from: user4 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user4 });
@@ -349,7 +353,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -412,8 +416,9 @@ contract("Market Creation Incentive", async function([
     // });
     it("Scenario 5: Should be able to get reward pool share of market", async function() {
         marketId++;
-        await plotusToken.transfer(user5, toWei(100000));
+        await plotusToken.transfer(user5, toWei(110000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user5 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user5 });
         await tokenController.lock("0x534d", toWei(100000), 86400 * 30, { from: user5 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user5 });
@@ -427,7 +432,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -489,8 +494,9 @@ contract("Market Creation Incentive", async function([
     // });
     it("Scenario 6: Should be able to get reward pool share of market", async function() {
         marketId++;
-        await plotusToken.transfer(user6, toWei(150000));
+        await plotusToken.transfer(user6, toWei(151000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user6 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user6 });
         await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user6 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user6 });
@@ -504,7 +510,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -569,8 +575,9 @@ contract("Market Creation Incentive", async function([
     // });
     it("Scenario 7: Should be able to get reward pool share of market", async function() {
         marketId++;
-        await plotusToken.transfer(user8, toWei(150000));
+        await plotusToken.transfer(user8, toWei(151000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user8 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user8 });
         await tokenController.lock("0x534d", toWei(150000), 86400 * 30, { from: user8 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user8 });
@@ -584,7 +591,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -640,8 +647,9 @@ contract("Market Creation Incentive", async function([
     // });
     it("Scenario 8: Should not be able to get reward pool share of market more than max cap of 5%", async function() {
         marketId++;
-        await plotusToken.transfer(user14, toWei(500000));
+        await plotusToken.transfer(user14, toWei(501000));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user14 });
+        await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user14 });
         await tokenController.lock("0x534d", toWei(500000), 86400 * 30, { from: user14 });
         await increaseTime(4 * 3600);
         let tx = await allMarkets.createMarket(0, 0, { from: user14 });
@@ -655,7 +663,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -724,7 +732,7 @@ contract("Market Creation Incentive", async function([
     it("Raise Dispute and reject: Scenario 2: Should be able to get reward pool share of market", async function() {
         marketId++;
         await increaseTime(86400*30);
-        await plotusToken.transfer(user10, toWei(250000));
+        await plotusToken.transfer(user10, toWei(210000));
         await plotusToken.transfer(marketIncentives.address, toWei(100));
         await plotusToken.approve(tokenController.address, toWei(10000000), { from: user10 });
         await plotusToken.approve(allMarkets.address, toWei(10000000), { from: user10 });
@@ -742,7 +750,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 99.95;
+        let rewardPoolPlot = 99.95 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
@@ -788,7 +796,7 @@ contract("Market Creation Incentive", async function([
         await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power(400), 1, { from: user7 });
         // await allMarkets.depositAndPlacePrediction(toWei(100), marketId, plotusToken.address, to8Power(100), 1, { from: user7 });
 
-        let rewardPoolPlot = 399.8;
+        let rewardPoolPlot = 399.8 + 66.66666666;
         let events = await marketIncentives.getPastEvents("allEvents", { fromBlock: 0, toBlock: "latest" });
         eventData = findByTxHash(events, tx.tx);
         let rewardPoolSharePerc = eventData.rewardPoolSharePerc;
