@@ -34,11 +34,11 @@ contract IMaster {
 contract Governed {
 
     address public masterAddress; // Name of the dApp, needs to be set by contracts inheriting this contract
+    IGovernance internal governance;
 
     /// @dev modifier that allows only the authorized addresses to execute the function
     modifier onlyAuthorizedToGovern() {
-        IMaster ms = IMaster(masterAddress);
-        require(ms.getLatestAddress("GV") == msg.sender);
+        require((address(governance)) == msg.sender);
         _;
     }
 
@@ -112,6 +112,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       uint64 disputeStakeAmount;
       uint incentiveToDistribute;
       uint rewardToDistribute;
+      uint totalStaked;
       PredictionStatus predictionStatus;
     }
 
@@ -166,7 +167,6 @@ contract AllMarkets is Governed, NativeMetaTransaction {
 
     ITokenController internal tokenController;
     IMarketUtility internal marketUtility;
-    IGovernance internal governance;
     IMarketCreationRewards internal marketCreationRewards;
 
     address internal authorizedMultiSig;
@@ -181,7 +181,6 @@ contract AllMarkets is Governed, NativeMetaTransaction {
 
     mapping(uint64 => uint32) internal marketType;
     mapping(uint256 => mapping(uint256 => MarketCreationData)) internal marketCreationData;
-    mapping(uint256 => uint256) public marketTotalTokenStaked;
 
     MarketBasicData[] internal marketBasicData;
 
@@ -190,7 +189,6 @@ contract AllMarkets is Governed, NativeMetaTransaction {
 
     mapping(uint =>mapping(uint=>PredictionData)) internal marketOptionsAvailable;
     mapping(uint256 => uint256) internal disputeProposalId;
-    mapping(uint256 => uint64) internal marketCreatorFee;
 
     function setReferrer(address _referrer, address _referee) external {
       require(marketUtility.isAuthorized(msg.sender));
@@ -330,8 +328,9 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       require(msg.sender == proxy.proxyOwner());
       IMaster ms = IMaster(msg.sender);
       masterAddress = msg.sender;
-      plotToken = ms.dAppToken();
-      predictionToken = plotToken;
+      address _plotToken = ms.dAppToken();
+      plotToken = _plotToken;
+      predictionToken = _plotToken;
       governance = IGovernance(ms.getLatestAddress("GV"));
       tokenController = ITokenController(ms.getLatestAddress("TC"));
     }
@@ -354,11 +353,12 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       totalOptions = 3;
       predictionDecimalMultiplier = 10;
       defaultMaxRecords = 20;
-      marketFeeParams.cummulativeFeePercent = 200;
-      marketFeeParams.daoCommissionPercent = 1000;
-      marketFeeParams.refereeFeePercent = 1000;
-      marketFeeParams.referrerFeePercent = 2000;
-      marketFeeParams.marketCreatorFeePercent = 4000;
+      MarketFeeParams storage _marketFeeParams = marketFeeParams;
+      _marketFeeParams.cummulativeFeePercent = 200;
+      _marketFeeParams.daoCommissionPercent = 1000;
+      _marketFeeParams.refereeFeePercent = 1000;
+      _marketFeeParams.referrerFeePercent = 2000;
+      _marketFeeParams.marketCreatorFeePercent = 4000;
       mcDefaultPredictionAmount = 100 * 10**8;
       
       _addMarketType(4 hours, 100, 1 hours, 40 minutes);
@@ -606,7 +606,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       }
       _predictionStakePostDeduction = _deductRelayerFee(_marketId, _predictionStake, _msgSenderAddress);
       
-      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSenderAddress, _marketId, _prediction, _asset, _predictionStakePostDeduction);
+      uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSenderAddress, _marketId, _prediction, _predictionStakePostDeduction);
       require(predictionPoints > 0);
 
       _storePredictionData(_marketId, _prediction, _predictionStakePostDeduction, predictionPoints);
@@ -621,7 +621,8 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       } else {
         _relayer = _msgSenderAddress;
       }
-      _fee = _calculateAmulBdivC(marketFeeParams.cummulativeFeePercent, _amount, 10000);
+      MarketFeeParams storage _marketFeeParams = marketFeeParams;
+      _fee = _calculateAmulBdivC(_marketFeeParams.cummulativeFeePercent, _amount, 10000);
       _amountPostFee = _amount.sub(_fee);
       uint64 _referrerFee;
       uint64 _refereeFee;
@@ -629,16 +630,16 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       address _referrer = _userData.referrer;
       if(_referrer != address(0)) {
         //Commission for referee
-        _refereeFee = _calculateAmulBdivC(marketFeeParams.refereeFeePercent, _fee, 10000);
+        _refereeFee = _calculateAmulBdivC(_marketFeeParams.refereeFeePercent, _fee, 10000);
         _userData.refereeFee = _userData.refereeFee.add(_refereeFee);
         //Commission for referrer
-        _referrerFee = _calculateAmulBdivC(marketFeeParams.referrerFeePercent, _fee, 10000);
+        _referrerFee = _calculateAmulBdivC(_marketFeeParams.referrerFeePercent, _fee, 10000);
         userData[_referrer].referrerFee = userData[_referrer].referrerFee.add(_referrerFee);
       }
-      uint64 _daoFee = _calculateAmulBdivC(marketFeeParams.daoCommissionPercent, _fee, 10000);
-      uint64 _marketCreatorFee = _calculateAmulBdivC(marketFeeParams.marketCreatorFeePercent, _fee, 10000);
-      marketFeeParams.daoFee[_marketId] = _daoFee;
-      marketFeeParams.marketCreatorFee[_marketId] = _marketCreatorFee;
+      uint64 _daoFee = _calculateAmulBdivC(_marketFeeParams.daoCommissionPercent, _fee, 10000);
+      uint64 _marketCreatorFee = _calculateAmulBdivC(_marketFeeParams.marketCreatorFeePercent, _fee, 10000);
+      _marketFeeParams.daoFee[_marketId] = _daoFee;
+      _marketFeeParams.marketCreatorFee[_marketId] = _marketCreatorFee;
       _fee = _fee.sub(_daoFee).sub(_referrerFee).sub(_refereeFee);
       relayerFeeEarned[_relayer] = relayerFeeEarned[_relayer].add(_fee);
       // _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(_daoFee));
@@ -647,7 +648,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     /**
     * @dev Internal function to calculate prediction points  and multiplier
     */
-    function _calculatePredictionPointsAndMultiplier(address _user, uint256 _marketId, uint256 _prediction, address _asset, uint64 _stake) internal returns(uint64 predictionPoints){
+    function _calculatePredictionPointsAndMultiplier(address _user, uint256 _marketId, uint256 _prediction, uint64 _stake) internal returns(uint64 predictionPoints){
       bool isMultiplierApplied;
       UserData storage _userData = userData[_user];
       (predictionPoints, isMultiplierApplied) = marketUtility.calculatePredictionPoints(_marketId, _prediction, _user, _userData.userMarketData[_marketId].multiplierApplied, _stake);
@@ -928,7 +929,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     */
     function getTotalStakedWorthInPLOT(uint256 _marketId) public view returns(uint256 _tokenStakedWorth) {
       uint256 _conversionRate = marketUtility.conversionRate(predictionToken);
-      return (marketTotalTokenStaked[_marketId]).mul(_conversionRate).mul(10**predictionDecimalMultiplier);
+      return (marketDataExtended[_marketId].totalStaked).mul(_conversionRate).mul(10**predictionDecimalMultiplier);
     }
 
     /**
@@ -961,7 +962,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       _userData.userMarketData[_marketId].predictionData[_prediction].amountStaked = _userData.userMarketData[_marketId].predictionData[_prediction].amountStaked.add(_predictionStake);
       _predictionData.amountStaked = _predictionData.amountStaked.add(_predictionStake);
       _userData.totalStaked = _userData.totalStaked.add(_predictionStake);
-      marketTotalTokenStaked[_marketId] = marketTotalTokenStaked[_marketId].add(_predictionStake);
+      marketDataExtended[_marketId].totalStaked = marketDataExtended[_marketId].totalStaked.add(_predictionStake);
       
     }
 
@@ -988,13 +989,13 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     */
     function raiseDispute(uint256 _marketId, uint256 _proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       address payable _msgSenderAddress = _msgSender();
-      require(getTotalPredictionPoints(_marketId) > 0);
+      MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
+      require(_marketDataExtended.totalStaked > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       _transferTokenFrom(plotToken, _msgSenderAddress, address(this), _stakeForDispute);
       // marketRegistry.createGovernanceProposal(proposalTitle, description, solutionHash, abi.encode(address(this), proposedValue), _stakeForDispute, msg.sender, ethAmountToPool, tokenAmountToPool, proposedValue);
       uint proposalId = governance.getProposalLength();
-      MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
       // marketBasicData[msg.sender].disputeStakes = DisputeStake(proposalId, _user, _stakeForDispute, _ethSentToPool, _tokenSentToPool);
       _marketDataExtended.disputeRaisedBy = _msgSenderAddress;
       _marketDataExtended.disputeStakeAmount = uint64(_stakeForDispute.div(10**predictionDecimalMultiplier));
@@ -1105,7 +1106,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       MarketBasicData storage _marketBasicData = marketBasicData[_marketId];
       PricingData storage _marketPricingData = marketPricingData[_marketId];
       _optionPricingParams[0] = marketOptionsAvailable[_marketId][_option].amountStaked;
-      _optionPricingParams[1] = marketTotalTokenStaked[_marketId];
+      _optionPricingParams[1] = marketDataExtended[_marketId].totalStaked;
       _optionPricingParams[2] = _marketPricingData.stakingFactorMinStake;
       _optionPricingParams[3] = _marketPricingData.stakingFactorWeightage;
       _optionPricingParams[4] = _marketPricingData.currentPriceWeightage;
