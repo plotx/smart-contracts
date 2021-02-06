@@ -99,7 +99,8 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
     privateKey,
     userAdd,
     functionSignature,
-    gv
+    gv,
+    "GV"
   );
   // await gv.createProposal("proposal", "proposal", "proposal", 0);
   let canClose = await gv.canCloseProposal(p);
@@ -109,7 +110,8 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
     privateKey,
     userAdd,
     functionSignature,
-    gv
+    gv,
+    "GV"
   );
   // await gv.categorizeProposal(p, catId, incentive);
   functionSignature = encode3("submitProposalWithSolution(uint256,string,bytes)", p, "Addnewmember", actionHash);
@@ -117,7 +119,8 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
     privateKey,
     userAdd,
     functionSignature,
-    gv
+    gv,
+    "GV"
   );
   // await gv.submitProposalWithSolution(p, "proposal", actionHash);
   // let members = await mr.members(seq);
@@ -128,7 +131,8 @@ async function gvProposalWithIncentiveViaTokenHolderMetaTX(...args) {
     privateKey,
     userAdd,
     functionSignature,
-    gv
+    gv,
+    "GV"
   );
   // await gv.submitVote(p, 1);
 

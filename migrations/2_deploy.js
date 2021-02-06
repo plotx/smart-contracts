@@ -22,9 +22,8 @@ module.exports = function(deployer, network, accounts){
       let deployProposalCategory = await deployer.deploy(ProposalCategory);
       let deployMemberRoles = await deployer.deploy(MemberRoles);
       let deployTokenController = await deployer.deploy(TokenController);
-      // let deployPlotusToken = await deployer.deploy(PlotusToken, "30000000000000000000000000", accounts[0]);
       let deployPlotusToken = await deployer.deploy(PlotusToken, "PLOT", "PLOT", 18,accounts[0], accounts[0]);
-      // await deployPlotusToken.deposit(accounts[0],"30000000000000000000000000");
+      deployPlotusToken.mint(accounts[0],"30000000000000000000000000");
       let mockchainLinkAggregaror = await deployer.deploy(MockchainLink);
       let marketConfig = await deployer.deploy(MarketConfig);
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);

@@ -89,7 +89,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[3],
               user3,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             await mockMarketConfig.setNextOptionPrice(18);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1, 18);
@@ -99,7 +100,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[1],
               user1,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             // await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 2, { from: user2 });
             functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(400), marketId, plotusToken.address, to8Power("400"), 2);
@@ -107,7 +109,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[2],
               user2,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             await mockMarketConfig.setNextOptionPrice(27);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1, 27);
@@ -117,7 +120,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[4],
               user4,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             // await allMarkets.depositAndPlacePrediction(toWei(1000), marketId, plotusToken.address, to8Power("1000"), 3, { from: user5 });
             functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(1000), marketId, plotusToken.address, to8Power("1000"), 3);
@@ -125,7 +129,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[5],
               user5,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             predictionPointsBeforeUser1 = (await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1e5;
             predictionPointsBeforeUser2 = (await allMarkets.getUserPredictionPoints(user2, marketId, 2)) / 1e5;
@@ -201,7 +206,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[3],
               user3,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             await mockMarketConfig.setNextOptionPrice(18);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[1] / 1, 18);
@@ -211,7 +217,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[1],
               user1,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             // await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 2, { from: user2 });
             functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(400), marketId, plotusToken.address, to8Power("400"), 2);
@@ -219,7 +226,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[2],
               user2,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             await mockMarketConfig.setNextOptionPrice(27);
             assert.equal((await allMarkets.getMarketData(marketId))._optionPrice[2] / 1, 27);
@@ -229,7 +237,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[4],
               user4,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             // await allMarkets.depositAndPlacePrediction(toWei(1000), marketId, plotusToken.address, to8Power("1000"), 3, { from: user5 });
             functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(1000), marketId, plotusToken.address, to8Power("1000"), 3);
@@ -237,7 +246,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
               privateKeyList[5],
               user5,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
             );
             predictionPointsBeforeUser1 = (await allMarkets.getUserPredictionPoints(user1, marketId, 2)) / 1e5;
             predictionPointsBeforeUser2 = (await allMarkets.getUserPredictionPoints(user2, marketId, 2)) / 1e5;

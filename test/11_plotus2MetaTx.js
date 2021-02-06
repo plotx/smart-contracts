@@ -87,7 +87,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 			}
 
@@ -134,7 +135,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 				let plotBalAfter = await plotusToken.balanceOf(users[i]);
 				assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
@@ -150,7 +152,8 @@ contract("Rewards-Market", async function(users) {
                 privateKeyList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+              		"MC"
                 );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
@@ -206,7 +209,8 @@ contract("Rewards-Market", async function(users) {
 			      privateKeyList[i],
 			      users[i],
 			      functionSignature,
-			      allMarkets
+			      allMarkets,
+              		"AM"
 			      );
 			}
 
@@ -276,7 +280,8 @@ contract("Rewards-Market", async function(users) {
 				      privateKeyList[i],
 				      users[i],
 				      functionSignature,
-				      allMarkets
+				      allMarkets,
+              		"AM"
 				      );
 					let plotBalAfter = await plotusToken.balanceOf(users[i]);
 					assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round((totalDepositedPlot/1e18-predictionVal[i])/1+reward/1e8));
@@ -293,7 +298,8 @@ contract("Rewards-Market", async function(users) {
                 privateKeyList[11],
                 users[11],
                 functionSignature,
-                marketIncentives
+                marketIncentives,
+              		"MC"
                 );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);

@@ -20,7 +20,7 @@ import "./external/govblocks-protocol/interfaces/IProposalCategory.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
-import "./external/BasicMetaTransaction.sol";
+import "./external/NativeMetaTransaction.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IAllMarkets.sol";
 import "./interfaces/IMarketCreationRewards.sol";
@@ -29,7 +29,7 @@ import "./interfaces/IToken.sol";
 import "./interfaces/IMaster.sol";
 import "./interfaces/IMarket.sol";
 
-contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
+contract Governance is IGovernance, Iupgradable, NativeMetaTransaction {
     using SafeMath for uint256;
 
     enum ProposalStatus {
@@ -1146,6 +1146,7 @@ contract Governance is IGovernance, Iupgradable, BasicMetaTransaction {
         maxVoteWeigthPer = 5;
         advisoryBoardMajority = 60;
         drQuorumMulitplier = 5;
+        _initializeEIP712("GV");
     }
 
 }
