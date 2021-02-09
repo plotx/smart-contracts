@@ -604,7 +604,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
         tokenController.swapBLOT(_msgSenderAddress, address(this), (decimalMultiplier).mul(_predictionStake));
         _asset = plotToken;
       }
-      _predictionStakePostDeduction = _deductRelayerFee(_marketId, _predictionStake, _msgSenderAddress);
+      _predictionStakePostDeduction = _deductFee(_marketId, _predictionStake, _msgSenderAddress);
       
       uint64 predictionPoints = _calculatePredictionPointsAndMultiplier(_msgSenderAddress, _marketId, _prediction, _predictionStakePostDeduction);
       require(predictionPoints > 0);
@@ -613,7 +613,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       emit PlacePrediction(_msgSenderAddress, _predictionStake, predictionPoints, _asset, _prediction, _marketId);
     }
 
-    function _deductRelayerFee(uint _marketId, uint64 _amount, address _msgSenderAddress) internal returns(uint64 _amountPostFee){
+    function _deductFee(uint _marketId, uint64 _amount, address _msgSenderAddress) internal returns(uint64 _amountPostFee){
       uint64 _fee;
       address _relayer;
       if(_msgSenderAddress != tx.origin) {
@@ -624,25 +624,27 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       MarketFeeParams storage _marketFeeParams = marketFeeParams;
       _fee = _calculateAmulBdivC(_marketFeeParams.cummulativeFeePercent, _amount, 10000);
       _amountPostFee = _amount.sub(_fee);
-      uint64 _referrerFee;
-      uint64 _refereeFee;
+      (uint64 _referrerFee, uint64 _refereeFee) = _calculateReferalFee(_msgSenderAddress, _fee, _marketFeeParams.refereeFeePercent, _marketFeeParams.referrerFeePercent);
+      uint64 _daoFee = _calculateAmulBdivC(_marketFeeParams.daoCommissionPercent, _fee, 10000);
+      uint64 _marketCreatorFee = _calculateAmulBdivC(_marketFeeParams.marketCreatorFeePercent, _fee, 10000);
+      _marketFeeParams.daoFee[_marketId] = _marketFeeParams.daoFee[_marketId].add(_daoFee);
+      _marketFeeParams.marketCreatorFee[_marketId] = _marketFeeParams.marketCreatorFee[_marketId].add(_marketCreatorFee);
+      _fee = _fee.sub(_daoFee).sub(_referrerFee).sub(_refereeFee).sub(_marketCreatorFee);
+      relayerFeeEarned[_relayer] = relayerFeeEarned[_relayer].add(_fee);
+      // _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(_daoFee));
+    }
+
+    function _calculateReferalFee(address _msgSenderAddress, uint64 _cummulativeFee, uint32 _refereeFeePerc, uint32 _referrerFeePerc) internal returns(uint64 _referrerFee, uint64 _refereeFee) {
       UserData storage _userData = userData[_msgSenderAddress];
       address _referrer = _userData.referrer;
       if(_referrer != address(0)) {
         //Commission for referee
-        _refereeFee = _calculateAmulBdivC(_marketFeeParams.refereeFeePercent, _fee, 10000);
+        _refereeFee = _calculateAmulBdivC(_refereeFeePerc, _cummulativeFee, 10000);
         _userData.refereeFee = _userData.refereeFee.add(_refereeFee);
         //Commission for referrer
-        _referrerFee = _calculateAmulBdivC(_marketFeeParams.referrerFeePercent, _fee, 10000);
+        _referrerFee = _calculateAmulBdivC(_referrerFeePerc, _cummulativeFee, 10000);
         userData[_referrer].referrerFee = userData[_referrer].referrerFee.add(_referrerFee);
       }
-      uint64 _daoFee = _calculateAmulBdivC(_marketFeeParams.daoCommissionPercent, _fee, 10000);
-      uint64 _marketCreatorFee = _calculateAmulBdivC(_marketFeeParams.marketCreatorFeePercent, _fee, 10000);
-      _marketFeeParams.daoFee[_marketId] = _daoFee;
-      _marketFeeParams.marketCreatorFee[_marketId] = _marketCreatorFee;
-      _fee = _fee.sub(_daoFee).sub(_referrerFee).sub(_refereeFee);
-      relayerFeeEarned[_relayer] = relayerFeeEarned[_relayer].add(_fee);
-      // _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(_daoFee));
     }
 
     /**
