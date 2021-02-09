@@ -64,7 +64,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     event MarketCurrencies(uint256 indexed index, address feedAddress, bytes32 currencyName, bool status);
     event MarketQuestion(uint256 indexed marketIndex, bytes32 currencyName, uint256 indexed predictionType, uint256 startTime, uint256 predictionTime, uint256 neutralMinValue, uint256 neutralMaxValue);
     event OptionPricingParams(uint256 indexed marketIndex, uint256 _stakingFactorMinStake,uint32 _stakingFactorWeightage,uint256 _currentPriceWeightage,uint32 _minTimePassed);
-    event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId);
+    event MarketResult(uint256 indexed marketIndex, uint256 totalReward, uint256 winningOption, uint256 closeValue, uint256 roundId, uint256 daoFee, uint256 marketCreatorFee);
     event ReturnClaimed(address indexed user, uint256 amount);
     event PlacePrediction(address indexed user,uint256 value, uint256 predictionPoints, address predictionAsset,uint256 prediction,uint256 indexed marketIndex);
     event DisputeRaised(uint256 indexed marketIndex, address raisedBy, uint256 proposalId, uint256 proposedValue);
@@ -745,7 +745,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       _marketDataExtended.rewardToDistribute = totalReward;
       // _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(marketCreatorIncentive));
       // marketCreationRewards.depositMarketRewardPoolShare(_marketId, (10**predictionDecimalMultiplier).mul(marketCreatorIncentive), tokenParticipation);
-      emit MarketResult(_marketId, _marketDataExtended.rewardToDistribute, _winningOption, _value, _roundId);
+      emit MarketResult(_marketId, _marketDataExtended.rewardToDistribute, _winningOption, _value, _roundId, marketFeeParams.daoFee[_marketId], marketFeeParams.marketCreatorFee[_marketId]);
     }
 
     /**
