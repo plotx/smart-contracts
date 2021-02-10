@@ -164,8 +164,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             let balanceAfter = await plotusToken.balanceOf(marketIncentives.address);
             balanceAfter = balanceAfter*1;
             let commission = 0;
-            let creationReward = 8.16666666;
-            assert.equal(balanceAfter, balanceBefore + commission*1e18 + creationReward*1e18);
+            let creationRewardDaoCommission = 17.999;
+            assert.equal(~~(balanceAfter/1e15), balanceBefore  + creationRewardDaoCommission*1e3);
         });
 
         it("1.2 Positions After increasing user levels", async () => {
@@ -295,8 +295,8 @@ describe("new_Multiplier 1. Multiplier Sheet PLOT Prediction", () => {
             let balanceAfter = await plotusToken.balanceOf(marketIncentives.address);
             balanceAfter = balanceAfter*1;
             let commission = 0;
-            let creationReward = 8.16666666;
-            assert.equal(~~(balanceAfter/1e10), ~~((balanceBefore + commission*1e18 + creationReward*1e18)/1e10));
+            let creationRewardDaoCommission = 17.9999;
+            assert.equal(~~(balanceAfter/1e15), ~~(balanceBefore/1e15 + creationRewardDaoCommission*1e3));
         });
         // it("1.2 Positions After increasing user levels", async () => {
         //     await allMarkets.createMarket(0, 0);
