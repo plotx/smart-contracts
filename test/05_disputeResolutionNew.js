@@ -78,7 +78,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     await allMarkets.postResultMock("10000000000000000000", 7);
     let allMarketsBalanceBefore = await plotusToken.balanceOf(allMarkets.address);
     let marketIncentivesBalance = await plotusToken.balanceOf(marketIncentives.address);
-    assert.equal(marketIncentivesBalance*1, marketIncentivesBalanceBefore/1+3.6*1e18);
+    let fee = "1999999960000000000";
+    assert.equal(marketIncentivesBalance*1, marketIncentivesBalanceBefore/1+fee*1);
      // cannot raise dispute with less than minimum stake
     await plotusToken.approve(allMarkets.address, "10000000000000000000000");
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
@@ -89,7 +90,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
       privateKeyList[0],
       ab1,
       functionSignature,
-      allMarkets
+      allMarkets,
+      "AM"
       );
     // await allMarkets.raiseDispute(7,1,"raise dispute","this is description","this is solution hash");
     // cannot raise dispute multiple times
@@ -125,7 +127,7 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let commission = 3.6 * 1e18;
     // let marketCreatorIncentives = 99.95*((0.05)/100) * 1e18;
     let marketIncentivesBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
-    assert.equal(marketIncentivesBalanceBefore*1  + commission*1, marketIncentivesBalanceAfter*1 + (toWei(100))*1);
+    assert.equal(marketIncentivesBalanceBefore*1  + fee*1, marketIncentivesBalanceAfter*1 + (toWei(100))*1);
 
     assert.equal((allMarketsBalanceAfter/1), allMarketsBalanceBefore/1, "Tokens staked for dispute not burned");
     // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
@@ -204,7 +206,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let commission = 7.2 * 1e18;
     let rewardPool = 163.33333333*1e18;
     let marketCreatorIncentive = 0 * 0.5/100;
-    assert.equal(marketIncentivesBalance*1, marketIncentivesBalanceBefore/1 + marketCreatorIncentive + commission*1);
+    let fee = "3999999960000000000"/1;
+    assert.equal(marketIncentivesBalance*1, marketIncentivesBalanceBefore/1 + fee);
      // cannot raise dispute with less than minimum stake
     await plotusToken.approve(allMarkets.address, "10000000000000000000000");
     await assertRevert(allMarkets.raiseDispute(7, 1400000000000,"raise dispute","this is description","this is solution hash",{from : notMember}));
@@ -247,9 +250,8 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     marketCreatorIncentive = rewardPool * 0.5/100;
     // let marketCreatorIncentives = 99.95*((0.05)/100) * 1e18;
     let marketIncentivesBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
-    assert.equal(marketIncentivesBalanceBefore*1  + commission*1, marketIncentivesBalanceAfter*1);
-
-    assert.equal((allMarketsBalanceAfter/1), allMarketsBalanceBefore/1 , "Tokens staked for dispute not burned");
+    assert.equal(marketIncentivesBalanceBefore*1 + fee, marketIncentivesBalanceAfter*1);
+    assert.equal((allMarketsBalanceAfter/1), allMarketsBalanceBefore/1 - fee/1 , "Tokens staked for dispute not burned");
     // let data = await plotusNewInstance.marketDisputeData(marketInstance.address)
     // assert.equal(data[0], proposalId,"dispute proposal mismatch");
     // let marketDetails = await plotusNewInstance.getMarketDetails(marketInstance.address);

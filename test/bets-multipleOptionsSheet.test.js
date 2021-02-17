@@ -53,6 +53,9 @@ describe("Bets Multiple options sheet", () => {
             allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             marketId = 6;
             await increaseTime(4 * 60 * 60);
+            await plotusToken.transfer(userMarketCreator, toWei(100000));
+            await plotusToken.approve(allMarkets.address, toWei(100000), {from: userMarketCreator});
+            await mockMarketConfig.setNextOptionPrice(90);
             await allMarkets.createMarket(0, 0, { from: userMarketCreator });
             marketId++;
         });
@@ -63,17 +66,18 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(500), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(400), { from: user3 });
+            // await allMarkets.deposit(toWei(500), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(400), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", 0, marketId, plotusToken.address, to8Power("100"), 1);
+            let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(500), marketId, plotusToken.address, to8Power("100"), 1);
             await signAndExecuteMetaTx(
               privateKeyList[0],
               user1,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
               );
             // await allMarkets.depositAndPlacePrediction(, { from: user1 });
             functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", 0, marketId, plotusToken.address, to8Power("400"), 1);
@@ -81,24 +85,27 @@ describe("Bets Multiple options sheet", () => {
               privateKeyList[0],
               user1,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
               );
             // await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 1, { from: user1 });
-            functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", 0, marketId, plotusToken.address, to8Power("400"), 1);
+            functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(400), marketId, plotusToken.address, to8Power("400"), 1);
             await signAndExecuteMetaTx(
               privateKeyList[1],
               user2,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
               );
             // await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
             await mockMarketConfig.setNextOptionPrice(180);
-            functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", 0, marketId, plotusToken.address, to8Power("400"), 2);
+            functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(400), marketId, plotusToken.address, to8Power("400"), 2);
             await signAndExecuteMetaTx(
               privateKeyList[2],
               user3,
               functionSignature,
-              allMarkets
+              allMarkets,
+              "AM"
               );
             // await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
 
@@ -108,8 +115,8 @@ describe("Bets Multiple options sheet", () => {
 
 
             // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
-            const expectedPredictionPoints = [1110.555556 + 4442.222222, 4353.377778, 2176.688889];
-            const expectedPLOTReturn = [143.6545942 + 574.6183767, 563.1260091, 0];
+            const expectedPredictionPoints = [1088.88888 + 4355.55555, 4355.55555, 2177.77777];
+            const expectedPLOTReturn = [147 + 588, 588, 0];
             const expectedETHReturn = [0, 0, 0];
 
             const predictionPointArray = [
@@ -140,7 +147,7 @@ describe("Bets Multiple options sheet", () => {
             }
         });
         it("3.2. Scenario 2", async () => {
-            await allMarkets.createMarket(0, 0);
+            await allMarkets.createMarket(0, 0, { from: userMarketCreator });
             marketId++;
 
             await plotusToken.transfer(user2, toWei("400"));
@@ -149,24 +156,24 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(500), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(400), { from: user3 });
+            // await allMarkets.deposit(toWei(500), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(400), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
             await mockMarketConfig.setNextOptionPrice(180);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 2, { from: user1 });
+            await allMarkets.depositAndPlacePrediction(toWei(500), marketId, plotusToken.address, to8Power("100"), 2, { from: user1 });
             await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) /  1e5;
             predictionPointsBeforeUser2 = parseFloat(await allMarkets.getUserPredictionPoints(user2, marketId, 1)) /  1e5;
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
             // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
-            const expectedPredictionPoints = [555.2777778 + 2221.111111, 4442.222222, 2221.111111];
-            const expectedPLOTReturn = [0 + 0, 1294.85225, 0];
+            const expectedPredictionPoints = [544.4444444 + 2177.77777, 4355.55555, 2177.77777];
+            const expectedPLOTReturn = [0 + 0, 1301.44, 0];
             const expectedETHReturn = [0, 0, 0];
 
             const predictionPointArray = [
@@ -197,7 +204,8 @@ describe("Bets Multiple options sheet", () => {
             }
         });
         it("3.3. Scenario 3", async () => {
-            await allMarkets.createMarket(0, 0);
+            await allMarkets.createMarket(0, 0, { from: userMarketCreator });
+            // await allMarkets.createMarket(0, 0);
             marketId++;
 
             await plotusToken.transfer(user2, toWei("400"));
@@ -206,17 +214,17 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(500), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(400), { from: user3 });
+            // await allMarkets.deposit(toWei(500), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(400), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
+            await allMarkets.depositAndPlacePrediction(toWei(500), marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
 
             await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
 
             predictionPointsBeforeUser1 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 1)) /  1e5;
             predictionPointsBeforeUser1_2 = parseFloat(await allMarkets.getUserPredictionPoints(user1, marketId, 2)) /  1e5;
@@ -224,9 +232,9 @@ describe("Bets Multiple options sheet", () => {
             predictionPointsBeforeUser3 = parseFloat(await allMarkets.getUserPredictionPoints(user3, marketId, 2)) /  1e5;
 
             // console.log(predictionPointsBeforeUser1, predictionPointsBeforeUser1_2, predictionPointsBeforeUser2, predictionPointsBeforeUser3);
-            const expectedPredictionPoints = [1110.555556, 2221.111111, 4442.222222, 2221.111111];
+            const expectedPredictionPoints = [1088.888889, 2177.777778, 4355.555556, 2177.777778];
             const expectedETHReturn = [0, 0, 0];
-            const expectedPLOTReturn = [259.0704, 1036.2816, 0];
+            const expectedPLOTReturn = [262.3870968, 1049.548387, 0];
 
             const predictionPointArray = [
                 predictionPointsBeforeUser1,
@@ -401,7 +409,8 @@ describe("Bets Multiple options sheet", () => {
         // });
         it("3.6. Scenario 6,7 and 8", async () => {
             await increaseTime(604800);
-            await allMarkets.createMarket(0, 2);
+            await mockMarketConfig.setNextOptionPrice(90);
+            await allMarkets.createMarket(0, 2, { from: userMarketCreator });
             marketId++;
             const scenario6MarketId = marketId;
 
@@ -411,19 +420,21 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(500), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(400), { from: user3 });
+            // await allMarkets.deposit(toWei(500), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(400), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
+            await allMarkets.depositAndPlacePrediction(toWei(500), marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 1, { from: user2 });
 
             await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 2, { from: user3 });
 
-            await allMarkets.createMarket(0, 0);
+            await mockMarketConfig.setNextOptionPrice(90);
+            await allMarkets.createMarket(0, 0, { from: userMarketCreator });
+            // await allMarkets.createMarket(0, 0);
             marketId++;
             const scenario7MarketId = marketId;
 
@@ -434,19 +445,21 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(200), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(500), { from: user3 });
+            // await allMarkets.deposit(toWei(200), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(500), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("500"), 1, { from: user3 });
+            await allMarkets.depositAndPlacePrediction(toWei(200), marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
+            await allMarkets.depositAndPlacePrediction(toWei(500), marketId, plotusToken.address, to8Power("500"), 1, { from: user3 });
             await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 2, { from: user1 });
             await mockMarketConfig.setNextOptionPrice(270);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
 
-            await allMarkets.createMarket(1, 0);
+            await mockMarketConfig.setNextOptionPrice(90);
+            await allMarkets.createMarket(1, 0, { from: userMarketCreator });
+            // await allMarkets.createMarket(1, 0);
             marketId++;
             const scenario8MarketId = marketId;
            
@@ -457,19 +470,19 @@ describe("Bets Multiple options sheet", () => {
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user1 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user2 });
             await plotusToken.approve(allMarkets.address, toWei("10000"), { from: user3 });
-            await allMarkets.deposit(toWei(400), { from: user1 });
-            await allMarkets.deposit(toWei(400), { from: user2 });
-            await allMarkets.deposit(toWei(200), { from: user3 });
+            // await allMarkets.deposit(toWei(400), { from: user1 });
+            // await allMarkets.deposit(toWei(400), { from: user2 });
+            // await allMarkets.deposit(toWei(200), { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(90);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("200"), 1, { from: user3 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("100"), 1, { from: user1 });
+            await allMarkets.depositAndPlacePrediction(toWei(200), marketId, plotusToken.address, to8Power("200"), 1, { from: user3 });
 
             await mockMarketConfig.setNextOptionPrice(180);
             await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("300"), 2, { from: user1 });
 
             await mockMarketConfig.setNextOptionPrice(270);
-            await allMarkets.depositAndPlacePrediction(0, marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
+            await allMarkets.depositAndPlacePrediction(toWei(400), marketId, plotusToken.address, to8Power("400"), 3, { from: user2 });
 
             await increaseTime(8 * 60 * 60);
             let neutralMinValue = (await allMarkets.getMarketData(scenario7MarketId)).neutralMinValue / 1;
@@ -490,21 +503,22 @@ describe("Bets Multiple options sheet", () => {
             let ethBalanceBeforeUser3 = (await web3.eth.getBalance(user3)) / 1e18;
 
             let user1Balance = await allMarkets.getUserUnusedBalance(user1);
-            user1Balance = user1Balance[0] + user1Balance[1];
+            let user1Return = user1Balance[1];
+            user1Balance = user1Balance[0]/1 + user1Balance[1]/1;
             let user2Balance = await allMarkets.getUserUnusedBalance(user2);
-            user2Balance = user2Balance[0] + user2Balance[1];
+            user2Balance = user2Balance[0]/1 + user2Balance[1]/1;
             let user3Balance = await allMarkets.getUserUnusedBalance(user3);
             user3Balance = user3Balance[0] + user3Balance[1];
-            await allMarkets.withdraw(user1Balance, 10, { from: user1 });
-            await allMarkets.withdraw(user2Balance, 10, { from: user2 });
+            await allMarkets.withdraw(user1Balance.toString(), 10, { from: user1 });
+            await allMarkets.withdraw(user2Balance.toString(), 10, { from: user2 });
             await assertRevert(allMarkets.withdraw(user3Balance, 10, { from: user3 }));
 
             let plotBalanceAfterUser1 = (await plotusToken.balanceOf(user1)) / 1e18;
             let plotBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
             let plotBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
 
-            assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (1094.4525).toFixed(2))
-            assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (996.5015).toFixed(2))
+            assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (user1Balance/1e18).toFixed(2))
+            assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (user2Balance/1e18).toFixed(2))
 
             await increaseTime(60 * 60 * 24 * 14);
             await allMarkets.postResultMock(1, scenario6MarketId);
@@ -532,8 +546,8 @@ describe("Bets Multiple options sheet", () => {
             plotBalanceAfterUser2 = (await plotusToken.balanceOf(user2)) / 1e18;
             plotBalanceAfterUser3 = (await plotusToken.balanceOf(user3)) / 1e18;
 
-            assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (259.0704).toFixed(2))
-            assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (1036.2816).toFixed(2))
+            assert.equal((plotBalanceAfterUser1-plotBalanceBeforeUser1).toFixed(2), (257.25).toFixed(2))
+            assert.equal((plotBalanceAfterUser2-plotBalanceBeforeUser2).toFixed(2), (1029).toFixed(2))
 
         });
     });

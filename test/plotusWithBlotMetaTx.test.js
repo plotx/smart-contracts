@@ -58,7 +58,11 @@ describe("newPlotusWithBlot", () => {
             allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
             marketIncentives = await MarketCreationRewards.at(await masterInstance.getLatestAddress(web3.utils.toHex("MC")));
             await increaseTime(4 * 60 * 60 + 1);
+            await allMarkets.claimRelayerRewards();
             await plotusToken.transfer(marketIncentives.address,toWei(100000));
+            await plotusToken.transfer(users[11],toWei(1000));
+            await plotusToken.approve(allMarkets.address, toWei(10000), {from:users[11]});
+            await mockMarketConfig.setNextOptionPrice(18);
             await allMarkets.createMarket(0, 0,{from: users[11]});
             // await marketIncentives.claimCreationReward(100,{from:users[11]});
             BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
@@ -103,7 +107,7 @@ describe("newPlotusWithBlot", () => {
             await allMarkets.claimRelayerRewards();
             let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-            assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),40.194*1e3);
+            assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),22.33*1e3);
         });
         it("1.3 Check Prediction points allocated", async () => {
             options = [0,2, 2, 2, 3, 1, 1, 2, 3, 3, 2];
@@ -139,8 +143,7 @@ describe("newPlotusWithBlot", () => {
                 let returnAmountInPLOT = response / 1e8;
                 return returnAmountInPLOT;
             };
-
-            const returnInPLOTExpected = [0,0,0,0,0,1452.578867,726.2894333,0,0,0,0];
+            const returnInPLOTExpected = [0,0,0,0,0,1433.688421,716.8442105,0,0,0,0];
 
             for (let index = 1; index < 11; index++) {
                 let returns = await getReturnsInPLOT(users[index]) / 1;
@@ -154,7 +157,7 @@ describe("newPlotusWithBlot", () => {
             }
         });
         it("1.5 Check User Received The appropriate amount", async () => {
-            const totalReturnLotExpexted = [0,0,0,0,0,1452.578867,726.2894333,0,0,0,0];;
+            const totalReturnLotExpexted = [0,0,0,0,0,1433.688421,716.8442105,0,0,0,0];;
             for (let i=1;i<11;i++) {
                 beforeClaimToken = await plotusToken.balanceOf(users[i]);
                 try {
@@ -189,7 +192,7 @@ describe("newPlotusWithBlot", () => {
         });
         it("1.6 Market creator should get apt reward", async () => {
             let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-            assert.equal(94717000,Math.round(marketCreatorReward[1]/1e11));
+            assert.equal(Math.round(1866.39),Math.round(marketCreatorReward/1e16));
 
             let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
@@ -204,7 +207,7 @@ describe("newPlotusWithBlot", () => {
 
             let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-            assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),94717000);
+            assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e16),Math.round(1866.39));
         });
     });
 });

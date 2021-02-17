@@ -104,8 +104,6 @@ contract("Rewards-Market", async function(users) {
 			      allMarkets,
               	   "AM"
 			      );
-				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
-				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
 			}
 
 			//SHould not add referrer if already placed prediction
@@ -114,7 +112,7 @@ contract("Rewards-Market", async function(users) {
 			await allMarkets.claimRelayerRewards();
 			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),5.466*1e3);
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),11.532*1e3);
 
 
 			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666, 1814.81481, 1814.81481, 1814.81481];
@@ -137,7 +135,12 @@ contract("Rewards-Market", async function(users) {
 
 			await increaseTime(8*60*60);
 
+			let daoBalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
 			await allMarkets.postResultMock(1,7);
+			let marketCreatoFee = 22.664;
+			let daoFee = 5.666;
+			let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+			assert.equal((daoBalanceAfter/1e18).toFixed(2), (daoBalanceBefore/1e18 + marketCreatoFee+daoFee).toFixed(2));
 			await plotusToken.transfer(users[12], "700000000000000000000");
 			await plotusToken.approve(allMarkets.address, "500000000000000000000", {
 				from: users[12],
@@ -169,7 +172,7 @@ contract("Rewards-Market", async function(users) {
 			}
 
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			assert.equal(391918333,Math.round(marketCreatorReward[1]/1e11));
+			assert.equal(226640000,Math.round(marketCreatorReward/1e11));
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
@@ -184,13 +187,13 @@ contract("Rewards-Market", async function(users) {
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),391918333);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),226640000);
 
 				
 		});
 
 		it("Check referral fee", async () => {
-			let referralRewardPlot = [2.633, 0.4, 0.21, 0.123, 0.5, 0.7, 0.2, 0.05, 0.3, 0.15];
+			let referralRewardPlot = [10.532, 0.8, 0.42, 0.246, 1, 1.4, 0.4, 0.1, 0.6, 0.3];
 
 			for(i=1;i<11;i++)
 			{
@@ -266,7 +269,7 @@ contract("Rewards-Market Stake less than 1 ether", async function(users) {
 			await allMarkets.claimRelayerRewards({from:users[11]});
 			relayerBalAfter = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(((relayerBalAfter-relayerBalBefore)/1e18),0.19999998);
+			assert.equal(((relayerBalAfter-relayerBalBefore)/1e18),1.00000002);
 
 
 			let betpoints = [1814.81481, 1814.81481, 1814.81481];
@@ -278,7 +281,7 @@ contract("Rewards-Market Stake less than 1 ether", async function(users) {
 				assert.equal(betPointUser,betpoints[i]);
 			}
 			let unusedBal = await allMarkets.getUserUnusedBalance(users[11]);
-			assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,99.99999999);
+			assert.equal(totalDepositedPlot/1e18-unusedBal[0]/1e18,100);
 
 			await increaseTime(8*60*60);
 
@@ -305,22 +308,22 @@ contract("Rewards-Market Stake less than 1 ether", async function(users) {
 			let plotBalAfter = await plotusToken.balanceOf(users[11]);
 			assert.equal(Math.round((plotBalAfter-plotBalBefore)/1e18),Math.round(reward/1e8));
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			assert.equal(0,Math.round(marketCreatorReward[1]/1e11));
+			assert.equal(8000000,Math.round(marketCreatorReward/1e11));
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
 			functionSignature = encode3("claimCreationReward(uint256)", 100);
-            await assertRevert(signAndExecuteMetaTx(
+            await signAndExecuteMetaTx(
                 privateKeyList[11],
                 users[11],
                 functionSignature,
                 marketIncentives,
               	"MC"
-                ));
+                );
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),0);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),8000000);
 
 				
 		});
@@ -386,8 +389,8 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			      allMarkets,
               		"AM"
 			      );
-				let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
-				assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
+				// let daoBalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+				// assert.equal(daoBalanceAfter - daoBalanceBefore, daoCommissions[i]*1e18);
 			}
 
 			//SHould not add referrer if already placed prediction
@@ -396,7 +399,7 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			await allMarkets.claimRelayerRewards();
 			let relayerBalAfter = await plotusToken.balanceOf(users[0]);
 
-			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),5.466*1e3);
+			assert.equal(Math.round((relayerBalAfter-relayerBalBefore)/1e15),11.532*1e3);
 
 
 			let betpoints = [0,5444.44444, 21777.77777, 11433.33333, 4464.44444, 54444.44444, 76222.22222, 10888.88888, 1814.81481, 10888.88888, 8166.66666, 1814.81481, 1814.81481, 1814.81481];
@@ -448,7 +451,7 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			await increaseTime(60*61);
 		    assert.equal((await allMarkets.getMarketResults(7))[0]/1, 3);
 
-			let userRewardPlot = [0, 0, 0, 0, 195.4564356, 0, 0, 0, 79.45383562, 476.7230137, 0];
+			let userRewardPlot = [0, 0, 0, 0, 166.6424219, 0, 0, 0, 67.74082192, 406.4449315, 0];
 			for(i=1;i<11;i++)
 			{
 				let reward = await allMarkets.getReturn(users[i],7);
@@ -468,7 +471,7 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			}
 
 			let marketCreatorReward = await marketIncentives.getPendingMarketCreationRewards(users[11]);
-			assert.equal(570033333,Math.round(marketCreatorReward[1]/1e11));
+			assert.equal(226640000,Math.round(marketCreatorReward/1e11));
 
 			let plotBalBeforeCreator = await plotusToken.balanceOf(users[11]);
 
@@ -483,13 +486,13 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 
 			let plotBalAfterCreator = await plotusToken.balanceOf(users[11]);
 
-			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),570033333);
+			assert.equal(Math.round((plotBalAfterCreator-plotBalBeforeCreator)/1e11),226640000);
 
 				
 		});
 
 		it("Check referral fee", async () => {
-			let referralRewardPlot = [2.633, 0.4, 0.21, 0.123, 0.5, 0.7, 0.2, 0.05, 0.3, 0.15];
+			let referralRewardPlot = [10.532, 0.8, 0.42, 0.246, 1, 1.4, 0.4, 0.1, 0.6, 0.3];
 
 			for(i=1;i<11;i++)
 			{
