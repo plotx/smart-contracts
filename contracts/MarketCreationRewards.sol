@@ -134,12 +134,12 @@ contract MarketCreationRewards is Governed, NativeMetaTransaction {
     /**
     * @dev Function to deposit market reward pool share funds for market creator
     * @param _marketId Index of market
-    * @param _tokenShare prediction token fee share earned by 
+    * @param _creatorFee prediction token fee share earned by 
     */
-    function depositMarketCreationReward(uint256 _marketId, uint256 _tokenShare) external onlyInternal {
-    	marketCreationRewardUserData[marketCreationRewardData[_marketId].createdBy].rewardEarned = _tokenShare;
+    function depositMarketCreationReward(uint256 _marketId, uint256 _creatorFee) external onlyInternal {
+    	marketCreationRewardUserData[marketCreationRewardData[_marketId].createdBy].rewardEarned = _creatorFee;
       // marketCreationRewardData[_marketId].tokenDeposited = _tokenDeposited;
-     	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _tokenShare);
+     	emit MarketCreatorRewardPoolShare(marketCreationRewardData[_marketId].createdBy, _marketId, _creatorFee);
     } 
 
     /**

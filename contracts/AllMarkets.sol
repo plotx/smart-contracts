@@ -704,9 +704,10 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       if(_marketDataExtended.predictionStatus != PredictionStatus.InDispute) {
         _marketDataExtended.settleTime = uint32(now);
         uint64 amountToTransfer;
-        amountToTransfer = (marketFeeParams.daoFee[_marketId]).add(marketFeeParams.marketCreatorFee[_marketId]);
+        MarketFeeParams storage _marketFeeParams = marketFeeParams;
+        amountToTransfer = (_marketFeeParams.daoFee[_marketId]).add(_marketFeeParams.marketCreatorFee[_marketId]);
         _transferAsset(predictionToken, address(marketCreationRewards), (10**predictionDecimalMultiplier).mul(amountToTransfer));
-        marketCreationRewards.depositMarketCreationReward(_marketId, (10**predictionDecimalMultiplier).mul(amountToTransfer));
+        marketCreationRewards.depositMarketCreationReward(_marketId, (10**predictionDecimalMultiplier).mul(_marketFeeParams.marketCreatorFee[_marketId]));
       } else {
         delete _marketDataExtended.settleTime;
       }
