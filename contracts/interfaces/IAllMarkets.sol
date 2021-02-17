@@ -10,6 +10,10 @@ contract IAllMarkets {
       Settled
     }
 
+    function getTotalPredictionPoints(uint _marketId) public view returns(uint64 predictionPoints);
+
+    function getUserPredictionPoints(address _user, uint256 _marketId, uint256 _option) external view returns(uint64);
+
     function marketStatus(uint256 _marketId) public view returns(PredictionStatus);
 
     function burnDisputedProposalTokens(uint _proposaId) external;

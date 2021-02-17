@@ -69,6 +69,7 @@ contract Master is Governed {
         allContractNames.push("MC");
         allContractNames.push("MU");
         allContractNames.push("BL");
+        allContractNames.push("PM");
 
         require(
             allContractNames.length == _implementations.length,
