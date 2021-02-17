@@ -8,6 +8,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 
 contract IMaster {
+    mapping(address => bool) public whitelistedSponsor;
     function getLatestAddress(bytes2 _module) public view returns(address);
 }
 
@@ -18,13 +19,19 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
 	IMaster public ms;
     IAllMarkets internal allMarkets;
 
-    bool initiated;
-
-
-    mapping(uint => mapping(address=>bool)) marketRewardUserClaimed;
+    struct SponsorIncentives {
+        address incentiveToken;
+        uint incentiveToDistribute;
+        address incentiveSponsoredBy;
+    }
+    
+    mapping(uint => SponsorIncentives) public marketSponsorship;
+    
+    mapping(uint => mapping(address=>bool)) public marketRewardUserClaimed;
 
     uint constant internal TOTAL_OPTION = 3;
 
+    event SponsoredIncentive(uint256 indexed marketIndex, address incentiveTokenAddress, address sponsoredBy, uint256 amount);
     event Claimed(uint _marketId, address _user, address _token, uint _reward);
 
     /**
@@ -35,13 +42,9 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
             address(uint160(address(this)))
         );
         require(msg.sender == proxy.proxyOwner(), "Sender is not proxy owner.");
-        IMaster ms = IMaster(msg.sender);
+        ms = IMaster(msg.sender);
         allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
-        if(!initiated)
-        {
-            initiated = true;
-            _initializeEIP712("PM");
-        }
+        _initializeEIP712("PM");    
     }
 
     function getUserTotalPointsInMarket(uint _marketId, address _user) internal view returns(uint) {
@@ -54,33 +57,43 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
 
     }
 
-    function claimParticipationMiningReward(uint[] calldata _marketIds, uint[] calldata _amountToDistribute, address[] calldata _tokenAddresses) external {
-
-        require(_marketIds.length == _amountToDistribute.length,"Array Length should match");
-        require(_marketIds.length == _tokenAddresses.length,"Array Length should match");
+    function claimParticipationMiningReward(uint[] calldata _marketIds) external {
 
         for(uint i=0; i<_marketIds.length; i++) {
-            require(allMarkets.marketStatus(_marketIds[i]) == IAllMarkets.PredictionStatus.Settled);
-            require(!marketRewardUserClaimed[_marketIds[i]][_msgSender()]);
-            require(_amountToDistribute[i] > 0);
-            require(_tokenAddresses[i]!=address(0));
+            SponsorIncentives storage _sponsorIncentives = marketSponsorship[_marketIds[i]];
+            require(_sponsorIncentives.incentiveToken != address(0),"One of the Makets are not Sponsored");
+            require(allMarkets.marketStatus(_marketIds[i]) == IAllMarkets.PredictionStatus.Settled,"One of the Markets are not Settled");
+            require(!marketRewardUserClaimed[_marketIds[i]][_msgSender()],"Already claimed for one of the market Id");
             
             uint reward=0;
 
             uint totalPredictionPoints = allMarkets.getTotalPredictionPoints(_marketIds[i]);
 
-            if(totalPredictionPoints == 0) {
-                continue;
-            }
-
             uint userPredictionPoints = getUserTotalPointsInMarket(_marketIds[i],_msgSender());
 
-            reward = _amountToDistribute[i].mul(userPredictionPoints).div(totalPredictionPoints);
+            reward = _sponsorIncentives.incentiveToDistribute.mul(userPredictionPoints).div(totalPredictionPoints);
             marketRewardUserClaimed[_marketIds[i]][_msgSender()] = true;
             if(reward > 0) { 
-                require(IToken(_tokenAddresses[i]).transfer(_msgSender(), reward));
-                emit Claimed(_marketIds[i], _msgSender(), _tokenAddresses[i], reward);
+                require(IToken(_sponsorIncentives.incentiveToken).transfer(_msgSender(), reward));
+                emit Claimed(_marketIds[i], _msgSender(), _sponsorIncentives.incentiveToken, reward);
             }
         }
+    }
+
+    /**
+    * @dev Sponsor Incentive for the market
+    * @param _marketId Index of market to sponsor
+    * @param _token Address of token to sponsor
+    * @param _value Amount to sponsor
+    */
+    function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
+      require(ms.whitelistedSponsor(_msgSender()),"Sponsor is not whitelisted");
+      require(_token != address(0), "Incentive Token can not be null");
+      require(_value > 0,"Incentive to distribute should not be 0");
+      require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live");
+      require(marketSponsorship[_marketId].incentiveToken == address(0),"Already Sponsored");
+      marketSponsorship[_marketId] = SponsorIncentives(_token,_value,_msgSender());
+      require(IToken(_token).transferFrom(_msgSender(), address(this), _value));
+      emit SponsoredIncentive(_marketId, _token, _msgSender(), _value);
     }
 }
