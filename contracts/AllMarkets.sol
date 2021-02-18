@@ -100,6 +100,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       uint32 currency;
       uint32 startTime;
       uint32 predictionTime;
+      uint32 cooldownTime;
       uint64 neutralMinValue;
       uint64 neutralMaxValue;
       address feedAddress;
@@ -273,6 +274,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     function updateMarketType(uint32 _marketType, uint32 _optionRangePerc, uint32 _marketCooldownTime, uint32 _minTimePassed) external onlyAuthorizedToGovern {
       require(_optionRangePerc > 0);
       require(_marketCooldownTime > 0);
+      require(_minTimePassed > 0);
       MarketTypeData storage _marketTypeArray = marketTypeArray[_marketType];
       require(_marketTypeArray.predictionTime != 0);
       _marketTypeArray.optionRangePerc = _optionRangePerc;
@@ -285,18 +287,31 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     * @dev function to update integer parameters
     */
     function updateUintParameters(bytes8 code, uint256 value) external onlyAuthorizedToGovern {
-      if(code == "CMFP") { // Cummulative fee percent
-        marketFeeParams.cummulativeFeePercent = uint32(value);
-      } else if(code == "DAOF") { // DAO Fee percent in Cummulative fee
-        marketFeeParams.daoCommissionPercent = uint32(value);
-      } else if(code == "RFRRF") { // Referrer fee percent in Cummulative fee
-        marketFeeParams.referrerFeePercent = uint32(value);
-      } else if(code == "RFREF") { // Referee fee percent in Cummulative fee
-        marketFeeParams.refereeFeePercent = uint32(value);
-      } else if(code == "MCF") { // Market Creator fee percent in Cummulative fee
-        marketFeeParams.marketCreatorFeePercent = uint32(value);
-      } else if(code == "MDPA") { // Market creators default prediction amount
+      if(code == "MDPA") { // Market creators default prediction amount
         mcDefaultPredictionAmount = uint64(value);
+      } else {
+        require(value < 10000);
+        if(code == "CMFP") { // Cummulative fee percent
+          marketFeeParams.cummulativeFeePercent = uint32(value);
+        } else {
+          if(code == "DAOF") { // DAO Fee percent in Cummulative fee
+            marketFeeParams.daoCommissionPercent = uint32(value);
+          } else if(code == "RFRRF") { // Referrer fee percent in Cummulative fee
+            marketFeeParams.referrerFeePercent = uint32(value);
+          } else if(code == "RFREF") { // Referee fee percent in Cummulative fee
+            marketFeeParams.refereeFeePercent = uint32(value);
+          } else if(code == "MCF") { // Market Creator fee percent in Cummulative fee
+            marketFeeParams.marketCreatorFeePercent = uint32(value);
+          } else {
+            revert("Invalid");
+          } 
+          require(
+            marketFeeParams.daoCommissionPercent + 
+            marketFeeParams.referrerFeePercent + 
+            marketFeeParams.refereeFeePercent + 
+            marketFeeParams.marketCreatorFeePercent
+            < 10000);
+        }
       }
     }
 
@@ -368,7 +383,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       _addMarketCurrency("ETH/USD", _ethFeed, 8, 1, _marketStartTime);
       _addMarketCurrency("BTC/USD", _btcFeed, 8, 25, _marketStartTime);
 
-      marketBasicData.push(MarketBasicData(0,0,0, 0,0,0, address(0)));
+      marketBasicData.push(MarketBasicData(0,0,0, 0,0,0,0, address(0)));
       for(uint32 i = 0;i < marketTypeArray.length; i++) {
           createMarket(0, i);
           createMarket(1, i);
@@ -389,7 +404,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
       uint32 _startTime = calculateStartTimeForMarket(_marketCurrencyIndex, _marketTypeIndex);
       (uint64 _minValue, uint64 _maxValue) = marketUtility.calculateOptionRange(_marketType.optionRangePerc, marketCurrencies[_marketCurrencyIndex].decimals, marketCurrencies[_marketCurrencyIndex].roundOfToNearest, marketCurrencies[_marketCurrencyIndex].marketFeed, marketCurrencies[_marketCurrencyIndex].currencyName);
       uint64 _marketIndex = uint64(marketBasicData.length);
-      marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, _marketType.predictionTime,_minValue,_maxValue, marketCurrencies[_marketCurrencyIndex].marketFeed));
+      marketBasicData.push(MarketBasicData(_marketTypeIndex,_marketCurrencyIndex,_startTime, _marketType.predictionTime, _marketType.cooldownTime, _minValue, _maxValue, marketCurrencies[_marketCurrencyIndex].marketFeed));
       MarketCreationData storage _marketCreationData = marketCreationData[_marketTypeIndex][_marketCurrencyIndex];
       (_marketCreationData.penultimateMarket, _marketCreationData.latestMarket) =
        (_marketCreationData.latestMarket, _marketIndex);
@@ -482,7 +497,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     * @return the time upto which user can raise the dispute after the market is settled
     */
     function marketCoolDownTime(uint256 _marketId) public view returns(uint256) {
-      return (marketSettleTime(_marketId) + marketTypeArray[marketBasicData[_marketId].Mtype].cooldownTime);
+      return (marketSettleTime(_marketId) + marketBasicData[_marketId].cooldownTime);
     }
 
     /**

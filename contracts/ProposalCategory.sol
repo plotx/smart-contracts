@@ -212,21 +212,13 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             advisoryBoardRole
         );
         _addInitialCategories(
-            "Update Market Creation Reward Uint parameters",
-            "QmXPXBkSKfidTgbDcRBLqokqAa9SU2wwErTyedPAZPfr5z",
-            "MC",
+            "Update AllMarkets Uint parameters",
+            "",
+            "AM",
             "updateUintParameters(bytes8,uint256)",
             60,
             advisoryBoardRole
         ); //19
-        // _addInitialCategories(
-        //     "Update Market Address parameters",
-        //     "QmbbNRchZHMULBbKFT8qjCWgCRPa4qdkst8mE8A2Kffy7N",
-        //     "PL",
-        //     "updateConfigAddressParameters(bytes8,address)",
-        //     60,
-        //     advisoryBoardRole
-        // );
         _addInitialCategories(
             "Update Member roles parameters",
             "QmcG8KXLMTDL5CtiKed12bJxE4ioL7Wn7oXLdW1zYWpf62",
@@ -250,7 +242,7 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "toggleMarketCreationType(uint64,bool)",
             60,
             advisoryBoardRole
-        );
+        );//22
         _addInitialCategories(
             "Set Multiplier per level",
             "",
@@ -266,7 +258,16 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             "updateUintParameters(bytes8,uint256)",
             60,
             advisoryBoardRole
-        );
+        );//24
+        
+        _addInitialCategories(
+            "Update Market Type",
+            "",
+            "AM",
+            "updateMarketType(uint32,uint32,uint32,uint32)",
+            60,
+            advisoryBoardRole
+        );//25
         _addInitialCategories(
             "Any other item",
             "",
