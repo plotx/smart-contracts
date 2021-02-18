@@ -21,7 +21,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMaster.sol";
 import "./interfaces/Iupgradable.sol";
 
-contract BLOTV2 is Iupgradable {
+contract BLOT is Iupgradable {
     using SafeMath for uint256;
     using Roles for Roles.Role;
 
@@ -33,10 +33,19 @@ contract BLOTV2 is Iupgradable {
 
     address public operator;
     address public plotToken;
-    address public constant authorized = 0x6f9f333de6eCFa67365916cF95873a4DC480217a; 
+    address public constant authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
+    address public constant migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
+    
+    mapping(bytes32 => MigrationStatus) public migrationStatus;
+    struct MigrationStatus{
+        bool initiated;
+        bool completed;
+    }
 
     event MinterAdded(address indexed account);
     event MinterRemoved(address indexed account);
+    event MigrationAuthorised(bytes hash);
+    event MigrationCompleted(bytes hash);
 
     mapping (address => uint256) internal _balances;
 
@@ -98,7 +107,7 @@ contract BLOTV2 is Iupgradable {
         operator = ms.getLatestAddress("TC");
     }
     
-    
+ 
     /**
      * @dev See `IERC20.transfer`.
      *
@@ -181,40 +190,58 @@ contract BLOTV2 is Iupgradable {
         _balances[account] = _balances[account].add(amount);
         emit Transfer(address(0), account, amount);
     }
-
-    /**
-     * @dev Destroys `amount` tokens from the caller.
-     *
-     * See `ERC20._burn`.
-     */
-    function convertToPLOT(
-        address _of,
-        address _to,
-        uint256 amount
-    ) public onlyOperator {
-        _burn(_of, amount);
-        require(IERC20(plotToken).transfer(_to, amount), "Error in transfer");
+    
+    function migrationHash( bytes memory _hash, address _to, address _from, uint256 _timestamp,uint256 _amount) public view returns (bytes32){
+        return  keccak256(abi.encode(_hash, _from, _to, _timestamp,_amount));
     }
     
+  
+   
      /**
-     * @dev Destroys all tokens from the caller.
+     * @dev Whitelist transaction to transfer bPlots.
      *
-     * See `ERC20._burn`.
+     * See `ERC20._mint`.
+     */
+    function whitelistMigration(
+        bytes memory _hash,
+        address _to,
+        address _from,
+        uint256 _timestamp,
+        uint256 _amount
+    ) public returns (bytes32) {
+        require(msg.sender == authController, "msg.sender is not authController");
+        require(migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].initiated == false, "Migration is already initiated");
+        require(migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].completed == false, "Migration has been already completed");
+        
+        migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].initiated = true;
+        emit MigrationAuthorised(_hash);
+
+        return migrationHash(_hash, _from, _to, _timestamp, _amount);
+        
+    }
+    
+   
+     /**
+     * @dev Mint bPlots as per whitelisted transaction.
+     *
      */
     function migrate(
-        address _to
-    ) public {
-        require(balanceOf(msg.sender) > 0, "User must have bPlots");
-        require(_to != address(0));
-        require(IERC20(plotToken).transfer(authorized, balanceOf(msg.sender)), "Error in transfer");
+        bytes memory _hash,
+        address _to,
+        address _from,
+        uint256 _timestamp,
+        uint256 _amount
+    ) public returns (bool){
+        require(msg.sender == migrationController, "msg.sender is not migration controller");
+        require(migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].initiated == true, "Migration is already initiated");
+        require(migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].completed == false, "Migration has been already completed");
         
-        uint256 value = balanceOf(msg.sender);
-        _burn(msg.sender,value);
-        
-        emit Migrate(msg.sender,_to,value);
+        _mint( _to, _amount);
+        migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].completed = true;
+        emit MigrationCompleted(_hash);
+
+        return true;
     }
-    
-    
 
     /**
      * @dev Destoys `amount` tokens from `account`, reducing the
@@ -234,8 +261,6 @@ contract BLOTV2 is Iupgradable {
         _balances[account] = _balances[account].sub(value);
         emit Transfer(account, address(0), value);
     }
-    
-    
 
     /**
      * @dev Check if `account` has minting rights
