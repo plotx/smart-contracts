@@ -1,6 +1,6 @@
 pragma solidity 0.5.7;
 
-import "./PlotXToken.sol";
+import "./interfaces/IToken.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
@@ -12,7 +12,7 @@ contract Airdrop {
 
   using SafeMath for uint256;
   IbLOTToken bLotToken;
-  PlotXToken public plotToken;
+  IToken public plotToken;
   address public owner;
   uint public endDate;
   uint public remainingbudget;
@@ -43,7 +43,7 @@ contract Airdrop {
     require(_plotToken != address(0),"Can not be null address");
     require(_bLotToken != address(0),"Can not be null address");
     require(_endDate > now,"End date can not be past time");
-    plotToken = PlotXToken(_plotToken);
+    plotToken = IToken(_plotToken);
     bLotToken = IbLOTToken(_bLotToken);
     owner = msg.sender;
     endDate = _endDate;

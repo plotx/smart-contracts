@@ -16,17 +16,15 @@
 pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
-import "./PlotXToken.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
-import "./interfaces/IMarketRegistry.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
-import "./external/BasicMetaTransaction.sol";
+import "./external/NativeMetaTransaction.sol";
 
-contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransaction {
+contract TokenController is IERC1132, Governed, Iupgradable, NativeMetaTransaction {
     using SafeMath for uint256;
 
     event Burned(address indexed member, bytes32 lockedUnder, uint256 amount);
@@ -42,13 +40,12 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
 
     bool internal constructorCheck;
 
-    PlotXToken public token;
-    IMarketRegistry public marketRegistry;
+    IToken public token;
     IbLOTToken public bLOTToken;
     Vesting public vesting;
 
     modifier onlyAuthorized {
-        require(marketRegistry.isMarket(msg.sender) || IMaster(masterAddress).isInternal(msg.sender), "Not authorized");
+        require(IMaster(masterAddress).isInternal(msg.sender), "Not authorized");
         _;
     }
 
@@ -63,9 +60,9 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
         constructorCheck = true;
         masterAddress = msg.sender;
         IMaster ms = IMaster(msg.sender);
-        token = PlotXToken(ms.dAppToken());
+        token = IToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
-        marketRegistry = IMarketRegistry(address(uint160(ms.getLatestAddress("PL"))));
+        _initializeEIP712("TC");
     }
 
     /**
@@ -323,7 +320,9 @@ contract TokenController is IERC1132, Governed, Iupgradable, BasicMetaTransactio
             locked[_of][_reason].claimed = true;
             _removeReason(_of, _reason);
         }
-        token.burn(_amount);
+        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+        IMaster ms = IMaster(proxy.proxyOwner());
+        token.transfer(ms.getLatestAddress("MC"),_amount);
         emit Burned(_of, _reason, _amount);
     }
 

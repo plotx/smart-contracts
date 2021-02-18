@@ -21,7 +21,9 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMaster.sol";
 import "./interfaces/Iupgradable.sol";
 
+
 contract BLOTV2 is Iupgradable {
+
     using SafeMath for uint256;
     using Roles for Roles.Role;
 
@@ -33,9 +35,10 @@ contract BLOTV2 is Iupgradable {
 
     address public operator;
     address public plotToken;
+
     address public constant authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
     address public constant migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
-    
+
     mapping(bytes32 => MigrationStatus) public migrationStatus;
     struct MigrationStatus{
         bool initiated;

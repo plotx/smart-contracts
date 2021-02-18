@@ -15,62 +15,66 @@
 
 pragma solidity 0.5.7;
 
-import "./external/uniswap/solidity-interface.sol";
-import "./external/uniswap/FixedPoint.sol";
-import "./external/uniswap/oracleLibrary.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/proxy/OwnedUpgradeabilityProxy.sol";
+import "./external/govblocks-protocol/Governed.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/IMarketRegistry.sol";
 import "./interfaces/IChainLinkOracle.sol";
 import "./interfaces/IToken.sol";
+import "./interfaces/IAllMarkets.sol";
 
-contract MarketUtility {
+contract MarketUtility is Governed {
     using SafeMath for uint256;
-    using FixedPoint for *;
+    using SafeMath64 for uint64;
 
-    address constant ETH_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
     uint256 constant updatePeriod = 1 hours;
 
-    uint256 internal STAKE_WEIGHTAGE;
-    uint256 internal STAKE_WEIGHTAGE_MIN_AMOUNT;
-    uint256 internal minTimeElapsedDivisor;
     uint256 internal minPredictionAmount;
     uint256 internal maxPredictionAmount;
     uint256 internal positionDecimals;
-    uint256 internal minStakeForMultiplier;
-    uint256 internal riskPercentage;
     uint256 internal tokenStakeForDispute;
-    address internal plotToken;
-    address internal plotETHpair;
-    address internal weth;
-    address internal initiater;
-    address public authorizedAddress;
     bool public initialized;
 
+    // Minimum prediction amount in market needed to kick-in staking factor in option pricing calculation
+    uint256 public stakingFactorMinStake;
+    // Weightage given to staking factor in option pricing
+    uint32 public stakingFactorWeightage;
+    // Weightage given to current price in option pricing
+    uint32 public currentPriceWeightage;
 
-    struct UniswapPriceData {
-        FixedPoint.uq112x112 price0Average;
-        uint256 price0CumulativeLast;
-        FixedPoint.uq112x112 price1Average;
-        uint256 price1CumulativeLast;
-        uint32 blockTimestampLast;
-        bool initialized;
-    }
 
-    mapping(address => UniswapPriceData) internal uniswapPairData;
-    IUniswapV2Factory uniswapFactory;
+    mapping(address => uint256) public conversionRate;
+    mapping(address => uint256) public userLevel;
+    mapping(uint256 => uint256) public levelMultiplier;
+    mapping (address => bool) internal authorizedAddresses;
+    // Mapping to store latest price of currency type if it's feed address is null.
+    mapping(bytes32 => uint) public marketTypeFeedPrice;
+    
 
     ITokenController internal tokenController;
+    IAllMarkets internal allMarkets;
     modifier onlyAuthorized() {
-        require(msg.sender == authorizedAddress, "Not authorized");
+        require(authorizedAddresses[msg.sender], "Not authorized");
         _;
+    }
+
+    /**
+     * @dev Changes the master address and update it's instance
+     */
+    function setMasterAddress() public {
+      OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
+      require(msg.sender == proxy.proxyOwner(),"not owner.");
+      IMaster ms = IMaster(msg.sender);
+      tokenController = ITokenController(ms.getLatestAddress("TC"));
+      allMarkets = IAllMarkets(ms.getLatestAddress("AM"));
+      masterAddress = msg.sender;
     }
 
     /**
      * @dev Initiates the config contact with initial values
      **/
-    function initialize(address payable[] memory _addressParams, address _initiater) public {
+    function initialize(address _initiater) public {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
             address(uint160(address(this)))
         );
@@ -78,48 +82,48 @@ contract MarketUtility {
         require(!initialized, "Already initialized");
         initialized = true;
         _setInitialParameters();
-        authorizedAddress = msg.sender;
-        tokenController = ITokenController(IMarketRegistry(msg.sender).tokenController());
-        plotToken = _addressParams[1];
-        initiater = _initiater;
-        weth = IUniswapV2Router02(_addressParams[0]).WETH();
-        uniswapFactory = IUniswapV2Factory(_addressParams[2]);
+        authorizedAddresses[_initiater] = true;
+    }
+
+    /**
+    * @dev Function to set authorized address
+    **/
+    function addAuthorizedAddress(address _address) external onlyAuthorized {
+        authorizedAddresses[_address] = true;
+    }
+
+    /**
+    * @dev Function to check if given `_address` is  authorized address
+    **/
+    function isAuthorized(address _address) external view returns(bool) {
+      return authorizedAddresses[_address];
     }
 
     /**
      * @dev Internal function to set initial value
      **/
     function _setInitialParameters() internal {
-        STAKE_WEIGHTAGE = 40; //
-        STAKE_WEIGHTAGE_MIN_AMOUNT = 20 ether;
-        minTimeElapsedDivisor = 6;
-        minPredictionAmount = 1e15;
-        maxPredictionAmount = 28 ether;
+        minPredictionAmount = 10 ether;// need to change the value according to prediction token
+        maxPredictionAmount = 100000 ether; // need to change the value according to prediction token
         positionDecimals = 1e2;
-        minStakeForMultiplier = 5e17;
-        riskPercentage = 20;
         tokenStakeForDispute = 500 ether;
+        stakingFactorMinStake = uint(20000).mul(10**8);
+        stakingFactorWeightage = 40;
+        currentPriceWeightage = 60;
     }
 
     /**
     * @dev Check if user gets any multiplier on his positions
-    * @param _asset The assets uses by user during prediction.
-    * @param _predictionStake The amount staked by user at the time of prediction.
+    * @param _user User address
     * @param predictionPoints The actual positions user got during prediction.
-    * @param _stakeValue The stake value of asset.
     * @return uint256 representing multiplied positions
+    * @return bool returns true if multplier applied
     */
-    function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool) {
+    function checkMultiplier(address _user, uint predictionPoints) public view returns(uint, bool) {
       bool multiplierApplied;
-      uint _stakedBalance = tokenController.tokensLockedAtTime(_user, "SM", now);
-      uint _predictionValueInToken;
-      (, _predictionValueInToken) = getValueAndMultiplierParameters(_asset, _predictionStake);
-      if(_stakeValue < minStakeForMultiplier) {
-        return (predictionPoints,multiplierApplied);
-      }
       uint _muliplier = 100;
-      if(_stakedBalance.div(_predictionValueInToken) > 0) {
-        _muliplier = _muliplier + _stakedBalance.mul(100).div(_predictionValueInToken.mul(10));
+      if(userLevel[_user] > 0) {
+        _muliplier = _muliplier + levelMultiplier[userLevel[_user]];
         multiplierApplied = true;
       }
       return (predictionPoints.mul(_muliplier).div(100),multiplierApplied);
@@ -130,102 +134,65 @@ contract MarketUtility {
      **/
     function updateUintParameters(bytes8 code, uint256 value)
         external
-        onlyAuthorized
+        onlyAuthorizedToGovern
     {
-        if (code == "SW") { // Stake weightage
-            require(value <= 100, "Value must be less or equal to 100");
-            STAKE_WEIGHTAGE = value;
-        } else if (code == "SWMA") { // Minimum amount required for stake weightage
-            STAKE_WEIGHTAGE_MIN_AMOUNT = value;
-        } else if (code == "MTED") { // Minimum time elapsed divisor
-            minTimeElapsedDivisor = value;
-        } else if (code == "MINPRD") { // Minimum predictionamount
+        if (code == "MINPRD") { // Minimum predictionamount
             minPredictionAmount = value;
-        } else if (code == "MAXPRD") { // Minimum predictionamount
+        } else if (code == "MAXPRD") { // Maximum predictionamount
             maxPredictionAmount = value;
         } else if (code == "PDEC") { // Position's Decimals
             positionDecimals = value;
-        } else if (code == "MINSTM") { // Min stake required for applying multiplier
-            minStakeForMultiplier = value;
-        } else if (code == "RPERC") { // Risk percentage
-            riskPercentage = value;
         } else if (code == "TSDISP") { // Amount of tokens to be staked for raising a dispute
             tokenStakeForDispute = value;
-        } else {
+        } else if (code == "SFMS") { // Minimum amount of tokens to be staked for considering staking factor
+            stakingFactorMinStake = value;
+        } else if (code == "SFCPW") { // Staking Factor Weightage and Current Price weightage
+            stakingFactorWeightage = uint32(value);
+            currentPriceWeightage = 100 - stakingFactorWeightage;
+        }else {
             revert("Invalid code");
         }
     }
 
     /**
-     * @dev Updates address parameters of config
-     **/
-    function updateAddressParameters(bytes8 code, address payable value)
-        external
-        onlyAuthorized
-    {
-        require(value != address(0), "Value cannot be address(0)");
-        if (code == "UNIFAC") { // Uniswap factory address
-            uniswapFactory = IUniswapV2Factory(value);
-            plotETHpair = uniswapFactory.getPair(plotToken, weth);
-        } else {
-            revert("Invalid code");
-        }
+    * @dev Function to set `_marketCurr` to Cuurency Price. Callable by authorised addresses only
+    * @param _marketCurr currencyType
+    * @param _val Price of currency
+    */
+    function setFeedPriceForMarketType(bytes32 _marketCurr, uint _val) external onlyAuthorized {
+      address _feedAddress = allMarkets.getMarketCurrencyData(_marketCurr); // getting feed address.
+      require(_feedAddress == address(0)); // feed addess should be null.
+      marketTypeFeedPrice[_marketCurr] = _val;
+    }
+    
+    /**
+    * @dev Function to set `_asset` to PLOT token value conversion rate
+    * @param _asset Token Address
+    * @param _rate `_asset` to PLOT conversion rate
+    */
+    function setAssetPlotConversionRate(address _asset, uint256 _rate) public onlyAuthorized {
+      conversionRate[_asset] = _rate;
     }
 
     /**
-     * @dev Update cumulative price of token in uniswap
-     **/
-    function update() external onlyAuthorized {
-        require(plotETHpair != address(0), "Uniswap pair not set");
-        UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
-        (
-            uint256 price0Cumulative,
-            uint256 price1Cumulative,
-            uint32 blockTimestamp
-        ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
-        uint32 timeElapsed = blockTimestamp - _priceData.blockTimestampLast; // overflow is desired
-
-        if (timeElapsed >= updatePeriod || !_priceData.initialized) {
-            // overflow is desired, casting never truncates
-            // cumulative price is in (uq112x112 price * seconds) units so we simply wrap it after division by time elapsed
-            _priceData.price0Average = FixedPoint.uq112x112(
-                uint224(
-                    (price0Cumulative - _priceData.price0CumulativeLast) /
-                        timeElapsed
-                )
-            );
-            _priceData.price1Average = FixedPoint.uq112x112(
-                uint224(
-                    (price1Cumulative - _priceData.price1CumulativeLast) /
-                        timeElapsed
-                )
-            );
-
-            _priceData.price0CumulativeLast = price0Cumulative;
-            _priceData.price1CumulativeLast = price1Cumulative;
-            _priceData.blockTimestampLast = blockTimestamp;
-            if(!_priceData.initialized) {
-              _priceData.initialized = true;
-            }
-        }
+    * @dev Function to set `_user` level for prediction points multiplier
+    * @param _user User address
+    * @param _level user level indicator
+    */
+    function setUserLevel(address _user, uint256 _level) public onlyAuthorized {
+      userLevel[_user] = _level;
     }
 
     /**
-     * @dev Set initial PLOT/ETH pair cummulative price
-     **/
-    function setInitialCummulativePrice() public {
-      require(msg.sender == initiater);
-      require(plotETHpair == address(0),"Already initialised");
-      plotETHpair = uniswapFactory.getPair(plotToken, weth);
-      UniswapPriceData storage _priceData = uniswapPairData[plotETHpair];
-      (
-          uint256 price0Cumulative,
-          uint256 price1Cumulative,
-          uint32 blockTimestamp
-      ) = UniswapV2OracleLibrary.currentCumulativePrices(plotETHpair);
-      _priceData.price0CumulativeLast = price0Cumulative;
-      _priceData.price1CumulativeLast = price1Cumulative;
-      _priceData.blockTimestampLast = blockTimestamp;
+    * @dev Function to set multiplier per level (With 2 decimals)
+    * @param _userLevels Array of levels
+    * @param _multipliers Array of corresponding multipliers
+    */
+    function setMultiplierLevels(uint256[] memory _userLevels, uint256[] memory _multipliers) public onlyAuthorizedToGovern {
+      require(_userLevels.length == _multipliers.length);
+      for(uint256 i = 0; i < _userLevels.length; i++) {
+        levelMultiplier[_userLevels[i]] = _multipliers[i];
+      }
     }
 
     /**
@@ -238,7 +205,6 @@ contract MarketUtility {
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
-     * @return Percentage of users leveraged amount to deduct when placed in wrong prediction
      * @return Decimal points for prediction positions
      * @return Maximum prediction amount
      **/
@@ -248,53 +214,48 @@ contract MarketUtility {
         returns (
             uint256,
             uint256,
-            uint256,
             uint256
         )
     {
-        return (minPredictionAmount, riskPercentage, positionDecimals, maxPredictionAmount);
+        return (minPredictionAmount, positionDecimals, maxPredictionAmount);
     }
 
     /**
      * @dev Get Parameter required for option price calculation
-     * @param _marketFeedAddress  Feed Address of currency on which market options are based on
-     * @return Stake weightage percentage for calculation option price
-     * @return minimum amount of stake required to consider stake weightage
-     * @return Current price of the market currency
-     * @return Divisor to calculate minimum time elapsed for a market type
      **/
-    function getPriceCalculationParams(
-        address _marketFeedAddress
-    )
+    function getPriceCalculationParams()
         public
         view
         returns (
             uint256,
             uint256,
-            uint256,
-            uint256
+            uint32
         )
     {
-        uint256 _currencyPrice = getAssetPriceUSD(
-            _marketFeedAddress
-        );
         return (
-            STAKE_WEIGHTAGE,
-            STAKE_WEIGHTAGE_MIN_AMOUNT,
-            _currencyPrice,
-            minTimeElapsedDivisor
+            stakingFactorMinStake,
+            stakingFactorWeightage,
+            currentPriceWeightage
         );
     }
 
     /**
      * @dev Get price of provided feed address
      * @param _currencyFeedAddress  Feed Address of currency on which market options are based on
+     * @param _marketCurr  name of currency type
      * @return Current price of the market currency
      **/
     function getAssetPriceUSD(
-        address _currencyFeedAddress
+        address _currencyFeedAddress,
+        bytes32 _marketCurr
     ) public view returns (uint256 latestAnswer) {
-        return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer());
+
+      if(_currencyFeedAddress == address(0)) {
+        return marketTypeFeedPrice[_marketCurr]; // If feed address is null, return manually feeded value
+      } else {
+        return uint256(IChainLinkOracle(_currencyFeedAddress).latestAnswer()); // If feed address is available, return value from feed contract
+      }
+        
     }
 
     /**
@@ -322,195 +283,137 @@ contract MarketUtility {
     }
 
     /**
-     * @dev Get value of provided currency address in ETH
-     * @param _currencyAddress Address of currency
-     * @param _amount Amount of provided currency
-     * @return Value of provided amount in ETH
-     **/
-    function getAssetValueETH(address _currencyAddress, uint256 _amount)
-        public
-        view
-        returns (uint256 tokenEthValue)
-    {
-        tokenEthValue = _amount;
-        if (_currencyAddress != ETH_ADDRESS) {
-            tokenEthValue = getPrice(plotETHpair, _amount);
-        }
-    }
-
-    /**
-     * @dev Get price of provided currency address in ETH
-     * @param _currencyAddress Address of currency
-     * @return Price of provided currency in ETH
-     * @return Decimals of the currency
-     **/
-    function getAssetPriceInETH(address _currencyAddress)
-        public
-        view
-        returns (uint256 tokenEthValue, uint256 decimals)
-    {
-        tokenEthValue = 1;
-        if (_currencyAddress != ETH_ADDRESS) {
-            decimals = IToken(_currencyAddress).decimals();
-            tokenEthValue = getPrice(plotETHpair, 10**decimals);
-        }
-    }
-
-    /**
      * @dev Get amount of stake required to raise a dispute
      **/
     function getDisputeResolutionParams() public view returns (uint256) {
         return tokenStakeForDispute;
     }
 
-    /**
-     * @dev Get value of _asset in PLOT token and multiplier parameters
-     * @param _asset Address of asset for which value is requested
-     * @param _amount Amount of _asset
-     * @return min prediction amount required for multiplier
-     * @return value of given asset in PLOT tokens
-     **/
-    function getValueAndMultiplierParameters(address _asset, uint256 _amount)
-        public
-        view
-        returns (uint256, uint256)
-    {
-        uint256 _value = _amount;
-        if (_asset == ETH_ADDRESS) {
-            _value = (uniswapPairData[plotETHpair].price1Average)
-                .mul(_amount)
-                .decode144();
-        }
-        return (minStakeForMultiplier, _value);
+    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed, bytes32 _marketCurr) external view returns(uint64 _minValue, uint64 _maxValue) {
+      uint currentPrice = getAssetPriceUSD(_marketFeed, _marketCurr);
+      uint optionRangePerc = currentPrice.mul(_optionRangePerc.div(2)).div(10000);
+      _minValue = uint64((ceil(currentPrice.sub(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
+      _maxValue = uint64((ceil(currentPrice.add(optionRangePerc).div(_roundOfToNearest), 10**_decimals)).mul(_roundOfToNearest));
     }
 
-    /**
-     * @dev Get Market feed address
-     * @return Uniswap factory address
-     **/
-    function getFeedAddresses() public view returns (address) {
-        return (address(uniswapFactory));
-    }
-
-    /**
-     * @dev Get value of token in pair
-     **/
-    function getPrice(address pair, uint256 amountIn)
-        public
-        view
-        returns (uint256 amountOut)
-    {
-        amountOut = (uniswapPairData[pair].price0Average)
-            .mul(amountIn)
-            .decode144();
-    }
-
-    /**
-    * @dev function to calculate square root of a number
-    */
-    function sqrt(uint x) internal pure returns (uint y) {
-      uint z = (x + 1) / 2;
-      y = x;
-      while (z < y) {
-          y = z;
-          z = (x / z + z) / 2;
-      }
-    }
-
-    /**
-    * @dev Calculate the prediction value, passing all the required params
-    * params index
-    * 0 _prediction
-    * 1 neutralMinValue
-    * 2 neutralMaxValue
-    * 3 startTime
-    * 4 expireTime
-    * 5 totalStakedETH
-    * 6 totalStakedToken
-    * 7 ethStakedOnOption
-    * 8 plotStakedOnOption
-    * 9 _stake
-    * 10 _leverage
-    */
-    function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied) {
-      uint _stakeValue = getAssetValueETH(asset, params[9]);
+    function calculatePredictionPoints(uint _marketId, uint256 _prediction, address _user, bool multiplierApplied, uint _predictionStake) external view returns(uint64 predictionPoints, bool isMultiplierApplied) {
+      uint _stakeValue = _predictionStake.mul(1e10);
       if(_stakeValue < minPredictionAmount || _stakeValue > maxPredictionAmount) {
-        return (_predictionValue, _multiplierApplied);
+        return (0, isMultiplierApplied);
       }
-      uint optionPrice;
-      
-      optionPrice = calculateOptionPrice(params, marketFeedAddress);
-      _predictionValue = _calculatePredictionPoints(_stakeValue.mul(positionDecimals), optionPrice, params[10]);
-      if(_checkMultiplier) {
-        return checkMultiplier(asset, user, params[9],  _predictionValue, _stakeValue);
+      uint64 _optionPrice = getOptionPrice(_marketId, _prediction);
+      predictionPoints = uint64(_predictionStake).div(_optionPrice);
+      if(!multiplierApplied) {
+        uint256 _predictionPoints;
+        (_predictionPoints, isMultiplierApplied) = checkMultiplier(_user,  predictionPoints);
+        predictionPoints = uint64(_predictionPoints);
       }
-      return (_predictionValue, _multiplierApplied);
-    }
-
-    function _calculatePredictionPoints(uint value, uint optionPrice, uint _leverage) internal pure returns(uint) {
-      //leverageMultiplier = levergage + (leverage -1)*0.05; Raised by 3 decimals i.e 1000
-      uint leverageMultiplier = 1000 + (_leverage-1)*50;
-      value = value.mul(2500).div(1e18);
-      // (amount*sqrt(amount*100)*leverage*100/(price*10*125000/1000));
-      return value.mul(sqrt(value.mul(10000))).mul(_leverage*100*leverageMultiplier).div(optionPrice.mul(1250000000));
     }
 
     /**
-    * @dev Calculate the option price for given params
-    * params
-    * 0 _option
-    * 1 neutralMinValue
-    * 2 neutralMaxValue
-    * 3 startTime
-    * 4 expireTime
-    * 5 totalStakedETH
-    * 6 totalStakedToken
-    * 7 ethStakedOnOption
-    * 8 plotStakedOnOption
-    */
-    function calculateOptionPrice(uint[] memory params, address marketFeedAddress) public view returns(uint _optionPrice) {
-      uint _totalStaked = params[5].add(getAssetValueETH(plotToken, params[6]));
-      uint _assetStakedOnOption = params[7]
-                                .add(
-                                  (getAssetValueETH(plotToken, params[8])));
-      _optionPrice = 0;
-      uint currentPriceOption = 0;
-      uint256 currentPrice = getAssetPriceUSD(
-          marketFeedAddress
-      );
-      uint stakeWeightage = STAKE_WEIGHTAGE;
-      uint predictionWeightage = 100 - stakeWeightage;
-      uint predictionTime = params[4].sub(params[3]);
-      uint minTimeElapsed = (predictionTime).div(minTimeElapsedDivisor);
-      if(now > params[4]) {
-        return 0;
-      }
-      if(_totalStaked > STAKE_WEIGHTAGE_MIN_AMOUNT) {
-        _optionPrice = (_assetStakedOnOption).mul(1000000).div(_totalStaked.mul(stakeWeightage));
+     * @dev Gets price for all the options in a market
+     * @param _marketId  Market ID
+     * @return _optionPrices array consisting of prices for all available options
+     **/
+    function getAllOptionPrices(uint _marketId) external view returns(uint64[] memory _optionPrices) {
+      _optionPrices = new uint64[](3);
+      for(uint i=0;i<3;i++) {
+        _optionPrices[i] = getOptionPrice(_marketId,i+1);
       }
 
-      uint maxDistance;
-      if(currentPrice < params[1]) {
-        currentPriceOption = 1;
-        maxDistance = 2;
-      } else if(currentPrice > params[2]) {
-        currentPriceOption = 3;
-        maxDistance = 2;
+    }
+
+    /**
+     * @dev Gets price for given market and option
+     * @param _marketId  Market ID
+     * @param _prediction  prediction option
+     * @return  option price
+     **/
+    function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64) {
+      (uint[] memory _optionPricingParams, uint32 startTime, address _feedAddress) = allMarkets.getMarketOptionPricingParams(_marketId,_prediction);
+      uint stakingFactorConst;
+      uint optionPrice; 
+      // Checking if current stake in market reached minimum stake required for considering staking factor.
+      if(_optionPricingParams[1] > _optionPricingParams[2])
+      {
+        // 10000 / staking weightage
+        stakingFactorConst = uint(10000).div(_optionPricingParams[3]); 
+        // (Amount staked in option x stakingFactorConst x 10^18) / Total staked in market --- (1)
+        optionPrice = (_optionPricingParams[0].mul(stakingFactorConst).mul(10**18).div(_optionPricingParams[1])); 
+      }
+      uint timeElapsed = uint(now).sub(startTime);
+      // max(timeElapsed, minTimePassed)
+      if(timeElapsed<_optionPricingParams[5]) {
+        timeElapsed = _optionPricingParams[5];
+      }
+      uint[] memory _distanceData = getOptionDistanceData(_marketId,_prediction, _feedAddress);
+
+      // (Time Elapsed x 10000) / (currentPriceWeightage x (Max Distance + 1))
+      uint timeFactor = timeElapsed.mul(10000).div(_optionPricingParams[4].mul(_distanceData[0].add(1)));
+
+      (, , , , uint totalTime, , ) = allMarkets.getMarketData(_marketId);
+
+      // (1) + ((Option Distance from max distance + 1) x timeFactor x 10^18 / Total Prediction Time)  -- (2)
+      optionPrice = optionPrice.add((_distanceData[1].add(1)).mul(timeFactor).mul(10**18).div(totalTime));  
+      // (2) / ((stakingFactorConst x 10^13) + timeFactor x 10^13 x (cummulative option distaance + 3) / Total Prediction Time)
+      optionPrice = optionPrice.div(stakingFactorConst.mul(10**13).add(timeFactor.mul(10**13).mul(_distanceData[2].add(3)).div(totalTime)));
+
+      // option price for `_prediction` in 10^5 format
+      return uint64(optionPrice);
+
+    }
+
+    /**
+     * @dev Gets price for given market and option
+     * @param _marketId  Market ID
+     * @param _prediction  prediction option
+     * @return  Array consist of Max Distance between current option and any option, predicting Option distance from max distance, cummulative option distance
+     **/
+    function getOptionDistanceData(uint _marketId,uint _prediction, address _feedAddress) internal view returns(uint[] memory) {
+      (bytes32 _marketCurr, uint minVal, uint maxVal , , , , ) = allMarkets.getMarketData(_marketId);
+      // [0]--> Max Distance between current option and any option, (For 3 options, if current option is 2 it will be `1`. else, it will be `2`) 
+      // [1]--> Predicting option distance from Max distance, (MaxDistance - | currentOption - predicting option |)
+      // [2]--> sum of all possible option distances,  
+      uint[] memory _distanceData = new uint256[](3); 
+
+      // Fetching current price
+      uint currentPrice = getAssetPriceUSD(
+            _feedAddress,
+            _marketCurr
+        );
+      _distanceData[0] = 2;
+      // current option based on current price
+      uint currentOption;
+      _distanceData[2] = 3;
+      if(currentPrice < minVal)
+      {
+        currentOption = 1;
+      } else if(currentPrice > maxVal) {
+        currentOption = 3;
       } else {
-        currentPriceOption = 2;
-        maxDistance = 1;
+        currentOption = 2;
+        _distanceData[0] = 1;
+        _distanceData[2] = 1;
       }
-      uint distance = _getAbsoluteDifference(currentPriceOption, params[0]);
-      uint timeElapsed = now > params[3] ? now.sub(params[3]) : 0;
-      timeElapsed = timeElapsed > minTimeElapsed ? timeElapsed: minTimeElapsed;
-      _optionPrice = _optionPrice.add((((maxDistance+1).sub(distance)).mul(1000000).mul(timeElapsed)).div((maxDistance+1).mul(predictionWeightage).mul(predictionTime)));
-      _optionPrice = _optionPrice.div(100);
+
+      // MaxDistance - | currentOption - predicting option |
+      _distanceData[1] = _distanceData[0].sub(modDiff(currentOption,_prediction)); 
+      return _distanceData;
     }
 
     /**
-    * @dev Internal function to get the absolute difference of two values
-    */
-    function _getAbsoluteDifference(uint value1, uint value2) internal pure returns(uint) {
-      return value1 > value2 ? value1.sub(value2) : value2.sub(value1);
+     * @dev  Calculates difference between `a` and `b`.
+     **/
+    function modDiff(uint a, uint b) internal pure returns(uint) {
+      if(a>b)
+      {
+        return a.sub(b);
+      } else {
+        return b.sub(a);
+      }
+    }
+
+    function ceil(uint256 a, uint256 m) internal pure returns (uint256) {
+        return ((a + m - 1) / m) * m;
     }
 }

@@ -4,13 +4,12 @@ import "../external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
 contract SampleERC is ERC20 {
 
-    string public name;
-    string public symbol;
-    uint8 public decimals = 18;
+    // string public name;
+    // string public symbol;
+    // uint8 public decimals = 18;
 
-    constructor(string memory tokenName, string memory tokenSymbol) public {
-    	name = tokenName;
-    	symbol = tokenSymbol;
+    constructor(string memory tokenName, string memory tokenSymbol) public ERC20(tokenName,tokenSymbol) {
+    	
     }
 
     function mint(uint256 amount) public returns (uint256) {
@@ -28,15 +27,15 @@ contract SampleERC is ERC20 {
         return true;
     }
 
-    /**
-    * @dev Burns a specific amount of tokens from the target address and decrements allowance
-    * @param from address The address which you want to send tokens from
-    * @param value uint256 The amount of token to be burned
-    */
-    function burnFrom(address from, uint256 value) public returns (bool) {
-        _burnFrom(from, value);
-        return true;
-    }
+    // *
+    // * @dev Burns a specific amount of tokens from the target address and decrements allowance
+    // * @param from address The address which you want to send tokens from
+    // * @param value uint256 The amount of token to be burned
+    
+    // function burnFrom(address from, uint256 value) public returns (bool) {
+    //     _burnFrom(from, value);
+    //     return true;
+    // }
 
     /**
     * @dev Transfer token for a specified address
@@ -63,7 +62,7 @@ contract SampleERC is ERC20 {
         public
         returns (bool)
     {
-        _transferFrom(from, to, value);
+        super.transferFrom(from, to, value);
         return true;
     }
 
@@ -73,7 +72,7 @@ contract SampleERC is ERC20 {
     * @return An uint256 representing the amount owned by the passed address.
     */
     function balanceOf(address owner) public view returns (uint256) {
-        return _balances[owner];
+        return super.balanceOf(owner);
     }
 
     /**
