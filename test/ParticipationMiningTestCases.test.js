@@ -8,11 +8,12 @@ const PlotusToken = artifacts.require("MockPLOT");
 const MarketConfig = artifacts.require("MockConfig");
 // const BLOT = artifacts.require("BLOT");
 const ParticipationMining = artifacts.require('ParticipationMining');
-const AllMarkets = artifacts.require("AllMarkets");
+const AllMarkets = artifacts.require("MockAllMarkets");
 const DummyTokenMock = artifacts.require('DummyTokenMock');
 const TokenMock = artifacts.require("TokenMock");
 const increaseTime = require("./utils/increaseTime.js").increaseTime;
 const increaseTimeTo = require("./utils/increaseTime.js").increaseTimeTo;
+const latestTime = require("./utils/latestTime.js").latestTime;
 const { encode, encode1,encode3 } = require("./utils/encoder.js");
 const signAndExecuteMetaTx = require("./utils/signAndExecuteMetaTx.js").signAndExecuteMetaTx;
 const { toHex, toWei, toChecksumAddress } = require("./utils/ethTools");
@@ -87,7 +88,6 @@ contract("Market", async function([user1, user2, user3, user4]) {
           2,
           0
         );
-        console.log("====>", (await allMarkets.marketStatus(1))/1);
         assert.equal(await masterInstance.whitelistedSponsor(user1), true);
         await assertRevert(pm.sponsorIncentives(1,ZERO_ADDRESS,toWei(100)));
     });
@@ -108,22 +108,40 @@ contract("Market", async function([user1, user2, user3, user4]) {
     });
 
     it("Tx should be reverted if status of any of markets in array is other than 'Settled'.", async () => {
-        
+        console.log("====>", (await latestTime())/1);
+        console.log("-====>",(await allMarkets.marketSettleTime(1))/1);
+        await allMarkets.postResultMock(1,7);
         await assertRevert(pm.claimParticipationMiningReward([1,2,3]));
 
     });
 
-    // it("Should revert if market is not live", async () => {
+    it("Should revert if market status is other than Live/InSettlement", async () => {
         
-    //     await assertRevert(pm.sponsorIncentives(1,token1.address,toWei(100)));
+        await assertRevert(pm.sponsorIncentives(1,token1.address,toWei(100)));
 
-    // });
+    });
 
-    // it("Tx should be reverted if user tries to claim more than 1 time.", async () => {
-    //     await pm.claimParticipationMiningReward([1]);
-    //     await assertRevert(pm.claimParticipationMiningReward([1]));
+    it("Tx should be reverted if user tries to claim For market which is not sponsered.", async () => {
+        await assertRevert(pm.claimParticipationMiningReward([2]));
 
-    // });
+    });
+
+    it("Tx should be reverted if user tries to claim more than 1 time.", async () => {
+        await increaseTime(3700);
+        await pm.claimParticipationMiningReward([1]);
+        await assertRevert(pm.claimParticipationMiningReward([1]));
+
+    });
+
+    it("Tx should be reverted transfer failed while claiming", async () => {
+        await token5.setRetBit(true);
+        await pm.sponsorIncentives(2,token5.address,toWei(100));
+        await allMarkets.postResultMock(2,7);
+        await increaseTime(3700);
+        await token5.setRetBit(false);
+        await assertRevert(pm.claimParticipationMiningReward([2]));
+
+    });
 
     // it("No new prediction other than initial prediction", async () => {
     //     // Market ID 7, only initial predictions
