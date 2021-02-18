@@ -23,18 +23,19 @@ let privateKeyList = ["fb437e3e01939d9d4fef43138249f23dc1d0852e69b0b5d1647c087f8
 
 let masterInstance,plotusToken,allMarkets,pm,gv;
 
-let token1,token2,token3,token4,token5;
+let token1,token2,token3,token5;
 
 const ZERO_ADDRESS = '0x0000000000000000000000000000000000000000';
 
-contract("Market", async function([user1, user2, user3, user4]) {
+let sponseredAmount = [toWei(150),toWei(300),toWei(120)];
+let sponsoredTokens=[]
+
+contract("Market", async function(users) {
 
     before(async function () {
         masterInstance = await OwnedUpgradeabilityProxy.deployed();
         masterInstance = await Master.at(masterInstance.address);
         plotusToken = await PlotusToken.deployed();
-        // BLOTInstance = await BLOT.deployed();
-        // MockchainLinkInstance = await MockchainLinkBTC.deployed();
         allMarkets = await AllMarkets.at(await masterInstance.getLatestAddress(web3.utils.toHex("AM")));
         marketConfig = await MarketConfig.at(await masterInstance.getLatestAddress(web3.utils.toHex("MU")));
         pm = await ParticipationMining.at(await masterInstance.getLatestAddress(web3.utils.toHex("PM")));
@@ -46,25 +47,18 @@ contract("Market", async function([user1, user2, user3, user4]) {
         token1 = await TokenMock.new("Token1","Token1");
         token2 = await TokenMock.new("Token2","Token2");
         token3 = await TokenMock.new("Token3","Token3");
-        token4 = await TokenMock.new("Token4","Token4");
         token5 = await DummyTokenMock.new("Token5","Token5");
 
-        await token1.mint(user1,toWei(1000));
-        await token2.mint(user1,toWei(1000));
-        await token3.mint(user1,toWei(1000));
-        await token4.mint(user1,toWei(1000));
+        await token1.mint(users[0],toWei(1000));
+        await token2.mint(users[0],toWei(1000));
+        await token3.mint(users[0],toWei(1000));
 
         await token1.approve(pm.address,toWei(1000));
         await token2.approve(pm.address,toWei(1000));
         await token3.approve(pm.address,toWei(1000));
-        await token4.approve(pm.address,toWei(1000));
 
-        // let expireT = await allMarkets.getMarketData(1);
+        sponsoredTokens = [token1,token2,token3];
 
-        // await increaseTimeTo(expireT[5]);
-
-        // await MockchainLinkInstance.setLatestAnswer(1195000000000);
-        // let currentPriceAfter = await MockchainLinkInstance.latestAnswer();
     });
 
     it("Should revert if non-owner tries to call setMasterAddress()", async () => {
@@ -78,7 +72,7 @@ contract("Market", async function([user1, user2, user3, user4]) {
     it("Should revert if sponsered token is null", async () => {
         let actionHash = encode(
           'whitelistSponsor(address)',
-          user1
+          users[0]
         );
         await gvProposal(
           21,
@@ -88,7 +82,7 @@ contract("Market", async function([user1, user2, user3, user4]) {
           2,
           0
         );
-        assert.equal(await masterInstance.whitelistedSponsor(user1), true);
+        assert.equal(await masterInstance.whitelistedSponsor(users[0]), true);
         await assertRevert(pm.sponsorIncentives(1,ZERO_ADDRESS,toWei(100)));
     });
 
@@ -108,9 +102,7 @@ contract("Market", async function([user1, user2, user3, user4]) {
     });
 
     it("Tx should be reverted if status of any of markets in array is other than 'Settled'.", async () => {
-        console.log("====>", (await latestTime())/1);
-        console.log("-====>",(await allMarkets.marketSettleTime(1))/1);
-        await allMarkets.postResultMock(1,7);
+        await allMarkets.postResultMock(1,1);
         await assertRevert(pm.claimParticipationMiningReward([1,2,3]));
 
     });
@@ -133,108 +125,150 @@ contract("Market", async function([user1, user2, user3, user4]) {
 
     });
 
-    it("Tx should be reverted transfer failed while claiming", async () => {
+    it("Tx should be reverted if transfer failed while claiming", async () => {
         await token5.setRetBit(true);
         await pm.sponsorIncentives(2,token5.address,toWei(100));
-        await allMarkets.postResultMock(2,7);
+        await allMarkets.postResultMock(1,2);
         await increaseTime(3700);
         await token5.setRetBit(false);
         await assertRevert(pm.claimParticipationMiningReward([2]));
 
     });
 
-    // it("No new prediction other than initial prediction", async () => {
-    //     // Market ID 7, only initial predictions
+    it("No new prediction other than initial prediction", async () => {
+        // Market ID 7, only initial predictions
 
-    //     await allMarkets.createMarket(0, 0);
+        await allMarkets.createMarket(0, 0);
+
+        await pm.sponsorIncentives(7,sponsoredTokens[0].address,sponseredAmount[0]);
+
+        await increaseTimeTo(await allMarkets.marketSettleTime(7));
+        await allMarkets.postResultMock(1,7);
+
+        await increaseTime(3601);
+    });  
+    it("User predicts in single options other than market creator", async () => {
+        // Market ID 8, 3 players predicts in single option each other than initial predictions
+        await allMarkets.createMarket(0, 0);
+
+        await pm.sponsorIncentives(8,sponsoredTokens[1].address,sponseredAmount[1]);
+
+        await plotusToken.transfer(users[1], toWei(10000));
+        await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[1] });
+        let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(10000), 8, plotusToken.address, 10000*1e8, 1);
+        await signAndExecuteMetaTx(
+            privateKeyList[1],
+            users[1],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+
+        await plotusToken.transfer(users[2], toWei(2000));
+        await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[2] });
+        functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(2000), 8, plotusToken.address, 2000*1e8, 2);
+        await signAndExecuteMetaTx(
+            privateKeyList[2],
+            users[2],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+
+        await plotusToken.transfer(users[3], toWei(5000));
+        await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[3] });
+        functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(5000), 8, plotusToken.address, 5000*1e8, 3);
+        await signAndExecuteMetaTx(
+            privateKeyList[3],
+            users[3],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+
+            await increaseTimeTo(await allMarkets.marketSettleTime(8));
+
+            await allMarkets.postResultMock(1,8);
+
+            await increaseTime(3601);
+    });
+
+    it("User predicts in multiple options", async () => {
+
+        // Market ID 9, players predicts in multiple options 
+        await allMarkets.createMarket(0, 0);
+        await pm.sponsorIncentives(9,sponsoredTokens[2].address,sponseredAmount[2]);
+        await plotusToken.transfer(users[1], toWei(20000));
+        await plotusToken.approve(allMarkets.address, toWei(200000), { from: users[1] });
+        let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(10000), 9, plotusToken.address, 10000*1e8, 1);
+        await signAndExecuteMetaTx(
+            privateKeyList[1],
+            users[1],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+
+        functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(2000), 9, plotusToken.address, 2000*1e8, 2);
+        await signAndExecuteMetaTx(
+            privateKeyList[1],
+            users[1],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+
+        await plotusToken.transfer(users[3], toWei(5000));
+        await plotusToken.approve(allMarkets.address, toWei(100000), { from: users[3] });
+        functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(5000), 9, plotusToken.address, 5000*1e8, 3);
+        await signAndExecuteMetaTx(
+            privateKeyList[3],
+            users[3],
+            functionSignature,
+            allMarkets,
+            "AM"
+            );
+        
+
+            await increaseTimeTo(await allMarkets.marketSettleTime(9));
+
+            await allMarkets.postResultMock(1,9);
+
+            await increaseTime(3601);
+    });
+
+    it("Distribute Participation Mining rewards", async () => {
+        
+        // Distribute Participation mining rewards among users
+        
+        let userReward = [];
+        let userBalanceBefore = [];
+        let userBalanceAfter = [];
+
+        for(let i=0;i<3;i++) {
+            userBalanceBefore.push([]);
+            userReward.push([]);
+            for(let j=0;j<4;j++) {
+                userBalanceBefore[i][j] = (await sponsoredTokens[i].balanceOf(users[j]))/1;
+                userReward[i][j] = (await pm.getUserTotalPointsInMarket(i+7,users[j]))*sponseredAmount[i]/(await allMarkets.getTotalPredictionPoints(i+7));
+
+            }
+        }
 
 
-    //     let expireT = await allMarkets.getMarketData(7);
+        await pm.claimParticipationMiningReward([7,8,9]);
+        await pm.claimParticipationMiningReward([7,8,9],{from:users[1]});
+        await pm.claimParticipationMiningReward([7,8,9],{from:users[2]});
+        await pm.claimParticipationMiningReward([7,8,9],{from:users[3]});
 
-    //     await increaseTimeTo(expireT[5]);
-    // });  
-    // it("User predicts in single options other than market creator", async () => {
+        for(let k=0;k<3;k++) {
+            userBalanceAfter.push([]);
+            for(let l=0;l<4;l++) {
+                userBalanceAfter[k][l] = (await sponsoredTokens[k].balanceOf(users[l]))/1;
+                assert.equal(Math.floor((userBalanceAfter[k][l]-userBalanceBefore[k][l])/1e5),Math.floor(userReward[k][l]/1e5));
 
-    //     await allMarkets.createMarket(0, 0);
-    //     await plotusToken.transfer(user2, toWei(10000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user2 });
-    //     let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(10000), 7, plotusToken.address, 10000*1e8, 1);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[1],
-    //         user2,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-
-    //     await plotusToken.transfer(user3, toWei(2000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user3 });
-    //     functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(2000), 7, plotusToken.address, 2000*1e8, 2);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[2],
-    //         user3,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-
-    //     await plotusToken.transfer(user4, toWei(5000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user4 });
-    //     functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(5000), 7, plotusToken.address, 5000*1e8, 3);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[3],
-    //         user4,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-    //     assert.equal(await marketConfig.getOptionPrice(7,1), 25000);
-    //     assert.equal(await marketConfig.getOptionPrice(7,2), 50000);
-    //     assert.equal(await marketConfig.getOptionPrice(7,3), 25000);
-    // });
-
-    // it("User predicts in multiple options", async () => {
-
-    //     await allMarkets.createMarket(0, 0);
-    //     await plotusToken.transfer(user2, toWei(10000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user2 });
-    //     let functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(10000), 7, plotusToken.address, 10000*1e8, 1);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[1],
-    //         user2,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-
-    //     await plotusToken.transfer(user3, toWei(2000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user3 });
-    //     functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(2000), 7, plotusToken.address, 2000*1e8, 2);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[2],
-    //         user3,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-
-    //     await plotusToken.transfer(user4, toWei(5000));
-    //     await plotusToken.approve(allMarkets.address, toWei(100000), { from: user4 });
-    //     functionSignature = encode3("depositAndPlacePrediction(uint,uint,address,uint64,uint256)", toWei(5000), 7, plotusToken.address, 5000*1e8, 3);
-    //     await signAndExecuteMetaTx(
-    //         privateKeyList[3],
-    //         user4,
-    //         functionSignature,
-    //         allMarkets,
-    //         "AM"
-    //         );
-    //     assert.equal(await marketConfig.getOptionPrice(7,1), 25000);
-    //     assert.equal(await marketConfig.getOptionPrice(7,2), 50000);
-    //     assert.equal(await marketConfig.getOptionPrice(7,3), 25000);
-    // });
-
-    // it("Distribute Participation Mining rewards", async () => {
-
-    // });
+            }
+        }
+    });
 
 });
