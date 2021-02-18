@@ -33,6 +33,7 @@ contract BLOT is Iupgradable {
 
     address public operator;
     address public plotToken;
+    address public constant authorized = 0x6f9f333de6eCFa67365916cF95873a4DC480217a; 
 
     event MinterAdded(address indexed account);
     event MinterRemoved(address indexed account);
@@ -49,6 +50,14 @@ contract BLOT is Iupgradable {
      * Note that `value` may be zero.
      */
     event Transfer(address indexed from, address indexed to, uint256 value);
+    
+    /**
+     * @dev Emitted when `value` tokens are moved from one account (`from`) to
+     * another (`to`).
+     *
+     * Note that `value` may be zero.
+     */
+    event Migrate(address indexed from, address indexed to, uint256 value);
 
     /**
      * @dev Checks if msg.sender is token operator address.
@@ -88,7 +97,8 @@ contract BLOT is Iupgradable {
         plotToken = ms.dAppToken();
         operator = ms.getLatestAddress("TC");
     }
-
+    
+    
     /**
      * @dev See `IERC20.transfer`.
      *
@@ -185,6 +195,26 @@ contract BLOT is Iupgradable {
         _burn(_of, amount);
         require(IERC20(plotToken).transfer(_to, amount), "Error in transfer");
     }
+    
+     /**
+     * @dev Destroys all tokens from the caller.
+     *
+     * See `ERC20._burn`.
+     */
+    function migrate(
+        address _to
+    ) public {
+        require(balanceOf(msg.sender) > 0, "User must have bPlots");
+        require(_to != address(0));
+        require(IERC20(plotToken).transfer(authorized, balanceOf(msg.sender)), "Error in transfer");
+        
+        uint256 value = balanceOf(msg.sender);
+        _burn(msg.sender,value);
+        
+        emit Migrate(msg.sender,_to,value);
+    }
+    
+    
 
     /**
      * @dev Destoys `amount` tokens from `account`, reducing the
@@ -204,6 +234,8 @@ contract BLOT is Iupgradable {
         _balances[account] = _balances[account].sub(value);
         emit Transfer(account, address(0), value);
     }
+    
+    
 
     /**
      * @dev Check if `account` has minting rights

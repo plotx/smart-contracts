@@ -21,7 +21,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./interfaces/IMaster.sol";
 import "./interfaces/Iupgradable.sol";
 
-contract BLOT is Iupgradable {
+contract BLOTV2 is Iupgradable {
     using SafeMath for uint256;
     using Roles for Roles.Role;
 
@@ -33,8 +33,8 @@ contract BLOT is Iupgradable {
 
     address public operator;
     address public plotToken;
-    address public authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
-    address public migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
+    address public constant authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
+    address public constant migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
     
     mapping(bytes32 => MigrationStatus) public migrationStatus;
     struct MigrationStatus{
@@ -191,7 +191,7 @@ contract BLOT is Iupgradable {
         emit Transfer(address(0), account, amount);
     }
     
-    function migrationHash( bytes memory _hash, address _to, address _from, uint256 _timestamp,uint256 _amount) internal pure returns (bytes32){
+    function migrationHash( bytes memory _hash, address _to, address _from, uint256 _timestamp,uint256 _amount) public view returns (bytes32){
         return  keccak256(abi.encode(_hash, _from, _to, _timestamp,_amount));
     }
     
