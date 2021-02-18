@@ -180,6 +180,9 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await plotusToken.approve(allMarkets.address, "18000000000000000000000000");
 		await plotusToken.approve(allMarkets.address, "18000000000000000000000000", {from:mem1});
 		await plotusToken.approve(allMarkets.address, "18000000000000000000000000");
+		await assertRevert(allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 5));
+		await assertRevert(allMarkets.depositAndPlacePrediction("100000000000000000000", 7, allMarkets.address, 100*1e8, 1));
+		await assertRevert(allMarkets.depositAndPlacePrediction("10000000", 7, plotusToken.address, 100*1e8, 1));
 		await allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 1);
 		// await allMarkets.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
 		let totalStaked = await allMarkets.getUserFlags(7, ab1);
@@ -241,6 +244,84 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		let startTime = Math.round(Date.now());
 		startTime = (await latestTime()) / 1 + 3 * 604800;
 		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 6 * 60 * 60, 0, startTime, 3600, 100);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+	});
+
+	it("Should not add new market type if cooldown time is zero", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 14, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1 + 3 * 604800;
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 6 * 60 * 60, 50, startTime, 0, 100);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+	});
+
+	it("Should not add new market type if min time passed is zero", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 14, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1 + 3 * 604800;
+		let actionHash = encode("addMarketType(uint32,uint32,uint32,uint32,uint32)", 6 * 60 * 60, 50, startTime, 3600, 0);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+	});
+
+	it("Should not update market type if option range percent is zero", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 25, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1 + 3 * 604800;
+		let actionHash = encode("updateMarketType(uint32,uint32,uint32,uint32)", 6 * 60 * 60, 0, 3600, 100);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+	});
+
+	it("Should not update market type if cooldown time is zero", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 25, 0);
+		let actionHash = encode("updateMarketType(uint32,uint32,uint32,uint32)", 6 * 60 * 60, 50, 0, 100);
+		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+	});
+
+	it("Should not update market type if min time passed is zero", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 25, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1 + 3 * 604800;
+		let actionHash = encode("updateMarketType(uint32,uint32,uint32,uint32)", 6 * 60 * 60, 50, 3600, 0);
 		await gv.submitProposalWithSolution(pId, "update max followers limit", actionHash);
 		await gv.submitVote(pId, 1, { from: ab1 });
 		await increaseTime(604810);
@@ -431,96 +512,23 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await increaseTime(604800);
 	});
 
-	it("Add category to update uint paramters of MarketCreationRewards", async function() {
-		let actionHash = encode1(
-	      ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
-	      [
-	        "updateUintParameters",
-	        2,
-	        50,
-	        50,
-	        [2],
-	        86400,
-	        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
-	        nullAddress,
-	        toHex("MC"),
-	        [0, 0],
-	        "updateUintParameters(bytes8,uint256)",
-	      ]
-	    );
-	    let p1 = await governance.getProposalLength();
-	    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
-	    await governance.submitVote(p1.toNumber(), 1);
-	    await governance.closeProposal(p1.toNumber());
-	    await increaseTime(604800);
+	it("Transfer DAO plot through proposal, Should Revert if no balance", async function() {
+		await increaseTime(604800);
+		pId = (await gv.getProposalLength()).toNumber();
+		let categoryId = 18;
+		await plotusToken.transfer(marketIncentives.address, toWei(100));
+		let daoPLOTbalanceBefore = await plotusToken.balanceOf(marketIncentives.address);
+		let userPLOTbalanceBefore = await plotusToken.balanceOf(user11);
+		let actionHash = encode1(["address","address","uint256"],[plotusToken.address, user11, toWei(100000000)])
+		await gvProposal(categoryId, actionHash, await MemberRoles.at(await nxms.getLatestAddress(toHex("MR"))), gv, 2, 0);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 1);
+		let daoPLOTbalanceAfter = await plotusToken.balanceOf(marketIncentives.address);
+		let userPLOTbalanceAfter = await plotusToken.balanceOf(user11);
+		assert.equal((daoPLOTbalanceBefore/1e18).toFixed(2), (daoPLOTbalanceAfter/1e18).toFixed(2));
+		assert.equal((userPLOTbalanceBefore/1e18).toFixed(2), (userPLOTbalanceAfter/1e18).toFixed(2));
+		await increaseTime(604800);
 	});
-
-	it("Should update uint paramters", async function() {
-		let categoryId = await pc.totalCategories();
-		categoryId = 19;
-		await updateParameter(categoryId, 2, "MAXRPSP", marketIncentives, "uint", 6000);
-		await updateParameter(categoryId, 2, "MINRPSP", marketIncentives, "uint", 7000);
-		await updateParameter(categoryId, 2, "PSFRPS", marketIncentives, "uint", 8000);
-		await updateParameter(categoryId, 2, "RPSTH", marketIncentives, "uint", 9000);
-		await updateInvalidParameter(categoryId, 2, "ABCD", marketIncentives, "uint", 10000);
-	});
-
-	it("Add category to update uint paramters of allMarkets", async function() {
-		let actionHash = encode1(
-	      ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
-	      [
-	        "updateUintParameters",
-	        2,
-	        50,
-	        50,
-	        [2],
-	        86400,
-	        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
-	        nullAddress,
-	        toHex("AM"),
-	        [0, 0],
-	        "updateUintParameters(bytes8,uint256)",
-	      ]
-	    );
-	    let p1 = await governance.getProposalLength();
-	    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
-	    await governance.submitVote(p1.toNumber(), 1);
-	    await governance.closeProposal(p1.toNumber());
-	    await increaseTime(604800);
-	});
-
-	// it("Should update uint paramters", async function() {
-	// 	let categoryId = await pc.totalCategories();
-	// 	categoryId = categoryId*1 - 1;
-	// 	await updateParameter(categoryId, 2, "ETHC", allMarkets, "uint", 5000);
-	// 	await updateParameter(categoryId, 2, "TKNC", allMarkets, "uint", 6000);
-	// 	await updateParameter(categoryId, 2, "ABCD", allMarkets, "uint", 10000);
-	// })
-
-	it("Add category to update address paramters of allMarkets", async function() {
-		let actionHash = encode1(
-	      ["string", "uint256", "uint256", "uint256", "uint256[]", "uint256", "string", "address", "bytes2", "uint256[]", "string"],
-	      [
-	        "updateAddressParameters",
-	        2,
-	        50,
-	        50,
-	        [2],
-	        86400,
-	        "QmZQhJunZesYuCJkdGwejSATTR8eynUgV8372cHvnAPMaM",
-	        nullAddress,
-	        toHex("MC"),
-	        [0, 0],
-	        "updateAddressParameters(bytes8,address)",
-	      ]
-	    );
-	    let p1 = await governance.getProposalLength();
-	    await governance.createProposalwithSolution("Add new member", "Add new member", "Addnewmember", 3, "Add new member", actionHash);
-	    await governance.submitVote(p1.toNumber(), 1);
-	    await governance.closeProposal(p1.toNumber());
-	    await increaseTime(604800);
-	});
-
 
 	it("Should add new market curreny with null address is passed as feed", async function() {
 		await increaseTime(604810);
@@ -538,80 +546,27 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		assert.equal(actionStatus / 1, 3);
 	});
 
+	it("Should update market type", async function() {
+		await increaseTime(604810);
+		pId = (await gv.getProposalLength()).toNumber();
+		await gv.createProposal("Proposal2", "Proposal2", "Proposal2", 0); //Pid 3
+		await gv.categorizeProposal(pId, 25, 0);
+		let startTime = Math.round(Date.now());
+		startTime = (await latestTime()) / 1 + 3 * 604800;
+		let actionHash = encode("updateMarketType(uint32,uint32,uint32,uint32)", 0, 10, 3600, 100);
+		await gv.submitProposalWithSolution(pId, "update market type", actionHash);
+		await gv.submitVote(pId, 1, { from: ab1 });
+		await increaseTime(604810);
+		await gv.closeProposal(pId);
+		let actionStatus = await gv.proposalActionStatus(pId);
+		assert.equal(actionStatus / 1, 3);
+	});
+
 	// it("Should update address paramters", async function() {
 	// 	let categoryId = await pc.totalCategories();
 	// 	categoryId = categoryId*1 - 1;
 	// 	await updateParameter(categoryId, 2, "GASAGG", marketIncentives, "address", allMarkets.address);
 	// 	await updateInvalidParameter(categoryId, 2, "ABECD", marketIncentives, "address", allMarkets.address);
 	// })
-	async function updateParameter(cId, mrSequence, code, contractInst, type, proposedValue) {
-        code = toHex(code);
-        let getterFunction;
-        if (type == "uint") {
-            action = "updateUintParameters(bytes8,uint256)";
-            getterFunction = "getUintParameters";
-        } else if (type == "address") {
-            action = "updateAddressParameters(bytes8,address)";
-            getterFunction = "getAddressParameters";
-        }
 
-        let actionHash = encode(action, code, proposedValue);
-        let proposalId = await governance.getProposalLength();
-        await gvProposal(cId, actionHash, mr, governance, mrSequence, 0);
-        if (code == toHex("MASTADD")) {
-            let newMaster = await NXMaster.at(proposedValue);
-            contractInst = newMaster;
-        }
-        let parameter;
-        if(code == toHex("ETHC")) {
-        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
-            assert.equal(actionStatus*1, 3, "Not updated");
-        } else if(code == toHex("TKNC")) {
-        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
-            assert.equal(actionStatus*1, 3, "Not updated");
-        } else if(code == toHex("ABCD")) {
-        	let actionStatus = await governance.proposalActionStatus(proposalId*1);
-            assert.equal(actionStatus*1, 3);
-        } else {
-	        // if (type == "uint") {
-	            parameter = await contractInst[getterFunction](code);
-	        // }
-	        try {
-	            parameter[1] = parameter[1].toNumber();
-	        } catch (err) {}
-	        // if (type == "uint") {
-	            assert.equal(parameter[1], proposedValue, "Not updated");
-	        // }
-        }
-    }
-
-    async function updateInvalidParameter(
-      cId,
-      mrSequence,
-      code,
-      contractInst,
-      type,
-      proposedValue
-    ) {
-      code = toHex(code);
-      let getterFunction;
-      if (type == 'uint') {
-        action = 'updateUintParameters(bytes8,uint)';
-        getterFunction = 'getUintParameters';
-      } else {
-            action = "updateAddressParameters(bytes8,address)";
-            getterFunction = "getAddressParameters";
-      }
-      let actionHash = encode(action, code, proposedValue);
-      await gvProposal(cId, actionHash, mr, governance, mrSequence, 0);
-      if (code == toHex('MASTADD') && proposedValue != ZERO_ADDRESS) {
-        let newMaster = await NXMaster.at(proposedValue);
-        contractInst = newMaster;
-      }
-      let parameter = await contractInst[getterFunction](code);
-      try {
-        parameter[1] = parameter[1].toNumber();
-      } catch (err) {}
-      assert.notEqual(parameter[1], proposedValue);
-    }
 });

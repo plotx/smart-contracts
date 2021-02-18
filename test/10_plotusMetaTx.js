@@ -363,7 +363,7 @@ contract("Rewards-Market Raise dispute and pass the proposal ", async function(u
 			await marketConfig.setNextOptionPrice(18);
 			await allMarkets.claimRelayerRewards();
             await allMarkets.createMarket(0, 0,{from:users[11],gasPrice:500000});
-            // await marketIncentives.claimCreationReward(100,{from:users[11]});
+            await assertRevert(marketIncentives.claimCreationReward(100,{from:users[11]}));
 		});
 
 		it("Scenario 1: Few user wins", async () => {

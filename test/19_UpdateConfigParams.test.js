@@ -177,6 +177,39 @@ contract('Configure Global Parameters', accounts => {
       });
     });
 
+    describe('Update AllMarkets Parameters', function() {
+      it('Should update Cummulative fee percent', async function() {
+        await updateParameter(19, 2, 'CMFP', allMarkets, 'uint', '5300');
+      });
+      it('Should update DAO fee percent', async function() {
+        await updateParameter(19, 2, 'DAOF', allMarkets, 'uint', '2500');
+      });
+      it('Should update Market creator fee percent', async function() {
+        await updateParameter(19, 2, 'MCF', allMarkets, 'uint', '1000');
+      });
+      it('Should update Referrer fee percent', async function() {
+        await updateParameter(19, 2, 'RFRRF', allMarkets, 'uint', '2600');
+      });
+      it('Should update Referee fee percent', async function() {
+        await updateParameter(19, 2, 'RFREF', allMarkets, 'uint', '1500');
+      });
+      it('Should update Market creator default prediction amount', async function() {
+        await updateParameter(19, 2, 'MDPA', allMarkets, 'uint', '123');
+      });
+      it('Should not update if Cummulative fee percent is >= 100', async function() {
+        await updateInvalidParameter(19, 2, 'CMFP', allMarkets, 'uint', '11000');
+      });
+      it('Should not update if total fee percents >= 100', async function() {
+        await updateInvalidParameter(19, 2, 'DAOF', allMarkets, 'uint', '8000');
+      });
+      it('Should not update if total fee percents >= 100', async function() {
+        await updateInvalidParameter(19, 2, 'MCF', allMarkets, 'uint', '7000');
+      });
+      it('Should not update if parameter code is incorrect', async function() {
+        await updateInvalidParameter(19, 2, 'EPTIM', allMarkets, 'uint', '86400');
+      });
+    }); 
+
     describe('Update MemberRoles Parameters', function() {
       it('Should update Min Token Locked For DR', async function() {
         await updateParameter(20, 2, 'MNLOCKDR', mr, 'uint', '123');
