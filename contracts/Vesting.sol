@@ -15,7 +15,7 @@
 
 pragma solidity 0.5.7;
 
-import "./PlotXToken.sol";
+import "./interfaces/IToken.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
@@ -24,7 +24,7 @@ contract Vesting {
 
   using SafeMath for uint256;
   using SafeMath64 for uint64;
-  PlotXToken public token;
+  IToken public token;
   address public owner;
 
   uint constant internal SECONDS_PER_DAY = 1 days;
@@ -56,7 +56,7 @@ contract Vesting {
   nonZeroAddress(_token)
   nonZeroAddress(_owner)
   {
-    token = PlotXToken(_token);
+    token = IToken(_token);
     owner = _owner;
   }
 

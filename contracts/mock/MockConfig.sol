@@ -1,22 +1,23 @@
 pragma solidity 0.5.7;
 
-import "../MarketUtilityV2.sol";
+import "../MarketUtility.sol";
 
-contract MockConfig is MarketUtilityV2 {
+contract MockConfig is MarketUtility {
 
 	uint public priceOfToken;
     bool public mockFlag;
     mapping(uint => uint) optionPrices;
 
-	function initialize(address payable[] memory _addressParams, address _intiater) public {
+	function initialize(address _intiater) public {
 		priceOfToken = 1e16;
         mockFlag = true;
-		super.initialize(_addressParams, _intiater);
+        nextOptionPrice = 10;
+		super.initialize(_intiater);
 	}
 
-    function setWeth(address _weth) external {
-        weth = _weth;
-    }
+    // function setWeth(address _weth) external {
+    //     weth = _weth;
+    // }
 
 	function setPrice(uint _newPrice) external {
 		priceOfToken = _newPrice;
@@ -26,16 +27,16 @@ contract MockConfig is MarketUtilityV2 {
 		return amountIn.mul(priceOfToken).div(1e18);
 	}
 
-	function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
-        uint _value = _amount;
-        if(_asset == ETH_ADDRESS) {
-            // address pair = uniswapFactory.getPair(plotToken, weth);
-            _value = _amount.mul(1e18).div(priceOfToken);
-            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
-            // _value = output[1];
-        }
-        return (minStakeForMultiplier, _value);
-    }
+	// function getValueAndMultiplierParameters(address _asset, uint _amount) public view returns(uint, uint) {
+ //        uint _value = _amount;
+ //        if(_asset == ETH_ADDRESS) {
+ //            // address pair = uniswapFactory.getPair(plotToken, weth);
+ //            _value = _amount.mul(1e18).div(priceOfToken);
+ //            // uint[] memory output = uniswapRouter.getAmountsOut(_amount, uniswapEthToTokenPath);
+ //            // _value = output[1];
+ //        }
+ //        return (minStakeForMultiplier, _value);
+ //    }
 
     /**
      * @dev Internal function to update pair cummulative price
@@ -43,9 +44,9 @@ contract MockConfig is MarketUtilityV2 {
     function _setCummulativePrice() internal {
     }
 
-    function update() external {
+    // function update() external {
     
-    }
+    // }
 
     function setOptionPrice(uint _option, uint _price) public {
         optionPrices[_option] = _price;
@@ -59,7 +60,7 @@ contract MockConfig is MarketUtilityV2 {
         if(mockFlag) {
             return optionPrices[params[0]];
           }
-        return super.calculateOptionPrice(params, marketFeedAddress);
+        // return super.calculateOptionPrice(params, marketFeedAddress);
     }
 
     uint64 public nextOptionPrice;
@@ -68,12 +69,12 @@ contract MockConfig is MarketUtilityV2 {
         nextOptionPrice = _price;
     }
 
-    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice) {
+    function getOptionPrice(uint _marketId, uint256 _prediction) public view returns(uint64 _optionPrice) {
         if(mockFlag) {
             return nextOptionPrice;
         }
         else  {
-            return super.getOptionPrice(totalPredictionPoints, predictionPointsOnOption);
+            return super.getOptionPrice(_marketId, _prediction);
         }
     }
 

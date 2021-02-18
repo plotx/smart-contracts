@@ -1,7 +1,9 @@
 pragma solidity 0.5.7;
 contract IMarketUtility {
 
-    function initialize(address payable[] calldata _addressParams, address _initiater) external;
+    function initialize(address _initiater) external;
+
+    mapping(address => uint256) public conversionRate;
 
 	/**
      * @dev to Set authorized address to update parameters 
@@ -28,7 +30,10 @@ contract IMarketUtility {
     **/
     function getMarketInitialParams() public view returns(address[] memory, uint , uint, uint, uint);
 
-    function getAssetPriceUSD(address _currencyAddress) external view returns(uint latestAnswer);
+    function getAssetPriceUSD(
+        address _currencyFeedAddress,
+        bytes32 _marketCurr
+    ) public view returns (uint256 latestAnswer);
 
     function getAssetValueETH(address _currencyAddress, uint256 _amount)
         public
@@ -37,11 +42,11 @@ contract IMarketUtility {
     
     function checkMultiplier(address _asset, address _user, uint _predictionStake, uint predictionPoints, uint _stakeValue) public view returns(uint, bool);
   
-    function calculatePredictionPoints(address _user, bool multiplierApplied, uint _predictionStake, address _asset, uint64 totalPredictionPoints, uint64 predictionPointsOnOption) external view returns(uint64 predictionPoints, bool isMultiplierApplied);
+    function calculatePredictionPoints(uint _marketId, uint _prediction, address _user, bool multiplierApplied, uint _predictionStake) external view returns(uint64 predictionPoints, bool isMultiplierApplied);
 
-    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed) external view returns(uint64 _minValue, uint64 _maxValue);
+    function calculateOptionRange(uint _optionRangePerc, uint64 _decimals, uint8 _roundOfToNearest, address _marketFeed, bytes32 _marketCurr) external view returns(uint64 _minValue, uint64 _maxValue);
     
-    function getOptionPrice(uint64 totalPredictionPoints, uint64 predictionPointsOnOption) public view returns(uint64 _optionPrice);
+    function getOptionPrice(uint256 _marketId, uint _prediction) public view returns(uint64 _optionPrice);
     
     function getPriceFeedDecimals(address _priceFeed) public view returns(uint8);
 
@@ -54,6 +59,8 @@ contract IMarketUtility {
     
     function calculatePredictionValue(uint[] memory params, address asset, address user, address marketFeedAddress, bool _checkMultiplier) public view returns(uint _predictionValue, bool _multiplierApplied);
     
+    function isAuthorized(address _address) external view returns(bool);
+
     /**
      * @dev Get basic market details
      * @return Minimum amount required to predict in market
@@ -64,7 +71,6 @@ contract IMarketUtility {
         public
         view
         returns (
-            uint256,
             uint256,
             uint256,
             uint256
@@ -82,4 +88,18 @@ contract IMarketUtility {
         address _currencyFeedAddress,
         uint256 _settleTime
     ) public view returns (uint256 latestAnswer, uint256 roundId);
+
+
+    function stakingFactorMinStake() external view returns(uint);
+    function stakingFactorWeightage() external view returns(uint);
+    function currentPriceWeightage() external view returns(uint32);
+
+    function getPriceCalculationParams()
+        public
+        view
+        returns (
+            uint256,
+            uint32,
+            uint32
+        );
 }

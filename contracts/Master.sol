@@ -19,6 +19,7 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/govblocks-protocol/Governed.sol";
 import "./external/govblocks-protocol/interfaces/IMemberRoles.sol";
 import "./interfaces/IMarketRegistry.sol";
+import "./interfaces/IMarketUtility.sol";
 import "./interfaces/IbLOTToken.sol";
 import "./interfaces/ITokenController.sol";
 import "./interfaces/Iupgradable.sol";
@@ -45,14 +46,11 @@ contract Master is Governed {
      * @dev Initialize the Master.
      * @param _implementations The address of market implementation.
      * @param _token The address of PLOT token.
-     * @param _marketUtiliy The addresses of market utility.
      */
     function initiateMaster(
         address[] calldata _implementations,
         address _token,
         address _defaultAddress,
-        address _marketUtiliy,
-        address payable[] calldata _configParams,
         address _vesting
     ) external {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
@@ -66,8 +64,10 @@ contract Master is Governed {
         allContractNames.push("MR");
         allContractNames.push("PC");
         allContractNames.push("GV");
-        allContractNames.push("PL");
         allContractNames.push("TC");
+        allContractNames.push("AM");
+        allContractNames.push("MC");
+        allContractNames.push("MU");
         allContractNames.push("BL");
 
         require(
@@ -83,12 +83,7 @@ contract Master is Governed {
 
         _setMasterAddress();
 
-        IMarketRegistry(contractAddress["PL"]).initiate(
-            _defaultAddress,
-            _marketUtiliy,
-            _token,
-            _configParams
-        );
+        IMarketUtility(contractAddress["MU"]).initialize(_defaultAddress);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
         ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
         IMemberRoles(contractAddress["MR"]).setInititorAddress(_defaultAddress);

@@ -12,7 +12,7 @@
 
 pragma solidity 0.5.7;
 
-import "./PlotXToken.sol";
+import "./interfaces/IToken.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/token/ERC20/ERC20.sol";
 
@@ -47,7 +47,7 @@ contract Staking {
     ERC20 private stakeToken;
 
     // Reward token
-    PlotXToken private rewardToken;
+    IToken private rewardToken;
 
     // Interest and staker data
     InterestData public interestData;
@@ -107,7 +107,7 @@ contract Staking {
         require(_rewardToken != address(0), "Can not be null address");
         require(_vaultAdd != address(0), "Can not be null address");
         stakeToken = ERC20(_stakeToken);
-        rewardToken = PlotXToken(_rewardToken);
+        rewardToken = IToken(_rewardToken);
         stakingStartTime = _stakingStart;
         interestData.lastUpdated = _stakingStart;
         stakingPeriod = _stakingPeriod;

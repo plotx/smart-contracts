@@ -2,7 +2,6 @@ const Master = artifacts.require("Master");
 const TokenController = artifacts.require("MockTokenController");
 const PlotusToken = artifacts.require("MockPLOT.sol");
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
-const MockUniswapRouter = artifacts.require('MockUniswapRouter');
 // const BLOT = artifacts.require("bLOTToken");
 
 const Web3 = require("web3");
@@ -11,7 +10,7 @@ const { expectRevert, time } = require("@openzeppelin/test-helpers");
 const { assert } = require("chai");
 
 contract("TokenController", ([owner, account2, account3]) => {
-	let plotusToken, tokenController, uniswapRouter;
+	let plotusToken, tokenController;
 
 	const lockReason1 = web3.utils.fromAscii("DR");
 	const lockReason2 = web3.utils.fromAscii("SM");
@@ -83,11 +82,9 @@ contract("TokenController", ([owner, account2, account3]) => {
 	describe("Lock Functionality", () => {
 		before(async () => {
 			await plotusToken.burn( await plotusToken.balanceOf(owner), { from: owner });
-			uniswapRouter = await MockUniswapRouter.deployed();
-			await plotusToken.burnTokens(uniswapRouter.address, await plotusToken.balanceOf(uniswapRouter.address), { from: owner });
 			await plotusToken.mint(owner, 2000, { from: owner });
 			assert.equal((await plotusToken.balanceOf(owner)).toNumber(), 2000);
-			assert.equal(parseInt(web3.utils.fromWei(await tokenController.totalSupply())), 1e4);
+			assert.equal(parseInt(web3.utils.fromWei(await tokenController.totalSupply())), parseInt(web3.utils.fromWei(await plotusToken.totalSupply())));
 			await assertRevert(plotusToken.changeOperator(nullAddress));
 			await plotusToken.changeOperator(tokenController.address);
 			assert.equal(await plotusToken.operator(), tokenController.address);

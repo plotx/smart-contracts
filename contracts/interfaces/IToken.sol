@@ -61,4 +61,9 @@ contract IToken {
     */
     function transferFrom(address sender, address recipient, uint256 amount) external returns (bool);
 
+    function lockForGovernanceVote(address _of, uint256 _period) public;
+
+    function isLockedForGV(address _of) public view returns (bool);
+
+    function changeOperator(address _newOperator) public returns (bool);
 }
