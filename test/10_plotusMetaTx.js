@@ -87,6 +87,8 @@ contract("Rewards-Market", async function(users) {
 			let daoCommissions = [0, 1.8, 6.4, 3.36, 1.968, 8, 11.2, 3.2, 0.8, 4.8, 2.4];
 			for(i=1; i<11;i++){
 				if(i>1) {
+					//Should not allow unauthorized address to set referrer
+					await assertRevert(allMarkets.setReferrer(users[1], users[i], {from:users[i]}));
 					await allMarkets.setReferrer(users[1], users[i]);
 					//SHould not add referrer if already set
 					await assertRevert(allMarkets.setReferrer(users[1], users[i]));
