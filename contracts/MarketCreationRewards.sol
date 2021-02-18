@@ -4,7 +4,9 @@ import "./external/proxy/OwnedUpgradeabilityProxy.sol";
 import "./external/openzeppelin-solidity/math/SafeMath.sol";
 import "./external/openzeppelin-solidity/math/Math.sol";
 import "./external/govblocks-protocol/Governed.sol";
-// import "./interfaces/ITokenController.sol";
+import "./interfaces/ITokenController.sol";
+import "./interfaces/IChainLinkOracle.sol";
+import "./interfaces/IMarketUtility.sol";
 import "./interfaces/IToken.sol";
 import "./interfaces/IAllMarkets.sol";
 import "./external/NativeMetaTransaction.sol";
@@ -146,6 +148,7 @@ contract MarketCreationRewards is Governed, NativeMetaTransaction {
     * @dev function to reward user for initiating market creation calls as per the new incetive calculations
     */
     function claimCreationReward(uint256 _maxRecords) external {
+
       address payable _msgSender = _msgSender();
       // uint256 rewardPoolShare = _getRewardPoolIncentives(_maxRecords);
       uint256 rewardPoolShare = marketCreationRewardUserData[_msgSender].rewardEarned;
