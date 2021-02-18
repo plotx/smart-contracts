@@ -74,7 +74,7 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
             reward = _sponsorIncentives.incentiveToDistribute.mul(userPredictionPoints).div(totalPredictionPoints);
             marketRewardUserClaimed[_marketIds[i]][_msgSender()] = true;
             if(reward > 0) { 
-                require(IToken(_sponsorIncentives.incentiveToken).transfer(_msgSender(), reward));
+                require(IToken(_sponsorIncentives.incentiveToken).transfer(_msgSender(), reward),"Tranfer Failed");
                 emit Claimed(_marketIds[i], _msgSender(), _sponsorIncentives.incentiveToken, reward);
             }
         }
@@ -93,7 +93,7 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
       require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live");
       require(marketSponsorship[_marketId].incentiveToken == address(0),"Already Sponsored");
       marketSponsorship[_marketId] = SponsorIncentives(_token,_value,_msgSender());
-      require(IToken(_token).transferFrom(_msgSender(), address(this), _value));
+      require(IToken(_token).transferFrom(_msgSender(), address(this), _value),"Tranfer Failed");
       emit SponsoredIncentive(_marketId, _token, _msgSender(), _value);
     }
 }
