@@ -1008,7 +1008,6 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     function raiseDispute(uint256 _marketId, uint256 _proposedValue, string memory proposalTitle, string memory description, string memory solutionHash) public {
       address payable _msgSenderAddress = _msgSender();
       MarketDataExtended storage _marketDataExtended = marketDataExtended[_marketId];
-      require(_marketDataExtended.totalStaked > 0);
       require(marketStatus(_marketId) == PredictionStatus.Cooling);
       uint _stakeForDispute =  marketUtility.getDisputeResolutionParams();
       _transferTokenFrom(plotToken, _msgSenderAddress, address(this), _stakeForDispute);
