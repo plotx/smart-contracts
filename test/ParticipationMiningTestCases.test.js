@@ -103,7 +103,7 @@ contract("Market", async function(users) {
 
     it("Tx should be reverted if status of any of markets in array is other than 'Settled'.", async () => {
         await allMarkets.postResultMock(1,1);
-        await assertRevert(pm.claimParticipationMiningReward([1,2,3]));
+        await assertRevert(pm.claimParticipationMiningReward([1,2,3],token1.address));
 
     });
 
@@ -114,14 +114,14 @@ contract("Market", async function(users) {
     });
 
     it("Tx should be reverted if user tries to claim For market which is not sponsered.", async () => {
-        await assertRevert(pm.claimParticipationMiningReward([2]));
+        await assertRevert(pm.claimParticipationMiningReward([2],token1.address));
 
     });
 
     it("Tx should be reverted if user tries to claim more than 1 time.", async () => {
         await increaseTime(3700);
-        await pm.claimParticipationMiningReward([1]);
-        await assertRevert(pm.claimParticipationMiningReward([1]));
+        await pm.claimParticipationMiningReward([1],token1.address);
+        await assertRevert(pm.claimParticipationMiningReward([1],token1.address));
 
     });
 
@@ -131,7 +131,7 @@ contract("Market", async function(users) {
         await allMarkets.postResultMock(1,2);
         await increaseTime(3700);
         await token5.setRetBit(false);
-        await assertRevert(pm.claimParticipationMiningReward([2]));
+        await assertRevert(pm.claimParticipationMiningReward([2],token5.address));
 
     });
 
@@ -146,7 +146,8 @@ contract("Market", async function(users) {
         await allMarkets.postResultMock(1,7);
 
         await increaseTime(3601);
-    });  
+    }); 
+
     it("User predicts in single options other than market creator", async () => {
         // Market ID 8, 3 players predicts in single option each other than initial predictions
         await allMarkets.createMarket(0, 0);
@@ -256,10 +257,16 @@ contract("Market", async function(users) {
         }
 
 
-        await pm.claimParticipationMiningReward([7,8,9]);
-        await pm.claimParticipationMiningReward([7,8,9],{from:users[1]});
-        await pm.claimParticipationMiningReward([7,8,9],{from:users[2]});
-        await pm.claimParticipationMiningReward([7,8,9],{from:users[3]});
+        await pm.claimParticipationMiningReward([7],token1.address);
+        await pm.claimParticipationMiningReward([8],token2.address);
+        await pm.claimParticipationMiningReward([9],token3.address);
+        await pm.claimParticipationMiningReward([8],token2.address,{from:users[1]});
+        await pm.claimParticipationMiningReward([9],token3.address,{from:users[1]});
+        await pm.claimParticipationMiningReward([8],token2.address,{from:users[2]});
+        await pm.claimParticipationMiningReward([8],token2.address,{from:users[3]});
+        await pm.claimParticipationMiningReward([9],token3.address,{from:users[3]});
+
+        await assertRevert(pm.claimParticipationMiningReward([9],token3.address,{from:users[2]}));
 
         for(let k=0;k<3;k++) {
             userBalanceAfter.push([]);

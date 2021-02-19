@@ -3,7 +3,6 @@ async function assertRevert(promise) {
     await promise;
     throw null;
   } catch (error) {
-    // console.log("===>",error);
     assert(error, `Expected an error but did not get one`);
     assert(
       error.message.includes('revert'),
