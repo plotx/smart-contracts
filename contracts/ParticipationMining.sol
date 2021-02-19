@@ -68,21 +68,21 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
      * @param _marketIds array of Market ids
      */
     function claimParticipationMiningReward(uint[] calldata _marketIds) external {
-
+        address payable msgSender = _msgSender();
         for(uint i=0; i<_marketIds.length; i++) {
             SponsorIncentives storage _sponsorIncentives = marketSponsorship[_marketIds[i]];
             require(_sponsorIncentives.incentiveToken != address(0),"One of the Makets are not Sponsored");
             require(allMarkets.marketStatus(_marketIds[i]) == IAllMarkets.PredictionStatus.Settled,"One of the Markets are not Settled");
-            require(!marketRewardUserClaimed[_marketIds[i]][_msgSender()],"Already claimed for one of the market Id");
+            require(!marketRewardUserClaimed[_marketIds[i]][msgSender],"Already claimed for one of the market Id");
             
             uint reward=0;
             uint totalPredictionPoints = allMarkets.getTotalPredictionPoints(_marketIds[i]);
-            uint userPredictionPoints = getUserTotalPointsInMarket(_marketIds[i],_msgSender());
+            uint userPredictionPoints = getUserTotalPointsInMarket(_marketIds[i],msgSender);
             reward = _sponsorIncentives.incentiveToDistribute.mul(userPredictionPoints).div(totalPredictionPoints);
-            marketRewardUserClaimed[_marketIds[i]][_msgSender()] = true;
+            marketRewardUserClaimed[_marketIds[i]][msgSender] = true;
             if(reward > 0) { 
-                require(IToken(_sponsorIncentives.incentiveToken).transfer(_msgSender(), reward),"Transfer Failed");
-                emit Claimed(_marketIds[i], _msgSender(), _sponsorIncentives.incentiveToken, reward);
+                require(IToken(_sponsorIncentives.incentiveToken).transfer(msgSender, reward),"Transfer Failed");
+                emit Claimed(_marketIds[i], msgSender, _sponsorIncentives.incentiveToken, reward);
             }
         }
     }
@@ -94,13 +94,14 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
     * @param _value Amount to sponsor
     */
     function sponsorIncentives(uint256 _marketId, address _token, uint256 _value) external {
-      require(ms.whitelistedSponsor(_msgSender()),"Sponsor is not whitelisted");
-      require(_token != address(0), "Incentive Token can not be null");
-      require(_value > 0,"Incentive to distribute should not be 0");
-      require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live");
-      require(marketSponsorship[_marketId].incentiveToken == address(0),"Already Sponsored");
-      marketSponsorship[_marketId] = SponsorIncentives(_token,_value,_msgSender());
-      require(IToken(_token).transferFrom(_msgSender(), address(this), _value),"Transfer Failed");
-      emit SponsoredIncentive(_marketId, _token, _msgSender(), _value);
+        address payable msgSender =  _msgSender();
+        require(ms.whitelistedSponsor(msgSender),"Sponsor is not whitelisted");
+        require(_token != address(0), "Incentive Token can not be null");
+        require(_value > 0,"Incentive to distribute should not be 0");
+        require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live");
+        require(marketSponsorship[_marketId].incentiveToken == address(0),"Already Sponsored");
+        marketSponsorship[_marketId] = SponsorIncentives(_token,_value,msgSender);
+        require(IToken(_token).transferFrom(msgSender, address(this), _value),"Transfer Failed");
+        emit SponsoredIncentive(_marketId, _token, msgSender, _value);
     }
 }
