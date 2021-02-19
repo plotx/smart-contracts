@@ -1,3 +1,4 @@
+const assertRevert = require("./utils/assertRevert.js").assertRevert;
 const { assert } = require("chai");
 const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 const Master = artifacts.require("Master");
@@ -138,6 +139,7 @@ contract("Market", async function([user1, user2, user3, user4]) {
 		let expireT = await allMarkets.getMarketData(8);
 
 		await increaseTimeTo(expireT[5]);
+		await assertRevert(allMarkets.postMarketResult(7, 10000000000));
 
 		await allMarkets.createMarket(0, 0);
 
