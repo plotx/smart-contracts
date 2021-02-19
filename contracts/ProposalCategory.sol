@@ -269,6 +269,14 @@ contract ProposalCategory is Governed, IProposalCategory, Iupgradable {
             advisoryBoardRole
         );//25
         _addInitialCategories(
+            "Update AllMarkets Address parameters",
+            "",
+            "AM",
+            "updateAddressParameters(bytes8,address)",
+            60,
+            advisoryBoardRole
+        );//26
+        _addInitialCategories(
             "Any other item",
             "",
             "EX",

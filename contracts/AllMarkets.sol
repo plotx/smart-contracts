@@ -170,7 +170,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
     IMarketUtility internal marketUtility;
     IMarketCreationRewards internal marketCreationRewards;
 
-    address internal authorizedMultiSig;
+    address public authorizedMultiSig;
     uint internal totalOptions;
     uint internal predictionDecimalMultiplier;
     uint internal defaultMaxRecords;
@@ -303,7 +303,7 @@ contract AllMarkets is Governed, NativeMetaTransaction {
           } else if(code == "MCF") { // Market Creator fee percent in Cummulative fee
             marketFeeParams.marketCreatorFeePercent = uint32(value);
           } else {
-            revert("Invalid");
+            revert("Invalid code");
           } 
           require(
             marketFeeParams.daoCommissionPercent + 
@@ -312,6 +312,17 @@ contract AllMarkets is Governed, NativeMetaTransaction {
             marketFeeParams.marketCreatorFeePercent
             < 10000);
         }
+      }
+    }
+
+    /**
+    * @dev Function to update address parameters
+    */
+    function updateAddressParameters(bytes8 code, address _address) external onlyAuthorizedToGovern {
+      if(code == "MULSIG") {
+        authorizedMultiSig = _address;
+      } else {
+        revert("Invalid code");
       }
     }
 
