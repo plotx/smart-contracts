@@ -5,7 +5,9 @@ const Master = artifacts.require("Master");
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { assertRevert } = require('./utils/assertRevert');
 var BLOTInstance;
-contract('bLOTToken', function([user1,user2]){
+const hash = '0x8da5e6ecc73d11e04b92e026989772d21e293c3943243c2d39ecf1439891d613';
+const timestamp = 1613651613;
+contract('bLOTToken', function([user1,user2,user3,user4]){
 
 
     it('1.Minter can mint bLOTTokens',async function(){
@@ -66,13 +68,13 @@ contract('bLOTToken', function([user1,user2]){
         })
 
 
-    it('6. bLOT tokens cannot be converted to PLOT directly',async function(){
-        PLOTInstance = await PLOT.deployed();
-        // BLOTInstance = await BLOT.deployed();
-        await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
-        await BLOTInstance.mint(user1,"1000000000000000000000");
-        await assertRevert(BLOTInstance.convertToPLOT(BLOTInstance.address, BLOTInstance.address, "10000000000000000000000"))
-        })
+    // it('6. bLOT tokens cannot be converted to PLOT directly',async function(){
+    //     PLOTInstance = await PLOT.deployed();
+    //     // BLOTInstance = await BLOT.deployed();
+    //     await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
+    //     await BLOTInstance.mint(user1,"1000000000000000000000");
+    //     await assertRevert(BLOTInstance.convertToPLOT(BLOTInstance.address, BLOTInstance.address, "10000000000000000000000"))
+    //     })
 
     it('7. Should not allow to mint to zero address',async function(){
         await PLOTInstance.approve(BLOTInstance.address, "10000000000000000000000");
@@ -82,5 +84,33 @@ contract('bLOTToken', function([user1,user2]){
     it('8. Should not allow to re-initiate bLOT instance', async function() {
         await assertRevert(BLOTInstance.initiatebLOT(user1));
     });
+
+    it('9. Should authorise the txn when called from authController', async function() {
+        await (BLOTInstance.whitelistMigration(hash,user1,user2,timestamp,"1000000000000000000000",{from:user3}));
+    });
+
+    it('10. Should not authorise when the same txn is authorised again', async function() {
+        await assertRevert(BLOTInstance.whitelistMigration(hash,user1,user2,timestamp,"1000000000000000000000",{from:user3}));
+    });
+
+    it('11. Should migrate tokens as authorised when called from migrationController', async function() {
+        await (BLOTInstance.migrate(hash,user1,user2,timestamp,"1000000000000000000000",{from:user4}));
+    });
+
+    it('12.Should not migrate tokens if the authorised txn is already migrated', async function() {
+        await assertRevert(BLOTInstance.migrate(hash,user1,user2,timestamp,"1000000000000000000000",{from:user4}));
+    });
+
+    it('13.Should not migrate tokens if the txn is not authorised', async function() {
+        await assertRevert(BLOTInstance.migrate(hash,user1,user2,timestamp,"2000000000000000000000",{from:user4}));
+    });
+
+    it('14.Should revert when not called from authController', async function() {
+        await assertRevert(BLOTInstance.migrate(hash,user1,user2,timestamp,"2000000000000000000000",{from:user2}));
+    });
+
+    it('15.Should revert when not called from migrationController', async function() {
+        await assertRevert(BLOTInstance.migrate(hash,user1,user2,timestamp,"2000000000000000000000",{from:user2}));
+    });
+
 })
- 

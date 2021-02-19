@@ -1,15 +1,12 @@
 /* Copyright (C) 2020 PlotX.io
-
   This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
     the Free Software Foundation, either version 3 of the License, or
     (at your option) any later version.
-
   This program is distributed in the hope that it will be useful,
     but WITHOUT ANY WARRANTY; without even the implied warranty of
     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
     GNU General Public License for more details.
-
   You should have received a copy of the GNU General Public License
     along with this program.  If not, see http://www.gnu.org/licenses/ */
 
@@ -33,8 +30,8 @@ contract BLOT is Iupgradable {
 
     address public operator;
     address public plotToken;
-    address public constant authController = 0x6f9f333de6eCFa67365916cF95873a4DC480217a;
-    address public constant migrationController = 0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6;
+    address public constant authController = 0x1A572Ad98557Baa0C908E5bD91D9c626106837e0;
+    address public constant migrationController = 0x004B7D0721cbffcB87Aeae35Bf88196dd07281D1;
     
     mapping(bytes32 => MigrationStatus) public migrationStatus;
     struct MigrationStatus{
@@ -174,6 +171,21 @@ contract BLOT is Iupgradable {
         return true;
     }
 
+    /**
+     * @dev Destroys `amount` tokens from the caller.
+     *
+     * See `ERC20._burn`.
+     */
+    function convertToPLOT(
+        address _of,
+        address _to,
+        uint256 amount
+    ) public onlyOperator {
+        _burn(_of, amount);
+        require(IERC20(plotToken).transfer(_to, amount), "Error in transfer");
+    }
+
+
     /** @dev Creates `amount` tokens and assigns them to `account`, increasing
      * the total supply.
      *
@@ -216,10 +228,8 @@ contract BLOT is Iupgradable {
         migrationStatus[ migrationHash(_hash, _from, _to, _timestamp, _amount)].initiated = true;
         emit MigrationAuthorised(_hash);
 
-        return migrationHash(_hash, _from, _to, _timestamp, _amount);
-        
-    }
-    
+        return migrationHash(_hash, _from, _to, _timestamp, _amount);        
+    }    
    
      /**
      * @dev Mint bPlots as per whitelisted transaction.
