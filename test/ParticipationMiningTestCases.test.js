@@ -135,6 +135,11 @@ contract("Market", async function(users) {
 
     });
 
+    it("Tx should be reverted if null token is passed while claiming", async () => {
+        await assertRevert(pm.claimParticipationMiningReward([2],ZERO_ADDRESS));
+
+    });
+
     it("No new prediction other than initial prediction", async () => {
         // Market ID 7, only initial predictions
 
