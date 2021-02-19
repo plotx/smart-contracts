@@ -162,6 +162,9 @@ contract("Market", ([ab1, ab2, ab3, ab4, dr1, dr2, dr3, notMember]) => {
     let address = await masterInstance.getLatestAddress(web3.utils.toHex("GV"));
     let plotusToken = await PlotusToken.deployed();
     await marketConfig.setAssetPlotConversionRate(plotusToken.address, 1);
+    await assertRevert(marketConfig.setAssetPlotConversionRate(plotusToken.address, 1, {from:dr1}));
+    await marketConfig.addAuthorizedAddress(dr1);
+    await marketConfig.setAssetPlotConversionRate(plotusToken.address, 1, {from:dr1});
     gv = await Governance.at(address);
     address = await masterInstance.getLatestAddress(web3.utils.toHex("PC"));
     pc = await ProposalCategory.at(address);

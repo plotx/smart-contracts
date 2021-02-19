@@ -82,7 +82,8 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await plotusToken.transfer(mem3, toWei(100));
 		await plotusToken.transfer(mem4, toWei(100));
 		await plotusToken.transfer(mem5, toWei(100));
-
+		await assertRevert(marketConfig.setMasterAddress());
+		await assertRevert(marketConfig.initialize(allMarkets.address));
 	});
 
 	it("Should create a proposal to whitelist sponsor", async function() {
@@ -183,6 +184,7 @@ contract("PlotX", ([ab1, ab2, ab3, ab4, mem1, mem2, mem3, mem4, mem5, mem6, mem7
 		await assertRevert(allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 5));
 		await assertRevert(allMarkets.depositAndPlacePrediction("100000000000000000000", 7, allMarkets.address, 100*1e8, 1));
 		await assertRevert(allMarkets.depositAndPlacePrediction("10000000", 7, plotusToken.address, 100*1e8, 1));
+		await assertRevert(allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100, 1));
 		await allMarkets.depositAndPlacePrediction("100000000000000000000", 7, plotusToken.address, 100*1e8, 1);
 		// await allMarkets.placePrediction(plotusToken.address, "1000000000000000000000", 1, 1);
 		let totalStaked = await allMarkets.getUserFlags(7, ab1);

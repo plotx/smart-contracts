@@ -106,7 +106,7 @@ contract('bLOTToken', function([user1,user2,user3,user4]){
     });
 
     it('14.Should revert when not called from authController', async function() {
-        await assertRevert(BLOTInstance.migrate(hash,user1,user2,timestamp,"2000000000000000000000",{from:user2}));
+        await assertRevert(BLOTInstance.whitelistMigration(hash,user1,user2,timestamp,"2000000000000000000000",{from:user2}));
     });
 
     it('15.Should revert when not called from migrationController', async function() {

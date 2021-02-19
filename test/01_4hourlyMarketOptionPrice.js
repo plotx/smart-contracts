@@ -77,9 +77,10 @@ contract("Market", async function([user1, user2, user3, user4]) {
 	      allMarkets,
 	      "AM"
 	      );
-		assert.equal(await marketConfig.getOptionPrice(7,1), 25000);
-		assert.equal(await marketConfig.getOptionPrice(7,2), 50000);
-		assert.equal(await marketConfig.getOptionPrice(7,3), 25000);
+		let optionPrices = await marketConfig.getAllOptionPrices(7);
+		assert.equal(optionPrices[0]/1, 25000);
+		assert.equal(optionPrices[1]/1, 50000);
+		assert.equal(optionPrices[2]/1, 25000);
 	});
 
 	it("2.Scenario 2 - Stake > minstakes and time passed < min time passed", async () => {

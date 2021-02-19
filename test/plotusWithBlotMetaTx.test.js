@@ -66,6 +66,16 @@ describe("newPlotusWithBlot", () => {
             await allMarkets.createMarket(0, 0,{from: users[11]});
             // await marketIncentives.claimCreationReward(100,{from:users[11]});
             BLOTInstance = await BLOT.at(await masterInstance.getLatestAddress(web3.utils.toHex("BL")));
+            await assertRevert(BLOTInstance.convertToPLOT(users[0], users[1],toWei(100)));
+        });
+        it("Add a minter in BLOT", async () => {
+            await BLOTInstance.addMinter(users[5]);
+            assert.equal(await BLOTInstance.isMinter(users[5]), true);
+        });
+
+        it("Renounce a minter in BLOT", async () => {
+            await BLOTInstance.renounceMinter({from:users[5]});
+            assert.equal(await BLOTInstance.isMinter(users[5]), false);
         });
         it("1. Place Prediction", async () => {
 
