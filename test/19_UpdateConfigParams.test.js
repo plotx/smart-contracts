@@ -58,16 +58,18 @@ contract('Configure Global Parameters', accounts => {
       code,
       contractInst,
       type,
-      proposedValue
+      proposedValue,
+      getFunction,
+      actionStatus
     ) {
       code = toHex(code);
       let getterFunction;
       if (type == 'uint') {
         action = 'updateUintParameters(bytes8,uint)';
         getterFunction = 'getUintParameters';
-      } else if (type == 'configAddress') {
-        action = 'updateConfigAddressParameters(bytes8,address)';
-        getterFunction = '';
+      } else if (type == 'address') {
+        action = 'updateAddressParameters(bytes8,address)';
+        getterFunction = getFunction;
       } else if (type == 'configUint') {
         action = 'updateConfigUintParameters(bytes8,uint256)';
         getterFunction = '';
@@ -88,6 +90,14 @@ contract('Configure Global Parameters', accounts => {
       } catch (err) {}
       if(type == 'uint') {
         assert.equal(parameter[1], proposedValue, 'Not updated');
+      }
+      if(type == 'address') {
+        parameter = await contractInst.authorizedMultiSig();
+        if(actionStatus) {
+          assert.equal(parameter, proposedValue, 'Not updated');
+        } else {
+          assert.notEqual(parameter, proposedValue, 'Updated');
+        }
       }
     }
     async function updateInvalidParameter(
@@ -196,6 +206,12 @@ contract('Configure Global Parameters', accounts => {
       it('Should update Market creator default prediction amount', async function() {
         await updateParameter(19, 2, 'MDPA', allMarkets, 'uint', '123');
       });
+      it('Should update Multisig address', async function() {
+        await updateParameter(26, 2, 'MULSIG', allMarkets, 'address', allMarkets.address, "authorizedMultiSig()", true);
+      });
+      it('Should not update Multisig address if invalid code passed', async function() {
+        await updateParameter(26, 2, 'BULSIG', allMarkets, 'address', tc.address, "authorizedMultiSig()", false);
+      });
       it('Should not update if Cummulative fee percent is >= 100', async function() {
         await updateInvalidParameter(19, 2, 'CMFP', allMarkets, 'uint', '11000');
       });
@@ -206,7 +222,7 @@ contract('Configure Global Parameters', accounts => {
         await updateInvalidParameter(19, 2, 'MCF', allMarkets, 'uint', '7000');
       });
       it('Should not update if parameter code is incorrect', async function() {
-        await updateInvalidParameter(19, 2, 'EPTIM', allMarkets, 'uint', '86400');
+        await updateInvalidParameter(19, 2, 'EPTIM', allMarkets, 'uint', '2');
       });
     }); 
 
