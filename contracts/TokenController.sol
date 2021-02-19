@@ -17,7 +17,6 @@ pragma solidity  0.5.7;
 
 import "./external/lockable-token/IERC1132.sol";
 import "./interfaces/IbLOTToken.sol";
-import "./Vesting.sol";
 import "./interfaces/Iupgradable.sol";
 import "./interfaces/IToken.sol";
 import "./external/govblocks-protocol/Governed.sol";
@@ -42,7 +41,6 @@ contract TokenController is IERC1132, Governed, Iupgradable, NativeMetaTransacti
 
     IToken public token;
     IbLOTToken public bLOTToken;
-    Vesting public vesting;
 
     modifier onlyAuthorized {
         require(IMaster(masterAddress).isInternal(msg.sender), "Not authorized");
@@ -63,17 +61,6 @@ contract TokenController is IERC1132, Governed, Iupgradable, NativeMetaTransacti
         token = IToken(ms.dAppToken());
         bLOTToken = IbLOTToken(ms.getLatestAddress("BL"));
         _initializeEIP712("TC");
-    }
-
-    /**
-     * @dev Initiate vesting contract
-     * @param _vesting Address of vesting contract implementation
-     */
-    function initiateVesting(address _vesting) external {
-        OwnedUpgradeabilityProxy proxy =  OwnedUpgradeabilityProxy(address(uint160(address(this))));
-        require(msg.sender == proxy.proxyOwner(),"Sender is not proxy owner.");
-        vesting = Vesting(_vesting);
-
     }
 
     /**
@@ -190,7 +177,7 @@ contract TokenController is IERC1132, Governed, Iupgradable, NativeMetaTransacti
         for (uint256 i = 0; i < lockReason[_of].length; i++) {
             amount = amount.add(tokensLocked(_of, lockReason[_of][i]));
         }  
-        amount = amount.add(vesting.unclaimedAllocation(_of)); 
+        amount = amount;
     }   
 
     function totalSupply() public view returns (uint256)

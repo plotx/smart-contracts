@@ -10,7 +10,6 @@ const BLOT = artifacts.require('BLOT');
 const MarketConfig = artifacts.require('MockConfig');
 const MockchainLink = artifacts.require('MockChainLinkAggregator');
 const OwnedUpgradeabilityProxy = artifacts.require('OwnedUpgradeabilityProxy');
-const Vesting = artifacts.require('Vesting');
 const ParticipationMining = artifacts.require('ParticipationMining');
 const { assert } = require("chai");
 const encode1 = require('../test/utils/encoder.js').encode1;
@@ -30,7 +29,6 @@ module.exports = function(deployer, network, accounts){
       let plotusToken = await PlotusToken.at(deployPlotusToken.address);
 
       let blotToken = await deployer.deploy(BLOT);
-      let vestingContract = await deployer.deploy(Vesting, plotusToken.address, accounts[0]);
       let masterProxy = await deployer.deploy(Master);
       let master = await deployer.deploy(OwnedUpgradeabilityProxy, masterProxy.address);
       let allMarkets = await deployer.deploy(AllMarkets);
@@ -38,7 +36,7 @@ module.exports = function(deployer, network, accounts){
       let participationMining = await deployer.deploy(ParticipationMining);
       master = await Master.at(master.address);
       let implementations = [deployMemberRoles.address, deployProposalCategory.address, deployGovernance.address, deployTokenController.address, allMarkets.address, mcr.address, marketConfig.address, blotToken.address, participationMining.address];
-      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0], vestingContract.address);
+      await master.initiateMaster(implementations, deployPlotusToken.address, accounts[0]);
       let tc = await TokenController.at(await master.getLatestAddress("0x5443"));
       let gvAddress = await master.getLatestAddress(web3.utils.toHex("GV"));
       master = await OwnedUpgradeabilityProxy.at(master.address);

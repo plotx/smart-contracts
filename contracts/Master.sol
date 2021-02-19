@@ -50,8 +50,7 @@ contract Master is Governed {
     function initiateMaster(
         address[] calldata _implementations,
         address _token,
-        address _defaultAddress,
-        address _vesting
+        address _defaultAddress
     ) external {
         OwnedUpgradeabilityProxy proxy = OwnedUpgradeabilityProxy(
             address(uint160(address(this)))
@@ -86,7 +85,6 @@ contract Master is Governed {
 
         IMarketUtility(contractAddress["MU"]).initialize(_defaultAddress);
         IbLOTToken(contractAddress["BL"]).initiatebLOT(_defaultAddress);
-        ITokenController(contractAddress["TC"]).initiateVesting(_vesting);
         IMemberRoles(contractAddress["MR"]).setInititorAddress(_defaultAddress);
     }
 

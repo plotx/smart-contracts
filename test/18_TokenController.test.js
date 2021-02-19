@@ -48,7 +48,6 @@ contract("TokenController", ([owner, account2, account3]) => {
 
 		it("1.3 Should not allow to call unauthorized functions", async() => {
 			await assertRevert(tokenController.swapBLOT(owner, owner, 100));
-			await assertRevert(tokenController.initiateVesting(owner));
 			await assertRevert(tokenController.setMasterAddress());
 		})
 	});
