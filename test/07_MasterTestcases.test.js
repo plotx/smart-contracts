@@ -168,17 +168,17 @@ contract('Master', function(accounts) {
       mas = await OwnedUpgradeabilityProxy.new(mas.address);
       mas = await Master.at(mas.address);
       await assertRevert(
-        mas.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address, mas.address, {from: newOwner})
+        mas.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address, {from: newOwner})
       );
     });
     it('Should revert if length of implementation array and contract array are not same', async function() {
       await assertRevert(
-        mas.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address, mas.address)
+        mas.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address)
       );
     });
     it('Should revert if master already initiated', async function() {
       await assertRevert(
-        ms.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address, mas.address)
+        ms.initiateMaster([mas.address, mas.address, mas.address], mas.address, mas.address)
       );
     });
   });
