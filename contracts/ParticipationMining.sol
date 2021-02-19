@@ -75,7 +75,7 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
 
         for(uint i=0; i<_marketIds.length; i++) {
             SponsorIncentives storage _sponsorIncentives = marketSponsorship[_marketIds[i]];
-            require(_sponsorIncentives.incentiveToken == _incentiveToken,"One of the Makets are having different Sponsored Token");
+            require(_sponsorIncentives.incentiveToken == _incentiveToken,"One of the Markets are not having mentioned Sponsored Token");
             require(allMarkets.marketStatus(_marketIds[i]) == IAllMarkets.PredictionStatus.Settled,"One of the Markets are not Settled");
             require(!marketRewardUserClaimed[_marketIds[i]][msgSender],"Already claimed for one of the market Id");
             marketRewardUserClaimed[_marketIds[i]][msgSender] = true;
@@ -104,7 +104,7 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
         require(ms.whitelistedSponsor(msgSender),"Sponsor is not whitelisted");
         require(_token != address(0), "Incentive Token can not be null");
         require(_value > 0,"Incentive to distribute should not be 0");
-        require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live");
+        require(allMarkets.marketStatus(_marketId) <= IAllMarkets.PredictionStatus.InSettlement,"Market is not Live/InSettlement");
         require(marketSponsorship[_marketId].incentiveToken == address(0),"Already Sponsored");
         marketSponsorship[_marketId] = SponsorIncentives(_token,_value,msgSender);
         require(IToken(_token).transferFrom(msgSender, address(this), _value),"Transfer Failed");
