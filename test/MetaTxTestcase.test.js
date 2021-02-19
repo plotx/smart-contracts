@@ -30,7 +30,7 @@ let plotusToken;
 let tc;
 let td;
 
-contract("MetaTxs", ([user1,user2,user3,user4]) => {
+contract("MetaTxs", ([user1,user2,user3,user4,user5]) => {
   before(async function () {
     nxms = await OwnedUpgradeabilityProxy.deployed();
     nxms = await Master.at(nxms.address);
@@ -231,6 +231,32 @@ describe('Token Controller Test Cases', function() {
     let lcokedAfter = (await lockableTok.locked(user2, toHex("DR")));
 
     assert.equal(lcokedAfter[1],  lcokedBefore[1]/1 + 1000);
+  });
+
+  it("Depositor Should be able to mint plot", async function () {
+    let user5BalBefore = (await plotusToken.balanceOf(user5))/1e18;
+    let functionSignature = await plotusToken.deposit(user5,"0x00000000000000000000000000000000000000000000003635c9adc5dea00000");
+    let user5BalAfter = (await plotusToken.balanceOf(user5))/1e18;
+    assert.equal(user5BalAfter,  user5BalBefore + 1000);
+  });
+  it("Non - Depositor Should not be able to mint plot", async function () {
+    let user5BalBefore = (await plotusToken.balanceOf(user5))/1e18;
+    await assertRevert(plotusToken.deposit(user5,"0x00000000000000000000000000000000000000000000003635c9adc5dea00000",{from:user2}));
+    let user5BalAfter = (await plotusToken.balanceOf(user5))/1e18;
+    assert.equal(user5BalAfter,  user5BalBefore);
+  });
+  it("user Should be able to withdraw their plot to ethereum", async function () {
+    let functionSignature = encode("withdraw(uint256)", toWei(1000));
+    let user5BalBefore = (await plotusToken.balanceOf(user5))/1e18;
+    await signAndExecuteMetaTx(
+      privateKeyList[4],
+      user5,
+      functionSignature,
+      plotusToken,
+      "PLOT"
+      );
+    let user5BalAfter = (await plotusToken.balanceOf(user5))/1e18;
+    assert.equal(user5BalAfter,  user5BalBefore/1- 1000);
   });
 
 });
