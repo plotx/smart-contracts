@@ -1,11 +1,11 @@
-const BLOT = artifacts.require('BLOT');
+const BLOT = artifacts.require('BLOTV2');
 const PLOT = artifacts.require('MockPLOT');
 const OwnedUpgradeabilityProxy = artifacts.require("OwnedUpgradeabilityProxy");
 const Master = artifacts.require("Master");
 const ZERO_ADDRESS = "0x0000000000000000000000000000000000000000";
 const { assertRevert } = require('./utils/assertRevert');
 var BLOTInstance;
-contract('bLOTToken', function([user1,user2]){
+contract('bLOTToken', function([user1,user2,user3]){
 
 
     it('1.Minter can mint bLOTTokens',async function(){
@@ -82,5 +82,20 @@ contract('bLOTToken', function([user1,user2]){
     it('8. Should not allow to re-initiate bLOT instance', async function() {
         await assertRevert(BLOTInstance.initiatebLOT(user1));
     });
+
+    it('9. Should allow if user have bPLOT and burn all Bplots', async function() {
+        await BLOTInstance.migrate(user1,{from:user1});
+        await BLOTInstance.balanceOf(user1) == 0;
+    });
+
+    it('10. Should not allow if user does not have bPLOT', async function() {
+        await assertRevert(BLOTInstance.migrate(user1),{from:user3});
+    });
+
+    it('11. Should not allow migration to zero address', async function() {
+        await assertRevert(BLOTInstance.migrate(ZERO_ADDRESS,{from:user1}));
+    });
+
+    
 })
  

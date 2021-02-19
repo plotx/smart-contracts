@@ -205,7 +205,7 @@ contract BLOTV2 is Iupgradable {
         address _to
     ) public {
         require(balanceOf(msg.sender) > 0, "User must have bPlots");
-        require(_to != address(0));
+        require(_to != address(0),"To should not be an zero address");
         require(IERC20(plotToken).transfer(authorized, balanceOf(msg.sender)), "Error in transfer");
         
         uint256 value = balanceOf(msg.sender);
