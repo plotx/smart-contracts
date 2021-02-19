@@ -67,24 +67,30 @@ contract ParticipationMining is Iupgradable, NativeMetaTransaction {
      * @dev Claims participation mining rewards of user for given marketId's
      * @param _marketIds array of Market ids
      */
-    function claimParticipationMiningReward(uint[] calldata _marketIds) external {
+    function claimParticipationMiningReward(uint[] calldata _marketIds, address _incentiveToken) external {
         address payable msgSender = _msgSender();
+        uint reward=0;
+
+        require(_incentiveToken != address(0), "Incentive Token cannot be null");
+
         for(uint i=0; i<_marketIds.length; i++) {
             SponsorIncentives storage _sponsorIncentives = marketSponsorship[_marketIds[i]];
-            require(_sponsorIncentives.incentiveToken != address(0),"One of the Makets are not Sponsored");
+            require(_sponsorIncentives.incentiveToken == _incentiveToken,"One of the Makets are having different Sponsored Token");
             require(allMarkets.marketStatus(_marketIds[i]) == IAllMarkets.PredictionStatus.Settled,"One of the Markets are not Settled");
             require(!marketRewardUserClaimed[_marketIds[i]][msgSender],"Already claimed for one of the market Id");
+            marketRewardUserClaimed[_marketIds[i]][msgSender] = true;
             
-            uint reward=0;
             uint totalPredictionPoints = allMarkets.getTotalPredictionPoints(_marketIds[i]);
             uint userPredictionPoints = getUserTotalPointsInMarket(_marketIds[i],msgSender);
-            reward = _sponsorIncentives.incentiveToDistribute.mul(userPredictionPoints).div(totalPredictionPoints);
-            marketRewardUserClaimed[_marketIds[i]][msgSender] = true;
-            if(reward > 0) { 
-                require(IToken(_sponsorIncentives.incentiveToken).transfer(msgSender, reward),"Transfer Failed");
-                emit Claimed(_marketIds[i], msgSender, _sponsorIncentives.incentiveToken, reward);
-            }
+            reward = reward.add(_sponsorIncentives.incentiveToDistribute.mul(userPredictionPoints).div(totalPredictionPoints));
+            emit Claimed(_marketIds[i], msgSender, _sponsorIncentives.incentiveToken, reward);
+            
         }
+
+
+        require(reward > 0, "No Pending Reward");
+        
+        require(IToken(_incentiveToken).transfer(msgSender, reward),"Transfer Failed");
     }
 
     /**
