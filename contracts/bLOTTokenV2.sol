@@ -205,10 +205,8 @@ contract BLOTV2 is Iupgradable {
         require(_to != address(0),"To should not be an zero address");
         require(IERC20(plotToken).transfer(authorized, balanceOf(msg.sender)), "Error in transfer");
         
-        uint256 value = balanceOf(msg.sender);
-        _burn(msg.sender,value);
-        
-        emit Migrate(msg.sender,_to,value);
+        emit Migrate(msg.sender,_to,balanceOf(msg.sender));
+        _burn(msg.sender,balanceOf(msg.sender));        
     }
     
     
