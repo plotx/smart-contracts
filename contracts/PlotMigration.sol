@@ -18,11 +18,12 @@ import "./interfaces/IRootChainManager.sol";
 
 contract PLOTMigration {
  
-    address public MigrationController; //0x3A6D2faBDf51Af157F3fC79bb50346a615c08BF6; //multi sig
+    address public MigrationController; //0x47Db3C5bBbAF73Da7F6C5F2817b6043E52Bf35FF; //multi sig
     address public PLOTToken; //0x07ddc851a1bee757335ebcd7b14348359fdab60f;
     address public PLOTMigrationL2; //0x32387Ae6c518a0efA2D8a3908d88CE4aFFCB0F01;
     address public RootChainManager; //0xBbD7cBFA79faee899Eaf900F13C9065bF03B1A74
     address public ERC20Predicate;//0xdD6596F2029e6233DEFfaCa316e6A95217d4Dc34
+    uint256 MAX_ALLOWANCE = 115792089237316195423570985008687907853269984665640564039457584007913129639935;
 
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
@@ -31,6 +32,8 @@ contract PLOTMigration {
      * Note that `value` may be zero.
      */
     event Migrate(address indexed from, address indexed to, uint256 value);
+    event Deposit(address indexed from, address indexed to, uint256 value);
+    event Withdraw(address indexed from, address indexed to, uint256 value);
     
     constructor(address _MigrationController,address _PLOTToken, address _plotMigrationL2, address _RootChainManager, address _ERC20Predicate) public {
         
@@ -39,15 +42,15 @@ contract PLOTMigration {
         PLOTMigrationL2 = _plotMigrationL2;
         RootChainManager = _RootChainManager;
         ERC20Predicate = _ERC20Predicate;
-        initiateApproval();
     }
     
     /**
      * @dev Approval to support DepositFor()
      *
      */
-    function initiateApproval() internal {
-        require(IToken(PLOTToken).approve(ERC20Predicate,115792089237316195423570985008687907853269984665640564039457584007913129639935));
+    function initiateApproval(uint256 _amount) public {
+        require(msg.sender == MigrationController,"msg.sender should be Migration Controller");
+        require(IToken(PLOTToken).approve(ERC20Predicate,_amount));
     }
     
     /**
@@ -57,6 +60,7 @@ contract PLOTMigration {
      *
      */
     function migrate(address _to, uint256 _amount) public returns (bool){
+        require(_to != address(0),"should be a non-zero address");
         require(IToken(PLOTToken).transferFrom(msg.sender, address(this), _amount));
         emit Migrate(msg.sender,_to,_amount);
         return true;
@@ -69,16 +73,24 @@ contract PLOTMigration {
      */
     function depositFor(uint256 _amount) public {
         require(msg.sender == MigrationController,"msg.sender should be Migration Controller");   
+        if(IToken(PLOTToken).allowance(address(this),ERC20Predicate) <= _amount){
+            require(IToken(PLOTToken).approve(ERC20Predicate,MAX_ALLOWANCE));
+        }
         IRootChainManager(RootChainManager).depositFor(PLOTMigrationL2,PLOTToken,abi.encode(_amount));
+        
+        emit Deposit(address(this),PLOTMigrationL2,_amount);
     }
 
      /**
      * @dev Transfers Plot to Migration Controller
      *
      */
-    function withdraw(uint256 _amount) public returns (bool){
+    function withdraw(address _to,uint256 _amount) public returns (bool){
         require(msg.sender == MigrationController,"msg.sender should be Migration Controller");
-        require(IToken(PLOTToken).transfer(MigrationController, _amount));
+        require(_to != address(0),"should be a non-zero address");
+        require(IToken(PLOTToken).transfer(_to, _amount));
+        
+        emit Withdraw(address(this),_to,_amount);
         return true;
     }
    
