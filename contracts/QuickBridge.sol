@@ -26,23 +26,19 @@ contract QuickBridge {
     uint256 constant MAX_ALLOWANCE = 2 ** 256 - 1;
     mapping(address=>bool) public tokenAllowed;
 
-    /**
-     * @dev Emitted when `value` of `_token` are moved from one account (`from`) to
-     * another (`to`).
-     *
-     */
+    
     event Migrate(address indexed from, address indexed to, address indexed _token, uint256 value);
     event Deposit(address indexed from, address indexed to, address indexed _token, uint256 value);
     event Withdraw(address indexed from, address indexed to, address indexed _token, uint256 value);
     
-    constructor(address _MigrationController,address _PLOTToken, address _quickBridgeL2, address _RootChainManager, address _ERC20Predicate) public {
+    constructor(address _MigrationController,address[] memory _initialTokenlist, address _quickBridgeL2, address _RootChainManager, address _ERC20Predicate) public {
         
         MigrationController = _MigrationController;
-        tokenAllowed[_PLOTToken] = true;
         quickBridgeL2 = _quickBridgeL2;
         RootChainManager = _RootChainManager;
         ERC20Predicate = _ERC20Predicate;
         authorised = msg.sender;
+        addAllowedToken(_initialTokenlist);
     }
 
     /**
@@ -74,7 +70,7 @@ contract QuickBridge {
      * @dev Adds new token in allowed list
      * @param _tokens list of address of tokens to be allowed
      */
-    function addAllowedToken(address[] calldata _tokens) external onlyAuthorised {
+    function addAllowedToken(address[] memory _tokens) public onlyAuthorised {
         for(uint i=0;i<_tokens.length;i++) {
             require(_tokens[i] != address(0),"Null Address");
             require(!tokenAllowed[_tokens[i]],"Already Exist");
