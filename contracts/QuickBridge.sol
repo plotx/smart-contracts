@@ -62,7 +62,7 @@ contract QuickBridge {
      * @param _newAuthorised address of new authorised account
      */
     function updateAuthorisedAddress(address _newAuthorised) external onlyAuthorised {
-        require(_newAuthorised != address(0));
+        require(_newAuthorised != address(0),"Can't be null address");
         authorised = _newAuthorised;
     } 
 
@@ -93,7 +93,7 @@ contract QuickBridge {
      *
      */
     function initiateApproval(address _token, uint256 _amount) public onlyMigrator {
-        require(IToken(_token).approve(ERC20Predicate,_amount));
+        require(IToken(_token).approve(ERC20Predicate,_amount),"ERC20:Approve Failed");
     }
     
     /**
@@ -109,7 +109,7 @@ contract QuickBridge {
         }
         require(_to != address(0),"should be a non-zero address");
         require(tokenAllowed[_token], "Token is not allowed");
-        require(IToken(_token).transferFrom(msg.sender, address(this), _amount));
+        require(IToken(_token).transferFrom(msg.sender, address(this), _amount),"ERC20:TransferFrom Failed");
 
         emit Migrate(msg.sender,_to,_token,_amount);
         return true;
@@ -147,7 +147,7 @@ contract QuickBridge {
         require(_to != address(0),"address should be a non-zero address");
         require(_token != address(0),"address should be a non-zero address");
         require(_amount > 0,"value should be greater than zero");
-        require(IToken(_token).transfer(_to, _amount));
+        require(IToken(_token).transfer(_to, _amount),"ERC20:Transfer Failed");
         
         emit Withdraw(address(this),_to,_token, _amount);
         return true;

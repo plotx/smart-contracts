@@ -27,6 +27,11 @@ contract DummyTokenMock is ERC20 {
         retBit = _a;
     }
 
+    function approve(address spender, uint256 value) public returns (bool) {
+        // _approve(msg.sender, spender, value);
+        return retBit;
+    }
+
      /**
     * @dev burns an amount of the tokens of the message sender
     * account.
