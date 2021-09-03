@@ -23,6 +23,7 @@ contract QuickBridge {
     address public RootChainManager; 
     address public ERC20Predicate;
     address public authorised;
+    address public nativeCurrency;
     uint256 constant MAX_ALLOWANCE = 2 ** 256 - 1;
     mapping(address=>bool) public tokenAllowed;
 
@@ -31,13 +32,14 @@ contract QuickBridge {
     event Deposit(address indexed from, address indexed to, address indexed _token, uint256 value);
     event Withdraw(address indexed from, address indexed to, address indexed _token, uint256 value);
     
-    constructor(address _MigrationController,address[] memory _initialTokenlist, address _quickBridgeL2, address _RootChainManager, address _ERC20Predicate) public {
+    constructor(address _MigrationController,address[] memory _initialTokenlist, address _quickBridgeL2, address _RootChainManager, address _ERC20Predicate, address _nativeCurrency) public {
         
         MigrationController = _MigrationController;
         quickBridgeL2 = _quickBridgeL2;
         RootChainManager = _RootChainManager;
         ERC20Predicate = _ERC20Predicate;
         authorised = msg.sender;
+        nativeCurrency = _nativeCurrency;
         addAllowedToken(_initialTokenlist);
     }
 
@@ -103,13 +105,18 @@ contract QuickBridge {
      * @param _amount Value to be received in Ploygon
      *
      */
-    function migrate(address _to, address _token, uint256 _amount) external returns (bool){
-        if(_amount == 0) {
-            return false;
-        }
+    function migrate(address _to, address _token, uint256 _amount) external payable returns (bool){
+        
+        require(_amount > 0, "Can't be null amount");
         require(_to != address(0),"should be a non-zero address");
         require(tokenAllowed[_token], "Token is not allowed");
-        require(IToken(_token).transferFrom(msg.sender, address(this), _amount),"ERC20:TransferFrom Failed");
+        if(_token == nativeCurrency) {
+            require(_amount == msg.value, "should send correct amount");
+
+        } else {
+            require(msg.value == 0, "Not native currency");
+            require(IToken(_token).transferFrom(msg.sender, address(this), _amount),"ERC20:TransferFrom Failed");
+        }
 
         emit Migrate(msg.sender,_to,_token,_amount);
         return true;
@@ -129,11 +136,18 @@ contract QuickBridge {
         {
             require(_amounts[i] > 0,"value should be greater than zero");
             require(tokenAllowed[_tokens[i]],"Token is not allowed");
-            if(IToken(_tokens[i]).allowance(address(this),ERC20Predicate) <= _amounts[i]){
-                initiateApproval(_tokens[i], MAX_ALLOWANCE);
-            }
+            if(_tokens[i] == nativeCurrency) {
+                rootManager.depositEtherFor.value(_amounts[i])(_quickBridgeL2Address); 
+            } else {
 
-            rootManager.depositFor(_quickBridgeL2Address,_tokens[i],abi.encode(_amounts[i]));        
+                if(IToken(_tokens[i]).allowance(address(this),ERC20Predicate) <= _amounts[i]){
+                    initiateApproval(_tokens[i], MAX_ALLOWANCE);
+                }
+
+                rootManager.depositFor(_quickBridgeL2Address,_tokens[i],abi.encode(_amounts[i])); 
+
+            }
+                   
             emit Deposit(address(this),_quickBridgeL2Address,_tokens[i],_amounts[i]);
         }
     }
@@ -143,11 +157,16 @@ contract QuickBridge {
      * @dev Transfers `_token` to `_to` by Migration Controller
      *
      */
-    function withdraw(address _token, address _to, uint256 _amount) external onlyMigrator returns (bool){
+    function withdraw(address _token, address payable _to, uint256 _amount) external onlyMigrator returns (bool){
         require(_to != address(0),"address should be a non-zero address");
         require(_token != address(0),"address should be a non-zero address");
         require(_amount > 0,"value should be greater than zero");
-        require(IToken(_token).transfer(_to, _amount),"ERC20:Transfer Failed");
+
+        if(_token == nativeCurrency) {
+            _to.transfer(_amount);
+        } else {
+            require(IToken(_token).transfer(_to, _amount),"ERC20:Transfer Failed");
+        }
         
         emit Withdraw(address(this),_to,_token, _amount);
         return true;

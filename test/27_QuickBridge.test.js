@@ -11,11 +11,12 @@ const latestTime = require("./utils/latestTime.js").latestTime;
 const encode = require("./utils/encoder.js").encode;
 const { toHex, toWei } = require("./utils/ethTools.js");
 const expectEvent = require("./utils/expectEvent");
-const Web3 = require("web3");
+// const Web3 = require("web3");
 const { assert } = require("chai");
-const web3 = new Web3();
+// const web3 = new Web3();
 let maxAllowance = "115792089237316195423570985008687907853269984665640564039457584007913129639935";
 const nullAddress = "0x0000000000000000000000000000000000000000";
+const nativeCurrency = "0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE";
 
 let quickBridge;
 let plotusToken;
@@ -35,7 +36,7 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
     dummyToken = await DummyTokenMock.new("dummy","dummy");
     erc20predicate = await ERC20PredicateMock.new();
     rootchainmanager = await RootChainManagerMock.new(erc20predicate.address);
-    quickBridge = await QuickBridge.new(user4,[plotusToken.address,token1.address,token2.address,dummyToken.address],user5,rootchainmanager.address,erc20predicate.address);
+    quickBridge = await QuickBridge.new(user4,[plotusToken.address,token1.address,token2.address,dummyToken.address],user5,rootchainmanager.address,erc20predicate.address,nativeCurrency);
 
     // dummyQuickBridge = await QuickBridge.new(dummyToken.address, owner);
     // await plotusToken.approve(vesting.address, maxAllowance);
@@ -53,6 +54,7 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
       assert.equal(await quickBridge.RootChainManager(), rootchainmanager.address);
       assert.equal(await quickBridge.ERC20Predicate(), erc20predicate.address);
       assert.equal(await quickBridge.authorised(), owner);
+      assert.equal(await quickBridge.nativeCurrency(), nativeCurrency);
     });
 
     it('Authorised user should be able to add new allowed token', async function () {
@@ -85,9 +87,35 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
 
     });
 
-    it('Nothing should happen if tries to migrate 0 tokens', async function () {
+    it('User should be able to migrate native currency upon approval', async function () {
+      await quickBridge.addAllowedToken([nativeCurrency]);
+      let ethBeforeBalUser1 = await web3.eth.getBalance(user1);
+      let ethBeforeBalContract = await web3.eth.getBalance(quickBridge.address);
+      await quickBridge.migrate(user2,nativeCurrency,toWei(10),{from:user1,value:toWei(10)});
+
+      let ethAfterBalUser1 = await web3.eth.getBalance(user1);
+      let ethAfterBalContract = await web3.eth.getBalance(quickBridge.address);
+
+      assert.equal(Math.floor((ethAfterBalContract-ethBeforeBalContract)/1e18),10);
+      assert.equal(Math.floor((ethBeforeBalUser1-ethAfterBalUser1)/1e18),10);
+
+    });
+
+    it('Should revert if tries to send incorrect amount of eth', async function () {
      
-      await quickBridge.migrate(user2,token1.address,0,{from:user1});
+      await assertRevert(quickBridge.migrate(user2,nativeCurrency,2,{from:user1,value:toWei(1)}));
+
+    });
+
+    it('Should revert if tries to send eth while migrating erc20', async function () {
+     
+      await assertRevert(quickBridge.migrate(user2,token1.address,toWei(100),{from:user1,value:toWei(1)}));
+
+    });
+
+    it('Should revert if tries to migrate 0 tokens', async function () {
+     
+      await assertRevert(quickBridge.migrate(user2,token1.address,0,{from:user1}));
 
     });
 
@@ -113,8 +141,10 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
       let token2BeforeBalPred = await token2.balanceOf(erc20predicate.address);
       let plotBeforeBalQB = await plotusToken.balanceOf(quickBridge.address);
       let plotBeforeBalPred = await plotusToken.balanceOf(erc20predicate.address);
+      let ethBalBeforeQB = await web3.eth.getBalance(quickBridge.address);
+      let ethBalBeforepred = await web3.eth.getBalance(rootchainmanager.address);
 
-      await quickBridge.depositFor([token1.address,token2.address,plotusToken.address],[toWei(100),toWei(100),toWei(100)],{from:user4});
+      await quickBridge.depositFor([token1.address,token2.address,plotusToken.address,nativeCurrency],[toWei(100),toWei(100),toWei(100),toWei(3)],{from:user4});
 
       let token1AfterBalQB = await token1.balanceOf(quickBridge.address);
       let token1AfterBalPred = await token1.balanceOf(erc20predicate.address);
@@ -122,6 +152,8 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
       let token2AfterBalPred = await token2.balanceOf(erc20predicate.address);
       let plotAfterBalQB = await plotusToken.balanceOf(quickBridge.address);
       let plotAfterBalPred = await plotusToken.balanceOf(erc20predicate.address);
+      let ethBalAfterQB = await web3.eth.getBalance(quickBridge.address);
+      let ethBalAfterpred = await web3.eth.getBalance(rootchainmanager.address);
 
       assert.equal(token1BeforeBalQB-token1AfterBalQB,toWei(100));
       assert.equal(token1AfterBalPred-token1BeforeBalPred,toWei(100));
@@ -129,6 +161,8 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
       assert.equal(token2AfterBalPred-token2BeforeBalPred,toWei(100));
       assert.equal(plotBeforeBalQB-plotAfterBalQB,toWei(100));
       assert.equal(plotAfterBalPred-plotBeforeBalPred,toWei(100));
+      assert.equal(ethBalAfterpred-ethBalBeforepred,toWei(3));
+      assert.equal(ethBalBeforeQB-ethBalAfterQB,toWei(3));
 
     });
 
@@ -148,6 +182,22 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
 
       assert.equal(beforeBalQB-afterBalQB,toWei(100));
       assert.equal(afterBalU2-beforeBalU2,toWei(100));
+
+    });
+
+    it('Migrator should be able to take native currency out', async function () {
+      
+      let ethBalbeforeQB = await web3.eth.getBalance(quickBridge.address);
+      let ethBalbeforeU2 = await web3.eth.getBalance(user2);
+      
+      await quickBridge.withdraw(nativeCurrency, user2, toWei(5),{from:user4});
+
+      let ethBalAfterQB = await web3.eth.getBalance(quickBridge.address);
+      let ethBalAfterU2 = await web3.eth.getBalance(user2);
+     
+
+      assert.equal(ethBalbeforeQB - ethBalAfterQB,toWei(5));
+      assert.equal(Math.floor((ethBalAfterU2-ethBalbeforeU2)/1e18),5);
 
     });
 

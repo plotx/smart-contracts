@@ -24,4 +24,8 @@ contract RootChainManagerMock{
 		_predicate.pullFunds(msg.sender,rootToken,abi.decode(depositData,(uint)));
 	}
 
+	function depositEtherFor(address user) external payable {
+		
+	}
+
 } 
