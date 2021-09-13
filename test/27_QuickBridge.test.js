@@ -272,6 +272,14 @@ contract("Quick Bridge", ([owner, user1, user2, user3, user4, user5]) => {
           // if ERC20 transfer fails
           await assertRevert(quickBridge.withdraw(dummyToken.address,user2,toWei(10),{from:user4}));
         });
+
+        it('should revert if deploy with null address', async function () {
+          await assertRevert(QuickBridge.new(nullAddress,[],user5,rootchainmanager.address,erc20predicate.address,nativeCurrency))
+          await assertRevert(QuickBridge.new(user4,[],nullAddress,rootchainmanager.address,erc20predicate.address,nativeCurrency))
+          await assertRevert(QuickBridge.new(user4,[],user5,nullAddress,erc20predicate.address,nativeCurrency))
+          await assertRevert(QuickBridge.new(user4,[],user5,rootchainmanager.address,nullAddress,nativeCurrency))
+          await assertRevert(QuickBridge.new(user4,[],user5,rootchainmanager.address,erc20predicate.address,nullAddress))
+        });
     });
   });
 });

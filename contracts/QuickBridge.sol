@@ -32,6 +32,12 @@ contract QuickBridge {
     event Withdraw(address indexed from, address indexed to, address indexed _token, uint256 value);
     
     constructor(address _MigrationController,address[] memory _initialTokenlist, address _quickBridgeL2, address _RootChainManager, address _ERC20Predicate, address _nativeCurrency) public {
+
+        require(_MigrationController != address(0),"Can't be null address");
+        require(_quickBridgeL2 != address(0),"Can't be null address");
+        require(_RootChainManager != address(0),"Can't be null address");
+        require(_ERC20Predicate != address(0),"Can't be null address");
+        require(_nativeCurrency != address(0),"Can't be null address");
         
         MigrationController = _MigrationController;
         quickBridgeL2 = _quickBridgeL2;
