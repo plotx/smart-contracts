@@ -24,7 +24,6 @@ contract QuickBridge {
     address public ERC20Predicate;
     address public authorised;
     address public nativeCurrency;
-    uint256 constant MAX_ALLOWANCE = 2 ** 256 - 1;
     mapping(address=>bool) public tokenAllowed;
 
     
@@ -141,7 +140,7 @@ contract QuickBridge {
             } else {
 
                 if(IToken(_tokens[i]).allowance(address(this),ERC20Predicate) <= _amounts[i]){
-                    initiateApproval(_tokens[i], MAX_ALLOWANCE);
+                    initiateApproval(_tokens[i], _amounts[i]);
                 }
 
                 rootManager.depositFor(_quickBridgeL2Address,_tokens[i],abi.encode(_amounts[i])); 
